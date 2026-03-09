@@ -1,0 +1,46 @@
+{
+  "rows": [
+    {
+      "memberCode": "MBR-010",
+      "loanAccountNumber": "LN-000140",
+      "repaymentDate": "2026-03-11",
+      "paymentType": "cash",
+      "amountPaid": "12,500",
+      "principalPaid": "9,400",
+      "interestPaid": "2,700",
+      "penaltyPaid": "400",
+      "outstandingBalance": "180,670",
+      "refNo": "LRP-20260311-001",
+      "phoneNumber": "2207001122",
+      "comments": "Monthly installment paid at branch counter"
+    },
+    {
+      "memberCode": "MBR-057",
+      "loanAccountNumber": "LN-000221",
+      "repaymentDate": "2026-03-12",
+      "paymentType": "mobile wallet",
+      "amountPaid": "6,800",
+      "principalPaid": "4,900",
+      "interestPaid": "1,700",
+      "penaltyPaid": "200",
+      "outstandingBalance": "58,200",
+      "refNo": "LRP-20260312-002",
+      "phoneNumber": "2207667788",
+      "comments": "Partial repayment received via wallet"
+    },
+    {
+      "memberCode": "MBR-033",
+      "loanAccountNumber": "LN-000098",
+      "repaymentDate": "2026-03-14",
+      "paymentType": "bank transfer",
+      "amountPaid": "18,000",
+      "principalPaid": "13,600",
+      "interestPaid": "4,200",
+      "penaltyPaid": "200",
+      "outstandingBalance": "347,200",
+      "refNo": "LRP-20260314-003",
+      "phoneNumber": "2207445566",
+      "comments": "Corporate transfer for scheduled installment"
+    }
+  ]
+}

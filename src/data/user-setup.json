@@ -1,0 +1,141 @@
+{
+  "companies": [
+    "Microfinance Management",
+    "Unity SACCO"
+  ],
+  "branches": [
+    "Banjul Main",
+    "Serekunda",
+    "Brikama"
+  ],
+  "companyBranches": [
+    {
+      "companyName": "Microfinance Management",
+      "branchName": "Banjul Main"
+    },
+    {
+      "companyName": "Unity SACCO",
+      "branchName": "Serekunda"
+    },
+    {
+      "companyName": "Unity SACCO",
+      "branchName": "Brikama"
+    }
+  ],
+  "users": [
+    {
+      "companyName": "Microfinance Management",
+      "branch": "Banjul Main",
+      "staffNumber": "STF-1001",
+      "userId": "user.admin",
+      "userName": "Awa Jallow",
+      "temporaryPassword": "Temp@123",
+      "baseRole": "Admin",
+      "cashAccount": "GL-CASH-001",
+      "userType": "approver",
+      "debitMit": "500000",
+      "creditLimit": "1,000,000",
+      "loanApprovalLimit": true,
+      "disableUser": false,
+      "resetPassword": false,
+      "createdAt": "2026-03-08T09:00:00.000Z"
+    },
+    {
+      "companyName": "Unity SACCO",
+      "branch": "Serekunda",
+      "staffNumber": "STF-1012",
+      "userId": "user.ops",
+      "userName": "Lamin Ceesay",
+      "temporaryPassword": "Temp@456",
+      "baseRole": "Officer",
+      "cashAccount": "GL-CASH-002",
+      "userType": "maker",
+      "debitMit": "150000",
+      "creditLimit": "300,000",
+      "loanApprovalLimit": false,
+      "disableUser": false,
+      "resetPassword": false,
+      "createdAt": "2026-03-08T09:10:00.000Z"
+    },
+    {
+      "companyName": "Microfinance Management",
+      "branch": "Banjul Main",
+      "staffNumber": "001",
+      "userId": "musa001",
+      "userName": "Musa Fall",
+      "temporaryPassword": "Musa@2026",
+      "baseRole": "Cashier",
+      "cashAccount": "GL-CASH-011",
+      "userType": "viewer",
+      "debitMit": "75000",
+      "creditLimit": "250000",
+      "loanApprovalLimit": false,
+      "disableUser": false,
+      "resetPassword": false,
+      "createdAt": "2026-03-08T20:37:02.244Z"
+    },
+    {
+      "companyName": "Microfinance Management",
+      "branch": "Banjul Main",
+      "staffNumber": "002",
+      "userId": "viewOnly002",
+      "userName": "View only",
+      "temporaryPassword": "poiuy123",
+      "baseRole": "View Only All Pages",
+      "cashAccount": "",
+      "userType": "",
+      "debitMit": "",
+      "creditLimit": "",
+      "loanApprovalLimit": false,
+      "disableUser": false,
+      "resetPassword": false,
+      "createdAt": "2026-03-08T22:31:20.337Z"
+    }
+  ],
+  "roles": [
+    {
+      "roleName": "Admin",
+      "roleDescription": "Full branch administration role",
+      "featurePermissions": {
+        "member": "write",
+        "loan": "write",
+        "accounting": "write",
+        "system": "write",
+        "reporting": "read"
+      }
+    },
+    {
+      "roleName": "Officer",
+      "roleDescription": "Day-to-day operations role",
+      "featurePermissions": {
+        "member": "view only",
+        "loan": "read",
+        "accounting": "hide feature",
+        "system": "hide feature",
+        "reporting": "hide feature"
+      }
+    },
+    {
+      "roleName": "Cashier",
+      "roleDescription": "Teller transactions",
+      "featurePermissions": {
+        "member": "write",
+        "loan": "read",
+        "accounting": "read",
+        "system": "hide feature",
+        "reporting": "hide feature"
+      }
+    },
+    {
+      "roleName": "View Only All Pages",
+      "roleDescription": "Officer view only",
+      "featurePermissions": {
+        "member": "view only",
+        "loan": "view only",
+        "accounting": "view only",
+        "system": "view only",
+        "reporting": "view only"
+      }
+    }
+  ]
+}

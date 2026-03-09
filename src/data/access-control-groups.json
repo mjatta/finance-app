@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "id": "grp-001",
+      "groupName": "System Administrators",
+      "description": "Full system administration group"
+    },
+    {
+      "id": "grp-002",
+      "groupName": "Loan Officers",
+      "description": "Loan operations and approvals"
+    },
+    {
+      "id": "grp-003",
+      "groupName": "Member Services",
+      "description": "Member onboarding and support"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr-001",
+      "username": "super.user",
+      "fullName": "Super User"
+    },
+    {
+      "id": "usr-002",
+      "username": "admin.loan",
+      "fullName": "Admin Loan User"
+    },
+    {
+      "id": "usr-003",
+      "username": "financial.user",
+      "fullName": "Financial Accounting User"
+    },
+    {
+      "id": "usr-004",
+      "username": "system.admin",
+      "fullName": "System Admin User"
+    }
+  ],
+  "roles": [
+    {
+      "id": "role-001",
+      "roleName": "Admin",
+      "description": "Full administrative rights"
+    },
+    {
+      "id": "role-002",
+      "roleName": "Approver",
+      "description": "Can approve transactions"
+    },
+    {
+      "id": "role-003",
+      "roleName": "Viewer",
+      "description": "Read-only access"
+    }
+  ],
+  "groupUsers": [
+    {
+      "groupId": "grp-001",
+      "userId": "usr-001"
+    },
+    {
+      "groupId": "grp-001",
+      "userId": "usr-004"
+    },
+    {
+      "groupId": "grp-002",
+      "userId": "usr-002"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "settings": {
+    "passwordComplexity": "Medium",
+    "allowConcurrentLogons": false,
+    "minPasswordLength": "8",
+    "passwordValidityDays": "90",
+    "passwordTrials": "3",
+    "logoutDurationHours": "8",
+    "biometricFingerprint": true,
+    "biometricFacialVerification": false,
+    "mobilePhoneVerification": true
+  },
+  "departmentAuthorisers": [
+    {
+      "department": "Loans",
+      "principalAuthoriser": "Momodou Sarr",
+      "firstProxy": "Fatoumata Bah",
+      "secondProxy": "Ebrima Sonko"
+    },
+    {
+      "department": "Member Services",
+      "principalAuthoriser": "Isatou Touray",
+      "firstProxy": "Lamin Jatta",
+      "secondProxy": "Mariama Bojang"
+    }
+  ]
+}

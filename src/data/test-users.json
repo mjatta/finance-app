@@ -1,0 +1,72 @@
+{
+  "users": [
+    {
+      "id": "u-super-001",
+      "name": "Super User",
+      "username": "super.user",
+      "password": "Super@123",
+      "role": "SUPER_USER",
+      "access": {
+        "allPages": true,
+        "features": ["member", "loan", "accounting", "system", "reporting"]
+      }
+    },
+    {
+      "id": "u-admin-loan-001",
+      "name": "Admin Loan User",
+      "username": "admin.loan",
+      "password": "AdminLoan@123",
+      "role": "ADMIN_LOAN_USER",
+      "access": {
+        "allPages": false,
+        "features": ["member", "loan"]
+      }
+    },
+    {
+      "id": "u-loan-member-read-001",
+      "name": "Loan Member Readonly User",
+      "username": "readonly.loanmember",
+      "password": "ReadOnly@123",
+      "role": "LOAN_MEMBER_READONLY",
+      "access": {
+        "allPages": false,
+        "features": ["member", "loan"],
+        "readOnly": true
+      }
+    },
+    {
+      "id": "u-loan-member-read-002",
+      "name": "Assistant Readonly User",
+      "username": "assistant.readonly",
+      "password": "AssistRead@123",
+      "role": "ASSISTANT_READONLY",
+      "access": {
+        "allPages": false,
+        "features": ["member", "loan"],
+        "readOnly": true
+      }
+    },
+    {
+      "id": "u-fin-001",
+      "name": "Financial Accounting User",
+      "username": "financial.user",
+      "password": "Finance@123",
+      "role": "FINANCIAL_ACCOUNTING_USER",
+      "access": {
+        "allPages": false,
+        "features": ["accounting"]
+      }
+    },
+    {
+      "id": "u-sys-001",
+      "name": "System Admin User",
+      "username": "system.admin",
+      "password": "System@123",
+      "role": "SYSTEM_ADMIN_USER",
+      "access": {
+        "allPages": false,
+        "features": ["system"]
+      }
+    }
+  ]
+}

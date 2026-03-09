@@ -1,0 +1,70 @@
+{
+  "subscriptionRows": [
+    {
+      "id": "sub-001",
+      "memberNo": "MBR-0012",
+      "name": "Awa Jallow",
+      "product": "Monthly Savings",
+      "expected": "GMD 500",
+      "status": "Due"
+    },
+    {
+      "id": "sub-002",
+      "memberNo": "MBR-0144",
+      "name": "Lamin Ceesay",
+      "product": "Welfare Contribution",
+      "expected": "GMD 300",
+      "status": "Due"
+    },
+    {
+      "id": "sub-003",
+      "memberNo": "MBR-0201",
+      "name": "Fatou Sowe",
+      "product": "Monthly Savings",
+      "expected": "GMD 500",
+      "status": "Pending"
+    },
+    {
+      "id": "sub-004",
+      "memberNo": "MBR-0348",
+      "name": "Binta Camara",
+      "product": "Group Subscription",
+      "expected": "GMD 750",
+      "status": "Due"
+    }
+  ],
+  "interestRows": [
+    {
+      "id": "int-001",
+      "accountNo": "SAV-00021",
+      "member": "Adama Badjie",
+      "averageBalance": "GMD 45,200",
+      "rate": "6%",
+      "interest": "GMD 226.00"
+    },
+    {
+      "id": "int-002",
+      "accountNo": "SAV-00088",
+      "member": "Musa Conteh",
+      "averageBalance": "GMD 30,100",
+      "rate": "6%",
+      "interest": "GMD 150.50"
+    },
+    {
+      "id": "int-003",
+      "accountNo": "SAV-00134",
+      "member": "Mariama Jobe",
+      "averageBalance": "GMD 78,450",
+      "rate": "6%",
+      "interest": "GMD 392.25"
+    },
+    {
+      "id": "int-004",
+      "accountNo": "SAV-00207",
+      "member": "Amadou Ceesay",
+      "averageBalance": "GMD 12,900",
+      "rate": "6%",
+      "interest": "GMD 64.50"
+    }
+  ]
+}

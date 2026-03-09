@@ -1,0 +1,68 @@
+{
+  "rows": [
+    {
+      "id": "lc-001",
+      "memberCode": "MBR001",
+      "memberName": "Awa Jallow",
+      "loanType": "Development Loan",
+      "loanAmount": "450,000",
+      "approvalDate": "2025-07-14",
+      "loanAccountNumber": "LN-000184",
+      "initialPrincipal": "450,000",
+      "loanBalance": "312,450",
+      "grossInterest": "68,420",
+      "totalAmount": "518,420",
+      "currentInterest": "8,250",
+      "accruedInterest": "13,400",
+      "totalOutstanding": "325,850"
+    },
+    {
+      "id": "lc-002",
+      "memberCode": "MBR019",
+      "memberName": "Lamin Ceesay",
+      "loanType": "Regular Loan",
+      "loanAmount": "120,000",
+      "approvalDate": "2025-11-02",
+      "loanAccountNumber": "LN-000209",
+      "initialPrincipal": "120,000",
+      "loanBalance": "84,000",
+      "grossInterest": "12,600",
+      "totalAmount": "132,600",
+      "currentInterest": "2,100",
+      "accruedInterest": "4,700",
+      "totalOutstanding": "88,700"
+    },
+    {
+      "id": "lc-003",
+      "memberCode": "MBR044",
+      "memberName": "Mariama Bojang",
+      "loanType": "Emergency Loan",
+      "loanAmount": "75,000",
+      "approvalDate": "2026-01-18",
+      "loanAccountNumber": "LN-000245",
+      "initialPrincipal": "75,000",
+      "loanBalance": "49,600",
+      "grossInterest": "8,300",
+      "totalAmount": "83,300",
+      "currentInterest": "1,450",
+      "accruedInterest": "2,900",
+      "totalOutstanding": "52,500"
+    },
+    {
+      "id": "lc-004",
+      "memberCode": "MBR061",
+      "memberName": "Ebrima Sowe",
+      "loanType": "Consumer Loan",
+      "loanAmount": "300,000",
+      "approvalDate": "2025-09-27",
+      "loanAccountNumber": "LN-000173",
+      "initialPrincipal": "300,000",
+      "loanBalance": "176,900",
+      "grossInterest": "45,000",
+      "totalAmount": "345,000",
+      "currentInterest": "5,750",
+      "accruedInterest": "9,600",
+      "totalOutstanding": "186,500"
+    }
+  ]
+}

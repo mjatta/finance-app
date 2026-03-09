@@ -1,0 +1,72 @@
+{
+  "rows": [
+    {
+      "id": "lrw-001",
+      "memberCode": "MBR010",
+      "memberName": "Fatoumata Camara",
+      "loanType": "Consumer Loan",
+      "loanAmount": "260,000",
+      "approvalDate": "2025-06-19",
+      "loanAccountNumber": "LN-000140",
+      "initialPrincipal": "260,000",
+      "loanBalance": "184,500",
+      "grossInterest": "39,800",
+      "totalAmount": "299,800",
+      "currentInterest": "5,220",
+      "accruedInterest": "8,670",
+      "totalOutstanding": "193,170",
+      "loanAmountToBeWrittenOff": "45,000"
+    },
+    {
+      "id": "lrw-002",
+      "memberCode": "MBR033",
+      "memberName": "Musa Jallow",
+      "loanType": "Building Loan",
+      "loanAmount": "520,000",
+      "approvalDate": "2025-02-11",
+      "loanAccountNumber": "LN-000098",
+      "initialPrincipal": "520,000",
+      "loanBalance": "348,400",
+      "grossInterest": "86,200",
+      "totalAmount": "606,200",
+      "currentInterest": "9,430",
+      "accruedInterest": "16,800",
+      "totalOutstanding": "365,200",
+      "loanAmountToBeWrittenOff": "90,000"
+    },
+    {
+      "id": "lrw-003",
+      "memberCode": "MBR057",
+      "memberName": "Isatou Jobe",
+      "loanType": "Emergency Loan",
+      "loanAmount": "95,000",
+      "approvalDate": "2025-12-04",
+      "loanAccountNumber": "LN-000221",
+      "initialPrincipal": "95,000",
+      "loanBalance": "61,750",
+      "grossInterest": "10,900",
+      "totalAmount": "105,900",
+      "currentInterest": "1,760",
+      "accruedInterest": "3,250",
+      "totalOutstanding": "65,000",
+      "loanAmountToBeWrittenOff": "15,000"
+    },
+    {
+      "id": "lrw-004",
+      "memberCode": "MBR071",
+      "memberName": "Baboucarr Touray",
+      "loanType": "Regular Loan",
+      "loanAmount": "140,000",
+      "approvalDate": "2025-08-29",
+      "loanAccountNumber": "LN-000166",
+      "initialPrincipal": "140,000",
+      "loanBalance": "94,200",
+      "grossInterest": "16,500",
+      "totalAmount": "156,500",
+      "currentInterest": "2,400",
+      "accruedInterest": "4,100",
+      "totalOutstanding": "98,300",
+      "loanAmountToBeWrittenOff": "25,000"
+    }
+  ]
+}
