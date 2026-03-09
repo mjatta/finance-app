@@ -590,5 +590,6 @@ const periodicProcessingApiPlugin = () => ({
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/finance-app/',
   plugins: [react(), depositsApiPlugin(), loanRepaymentsApiPlugin(), userSetupApiPlugin(), securitySettingsApiPlugin(), productDefinitionApiPlugin(), periodicProcessingApiPlugin()],
 })
