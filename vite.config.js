@@ -11,6 +11,7 @@ const userSetupFilePath = path.resolve(process.cwd(), 'src/data/user-setup.json'
 const securitySettingsFilePath = path.resolve(process.cwd(), 'src/data/security-settings.json')
 const productDefinitionFilePath = path.resolve(process.cwd(), 'src/data/product-definition.json')
 const periodicProcessingFilePath = path.resolve(process.cwd(), 'src/data/periodic-processing.json')
+const customerRegistrationFilePath = path.resolve(process.cwd(), 'src/data/customer-registration.json')
 
 const parseRequestBody = async (req) => {
   const chunks = []
@@ -167,6 +168,27 @@ const readPeriodicProcessingFile = async () => {
 const writePeriodicProcessingFile = async (data) => {
   const payload = JSON.stringify(data, null, 2)
   await fs.writeFile(periodicProcessingFilePath, payload, 'utf8')
+}
+
+const readCustomerRegistrationFile = async () => {
+  try {
+    const raw = await fs.readFile(customerRegistrationFilePath, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed
+    }
+    return Array.isArray(parsed?.rows) ? parsed.rows : []
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
+const writeCustomerRegistrationFile = async (rows) => {
+  const payload = JSON.stringify({ rows }, null, 2)
+  await fs.writeFile(customerRegistrationFilePath, payload, 'utf8')
 }
 
 const depositsApiPlugin = () => ({
@@ -588,8 +610,97 @@ const periodicProcessingApiPlugin = () => ({
   },
 })
 
+const customerRegistrationApiPlugin = () => ({
+  name: 'customer-registration-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/customer-registration', async (req, res, next) => {
+      try {
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'GET' && req.url?.startsWith('/report')) {
+          const rows = await readCustomerRegistrationFile()
+          const latest = rows.length > 0 ? rows[rows.length - 1] : null
+          const report = {
+            generatedAt: new Date().toISOString(),
+            totalRecords: rows.length,
+            latestMember: latest
+              ? {
+                  memberCode: latest.memberCode || '',
+                  fullName: [latest.firstName, latest.middleName, latest.surname].filter(Boolean).join(' '),
+                  branch: latest.branch || '',
+                  creditUnion: latest.creditUnion || '',
+                }
+              : null,
+          }
+
+          res.statusCode = 200
+          res.end(JSON.stringify({ report, rows }))
+          return
+        }
+
+        if (req.method === 'GET') {
+          const rows = await readCustomerRegistrationFile()
+          res.statusCode = 200
+          res.end(JSON.stringify({ rows }))
+          return
+        }
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          const incomingRow = body?.row
+
+          if (!incomingRow || typeof incomingRow !== 'object') {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object.' }))
+            return
+          }
+
+          const rows = await readCustomerRegistrationFile()
+          rows.push(incomingRow)
+          await writeCustomerRegistrationFile(rows)
+
+          res.statusCode = 201
+          res.end(JSON.stringify({ rows }))
+          return
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process customer registration data.' }))
+      }
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/finance-app/',
-  plugins: [react(), depositsApiPlugin(), loanRepaymentsApiPlugin(), userSetupApiPlugin(), securitySettingsApiPlugin(), productDefinitionApiPlugin(), periodicProcessingApiPlugin()],
+  server: {
+    proxy: {
+      // Proxy remote branches lookup to avoid CORS during development
+      '/api/remote-branches': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-branches/, '/api/lookups'),
+      },
+    },
+  },
+  plugins: [
+    react(),
+    depositsApiPlugin(),
+    loanRepaymentsApiPlugin(),
+    userSetupApiPlugin(),
+    securitySettingsApiPlugin(),
+    productDefinitionApiPlugin(),
+    periodicProcessingApiPlugin(),
+    customerRegistrationApiPlugin(),
+  ],
 })

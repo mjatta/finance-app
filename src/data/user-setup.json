@@ -1,7 +1,6 @@
 {
   "companies": [
-    "Microfinance Management",
-    "Unity SACCO"
+    "Social Development Fund"
   ],
   "branches": [
     "Banjul Main",
@@ -100,6 +99,7 @@
         "member": "write",
         "loan": "write",
         "accounting": "write",
+        "processing": "write",
         "system": "write",
         "reporting": "read"
       }
@@ -111,6 +111,7 @@
         "member": "view only",
         "loan": "read",
         "accounting": "hide feature",
+        "processing": "hide feature",
         "system": "hide feature",
         "reporting": "hide feature"
       }
@@ -122,6 +123,7 @@
         "member": "write",
         "loan": "read",
         "accounting": "read",
+        "processing": "read",
         "system": "hide feature",
         "reporting": "hide feature"
       }
@@ -133,6 +135,7 @@
         "member": "view only",
         "loan": "view only",
         "accounting": "view only",
+        "processing": "view only",
         "system": "view only",
         "reporting": "view only"
       }

@@ -7,6 +7,42 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import SavingsRoundedIcon from '@mui/icons-material/SavingsRounded';
+import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
+import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
+import HowToRegRoundedIcon from '@mui/icons-material/HowToRegRounded';
+import ListAltRoundedIcon from '@mui/icons-material/ListAltRounded';
+import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
+import ToggleOnRoundedIcon from '@mui/icons-material/ToggleOnRounded';
+import PersonRemoveRoundedIcon from '@mui/icons-material/PersonRemoveRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import BlockRoundedIcon from '@mui/icons-material/BlockRounded';
+import AssignmentReturnRoundedIcon from '@mui/icons-material/AssignmentReturnRounded';
+import AssessmentRoundedIcon from '@mui/icons-material/AssessmentRounded';
+import TaskAltRoundedIcon from '@mui/icons-material/TaskAltRounded';
+import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
+import OutboxRoundedIcon from '@mui/icons-material/OutboxRounded';
+import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
+import CalculateRoundedIcon from '@mui/icons-material/CalculateRounded';
+import EventRepeatRoundedIcon from '@mui/icons-material/EventRepeatRounded';
+import PointOfSaleRoundedIcon from '@mui/icons-material/PointOfSaleRounded';
+import BookRoundedIcon from '@mui/icons-material/BookRounded';
+import SyncAltRoundedIcon from '@mui/icons-material/SyncAltRounded';
+import UndoRoundedIcon from '@mui/icons-material/UndoRounded';
+import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
+import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import BalanceRoundedIcon from '@mui/icons-material/BalanceRounded';
+import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
+import GroupWorkRoundedIcon from '@mui/icons-material/GroupWorkRounded';
+import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
+import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
+import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
+import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import logo from './assets/company-logo.jpg';
@@ -16,17 +52,44 @@ import './App.css';
 const DepositManagement = lazy(() => import('./features/member/DepositManagement'));
 const MemberTransfer = lazy(() => import('./features/member/MemberTransfer'));
 const Reprint = lazy(() => import('./features/member/Reprint'));
+const CustomerRegistration = lazy(() => import('./features/member/CustomerRegistration'));
+const MemberAdministrationAccounts = lazy(() => import('./features/member/MemberAdministrationAccounts'));
+const AddMemberAccount = lazy(() => import('./features/member/AddMemberAccount'));
+const MemberActivation = lazy(() => import('./features/member/MemberActivation'));
+const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
+const MemberClose = lazy(() => import('./features/member/MemberClose'));
+const Transfers = lazy(() => import('./features/member/Transfers'));
+const MemberMessage = lazy(() => import('./features/member/MemberMessage'));
+const MemberPayrollManagement = lazy(() => import('./features/member/MemberPayrollManagement'));
 
 const Repayments = lazy(() => import('./features/loan/Repayments'));
 const LoanChangeOff = lazy(() => import('./features/loan/LoanChangeOff'));
 const RecoveryWriteOff = lazy(() => import('./features/loan/RecoveryWriteOff'));
 const LoanReporting = lazy(() => import('./features/loan/Reporting'));
+const LoanActivate = lazy(() => import('./features/loan/LoanActivate'));
+const LoanAmortization = lazy(() => import('./features/loan/LoanAmortization'));
+const LoanApplication = lazy(() => import('./features/loan/LoanApplication'));
+const LoanApproval = lazy(() => import('./features/loan/LoanApproval'));
+const LoanDisbursement = lazy(() => import('./features/loan/LoanDisbursement'));
+const LoanGuarantor = lazy(() => import('./features/loan/LoanGuarantor'));
+const LoanApplicationReschedule = lazy(() => import('./features/loan/LoanApplicationReschedule'));
+const LoanApplicationTopUp = lazy(() => import('./features/loan/LoanApplicationTopUp'));
 
 const SubscriptionProcessing = lazy(() => import('./features/accounting/PeriodicProcessing/SubscriptionProcessing'));
 const InterestCalculation = lazy(() => import('./features/accounting/PeriodicProcessing/InterestCalculation'));
+const PeriodDues = lazy(() => import('./features/accounting/PeriodicProcessing/PeriodDues'));
+const CashManager = lazy(() => import('./features/accounting/CashManager'));
+const Journals = lazy(() => import('./features/accounting/Journals'));
+const TransactionUpdate = lazy(() => import('./features/accounting/TransactionUpdate'));
+const TransactionReversalAdjustment = lazy(() => import('./features/accounting/TransactionReversalAdjustment'));
+const AccountEnquiry = lazy(() => import('./features/accounting/AccountEnquiry'));
+const GeneralLedger = lazy(() => import('./features/accounting/LedgerManagement'));
+const AccountReconciliation = lazy(() => import('./features/accounting/Reconciliation'));
 
 const UserSecurity = lazy(() => import('./features/system/UserSecurity'));
 const UserSetup = lazy(() => import('./features/system/UserSetup'));
+const EndOfYear = lazy(() => import('./features/system/EndOfYear'));
+const RunningBalanceFix = lazy(() => import('./features/system/RunningBalanceFix'));
 const AccessControlGroups = lazy(() => import('./features/system/AccessControlGroups'));
 const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
 const ProductDefinition = lazy(() => import('./features/system/ModuleSetup/ProductDefinition'));
@@ -38,16 +101,25 @@ const Login = lazy(() => import('./features/auth/Login'));
 
 const deriveCategoryFromPath = (pathname) => {
   const firstSegment = pathname.split('/').filter(Boolean)[0] || null;
-  const allowedKeys = ['member', 'loan', 'accounting', 'system', 'reporting'];
+  const allowedKeys = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting'];
   return allowedKeys.includes(firstSegment) ? firstSegment : null;
+};
+
+const normalizePathname = (pathname) => {
+  const clean = String(pathname || '').split('?')[0].split('#')[0];
+  if (!clean || clean === '/') {
+    return '/';
+  }
+
+  return clean.endsWith('/') ? clean.slice(0, -1) : clean;
 };
 
 const normalizePermission = (permission) => {
   const value = String(permission || '').trim().toLowerCase();
-  if (value === 'hide feature' || value === 'hide') {
+  if (value === 'hide feature' || value === 'hide page' || value === 'hide') {
     return 'hide';
   }
-  if (value === 'view' || value === 'view only' || value === 'read') {
+  if (value === 'view' || value === 'view only' || value === 'read' || value === 'read only') {
     return 'read';
   }
   if (value === 'write') {
@@ -122,45 +194,78 @@ function App() {
       key: 'member',
       label: 'Member Administration',
       children: [
-        { label: 'Deposits', to: '/member/deposits' },
-        { label: 'Member Transfer', to: '/member/transfer' },
-        { label: 'Reprint', to: '/member/reprint' },
+        { label: 'Customer Registration / Individual / Listing', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
+        { label: 'Member Administration Accounts', to: '/member/member-administration-accounts', icon: ListAltRoundedIcon },
+        { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
+        { label: 'Member Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
+        { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
+        { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
+        { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
+        { label: 'Transfers', to: '/member/transfers', icon: SwapHorizRoundedIcon },
+        { label: 'Member Message', to: '/member/member-message', icon: ReceiptLongRoundedIcon },
+        { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
+        { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
+        { label: 'Member Close', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
       ],
     },
     {
       key: 'loan',
       label: 'Loan Management',
       children: [
-        { label: 'Repayments', to: '/loan/repayments' },
-        { label: 'Loan Change off', to: '/loan/change-off' },
-        { label: 'Recovery/Write-off', to: '/loan/recovery' },
-        { label: 'Loan Reporting', to: '/loan/reporting' },
+        { label: 'Loan Application', to: '/loan/application', icon: DescriptionRoundedIcon },
+        { label: 'Loan Guarantor', to: '/loan/guarantor', icon: GroupWorkRoundedIcon },
+        { label: 'Loan Amortization', to: '/loan/amortization', icon: CalculateRoundedIcon },
+        { label: 'Loan Approval', to: '/loan/approval', icon: VerifiedRoundedIcon },
+        { label: 'Loan Activate', to: '/loan/activate', icon: TaskAltRoundedIcon },
+        { label: 'Loan Disbursement', to: '/loan/disbursement', icon: OutboxRoundedIcon },
+        { label: 'Loan Repayments', to: '/loan/repayments', icon: PaymentsRoundedIcon },
+        { label: 'Loan Application Reschedule', to: '/loan/application-reschedule', icon: ScheduleRoundedIcon },
+        { label: 'Loan Application Top up', to: '/loan/application-top-up', icon: TrendingUpRoundedIcon },
+        { label: 'Loan Change off', to: '/loan/change-off', icon: BlockRoundedIcon },
+        { label: 'Recovery/Write-off', to: '/loan/recovery', icon: AssignmentReturnRoundedIcon },
+        { label: 'Loan Reporting', to: '/loan/reporting', icon: AssessmentRoundedIcon },
       ],
     },
     {
       key: 'accounting',
       label: 'Financial Accounting',
       children: [
-        { label: 'Periodic Subscription Processing', to: '/accounting/periodic/subscription' },
-        { label: 'Interest Calculation', to: '/accounting/periodic/interest' },
+        { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
+        { label: 'Journals', to: '/accounting/journals', icon: BookRoundedIcon },
+        { label: 'Transaction Update', to: '/accounting/transaction-update', icon: SyncAltRoundedIcon },
+        { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
+        { label: 'Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
+        { label: 'General Ledger', to: '/accounting/general-ledger', icon: AccountBalanceRoundedIcon },
+        { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
+      ],
+    },
+    {
+      key: 'processing',
+      label: 'Processing',
+      children: [
+        { label: 'Periodic Subscription Processing', to: '/processing/subscription', icon: AutorenewRoundedIcon },
+        { label: 'Interest Calculation', to: '/processing/interest', icon: CalculateRoundedIcon },
+        { label: 'Period Processing Period Dues', to: '/processing/period-dues', icon: EventRepeatRoundedIcon },
       ],
     },
     {
       key: 'system',
       label: 'System Administration',
       children: [
-        { label: 'User Setup', to: '/system/user-setup' },
-        { label: 'Access Control Groups', to: '/system/access-control-groups' },
-        { label: 'Security', to: '/system/security' },
-        { label: 'Product Setup', to: '/system/product' },
+        { label: 'Product Setup', to: '/system/product', icon: Inventory2RoundedIcon },
+        { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
+        { label: 'Access Control Groups', to: '/system/access-control-groups', icon: GroupWorkRoundedIcon },
+        { label: 'Security', to: '/system/security', icon: SecurityRoundedIcon },
+        { label: 'Running Balance Fix', to: '/system/running-balance-fix', icon: TuneRoundedIcon },
+        { label: 'End of Year', to: '/system/end-of-year', icon: DateRangeRoundedIcon },
       ],
     },
     {
       key: 'reporting',
       label: 'Reporting & Analytics',
       children: [
-        { label: 'Reporting', to: '/reporting' },
-        { label: 'Analytics', to: '/reporting/analytics' },
+        { label: 'Reporting', to: '/reporting', icon: AssessmentRoundedIcon },
+        { label: 'Analytics', to: '/reporting/analytics', icon: InsightsRoundedIcon },
       ],
     },
   ];
@@ -179,23 +284,65 @@ function App() {
       return user?.access?.readOnly ? 'read' : 'write';
     }
 
+    if (featureKey === 'processing') {
+      const accountingPermission = normalizePermission(user?.access?.featurePermissions?.accounting);
+      if (accountingPermission) {
+        return accountingPermission;
+      }
+
+      if (user?.access?.features?.includes('accounting')) {
+        return user?.access?.readOnly ? 'read' : 'write';
+      }
+    }
+
     return 'hide';
   };
 
   const canAccessFeature = (featureKey) => getFeaturePermission(featureKey) !== 'hide';
-  const isFeatureReadOnly = (featureKey) => getFeaturePermission(featureKey) === 'read';
+  const pagePermissions = user?.access?.pagePermissions || {};
 
-  const allowedCategories = categories.filter((cat) => canAccessFeature(cat.key));
+  const getPagePermission = (featureKey, pagePath) => {
+    if (user?.access?.allPages) {
+      return 'write';
+    }
 
-  const renderWithAccess = (featureKey, element) =>
-    canAccessFeature(featureKey)
+    const normalizedPath = normalizePathname(pagePath);
+    const explicitPagePermission = normalizePermission(pagePermissions?.[normalizedPath]);
+    if (explicitPagePermission) {
+      return explicitPagePermission;
+    }
+
+    return getFeaturePermission(featureKey);
+  };
+
+  const canAccessPage = (featureKey, pagePath) => getPagePermission(featureKey, pagePath) !== 'hide';
+  const isPageReadOnly = (featureKey, pagePath) => getPagePermission(featureKey, pagePath) === 'read';
+
+  const hasAccessiblePages = (featureKey) => {
+    const category = categories.find((cat) => cat.key === featureKey);
+    if (!category) {
+      return false;
+    }
+
+    return category.children.some((child) => canAccessPage(featureKey, child.to));
+  };
+
+  const allowedCategories = categories.filter(
+    (cat) => canAccessFeature(cat.key) || hasAccessiblePages(cat.key),
+  );
+
+  const renderWithAccess = (featureKey, element, pagePath = location.pathname) =>
+    canAccessPage(featureKey, pagePath)
       ? (() => {
+          const effectiveReadOnly = isPageReadOnly(featureKey, pagePath);
+
           const scopedUser = {
             ...user,
             access: {
               ...(user?.access || {}),
-              readOnly: isFeatureReadOnly(featureKey),
+              readOnly: effectiveReadOnly,
               currentFeature: featureKey,
+              currentPage: normalizePathname(pagePath),
             },
           };
 
@@ -206,14 +353,14 @@ function App() {
               })
             : element;
 
-          if (!isFeatureReadOnly(featureKey)) {
+          if (!effectiveReadOnly) {
             return scopedElement;
           }
 
           return (
             <Box>
               <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontWeight: 700 }}>
-                View-only mode: edits are disabled for this feature.
+                View-only mode: edits are disabled for this page.
               </Typography>
               <Box
                 sx={{
@@ -237,22 +384,15 @@ function App() {
           <Navigate
             to="/access-denied"
             replace
-            state={{ requiredFeature: featureKey, fromPath: location.pathname }}
+            state={{ requiredFeature: featureKey, requiredPage: normalizePathname(pagePath), fromPath: location.pathname }}
           />
         );
 
   const currentChildren =
-    allowedCategories.find((c) => c.key === activeCategory)?.children || [];
+    (allowedCategories.find((c) => c.key === activeCategory)?.children || [])
+      .filter((link) => canAccessPage(activeCategory, link.to));
   const activeCategoryLabel =
     allowedCategories.find((c) => c.key === activeCategory)?.label || 'Navigation';
-  const getCompactLabel = (label) =>
-    label
-      .split(/[\s/.-]+/)
-      .filter(Boolean)
-      .map((word) => word[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
   const showSideNav = Boolean(activeCategory);
 
 
@@ -344,15 +484,31 @@ function App() {
                   <ul>
                     {currentChildren.map((link) => (
                       <li key={link.to}>
+                        {(() => {
+                          const LinkIcon = link.icon;
+
+                          return (
                         <NavLink
                           to={link.to}
                           onClick={() => setActiveCategoryOverride(null)}
                           end={link.to === '/reporting'}
                           className={({ isActive }) => (isActive ? 'active' : '')}
                           title={link.label}
+                          aria-label={link.label}
                         >
-                          {isSideNavCollapsed ? getCompactLabel(link.label) : link.label}
+                          <span className="side-nav-link-content">
+                            {LinkIcon ? (
+                              <span className="side-nav-link-icon" aria-hidden="true">
+                                <LinkIcon fontSize="small" />
+                              </span>
+                            ) : null}
+                            {!isSideNavCollapsed ? (
+                              <span className="side-nav-link-label">{link.label}</span>
+                            ) : null}
+                          </span>
                         </NavLink>
+                          );
+                        })()}
                       </li>
                     ))}
                   </ul>
@@ -383,12 +539,48 @@ function App() {
                       element={renderWithAccess('member', <DepositManagement user={user} />)}
                     />
                     <Route
+                      path="/member/withdrawal"
+                      element={renderWithAccess('member', <Withdrawal />)}
+                    />
+                    <Route
                       path="/member/transfer"
                       element={renderWithAccess('member', <MemberTransfer user={user} />)}
                     />
                     <Route
+                      path="/member/transfers"
+                      element={renderWithAccess('member', <Transfers />)}
+                    />
+                    <Route
+                      path="/member/member-message"
+                      element={renderWithAccess('member', <MemberMessage />)}
+                    />
+                    <Route
                       path="/member/reprint"
                       element={renderWithAccess('member', <Reprint />)}
+                    />
+                    <Route
+                      path="/member/customer-registration"
+                      element={renderWithAccess('member', <CustomerRegistration />)}
+                    />
+                    <Route
+                      path="/member/member-administration-accounts"
+                      element={renderWithAccess('member', <MemberAdministrationAccounts />)}
+                    />
+                    <Route
+                      path="/member/add-member-account"
+                      element={renderWithAccess('member', <AddMemberAccount />)}
+                    />
+                    <Route
+                      path="/member/member-activation"
+                      element={renderWithAccess('member', <MemberActivation />)}
+                    />
+                    <Route
+                      path="/member/member-close"
+                      element={renderWithAccess('member', <MemberClose />)}
+                    />
+                    <Route
+                      path="/member/member-payroll-management"
+                      element={renderWithAccess('member', <MemberPayrollManagement />)}
                     />
 
                     <Route path="/loan/repayments" element={renderWithAccess('loan', <Repayments user={user} />)} />
@@ -404,18 +596,98 @@ function App() {
                       path="/loan/reporting"
                       element={renderWithAccess('loan', <LoanReporting />)}
                     />
+                    <Route
+                      path="/loan/activate"
+                      element={renderWithAccess('loan', <LoanActivate />)}
+                    />
+                    <Route
+                      path="/loan/amortization"
+                      element={renderWithAccess('loan', <LoanAmortization />)}
+                    />
+                    <Route
+                      path="/loan/application"
+                      element={renderWithAccess('loan', <LoanApplication />)}
+                    />
+                    <Route
+                      path="/loan/approval"
+                      element={renderWithAccess('loan', <LoanApproval />)}
+                    />
+                    <Route
+                      path="/loan/disbursement"
+                      element={renderWithAccess('loan', <LoanDisbursement />)}
+                    />
+                    <Route
+                      path="/loan/guarantor"
+                      element={renderWithAccess('loan', <LoanGuarantor />)}
+                    />
+                    <Route
+                      path="/loan/application-reschedule"
+                      element={renderWithAccess('loan', <LoanApplicationReschedule />)}
+                    />
+                    <Route
+                      path="/loan/application-top-up"
+                      element={renderWithAccess('loan', <LoanApplicationTopUp />)}
+                    />
 
                     <Route
                       path="/accounting/periodic"
-                      element={<Navigate to="/accounting/periodic/subscription" replace />}
+                      element={<Navigate to="/processing/subscription" replace />}
+                    />
+                    <Route
+                      path="/accounting/cash-manager"
+                      element={renderWithAccess('accounting', <CashManager />)}
+                    />
+                    <Route
+                      path="/accounting/journals"
+                      element={renderWithAccess('accounting', <Journals />)}
+                    />
+                    <Route
+                      path="/accounting/transaction-update"
+                      element={renderWithAccess('accounting', <TransactionUpdate />)}
+                    />
+                    <Route
+                      path="/accounting/transaction-reversal-adjustment"
+                      element={renderWithAccess('accounting', <TransactionReversalAdjustment />)}
+                    />
+                    <Route
+                      path="/accounting/account-enquiry"
+                      element={renderWithAccess('accounting', <AccountEnquiry />)}
+                    />
+                    <Route
+                      path="/accounting/general-ledger"
+                      element={renderWithAccess('accounting', <GeneralLedger />)}
+                    />
+                    <Route
+                      path="/accounting/account-reconciliation"
+                      element={renderWithAccess('accounting', <AccountReconciliation />)}
                     />
                     <Route
                       path="/accounting/periodic/subscription"
-                      element={renderWithAccess('accounting', <SubscriptionProcessing />)}
+                      element={<Navigate to="/processing/subscription" replace />}
                     />
                     <Route
                       path="/accounting/periodic/interest"
-                      element={renderWithAccess('accounting', <InterestCalculation />)}
+                      element={<Navigate to="/processing/interest" replace />}
+                    />
+                    <Route
+                      path="/accounting/periodic/period-dues"
+                      element={<Navigate to="/processing/period-dues" replace />}
+                    />
+                    <Route
+                      path="/processing"
+                      element={<Navigate to="/processing/subscription" replace />}
+                    />
+                    <Route
+                      path="/processing/subscription"
+                      element={renderWithAccess('processing', <SubscriptionProcessing />)}
+                    />
+                    <Route
+                      path="/processing/interest"
+                      element={renderWithAccess('processing', <InterestCalculation />)}
+                    />
+                    <Route
+                      path="/processing/period-dues"
+                      element={renderWithAccess('processing', <PeriodDues />)}
                     />
 
                     <Route
@@ -433,6 +705,14 @@ function App() {
                     <Route
                       path="/system/product"
                       element={renderWithAccess('system', <ProductDefinition />)}
+                    />
+                    <Route
+                      path="/system/end-of-year"
+                      element={renderWithAccess('system', <EndOfYear />)}
+                    />
+                    <Route
+                      path="/system/running-balance-fix"
+                      element={renderWithAccess('system', <RunningBalanceFix />)}
                     />
 
                     <Route path="/reporting" element={renderWithAccess('reporting', <Reporting />)} />

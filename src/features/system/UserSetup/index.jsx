@@ -5,10 +5,6 @@ import {
   Card,
   CardContent,
   Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -22,16 +18,86 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add as AddIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+
+const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
+const SETUP_CACHE_KEY = 'userSetup_setupPayload';
+
+const featureOptions = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting'];
+const featurePermissionOptions = ['write', 'view only', 'hide feature'];
+const pagePermissionOptions = ['inherit', 'write', 'view only', 'hide page'];
+
+const defaultFeaturePermissions = {
+  member: 'hide feature',
+  loan: 'hide feature',
+  accounting: 'hide feature',
+  processing: 'hide feature',
+  system: 'hide feature',
+  reporting: 'hide feature',
+};
+
+const featurePageMap = {
+  member: [
+    { path: '/member/customer-registration', label: 'Customer Registration / Individual / Listing' },
+    { path: '/member/member-administration-accounts', label: 'Member Administration Accounts' },
+    { path: '/member/add-member-account', label: 'Add Member Account' },
+    { path: '/member/member-activation', label: 'Member Activation' },
+    { path: '/member/deposits', label: 'Deposits' },
+    { path: '/member/withdrawal', label: 'Withdrawal' },
+    { path: '/member/transfer', label: 'Member Transfer' },
+    { path: '/member/transfers', label: 'Transfers' },
+    { path: '/member/member-message', label: 'Member Message' },
+    { path: '/member/member-payroll-management', label: 'Member Payroll Management' },
+    { path: '/member/reprint', label: 'Reprint' },
+    { path: '/member/member-close', label: 'Member Close' },
+  ],
+  loan: [
+    { path: '/loan/application', label: 'Loan Application' },
+    { path: '/loan/guarantor', label: 'Loan Guarantor' },
+    { path: '/loan/amortization', label: 'Loan Amortization' },
+    { path: '/loan/approval', label: 'Loan Approval' },
+    { path: '/loan/activate', label: 'Loan Activate' },
+    { path: '/loan/disbursement', label: 'Loan Disbursement' },
+    { path: '/loan/repayments', label: 'Loan Repayments' },
+    { path: '/loan/application-reschedule', label: 'Loan Application Reschedule' },
+    { path: '/loan/application-top-up', label: 'Loan Application Top up' },
+    { path: '/loan/change-off', label: 'Loan Change off' },
+    { path: '/loan/recovery', label: 'Recovery/Write-off' },
+    { path: '/loan/reporting', label: 'Loan Reporting' },
+  ],
+  accounting: [
+    { path: '/accounting/cash-manager', label: 'Cash Manager' },
+    { path: '/accounting/journals', label: 'Journals' },
+    { path: '/accounting/transaction-update', label: 'Transaction Update' },
+    { path: '/accounting/transaction-reversal-adjustment', label: 'Transaction Reversal / Adjustment' },
+    { path: '/accounting/account-enquiry', label: 'Account Enquiry' },
+    { path: '/accounting/general-ledger', label: 'General Ledger' },
+    { path: '/accounting/account-reconciliation', label: 'Account Reconciliation' },
+  ],
+  processing: [
+    { path: '/processing/subscription', label: 'Periodic Subscription Processing' },
+    { path: '/processing/interest', label: 'Interest Calculation' },
+    { path: '/processing/period-dues', label: 'Period Processing Period Dues' },
+  ],
+  system: [
+    { path: '/system/product', label: 'Product Setup' },
+    { path: '/system/user-setup', label: 'User Setup' },
+    { path: '/system/access-control-groups', label: 'Access Control Groups' },
+    { path: '/system/security', label: 'Security' },
+    { path: '/system/running-balance-fix', label: 'Running Balance Fix' },
+    { path: '/system/end-of-year', label: 'End of Year' },
+  ],
+  reporting: [
+    { path: '/reporting', label: 'Reporting' },
+    { path: '/reporting/analytics', label: 'Analytics' },
+  ],
+};
 
 export default function UserSetup({ user }) {
-  const featureOptions = ['member', 'loan', 'accounting', 'system', 'reporting'];
-  const featurePermissionOptions = ['read', 'write', 'view only', 'hide feature'];
-  const [companies, setCompanies] = useState(['Microfinance Management']);
-  const [branches, setBranches] = useState(['Main Branch']);
-  const [companyBranches, setCompanyBranches] = useState([
-    { companyName: 'Microfinance Management', branchName: 'Main Branch' },
-  ]);
+  const [companies, setCompanies] = useState(['Social Development Fund']);
+  const [branches, setBranches] = useState([]);
+  const [companyBranches, setCompanyBranches] = useState([]);
+  const [remoteBranchesLoaded, setRemoteBranchesLoaded] = useState(false);
   const [baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
   const [savedUsers, setSavedUsers] = useState([]);
   const [savedRoles, setSavedRoles] = useState([]);
@@ -44,7 +110,7 @@ export default function UserSetup({ user }) {
   const [isSavingRole, setIsSavingRole] = useState(false);
 
   const [userForm, setUserForm] = useState({
-    companyName: '',
+    companyName: 'Social Development Fund',
     branch: '',
     staffNumber: '',
     userId: '',
@@ -63,20 +129,9 @@ export default function UserSetup({ user }) {
   const [roleForm, setRoleForm] = useState({
     roleName: '',
     roleDescription: '',
-    featurePermissions: {
-      member: 'hide feature',
-      loan: 'hide feature',
-      accounting: 'hide feature',
-      system: 'hide feature',
-      reporting: 'hide feature',
-    },
+    featurePermissions: defaultFeaturePermissions,
+    pagePermissions: {},
   });
-  const [isBranchDialogOpen, setIsBranchDialogOpen] = useState(false);
-  const [branchDialogForm, setBranchDialogForm] = useState({
-    companyName: '',
-    branchName: '',
-  });
-
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
 
   const canSave = useMemo(
@@ -88,144 +143,115 @@ export default function UserSetup({ user }) {
     [roleForm],
   );
   const availableBranches = useMemo(() => {
-    const selectedCompany = userForm.companyName;
-    if (!selectedCompany) {
-      return branches;
-    }
+    if (remoteBranchesLoaded) return branches;
+    if (!userForm.companyName) return branches;
 
     const linkedBranches = companyBranches
-      .filter((item) => item.companyName === selectedCompany)
+      .filter((item) => item.companyName === userForm.companyName)
       .map((item) => item.branchName);
 
     return Array.from(new Set(linkedBranches));
-  }, [branches, companyBranches, userForm.companyName]);
+  }, [branches, companyBranches, userForm.companyName, remoteBranchesLoaded]);
 
   useEffect(() => {
     let isMounted = true;
 
+    const applyRemoteBranches = (remoteBranches) => {
+      if (!isMounted || remoteBranches.length === 0) return;
+      setBranches(remoteBranches);
+      setRemoteBranchesLoaded(true);
+      setUserForm((prev) => ({
+        ...prev,
+        branch: prev.branch && remoteBranches.includes(prev.branch) ? prev.branch : '',
+      }));
+    };
+
+    const applySetupPayload = (payload) => {
+      if (!isMounted) return;
+      if (Array.isArray(payload?.companies) && payload.companies.length > 0) {
+        setCompanies(payload.companies);
+        setUserForm((prev) => ({ ...prev, companyName: prev.companyName || payload.companies[0] }));
+      }
+      if (Array.isArray(payload?.companyBranches) && payload.companyBranches.length > 0) {
+        setCompanyBranches(payload.companyBranches);
+      }
+      if (Array.isArray(payload?.users)) setSavedUsers(payload.users);
+      if (Array.isArray(payload?.roles) && payload.roles.length > 0) {
+        setSavedRoles(payload.roles);
+        const roleNames = payload.roles.map((role) => role?.roleName).filter(Boolean);
+        if (roleNames.length > 0) {
+          setBaseRoles((prev) => Array.from(new Set([...prev, ...roleNames])));
+        }
+      } else {
+        setSavedRoles([]);
+      }
+    };
+
+    // Apply cached data immediately to avoid visible delay
+    try {
+      const cachedBranches = localStorage.getItem(BRANCHES_CACHE_KEY);
+      if (cachedBranches) {
+        const parsed = JSON.parse(cachedBranches);
+        if (Array.isArray(parsed) && parsed.length > 0) applyRemoteBranches(parsed);
+      }
+      const cachedSetup = localStorage.getItem(SETUP_CACHE_KEY);
+      if (cachedSetup) applySetupPayload(JSON.parse(cachedSetup));
+    } catch {
+      // ignore corrupted cache
+    }
+
     const loadSetupData = async () => {
       try {
-        const response = await fetch('/api/user-setup');
-        if (!response.ok) {
-          return;
+        try {
+          const remoteResp = await fetch('/api/remote-branches/branches');
+          if (remoteResp.ok) {
+            const remoteJson = await remoteResp.json();
+            if (Array.isArray(remoteJson) && remoteJson.length > 0) {
+              const remoteBranches = Array.from(
+                new Set(
+                  remoteJson
+                    .map((b) => (b?.br_name || b?.branchName || b?.name || '').toString().trim())
+                    .filter(Boolean),
+                ),
+              );
+              if (remoteBranches.length > 0) {
+                try { localStorage.setItem(BRANCHES_CACHE_KEY, JSON.stringify(remoteBranches)); } catch { /* quota */ }
+                applyRemoteBranches(remoteBranches);
+              }
+            }
+          }
+        } catch {
+          // remote lookup failed — cached data already applied
         }
+
+        const response = await fetch('/api/user-setup');
+        if (!response.ok) return;
 
         const payload = await response.json();
-        if (!isMounted) {
-          return;
-        }
-
-        if (Array.isArray(payload?.companies) && payload.companies.length > 0) {
-          setCompanies(payload.companies);
-          setUserForm((prev) => ({ ...prev, companyName: prev.companyName || payload.companies[0] }));
-        }
-
-        if (Array.isArray(payload?.branches) && payload.branches.length > 0) {
-          setBranches(payload.branches);
-          setUserForm((prev) => ({ ...prev, branch: prev.branch || payload.branches[0] }));
-        }
-
-        if (Array.isArray(payload?.companyBranches) && payload.companyBranches.length > 0) {
-          setCompanyBranches(payload.companyBranches);
-        }
-
-        if (Array.isArray(payload?.users)) {
-          setSavedUsers(payload.users);
-        }
-
-        if (Array.isArray(payload?.roles) && payload.roles.length > 0) {
-          setSavedRoles(payload.roles);
-          const roleNames = payload.roles
-            .map((role) => role?.roleName)
-            .filter(Boolean);
-          if (roleNames.length > 0) {
-            setBaseRoles((prev) => Array.from(new Set([...prev, ...roleNames])));
-          }
-        } else {
-          setSavedRoles([]);
-        }
+        try { localStorage.setItem(SETUP_CACHE_KEY, JSON.stringify(payload)); } catch { /* quota */ }
+        applySetupPayload(payload);
       } catch {
-        // keep defaults if loading fails
+        // keep existing state if refresh fails
       }
     };
 
     loadSetupData();
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
-    if (!userForm.companyName) {
-      return;
-    }
+    if (!userForm.companyName) return;
 
     if (availableBranches.length === 0) {
       setUserForm((prev) => ({ ...prev, branch: '' }));
       return;
     }
 
-    if (!availableBranches.includes(userForm.branch)) {
+    if (userForm.branch && !availableBranches.includes(userForm.branch)) {
       setUserForm((prev) => ({ ...prev, branch: availableBranches[0] }));
     }
   }, [availableBranches, userForm.companyName, userForm.branch]);
-
-  const handleAddOption = (type) => {
-    if (type === 'branch') {
-      setBranchDialogForm({
-        companyName: userForm.companyName || companies[0] || '',
-        branchName: '',
-      });
-      setIsBranchDialogOpen(true);
-      return;
-    }
-
-    const label = type === 'company' ? 'company name' : 'branch name';
-    const value = window.prompt(`Enter ${label}`);
-    setStatusMessage('');
-    if (!value) {
-      return;
-    }
-
-    const trimmedValue = value.trim();
-    if (!trimmedValue) {
-      return;
-    }
-
-    if (type === 'company') {
-      setCompanies((prev) => {
-        if (prev.includes(trimmedValue)) {
-          return prev;
-        }
-        return [...prev, trimmedValue];
-      });
-      setUserForm((prev) => ({ ...prev, companyName: trimmedValue }));
-      return;
-    }
-
-  };
-
-  const handleCreateBranch = () => {
-    const companyName = branchDialogForm.companyName.trim();
-    const branchName = branchDialogForm.branchName.trim();
-
-    if (!companyName || !branchName) {
-      return;
-    }
-
-    setStatusMessage('');
-    setCompanyBranches((prev) => {
-      const exists = prev.some((item) => item.companyName === companyName && item.branchName === branchName);
-      if (exists) {
-        return prev;
-      }
-      return [...prev, { companyName, branchName }];
-    });
-    setBranches((prev) => (prev.includes(branchName) ? prev : [...prev, branchName]));
-    setUserForm((prev) => ({ ...prev, companyName, branch: branchName }));
-    setIsBranchDialogOpen(false);
-  };
 
   const handleUserFormChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -239,10 +265,7 @@ export default function UserSetup({ user }) {
   const handleRoleFormChange = (event) => {
     const { name, value } = event.target;
     setStatusMessage('');
-    setRoleForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setRoleForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFeaturePermissionChange = (feature, permission) => {
@@ -258,22 +281,25 @@ export default function UserSetup({ user }) {
     });
   };
 
-  const handleEditSavedRole = (roleRecord) => {
-    const defaultPermissions = {
-      member: 'hide feature',
-      loan: 'hide feature',
-      accounting: 'hide feature',
-      system: 'hide feature',
-      reporting: 'hide feature',
-    };
+  const handlePagePermissionChange = (pagePath, permission) => {
+    setStatusMessage('');
+    setRoleForm((prev) => {
+      const currentPagePermissions = { ...(prev.pagePermissions || {}) };
+      if (permission === 'inherit') {
+        delete currentPagePermissions[pagePath];
+      } else {
+        currentPagePermissions[pagePath] = permission;
+      }
+      return { ...prev, pagePermissions: currentPagePermissions };
+    });
+  };
 
+  const handleEditSavedRole = (roleRecord) => {
     setRoleForm({
       roleName: roleRecord?.roleName || '',
       roleDescription: roleRecord?.roleDescription || '',
-      featurePermissions: {
-        ...defaultPermissions,
-        ...(roleRecord?.featurePermissions || {}),
-      },
+      featurePermissions: { ...defaultFeaturePermissions, ...(roleRecord?.featurePermissions || {}) },
+      pagePermissions: { ...(roleRecord?.pagePermissions || {}) },
     });
     setEditingRoleName(roleRecord?.roleName || '');
     setStatusMessage(`Editing role: ${roleRecord?.roleName || '-'}`);
@@ -301,14 +327,15 @@ export default function UserSetup({ user }) {
       setCompanies((prev) => (prev.includes(userRecord.companyName) ? prev : [...prev, userRecord.companyName]));
     }
     if (userRecord?.branch) {
-      setBranches((prev) => (prev.includes(userRecord.branch) ? prev : [...prev, userRecord.branch]));
+      if (!remoteBranchesLoaded) {
+        setBranches((prev) => (prev.includes(userRecord.branch) ? prev : [...prev, userRecord.branch]));
+      }
       if (userRecord?.companyName) {
         setCompanyBranches((prev) => {
-          const exists = prev.some((item) => item.companyName === userRecord.companyName && item.branchName === userRecord.branch);
-          if (exists) {
-            return prev;
-          }
-          return [...prev, { companyName: userRecord.companyName, branchName: userRecord.branch }];
+          const exists = prev.some(
+            (item) => item.companyName === userRecord.companyName && item.branchName === userRecord.branch,
+          );
+          return exists ? prev : [...prev, { companyName: userRecord.companyName, branchName: userRecord.branch }];
         });
       }
     }
@@ -331,45 +358,24 @@ export default function UserSetup({ user }) {
     try {
       const response = await fetch('/api/user-setup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companies,
           branches,
           companyBranches,
-          user: {
-            ...userForm,
-            createdAt: new Date().toISOString(),
-          },
+          user: { ...userForm, createdAt: new Date().toISOString() },
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save user setup.');
-      }
+      if (!response.ok) throw new Error('Failed to save user setup.');
 
       const payload = await response.json();
 
-      if (Array.isArray(payload?.users)) {
-        setSavedUsers(payload.users);
-      }
-
-      if (Array.isArray(payload?.companies) && payload.companies.length > 0) {
-        setCompanies(payload.companies);
-      }
-
-      if (Array.isArray(payload?.branches) && payload.branches.length > 0) {
-        setBranches(payload.branches);
-      }
-
-      if (Array.isArray(payload?.companyBranches)) {
-        setCompanyBranches(payload.companyBranches);
-      }
-
-      if (Array.isArray(payload?.roles)) {
-        setSavedRoles(payload.roles);
-      }
+      if (Array.isArray(payload?.users)) setSavedUsers(payload.users);
+      if (Array.isArray(payload?.companies) && payload.companies.length > 0) setCompanies(payload.companies);
+      if (Array.isArray(payload?.branches) && payload.branches.length > 0) setBranches(payload.branches);
+      if (Array.isArray(payload?.companyBranches)) setCompanyBranches(payload.companyBranches);
+      if (Array.isArray(payload?.roles)) setSavedRoles(payload.roles);
 
       setStatusMessage('User setup saved successfully.');
       setEditingUserId(userForm.userId || '');
@@ -408,21 +414,16 @@ export default function UserSetup({ user }) {
         roleName: roleForm.roleName.trim(),
         roleDescription: roleForm.roleDescription.trim(),
         featurePermissions: roleForm.featurePermissions || {},
+        pagePermissions: roleForm.pagePermissions || {},
       };
 
       const response = await fetch('/api/user-setup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          role: rolePayload,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: rolePayload }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save role setup.');
-      }
+      if (!response.ok) throw new Error('Failed to save role setup.');
 
       const payload = await response.json();
       if (Array.isArray(payload?.roles)) {
@@ -434,13 +435,8 @@ export default function UserSetup({ user }) {
       setRoleForm({
         roleName: '',
         roleDescription: '',
-        featurePermissions: {
-          member: 'hide feature',
-          loan: 'hide feature',
-          accounting: 'hide feature',
-          system: 'hide feature',
-          reporting: 'hide feature',
-        },
+        featurePermissions: defaultFeaturePermissions,
+        pagePermissions: {},
       });
       setEditingRoleName('');
       setStatusMessage('User role saved successfully.');
@@ -497,45 +493,39 @@ export default function UserSetup({ user }) {
                 },
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: '1 1 320px', minWidth: 260 }}>
-                <TextField
-                  select
-                  label="Compay name"
-                  name="companyName"
-                  value={userForm.companyName}
-                  onChange={handleUserFormChange}
-                  sx={{ flex: 1 }}
-                >
-                  {companies.map((item) => (
-                    <MenuItem key={item} value={item}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <IconButton aria-label="add company" onClick={() => handleAddOption('company')}>
-                  <AddIcon />
-                </IconButton>
-              </Box>
+              <TextField
+                select
+                label="Company name"
+                name="companyName"
+                value={userForm.companyName}
+                onChange={handleUserFormChange}
+                disabled
+                sx={{ flex: '1 1 320px', minWidth: 260 }}
+              >
+                {companies.map((item) => (
+                  <MenuItem key={item} value={item}>
+                    {item}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: '1 1 320px', minWidth: 260 }}>
-                <TextField
-                  select
-                  label="Branch"
-                  name="branch"
-                  value={userForm.branch}
-                  onChange={handleUserFormChange}
-                  sx={{ flex: 1 }}
-                >
-                  {availableBranches.map((item) => (
-                    <MenuItem key={item} value={item}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <IconButton aria-label="add branch" onClick={() => handleAddOption('branch')}>
-                  <AddIcon />
-                </IconButton>
-              </Box>
+              <TextField
+                select
+                label="Branch"
+                name="branch"
+                value={userForm.branch}
+                onChange={handleUserFormChange}
+                sx={{ flex: '1 1 320px', minWidth: 260 }}
+              >
+                <MenuItem value="" disabled>
+                  Select Branch
+                </MenuItem>
+                {availableBranches.map((item) => (
+                  <MenuItem key={item} value={item}>
+                    {item}
+                  </MenuItem>
+                ))}
+              </TextField>
 
               <TextField
                 label="Staff number"
@@ -559,7 +549,7 @@ export default function UserSetup({ user }) {
                 sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
-                label="Temporay password"
+                label="Temporary password"
                 name="temporaryPassword"
                 value={userForm.temporaryPassword}
                 onChange={handleUserFormChange}
@@ -667,22 +657,48 @@ export default function UserSetup({ user }) {
                 <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
                   Feature permissions
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                  Set feature-level access first (Write/View only/Hide), then override individual pages where needed.
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 1.5 }}>
                   {featureOptions.map((feature) => (
-                    <TextField
-                      key={feature}
-                      select
-                      size="small"
-                      label={feature.charAt(0).toUpperCase() + feature.slice(1)}
-                      value={roleForm.featurePermissions?.[feature] || 'hide feature'}
-                      onChange={(e) => handleFeaturePermissionChange(feature, e.target.value)}
-                    >
-                      {featurePermissionOptions.map((permission) => (
-                        <MenuItem key={permission} value={permission}>
-                          {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    <Paper key={feature} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                      <Box sx={{ display: 'grid', gap: 1.25 }}>
+                        <TextField
+                          select
+                          size="small"
+                          label={`${feature.charAt(0).toUpperCase() + feature.slice(1)} (Feature level)`}
+                          value={roleForm.featurePermissions?.[feature] || 'hide feature'}
+                          onChange={(e) => handleFeaturePermissionChange(feature, e.target.value)}
+                          sx={{ maxWidth: { xs: '100%', md: 340 } }}
+                        >
+                          {featurePermissionOptions.map((permission) => (
+                            <MenuItem key={permission} value={permission}>
+                              {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+
+                        <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                          {(featurePageMap[feature] || []).map((page) => (
+                            <TextField
+                              key={page.path}
+                              select
+                              size="small"
+                              label={page.label}
+                              value={roleForm.pagePermissions?.[page.path] || 'inherit'}
+                              onChange={(e) => handlePagePermissionChange(page.path, e.target.value)}
+                            >
+                              {pagePermissionOptions.map((permission) => (
+                                <MenuItem key={permission} value={permission}>
+                                  {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ))}
+                        </Box>
+                      </Box>
+                    </Paper>
                   ))}
                 </Box>
               </Box>
@@ -698,37 +714,6 @@ export default function UserSetup({ user }) {
             </Box>
           </CardContent>
         </Card>
-
-        <Dialog open={isBranchDialogOpen} onClose={() => setIsBranchDialogOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>Add new branch</DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <TextField
-                select
-                label="Company"
-                value={branchDialogForm.companyName}
-                onChange={(e) => setBranchDialogForm((prev) => ({ ...prev, companyName: e.target.value }))}
-              >
-                {companies.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Branch name"
-                value={branchDialogForm.branchName}
-                onChange={(e) => setBranchDialogForm((prev) => ({ ...prev, branchName: e.target.value }))}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setIsBranchDialogOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleCreateBranch}>
-              Add branch
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
@@ -774,12 +759,13 @@ export default function UserSetup({ user }) {
                         <TableCell sx={{ fontWeight: 700 }}>Role name</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Role description</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Feature permissions</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Page permissions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {savedRoles.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                          <TableCell colSpan={4} sx={{ textAlign: 'center', color: 'text.secondary' }}>
                             No roles saved.
                           </TableCell>
                         </TableRow>
@@ -802,6 +788,13 @@ export default function UserSetup({ user }) {
                                     .map((feature) => `${feature}: ${item.featurePermissions[feature] || 'hide feature'}`)
                                     .join(' | ')
                                 : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {item.pagePermissions && typeof item.pagePermissions === 'object' && Object.keys(item.pagePermissions).length > 0
+                                ? Object.entries(item.pagePermissions)
+                                    .map(([page, permission]) => `${page}: ${permission}`)
+                                    .join(' | ')
+                                : 'Inherit from feature'}
                             </TableCell>
                           </TableRow>
                         ))

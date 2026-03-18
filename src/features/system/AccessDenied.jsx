@@ -9,6 +9,7 @@ export default function AccessDenied() {
   const location = useLocation();
   const navigate = useNavigate();
   const requiredFeature = location.state?.requiredFeature;
+  const requiredPage = location.state?.requiredPage;
   const fromPath = location.state?.fromPath;
 
   return (
@@ -32,9 +33,10 @@ export default function AccessDenied() {
           You do not have permission to view this page.
         </Typography>
 
-        {(requiredFeature || fromPath) && (
+        {(requiredFeature || requiredPage || fromPath) && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {requiredFeature ? `Required feature: ${requiredFeature}. ` : ''}
+            {requiredPage ? `Required page: ${requiredPage}. ` : ''}
             {fromPath ? `Requested route: ${fromPath}` : ''}
           </Typography>
         )}

@@ -8,7 +8,7 @@
       "role": "SUPER_USER",
       "access": {
         "allPages": true,
-        "features": ["member", "loan", "accounting", "system", "reporting"]
+        "features": ["member", "loan", "accounting", "processing", "system", "reporting"]
       }
     },
     {
@@ -54,7 +54,7 @@
       "role": "FINANCIAL_ACCOUNTING_USER",
       "access": {
         "allPages": false,
-        "features": ["accounting"]
+        "features": ["accounting", "processing"]
       }
     },
     {

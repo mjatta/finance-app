@@ -1,14 +1,14 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-export default function Reconciliation() {
+export default function Withdrawal() {
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
-        Account Reconciliation
+        Withdrawal
       </Typography>
       <Typography variant="body1" color="text.secondary">
-        This page is ready for account reconciliation features.
+        This page is ready for withdrawal features.
       </Typography>
     </Box>
   );
