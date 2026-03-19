@@ -290,6 +290,89 @@ const loanRepaymentsApiPlugin = () => ({
 const userSetupApiPlugin = () => ({
   name: 'user-setup-api-plugin',
   configureServer(server) {
+    server.middlewares.use('/api/user-setup/password-change', async (req, res, next) => {
+      try {
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          const userId = String(body?.userId || '').trim()
+          const currentPassword = String(body?.currentPassword || '')
+          const newPassword = String(body?.newPassword || '')
+
+          if (!userId || !currentPassword || !newPassword) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Missing required fields.' }))
+            return
+          }
+
+          if (newPassword.length < 8) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'New password must be at least 8 characters.' }))
+            return
+          }
+
+          const existing = await readUserSetupFile()
+          const users = [...(existing.users || [])]
+          const userIndex = users.findIndex((item) => item?.userId === userId)
+
+          if (userIndex < 0) {
+            res.statusCode = 404
+            res.end(JSON.stringify({ message: 'User not found.' }))
+            return
+          }
+
+          const userRecord = users[userIndex]
+          const matchesCurrent = userRecord?.temporaryPassword === currentPassword || userRecord?.password === currentPassword
+
+          if (!matchesCurrent) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Current password is incorrect.' }))
+            return
+          }
+
+          if (userRecord?.disableUser) {
+            res.statusCode = 403
+            res.end(JSON.stringify({ message: 'User account is disabled.' }))
+            return
+          }
+
+          users[userIndex] = {
+            ...userRecord,
+            password: newPassword,
+            temporaryPassword: '',
+            resetPassword: false,
+            passwordUpdatedAt: new Date().toISOString(),
+          }
+
+          const nextPayload = {
+            companies: existing.companies || [],
+            branches: existing.branches || [],
+            companyBranches: existing.companyBranches || [],
+            users,
+            roles: existing.roles || [],
+          }
+
+          await writeUserSetupFile(nextPayload)
+
+          res.statusCode = 200
+          res.end(JSON.stringify({ message: 'Password changed successfully.' }))
+          return
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to change password.' }))
+      }
+    })
+
     server.middlewares.use('/api/user-setup', async (req, res, next) => {
       try {
         res.setHeader('Content-Type', 'application/json')

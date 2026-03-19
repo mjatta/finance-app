@@ -5,7 +5,16 @@
   "branches": [
     "Banjul Main",
     "Serekunda",
-    "Brikama"
+    "Brikama",
+    "Banjul",
+    "Bansang",
+    "Barra",
+    "Basse Branch",
+    "Brikamaba",
+    "Bwiam",
+    "Farafenni",
+    "Soma",
+    "Wassu"
   ],
   "companyBranches": [
     {
@@ -89,6 +98,25 @@
       "disableUser": false,
       "resetPassword": false,
       "createdAt": "2026-03-08T22:31:20.337Z"
+    },
+    {
+      "companyName": "Social Development Fund",
+      "branch": "Bansang",
+      "staffNumber": "007",
+      "userId": "007",
+      "userName": "newvision",
+      "temporaryPassword": "",
+      "baseRole": "memberFeature testing",
+      "cashAccount": "",
+      "userType": "",
+      "debitMit": "",
+      "creditLimit": "",
+      "loanApprovalLimit": false,
+      "disableUser": false,
+      "resetPassword": false,
+      "createdAt": "2026-03-19T03:48:05.105Z",
+      "password": "kP9!vR@2xZ&L5#mQ",
+      "passwordUpdatedAt": "2026-03-19T03:57:14.259Z"
     }
   ],
   "roles": [
@@ -138,6 +166,31 @@
         "processing": "view only",
         "system": "view only",
         "reporting": "view only"
+      }
+    },
+    {
+      "roleName": "memberFeature testing",
+      "roleDescription": "",
+      "featurePermissions": {
+        "member": "write",
+        "loan": "hide feature",
+        "accounting": "hide feature",
+        "processing": "hide feature",
+        "system": "hide feature",
+        "reporting": "hide feature"
+      },
+      "pagePermissions": {
+        "/member/customer-registration": "write",
+        "/member/add-member-account": "write",
+        "/member/deposits": "write",
+        "/member/member-administration-accounts": "hide page",
+        "/member/member-close": "write",
+        "/member/member-activation": "write",
+        "/member/member-activate": "write",
+        "/member/withdrawal": "hide page",
+        "/member/transfers": "hide page",
+        "/member/member-payroll-management": "hide page",
+        "/member/member-message": "hide page"
       }
     }
   ]

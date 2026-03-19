@@ -100,6 +100,7 @@ const Reporting = lazy(() => import('./features/reporting'));
 const ReportingAnalytics = lazy(() => import('./features/reporting/Analytics'));
 const Landing = lazy(() => import('./features/home/Landing'));
 const Login = lazy(() => import('./features/auth/Login'));
+const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
 
 const deriveCategoryFromPath = (pathname) => {
   const firstSegment = pathname.split('/').filter(Boolean)[0] || null;
@@ -165,6 +166,25 @@ function App() {
     navigate('/home');
   };
 
+  const handlePasswordChanged = () => {
+    setUser((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      const nextUser = {
+        ...prev,
+        mustChangePassword: false,
+      };
+
+      const expires = new Date(Date.now() + 60 * 60 * 1000).toUTCString();
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(nextUser))}; expires=${expires}; path=/`;
+      return nextUser;
+    });
+
+    navigate('/home');
+  };
+
   const handleLogout = () => {
     setUser(null);
     setActiveCategoryOverride(null);
@@ -186,6 +206,11 @@ function App() {
     );
   }
 
+  // if user must change temporary password, force redirect (except super.user)
+  if (user?.mustChangePassword && user?.username !== 'super.user' && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
+  }
+
   // if user is logged in but on login path, send them home
   if (user && location.pathname === '/login') {
     return <Navigate to="/home" replace />;
@@ -200,9 +225,9 @@ function App() {
         { label: 'Account Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
         { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
         { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
+        { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
         { label: 'Administration Accounts', to: '/member/member-administration-accounts', icon: ListAltRoundedIcon },
-        { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
         { label: 'Transfers', to: '/member/transfers', icon: SwapHorizRoundedIcon },
@@ -534,6 +559,10 @@ function App() {
                       }
                     />
                     <Route path="/access-denied" element={<AccessDenied />} />
+                    <Route
+                      path="/change-password"
+                      element={<ChangePassword user={user} onPasswordChanged={handlePasswordChanged} onLogout={handleLogout} />}
+                    />
                     <Route
                       path="/"
                       element={<Navigate to="/home" replace />}

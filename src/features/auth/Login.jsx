@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import testUsers from '../../data/test-users.json';
@@ -19,10 +22,12 @@ const loginHighlights = [
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const mapRoleToAccess = (roleRecord) => {
     const permissions = roleRecord?.featurePermissions || {};
+    const pagePermissions = roleRecord?.pagePermissions || {};
     const visibleFeatures = Object.entries(permissions)
       .filter(([, permission]) => permission !== 'hide feature')
       .map(([feature]) => feature);
@@ -34,12 +39,14 @@ export default function Login({ onLogin }) {
       features: visibleFeatures,
       readOnly: !hasWritePermission && visibleFeatures.length > 0,
       featurePermissions: permissions,
+      pagePermissions,
     };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const normalizedUsername = username.trim();
+    const normalizedLookup = normalizedUsername.toLowerCase();
     const foundDefaultUser = testUsers.users.find(
       (user) => user.username === normalizedUsername && user.password === password,
     );
@@ -63,8 +70,10 @@ export default function Login({ onLogin }) {
       const setupRoles = Array.isArray(payload?.roles) ? payload.roles : [];
 
       const foundSetupUser = setupUsers.find((setupUser) => {
-        const matchesUsername = setupUser.userId === normalizedUsername;
-        const matchesPassword = setupUser.temporaryPassword === password;
+        const setupUserId = String(setupUser.userId || '').trim().toLowerCase();
+        const setupUserName = String(setupUser.userName || '').trim().toLowerCase();
+        const matchesUsername = setupUserId === normalizedLookup || setupUserName === normalizedLookup;
+        const matchesPassword = setupUser.temporaryPassword === password || setupUser.password === password;
         return matchesUsername && matchesPassword;
       });
 
@@ -74,7 +83,15 @@ export default function Login({ onLogin }) {
       }
 
       const matchedRole = setupRoles.find((role) => role.roleName === foundSetupUser.baseRole);
-      const access = mapRoleToAccess(matchedRole);
+      const access = {
+        ...mapRoleToAccess(matchedRole),
+        pagePermissions: {
+          ...(matchedRole?.pagePermissions || {}),
+          ...(foundSetupUser?.pagePermissions || {}),
+        },
+      };
+      const usedTemporaryPassword = foundSetupUser.temporaryPassword === password;
+      const mustChangePassword = foundSetupUser.userId !== 'super.user' && (usedTemporaryPassword || Boolean(foundSetupUser.resetPassword));
 
       const safeUser = {
         id: foundSetupUser.staffNumber || foundSetupUser.userId,
@@ -82,6 +99,7 @@ export default function Login({ onLogin }) {
         username: foundSetupUser.userId,
         role: foundSetupUser.baseRole || 'USER',
         access,
+        mustChangePassword,
       };
 
       setErrorMessage('');
@@ -334,7 +352,7 @@ export default function Login({ onLogin }) {
             <TextField
               id="password"
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -348,6 +366,17 @@ export default function Login({ onLogin }) {
                 startAdornment: (
                   <InputAdornment position="start">
                     <FontAwesomeIcon icon={faLock} style={{ color: '#1565c0' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}

@@ -38,11 +38,13 @@ const defaultFeaturePermissions = {
 
 const featurePageMap = {
   member: [
-    { path: '/member/customer-registration', label: 'Customer Registration / Individual / Listing' },
-    { path: '/member/member-administration-accounts', label: 'Member Administration Accounts' },
-    { path: '/member/add-member-account', label: 'Add Member Account' },
+    { path: '/member/customer-registration', label: 'Registration' },
     { path: '/member/member-activation', label: 'Account Activation' },
+    { path: '/member/add-member-account', label: 'Add Member Account' },
+    { path: '/member/member-activate', label: 'Member Activate' },
     { path: '/member/deposits', label: 'Deposits' },
+    { path: '/member/member-close-account', label: 'Member Close' },
+    { path: '/member/member-administration-accounts', label: 'Administration Accounts' },
     { path: '/member/withdrawal', label: 'Withdrawal' },
     { path: '/member/transfer', label: 'Member Transfer' },
     { path: '/member/transfers', label: 'Transfers' },
@@ -60,8 +62,8 @@ const featurePageMap = {
     { path: '/loan/disbursement', label: 'Loan Disbursement' },
     { path: '/loan/repayments', label: 'Loan Repayments' },
     { path: '/loan/application-reschedule', label: 'Loan Application Reschedule' },
-    { path: '/loan/application-top-up', label: 'Loan Application Top up' },
-    { path: '/loan/change-off', label: 'Loan Change off' },
+    { path: '/loan/application-top-up', label: 'Loan Application Top Up' },
+    { path: '/loan/change-off', label: 'Loan Change Off' },
     { path: '/loan/recovery', label: 'Recovery/Write-off' },
     { path: '/loan/reporting', label: 'Loan Reporting' },
   ],
@@ -101,6 +103,7 @@ export default function UserSetup({ user }) {
   const [baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
   const [savedUsers, setSavedUsers] = useState([]);
   const [savedRoles, setSavedRoles] = useState([]);
+  const [showCreateUserRoles, setShowCreateUserRoles] = useState(false);
   const [showSavedRoles, setShowSavedRoles] = useState(false);
   const [showSavedUsers, setShowSavedUsers] = useState(false);
   const [editingUserId, setEditingUserId] = useState('');
@@ -638,83 +641,118 @@ export default function UserSetup({ user }) {
 
         <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
-              CREATE USER ROLES
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Role name"
-                name="roleName"
-                value={roleForm.roleName}
-                onChange={handleRoleFormChange}
-                sx={{ flex: '1 1 240px', minWidth: 220 }}
-              />
-              <TextField
-                label="Role description"
-                name="roleDescription"
-                value={roleForm.roleDescription}
-                onChange={handleRoleFormChange}
-                sx={{ flex: '1 1 320px', minWidth: 260 }}
-              />
-              <Box sx={{ width: '100%' }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
-                  Feature permissions
+            <Box
+              onClick={() => setShowCreateUserRoles((prev) => !prev)}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: showCreateUserRoles ? 2 : 0,
+                cursor: 'pointer',
+                borderRadius: 1,
+                px: 0.5,
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                CREATE USER ROLES
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {showCreateUserRoles ? 'Collapse' : 'Expand'}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                  Set feature-level access first (Write/View only/Hide), then override individual pages where needed.
-                </Typography>
-                <Box sx={{ display: 'grid', gap: 1.5 }}>
-                  {featureOptions.map((feature) => (
-                    <Paper key={feature} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Box sx={{ display: 'grid', gap: 1.25 }}>
-                        <TextField
-                          select
-                          size="small"
-                          label={`${feature.charAt(0).toUpperCase() + feature.slice(1)} (Feature level)`}
-                          value={roleForm.featurePermissions?.[feature] || 'hide feature'}
-                          onChange={(e) => handleFeaturePermissionChange(feature, e.target.value)}
-                          sx={{ maxWidth: { xs: '100%', md: 340 } }}
-                        >
-                          {featurePermissionOptions.map((permission) => (
-                            <MenuItem key={permission} value={permission}>
-                              {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowCreateUserRoles((prev) => !prev);
+                  }}
+                >
+                  <ExpandMoreIcon
+                    fontSize="small"
+                    sx={{ transform: showCreateUserRoles ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
+                  />
+                </IconButton>
+              </Box>
+            </Box>
 
-                        <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          {(featurePageMap[feature] || []).map((page) => (
+            {showCreateUserRoles && (
+              <>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <TextField
+                    label="Role name"
+                    name="roleName"
+                    value={roleForm.roleName}
+                    onChange={handleRoleFormChange}
+                    sx={{ flex: '1 1 240px', minWidth: 220 }}
+                  />
+                  <TextField
+                    label="Role description"
+                    name="roleDescription"
+                    value={roleForm.roleDescription}
+                    onChange={handleRoleFormChange}
+                    sx={{ flex: '1 1 320px', minWidth: 260 }}
+                  />
+                  <Box sx={{ width: '100%' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Feature permissions
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                      Set feature-level access first (Write/View only/Hide), then override individual pages where needed.
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 1.5 }}>
+                      {featureOptions.map((feature) => (
+                        <Paper key={feature} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                          <Box sx={{ display: 'grid', gap: 1.25 }}>
                             <TextField
-                              key={page.path}
                               select
                               size="small"
-                              label={page.label}
-                              value={roleForm.pagePermissions?.[page.path] || 'inherit'}
-                              onChange={(e) => handlePagePermissionChange(page.path, e.target.value)}
+                              label={`${feature.charAt(0).toUpperCase() + feature.slice(1)} (Feature level)`}
+                              value={roleForm.featurePermissions?.[feature] || 'hide feature'}
+                              onChange={(e) => handleFeaturePermissionChange(feature, e.target.value)}
+                              sx={{ maxWidth: { xs: '100%', md: 340 } }}
                             >
-                              {pagePermissionOptions.map((permission) => (
+                              {featurePermissionOptions.map((permission) => (
                                 <MenuItem key={permission} value={permission}>
                                   {permission.charAt(0).toUpperCase() + permission.slice(1)}
                                 </MenuItem>
                               ))}
                             </TextField>
-                          ))}
-                        </Box>
-                      </Box>
-                    </Paper>
-                  ))}
+
+                            <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                              {(featurePageMap[feature] || []).map((page) => (
+                                <TextField
+                                  key={page.path}
+                                  select
+                                  size="small"
+                                  label={page.label}
+                                  value={roleForm.pagePermissions?.[page.path] || 'inherit'}
+                                  onChange={(e) => handlePagePermissionChange(page.path, e.target.value)}
+                                >
+                                  {pagePermissionOptions.map((permission) => (
+                                    <MenuItem key={permission} value={permission}>
+                                      {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              ))}
+                            </Box>
+                          </Box>
+                        </Paper>
+                      ))}
+                    </Box>
+                  </Box>
                 </Box>
-              </Box>
-            </Box>
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                onClick={handleSaveRole}
-                disabled={!canSaveRole || isSavingRole}
-              >
-                {isSavingRole ? 'Saving...' : editingRoleName ? 'Update user role' : 'Save user role'}
-              </Button>
-            </Box>
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveRole}
+                    disabled={!canSaveRole || isSavingRole}
+                  >
+                    {isSavingRole ? 'Saving...' : editingRoleName ? 'Update user role' : 'Save user role'}
+                  </Button>
+                </Box>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -847,7 +885,13 @@ export default function UserSetup({ user }) {
             </Box>
             {showSavedUsers && (
               <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                <TableContainer sx={{ maxHeight: 360 }}>
+                <TableContainer
+                  sx={{
+                    maxHeight: 360,
+                    overflowY: 'auto',
+                    overflowX: 'auto',
+                  }}
+                >
                   <Table stickyHeader>
                     <TableHead>
                       <TableRow>
