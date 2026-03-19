@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
@@ -41,7 +41,7 @@ const featurePageMap = {
     { path: '/member/customer-registration', label: 'Customer Registration / Individual / Listing' },
     { path: '/member/member-administration-accounts', label: 'Member Administration Accounts' },
     { path: '/member/add-member-account', label: 'Add Member Account' },
-    { path: '/member/member-activation', label: 'Member Activation' },
+    { path: '/member/member-activation', label: 'Account Activation' },
     { path: '/member/deposits', label: 'Deposits' },
     { path: '/member/withdrawal', label: 'Withdrawal' },
     { path: '/member/transfer', label: 'Member Transfer' },
@@ -49,7 +49,7 @@ const featurePageMap = {
     { path: '/member/member-message', label: 'Member Message' },
     { path: '/member/member-payroll-management', label: 'Member Payroll Management' },
     { path: '/member/reprint', label: 'Reprint' },
-    { path: '/member/member-close', label: 'Member Close' },
+    { path: '/member/member-close', label: 'Account Closure' },
   ],
   loan: [
     { path: '/loan/application', label: 'Loan Application' },
@@ -470,9 +470,8 @@ export default function UserSetup({ user }) {
       )}
 
       <Box
-        component="fieldset"
-        disabled={isReadOnlyRole}
-        sx={{ border: 'none', p: 0, m: 0, opacity: isReadOnlyRole ? 0.55 : 1, pointerEvents: isReadOnlyRole ? 'none' : 'auto' }}
+        {...(isReadOnlyRole ? { inert: '' } : {})}
+        sx={{ p: 0, m: 0, opacity: isReadOnlyRole ? 0.55 : 1 }}
       >
         <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
@@ -515,10 +514,14 @@ export default function UserSetup({ user }) {
                 name="branch"
                 value={userForm.branch}
                 onChange={handleUserFormChange}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => selected || 'Select a Branch',
+                }}
                 sx={{ flex: '1 1 320px', minWidth: 260 }}
               >
                 <MenuItem value="" disabled>
-                  Select Branch
+                  Select a Branch
                 </MenuItem>
                 {availableBranches.map((item) => (
                   <MenuItem key={item} value={item}>

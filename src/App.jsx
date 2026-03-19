@@ -55,6 +55,8 @@ const Reprint = lazy(() => import('./features/member/Reprint'));
 const CustomerRegistration = lazy(() => import('./features/member/CustomerRegistration'));
 const MemberAdministrationAccounts = lazy(() => import('./features/member/MemberAdministrationAccounts'));
 const AddMemberAccount = lazy(() => import('./features/member/AddMemberAccount'));
+const MemberActivate = lazy(() => import('./features/member/MemberActivate'));
+const MemberCloseAccount = lazy(() => import('./features/member/MemberCloseAccount'));
 const MemberActivation = lazy(() => import('./features/member/MemberActivation'));
 const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
 const MemberClose = lazy(() => import('./features/member/MemberClose'));
@@ -194,10 +196,12 @@ function App() {
       key: 'member',
       label: 'Member Administration',
       children: [
-        { label: 'Customer Registration / Individual / Listing', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
-        { label: 'Member Administration Accounts', to: '/member/member-administration-accounts', icon: ListAltRoundedIcon },
+        { label: 'Registration', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
+        { label: 'Account Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
         { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
-        { label: 'Member Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
+        { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
+        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
+        { label: 'Administration Accounts', to: '/member/member-administration-accounts', icon: ListAltRoundedIcon },
         { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
@@ -205,7 +209,7 @@ function App() {
         { label: 'Member Message', to: '/member/member-message', icon: ReceiptLongRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
-        { label: 'Member Close', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
+        { label: 'Account Closure', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
       ],
     },
     {
@@ -569,6 +573,14 @@ function App() {
                     <Route
                       path="/member/add-member-account"
                       element={renderWithAccess('member', <AddMemberAccount />)}
+                    />
+                    <Route
+                      path="/member/member-activate"
+                      element={renderWithAccess('member', <MemberActivate />)}
+                    />
+                    <Route
+                      path="/member/member-close-account"
+                      element={renderWithAccess('member', <MemberCloseAccount />)}
                     />
                     <Route
                       path="/member/member-activation"

@@ -25,7 +25,48 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+
+const MANDATORY_PRODUCTS_CACHE_KEY = 'productDefinition_mandatoryProducts';
+
+const normalizeMandatoryProductsPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.results)) return payload.results;
+  return [];
+};
+
+const extractMainCategory = (item) => {
+  if (typeof item === 'string') {
+    return item.trim();
+  }
+
+  if (!item || typeof item !== 'object') {
+    return '';
+  }
+
+  const candidates = [
+    item?.mainCategory,
+    item?.maincategory,
+    item?.prd_name,
+    item?.prdName,
+    item?.prdname,
+    item?.mandatoryProduct,
+    item?.mandatoryproduct,
+    item?.mandatoryProductName,
+    item?.mandatoryproductname,
+    item?.productName,
+    item?.productname,
+    item?.name,
+    item?.label,
+  ];
+
+  const match = candidates.find((value) => typeof value === 'string' && value.trim().length > 0);
+  return match ? match.trim() : '';
+};
 
 export default function ProductDefinition({ user }) {
   const initialForm = {
@@ -73,8 +114,69 @@ export default function ProductDefinition({ user }) {
   useEffect(() => {
     let isMounted = true;
 
+    const applyRemoteMainCategories = (remoteData) => {
+      if (!isMounted) return;
+
+      const normalizedRows = normalizeMandatoryProductsPayload(remoteData);
+
+      const categories = Array.from(
+        new Set(
+          normalizedRows
+            .map((item) => extractMainCategory(item))
+            .filter(Boolean),
+        ),
+      );
+
+      console.log('[ProductDefinition] mandatory products endpoint rows:', normalizedRows.length);
+      console.log('[ProductDefinition] extracted main categories:', categories);
+
+      if (categories.length === 0) {
+        return;
+      }
+
+      setMainCategories(categories);
+      setForm((prev) => ({
+        ...prev,
+        mainCategory: prev.mainCategory && categories.includes(prev.mainCategory) ? prev.mainCategory : '',
+      }));
+    };
+
     const loadData = async () => {
       try {
+        // Apply cached mandatory products immediately to avoid visible delay
+        try {
+          const cachedMandatoryProducts = localStorage.getItem(MANDATORY_PRODUCTS_CACHE_KEY);
+          if (cachedMandatoryProducts) {
+            applyRemoteMainCategories(JSON.parse(cachedMandatoryProducts));
+          }
+        } catch {
+          // ignore corrupted cache
+        }
+
+        // Load main categories from remote mandatory products lookup
+        try {
+          const mandatoryProductsEndpoint = '/api/mandatory-products/mandatoryproducts';
+          console.log('[ProductDefinition] fetching mandatory products from:', mandatoryProductsEndpoint);
+          const remoteResponse = await fetch(mandatoryProductsEndpoint);
+          console.log('[ProductDefinition] mandatory products status:', remoteResponse.status, remoteResponse.statusText);
+
+          if (remoteResponse.ok) {
+            const remotePayload = await remoteResponse.json();
+            console.log('[ProductDefinition] mandatory products raw payload:', remotePayload);
+            try {
+              localStorage.setItem(MANDATORY_PRODUCTS_CACHE_KEY, JSON.stringify(remotePayload));
+            } catch {
+              // ignore cache quota errors
+            }
+            applyRemoteMainCategories(remotePayload);
+          } else {
+            console.warn('[ProductDefinition] mandatory products fetch failed (non-200).');
+          }
+        } catch (error) {
+          console.warn('[ProductDefinition] mandatory products fetch error:', error);
+          // keep cached values if remote lookup fails
+        }
+
         const response = await fetch('/api/product-definition');
         if (!response.ok) {
           return;
@@ -83,11 +185,6 @@ export default function ProductDefinition({ user }) {
         const payload = await response.json();
         if (!isMounted) {
           return;
-        }
-
-        if (Array.isArray(payload?.mainCategories)) {
-          setMainCategories(payload.mainCategories);
-          setForm((prev) => ({ ...prev, mainCategory: prev.mainCategory || payload.mainCategories[0] || '' }));
         }
 
         if (Array.isArray(payload?.productNames)) {
@@ -152,9 +249,6 @@ export default function ProductDefinition({ user }) {
       }
 
       const payload = await response.json();
-      if (Array.isArray(payload?.mainCategories)) {
-        setMainCategories(payload.mainCategories);
-      }
       if (Array.isArray(payload?.productNames)) {
         setProductNames(payload.productNames);
       }
@@ -241,8 +335,15 @@ export default function ProductDefinition({ user }) {
                   name="mainCategory"
                   value={form.mainCategory}
                   onChange={handleFieldChange}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => selected || 'Select a Catergory',
+                  }}
                   sx={{ flex: 1 }}
                 >
+                  <MenuItem value="" disabled>
+                    Select a Catergory
+                  </MenuItem>
                   {mainCategories.map((item) => (
                     <MenuItem key={item} value={item}>
                       {item}

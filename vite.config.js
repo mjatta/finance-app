@@ -691,6 +691,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-branches/, '/api/lookups'),
       },
+      // Proxy mandatory products lookup for Product Definition main category
+      '/api/mandatory-products': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/mandatory-products/, '/api/lookups'),
+      },
     },
   },
   plugins: [
