@@ -92,6 +92,7 @@ const RunningBalanceFix = lazy(() => import('./features/system/RunningBalanceFix
 const AccessControlGroups = lazy(() => import('./features/system/AccessControlGroups'));
 const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
 const ProductDefinition = lazy(() => import('./features/system/ModuleSetup/ProductDefinition'));
+const SaveLogs = lazy(() => import('./features/system/SaveLogs'));
 
 const Reporting = lazy(() => import('./features/reporting'));
 const ReportingAnalytics = lazy(() => import('./features/reporting/Analytics'));
@@ -225,9 +226,9 @@ function App() {
         { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
-        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
+        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
         { label: 'Account Closure', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
       ],
     },
@@ -279,6 +280,7 @@ function App() {
         { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
         { label: 'Access Control Groups', to: '/system/access-control-groups', icon: GroupWorkRoundedIcon },
         { label: 'Security', to: '/system/security', icon: SecurityRoundedIcon },
+        { label: 'Save Logs', to: '/system/save-logs', icon: ListAltRoundedIcon },
         { label: 'Running Balance Fix', to: '/system/running-balance-fix', icon: TuneRoundedIcon },
         { label: 'End of Year', to: '/system/end-of-year', icon: DateRangeRoundedIcon },
       ],
@@ -440,7 +442,7 @@ function App() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <img src={logo} alt="Company logo" style={{ height: 36, borderRadius: 6 }} />
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, letterSpacing: 0.3 }}>
-                  Microfinance Management
+                  Social Development Fund
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -513,7 +515,6 @@ function App() {
                           return (
                         <NavLink
                           to={link.to}
-                          onClick={() => setActiveCategoryOverride(null)}
                           end={link.to === '/reporting'}
                           className={({ isActive }) => (isActive ? 'active' : '')}
                           title={link.label}
@@ -724,6 +725,10 @@ function App() {
                     <Route
                       path="/system/security"
                       element={renderWithAccess('system', <UserSecurity />)}
+                    />
+                    <Route
+                      path="/system/save-logs"
+                      element={renderWithAccess('system', <SaveLogs />)}
                     />
                     <Route
                       path="/system/product"

@@ -15,6 +15,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function MemberTransfer({ user }) {
   const initialForm = {
@@ -75,8 +76,25 @@ export default function MemberTransfer({ user }) {
     }
 
     const transferLabel = formData.transactionType === 'account-transfer' ? 'Account transfer' : 'Member transfer';
-    setSaveMessage(`${transferLabel} saved successfully.`);
-    setFormData(initialForm);
+
+    try {
+      setSaveMessage(`${transferLabel} saved successfully.`);
+      setFormData(initialForm);
+      notifySaveSuccess({
+        page: 'Member Administration / Member Transfer',
+        action: `Save ${transferLabel}`,
+        message: `${transferLabel} saved successfully.`,
+      });
+    } catch (error) {
+      const failedMessage = `Failed to save ${transferLabel.toLowerCase()}.`;
+      setSaveMessage(failedMessage);
+      notifySaveError({
+        page: 'Member Administration / Member Transfer',
+        action: `Save ${transferLabel}`,
+        message: failedMessage,
+        error,
+      });
+    }
   };
 
   return (

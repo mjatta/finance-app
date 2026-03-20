@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import logo from '../../../assets/company-logo.jpg';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -254,9 +255,20 @@ export default function Withdrawal() {
 
       setStatusMessage('Withdrawal saved successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Withdrawal',
+        action: 'Save Withdrawal',
+        message: 'Withdrawal saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to save withdrawal.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Withdrawal',
+        action: 'Save Withdrawal',
+        message: 'Failed to save withdrawal.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

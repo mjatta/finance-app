@@ -26,6 +26,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import {
   faCalendarDays,
   faCoins,
@@ -249,8 +250,19 @@ export default function Repayments({ user }) {
       setFormData(initialForm);
       setErrors({});
       setOpenRows({});
-    } catch {
+      notifySaveSuccess({
+        page: 'Loan Management / Loan Repayments',
+        action: 'Save Loan Repayment',
+        message: 'Loan repayment saved successfully.',
+      });
+    } catch (error) {
       setStorageError('Unable to save loan repayment record.');
+      notifySaveError({
+        page: 'Loan Management / Loan Repayments',
+        action: 'Save Loan Repayment',
+        message: 'Unable to save loan repayment record.',
+        error,
+      });
     } finally {
       setIsSavingRow(false);
     }

@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AccountClosure() {
   const [formData, setFormData] = useState({
@@ -117,9 +118,20 @@ export default function AccountClosure() {
       
       setStatusMessage('Account closure saved successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Account Closure',
+        action: 'Save Account Closure',
+        message: 'Account closure saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to save account closure.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Account Closure',
+        action: 'Save Account Closure',
+        message: 'Failed to save account closure.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

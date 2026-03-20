@@ -17,6 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function UserSecurity({ user }) {
   const [settingsForm, setSettingsForm] = useState({
@@ -128,8 +129,19 @@ export default function UserSecurity({ user }) {
       }
 
       setStatusMessage('Security settings saved successfully.');
-    } catch {
+      notifySaveSuccess({
+        page: 'System Administration / Security',
+        action: 'Save Security Settings',
+        message: 'Security settings saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to save security settings.');
+      notifySaveError({
+        page: 'System Administration / Security',
+        action: 'Save Security Settings',
+        message: 'Unable to save security settings.',
+        error,
+      });
     } finally {
       setIsSavingSettings(false);
     }
@@ -175,8 +187,19 @@ export default function UserSecurity({ user }) {
         firstProxy: '',
         secondProxy: '',
       });
-    } catch {
+      notifySaveSuccess({
+        page: 'System Administration / Security',
+        action: 'Save Department Authoriser',
+        message: 'Department authoriser setup saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to save department authoriser setup.');
+      notifySaveError({
+        page: 'System Administration / Security',
+        action: 'Save Department Authoriser',
+        message: 'Unable to save department authoriser setup.',
+        error,
+      });
     } finally {
       setIsSavingAuthoriser(false);
     }

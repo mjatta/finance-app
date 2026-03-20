@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function InterestCalculation() {
   const [interestDate, setInterestDate] = useState('');
@@ -79,8 +80,19 @@ export default function InterestCalculation() {
       const payload = await response.json();
       setRows(Array.isArray(payload?.interestRows) ? payload.interestRows : []);
       setStatusMessage('Interest calculation completed and saved.');
-    } catch {
+      notifySaveSuccess({
+        page: 'Processing / Interest Calculation',
+        action: 'Save Interest Calculation',
+        message: 'Interest calculation completed and saved.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to calculate and save interest.');
+      notifySaveError({
+        page: 'Processing / Interest Calculation',
+        action: 'Save Interest Calculation',
+        message: 'Unable to calculate and save interest.',
+        error,
+      });
     }
   };
 

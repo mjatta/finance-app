@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function MemberCloseAccount() {
   const [isLoadingMember, setIsLoadingMember] = useState(false);
@@ -91,9 +92,20 @@ export default function MemberCloseAccount() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setStatusMessage('Member account closed successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Member Close',
+        action: 'Save Member Close',
+        message: 'Member account closed successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to close member account.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Member Close',
+        action: 'Save Member Close',
+        message: 'Failed to close member account.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function SubscriptionProcessing() {
   const [processingDate, setProcessingDate] = useState('');
@@ -74,8 +75,19 @@ export default function SubscriptionProcessing() {
       const payload = await response.json();
       setRows(Array.isArray(payload?.subscriptionRows) ? payload.subscriptionRows : []);
       setStatusMessage('Subscription batch processed and saved.');
-    } catch {
+      notifySaveSuccess({
+        page: 'Processing / Periodic Subscription Processing',
+        action: 'Save Subscription Processing',
+        message: 'Subscription batch processed and saved.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to process subscription batch.');
+      notifySaveError({
+        page: 'Processing / Periodic Subscription Processing',
+        action: 'Save Subscription Processing',
+        message: 'Unable to process subscription batch.',
+        error,
+      });
     }
   };
 

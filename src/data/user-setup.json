@@ -28,6 +28,10 @@
     {
       "companyName": "Unity SACCO",
       "branchName": "Brikama"
+    },
+    {
+      "companyName": "Social Development Fund",
+      "branchName": "Bansang"
     }
   ],
   "users": [
@@ -107,14 +111,14 @@
       "userName": "newvision",
       "temporaryPassword": "",
       "baseRole": "memberFeature testing",
-      "cashAccount": "",
+      "cashAccount": "60000",
       "userType": "",
-      "debitMit": "",
+      "debitMit": "10000",
       "creditLimit": "",
       "loanApprovalLimit": false,
       "disableUser": false,
       "resetPassword": false,
-      "createdAt": "2026-03-19T03:48:05.105Z",
+      "createdAt": "2026-03-20T05:40:32.278Z",
       "password": "kP9!vR@2xZ&L5#mQ",
       "passwordUpdatedAt": "2026-03-19T03:57:14.259Z"
     }

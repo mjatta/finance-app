@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AddMemberAccount() {
   const [branches, setBranches] = useState([]);
@@ -130,9 +131,20 @@ export default function AddMemberAccount() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setStatusMessage('Member account saved successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Add Member Account',
+        action: 'Save Member Account',
+        message: 'Member account saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to save member account.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Add Member Account',
+        action: 'Save Member Account',
+        message: 'Failed to save member account.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

@@ -26,6 +26,7 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { notifySaveError, notifySaveSuccess } from '../../../../utils/saveNotifications';
 
 const MANDATORY_PRODUCTS_CACHE_KEY = 'productDefinition_mandatoryProducts';
 
@@ -257,14 +258,25 @@ export default function ProductDefinition({ user }) {
       }
 
       setStatusMessage(editingProductId ? 'Product definition updated successfully.' : 'Product definition saved successfully.');
+      notifySaveSuccess({
+        page: 'System Administration / Product Setup',
+        action: editingProductId ? 'Update Product Definition' : 'Save Product Definition',
+        message: editingProductId ? 'Product definition updated successfully.' : 'Product definition saved successfully.',
+      });
       setEditingProductId('');
       setForm((prev) => ({
         ...initialForm,
         mainCategory: prev.mainCategory,
         productName: prev.productName,
       }));
-    } catch {
+    } catch (error) {
       setStatusMessage('Unable to save product definition.');
+      notifySaveError({
+        page: 'System Administration / Product Setup',
+        action: editingProductId ? 'Update Product Definition' : 'Save Product Definition',
+        message: 'Unable to save product definition.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

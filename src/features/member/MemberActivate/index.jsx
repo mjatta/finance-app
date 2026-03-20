@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function MemberActivate() {
   const [isLoadingMember, setIsLoadingMember] = useState(false);
@@ -91,9 +92,20 @@ export default function MemberActivate() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setStatusMessage('Member activated successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Member Activate',
+        action: 'Save Member Activate',
+        message: 'Member activated successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to activate member.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Member Activate',
+        action: 'Save Member Activate',
+        message: 'Failed to activate member.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

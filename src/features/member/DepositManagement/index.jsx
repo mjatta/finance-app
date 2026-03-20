@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import logo from '../../../assets/company-logo.jpg';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -280,9 +281,20 @@ export default function DepositManagement() {
 
       setStatusMessage('Deposit saved successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Deposits',
+        action: 'Save Deposit',
+        message: 'Deposit saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to save deposit.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Deposits',
+        action: 'Save Deposit',
+        message: 'Failed to save deposit.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

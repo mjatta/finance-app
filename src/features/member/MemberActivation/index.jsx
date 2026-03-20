@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AccountActivation() {
   const [formData, setFormData] = useState({
@@ -97,9 +98,20 @@ export default function AccountActivation() {
       
       setStatusMessage('Account activation saved successfully.');
       setStatusError(false);
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Account Activation',
+        action: 'Save Account Activation',
+        message: 'Account activation saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Failed to save account activation.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Account Activation',
+        action: 'Save Account Activation',
+        message: 'Failed to save account activation.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

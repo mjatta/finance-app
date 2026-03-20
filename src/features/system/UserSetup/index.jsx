@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
@@ -83,6 +84,7 @@ const featurePageMap = {
     { path: '/system/user-setup', label: 'User Setup' },
     { path: '/system/access-control-groups', label: 'Access Control Groups' },
     { path: '/system/security', label: 'Security' },
+    { path: '/system/save-logs', label: 'Save Logs' },
     { path: '/system/running-balance-fix', label: 'Running Balance Fix' },
     { path: '/system/end-of-year', label: 'End of Year' },
   ],
@@ -394,8 +396,19 @@ export default function UserSetup({ user }) {
         resetPassword: false,
       }));
       setEditingUserId('');
-    } catch {
+      notifySaveSuccess({
+        page: 'System Administration / User Setup',
+        action: 'Save User Setup',
+        message: 'User setup saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to save user setup data.');
+      notifySaveError({
+        page: 'System Administration / User Setup',
+        action: 'Save User Setup',
+        message: 'Unable to save user setup data.',
+        error,
+      });
     } finally {
       setIsSavingUser(false);
     }
@@ -440,8 +453,19 @@ export default function UserSetup({ user }) {
       });
       setEditingRoleName('');
       setStatusMessage('User role saved successfully.');
-    } catch {
+      notifySaveSuccess({
+        page: 'System Administration / User Setup',
+        action: 'Save User Role',
+        message: 'User role saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to save user role data.');
+      notifySaveError({
+        page: 'System Administration / User Setup',
+        action: 'Save User Role',
+        message: 'Unable to save user role data.',
+        error,
+      });
     } finally {
       setIsSavingRole(false);
     }

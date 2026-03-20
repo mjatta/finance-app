@@ -22,6 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function CustomerRegistration({ user }) {
   const [mainTab, setMainTab] = useState(0);
@@ -387,9 +388,20 @@ export default function CustomerRegistration({ user }) {
       }
 
       setStatusMessage('Customer registration saved successfully.');
-    } catch {
+      notifySaveSuccess({
+        page: 'Member Administration / Registration',
+        action: 'Save Customer Registration',
+        message: 'Customer registration saved successfully.',
+      });
+    } catch (error) {
       setStatusMessage('Unable to save customer registration.');
       setStatusError(true);
+      notifySaveError({
+        page: 'Member Administration / Registration',
+        action: 'Save Customer Registration',
+        message: 'Unable to save customer registration.',
+        error,
+      });
     } finally {
       setIsSaving(false);
     }

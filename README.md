@@ -52,6 +52,25 @@ npm run dev
 The app will open at `http://localhost:5173` by default.  
 A simple login page is shown for unauthenticated users; once signed in, the app auto‑redirects to the landing dashboard and the top navigation bar provides links to every feature of the system.
 
+## Save toasts and audit logs
+
+- All Save actions now show a toast for 45 seconds.
+- Successful saves show a success toast.
+- Failed saves show an error toast.
+- Every save event is logged in browser local storage under key `microfinance.save.logs`.
+
+To inspect logs in the browser console:
+
+```js
+JSON.parse(localStorage.getItem('microfinance.save.logs') || '[]')
+```
+
+To clear logs:
+
+```js
+localStorage.removeItem('microfinance.save.logs')
+```
+
 ## Next steps
 
 - Flesh out individual components and pages in each feature folder
