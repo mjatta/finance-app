@@ -74,7 +74,8 @@ export default function MemberTransfer({ user }) {
       return;
     }
 
-    setSaveMessage('Member transfer saved successfully.');
+    const transferLabel = formData.transactionType === 'account-transfer' ? 'Account transfer' : 'Member transfer';
+    setSaveMessage(`${transferLabel} saved successfully.`);
     setFormData(initialForm);
   };
 
@@ -155,12 +156,13 @@ export default function MemberTransfer({ user }) {
                 </Typography>
                 <TextField
                   select
-                  label="Transaction Type"
+                  label="Transfer Type"
                   name="transactionType"
                   value={formData.transactionType}
                   onChange={handleChange}
                   sx={{ width: { xs: '100%', md: 300 } }}
                 >
+                  <MenuItem value="account-transfer">Account Transfer</MenuItem>
                   <MenuItem value="member-transfer">Member Transfer</MenuItem>
                 </TextField>
               </CardContent>

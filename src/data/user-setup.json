@@ -183,14 +183,11 @@
         "/member/customer-registration": "write",
         "/member/add-member-account": "write",
         "/member/deposits": "write",
-        "/member/member-administration-accounts": "hide page",
         "/member/member-close": "write",
         "/member/member-activation": "write",
         "/member/member-activate": "write",
         "/member/withdrawal": "hide page",
-        "/member/transfers": "hide page",
-        "/member/member-payroll-management": "hide page",
-        "/member/member-message": "hide page"
+        "/member/member-payroll-management": "hide page"
       }
     }
   ]
