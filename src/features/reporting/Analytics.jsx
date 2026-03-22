@@ -5,15 +5,10 @@ import {
   CardContent,
   Grid,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
+import { DataGrid } from '@mui/x-data-grid';
 
 const loanPortfolioMix = [
   { id: 0, value: 42, label: 'Development Loan' },
@@ -253,28 +248,26 @@ export default function ReportingAnalytics() {
             Branch Performance Metrics
           </Typography>
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Branch</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Active Members</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Loan Disbursed</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Collection Efficiency</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {topBranches.map((row) => (
-                  <TableRow key={row.branch} hover>
-                    <TableCell>{row.branch}</TableCell>
-                    <TableCell>{row.members}</TableCell>
-                    <TableCell>{row.disbursed}</TableCell>
-                    <TableCell>{row.collection}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 300, width: '100%' }}>
+            <DataGrid
+              rows={topBranches.map((row, idx) => ({ id: idx, ...row }))}
+              columns={[
+                { field: 'branch', headerName: 'Branch', flex: 1, minWidth: 120 },
+                { field: 'members', headerName: 'Active Members', flex: 1, minWidth: 120 },
+                { field: 'disbursed', headerName: 'Loan Disbursed', flex: 1, minWidth: 120 },
+                { field: 'collection', headerName: 'Collection Efficiency', flex: 1, minWidth: 140 },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </Box>

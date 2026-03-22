@@ -7,15 +7,10 @@ import {
   Grid,
   MenuItem,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function InterestCalculation() {
@@ -154,39 +149,31 @@ export default function InterestCalculation() {
           <Typography variant="h6" sx={{ mb: 1.5 }}>
             Interest Calculation Preview
           </Typography>
-
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Account No</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Member</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Average Balance</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Interest Amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                      No interest calculation records found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row, index) => (
-                    <TableRow key={row.id || `${row.accountNo}-${index}`} hover>
-                      <TableCell>{row.accountNo}</TableCell>
-                      <TableCell>{row.member}</TableCell>
-                      <TableCell>{row.averageBalance}</TableCell>
-                      <TableCell>{row.rate}</TableCell>
-                      <TableCell>{row.interest}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+            <DataGrid
+              rows={rows.map((row, index) => ({ ...row, id: row.id || `${row.accountNo}-${index}` }))}
+              columns={[
+                { field: 'accountNo', headerName: 'Account No', flex: 1, minWidth: 120 },
+                { field: 'member', headerName: 'Member', flex: 1.2, minWidth: 140 },
+                { field: 'averageBalance', headerName: 'Average Balance', flex: 1, minWidth: 130 },
+                { field: 'rate', headerName: 'Rate', flex: 0.6, minWidth: 80 },
+                { field: 'interest', headerName: 'Interest Amount', flex: 1, minWidth: 130 },
+              ]}
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
+                },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </Paper>
         </CardContent>
       </Card>
     </Box>

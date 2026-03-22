@@ -5,14 +5,9 @@ import {
   Card,
   CardContent,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -132,47 +127,34 @@ export default function RecoveryWriteOff() {
       </Card>
 
       <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-        <TableContainer sx={{ width: '100%', maxHeight: 460, overflowX: 'auto' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Member Code</TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Member Name</TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Loan type</TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Laon Amoount</TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Approal Date</TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: 'primary.main', color: 'primary.contrastText' }}>Laon Account Number</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row, idx) => {
-                const isSelected = row.id === selectedId;
-
-                return (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    onClick={() => setSelectedId(row.id)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: isSelected ? 'primary.50' : idx % 2 === 0 ? 'background.paper' : 'grey.50',
-                      '& td': {
-                        fontWeight: isSelected ? 700 : 500,
-                      },
-                    }}
-                  >
-                    <TableCell>{row.memberCode}</TableCell>
-                    <TableCell>{row.memberName}</TableCell>
-                    <TableCell>{row.loanType}</TableCell>
-                    <TableCell>{row.loanAmount}</TableCell>
-                    <TableCell>{row.approvalDate}</TableCell>
-                    <TableCell>{row.loanAccountNumber}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataGrid
+          rows={rows.map((row) => ({ ...row }))}
+          columns={[
+            { field: 'memberCode', headerName: 'Member Code', flex: 1, minWidth: 120 },
+            { field: 'memberName', headerName: 'Member Name', flex: 1.2, minWidth: 140 },
+            { field: 'loanType', headerName: 'Loan Type', flex: 1, minWidth: 110 },
+            { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 110 },
+            { field: 'approvalDate', headerName: 'Approval Date', flex: 1, minWidth: 120 },
+            { field: 'loanAccountNumber', headerName: 'Loan Account Number', flex: 1.2, minWidth: 150 },
+          ]}
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          density="compact"
+          onRowClick={(params) => setSelectedId(params.row.id)}
+          getRowClassName={(params) => params.row.id === selectedId ? 'selected-row' : ''}
+          sx={{
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeader': {
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 700,
+            },
+            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+            '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+            '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+            '& .selected-row': { backgroundColor: '#cfe2ff !important', fontWeight: 700 },
+          }}
+        />
       </Paper>
     </Box>
   );

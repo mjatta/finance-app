@@ -6,15 +6,10 @@ import {
   CardContent,
   Checkbox,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import logo from '../../../assets/company-logo.jpg';
 
 export default function Reprint() {
@@ -327,47 +322,67 @@ export default function Reprint() {
         </Typography>
       ) : (
         <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={allVisibleSelected}
-                      indeterminate={selectedCount > 0 && !allVisibleSelected}
-                      onChange={(e) => handleToggleAll(e.target.checked)}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Reciept Number</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Reciept Date</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Recipt amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} sx={{ textAlign: 'center', py: 3, color: 'text.secondary' }}>
-                      No records found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRows.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={Boolean(selectedRows[row.id])}
-                          onChange={(e) => handleToggleRow(row.id, e.target.checked)}
-                        />
-                      </TableCell>
-                      <TableCell>{row.receiptNumber}</TableCell>
-                      <TableCell>{row.receiptDate || '-'}</TableCell>
-                      <TableCell>{row.receiptAmount}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Box sx={{ mb: 2, p: 1.5, display: 'flex', gap: 1, alignItems: 'center', borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Checkbox
+              checked={allVisibleSelected}
+              indeterminate={selectedCount > 0 && !allVisibleSelected}
+              onChange={(e) => handleToggleAll(e.target.checked)}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {selectedCount > 0 ? `${selectedCount} selected` : 'Select receipts'}
+            </Typography>
+          </Box>
+          {filteredRows.length === 0 ? (
+            <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
+              No records found.
+            </Typography>
+          ) : (
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={filteredRows.map((row) => ({
+                  ...row,
+                  id: row.id || `receipt-${Date.now()}`,
+                }))}
+                columns={[
+                  {
+                    field: 'select',
+                    headerName: '',
+                    flex: 0.05,
+                    minWidth: 50,
+                    sortable: false,
+                    renderCell: (params) => (
+                      <Checkbox
+                        checked={Boolean(selectedRows[params.row.id])}
+                        onChange={(e) => handleToggleRow(params.row.id, e.target.checked)}
+                      />
+                    ),
+                  },
+                  { field: 'receiptNumber', headerName: 'Receipt Number', flex: 1, minWidth: 120 },
+                  { field: 'receiptDate', headerName: 'Receipt Date', flex: 1, minWidth: 120 },
+                  { field: 'receiptAmount', headerName: 'Receipt Amount', flex: 1, minWidth: 120 },
+                ]}
+                pageSizeOptions={[10, 25, 50]}
+                initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+                density="compact"
+                sx={{
+                  '& .MuiDataGrid-columnHeader': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    fontWeight: 700,
+                  },
+                  '& .MuiDataGrid-row:nth-of-type(even)': {
+                    backgroundColor: '#f8f9fa',
+                  },
+                  '& .MuiDataGrid-row:hover': {
+                    backgroundColor: '#e9ecef',
+                  },
+                  '& .MuiDataGrid-cell': {
+                    borderColor: '#dee2e6',
+                  },
+                }}
+              />
+            </div>
+          )}
         </Paper>
       )}
     </Box>

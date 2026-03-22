@@ -10,15 +10,11 @@ import {
   MenuItem,
   Radio,
   RadioGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
+  Chip,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -158,6 +154,79 @@ export default function MemberPayrollManagement() {
 
   const processBalance = useMemo(() => memberContribution - totalPayment, [memberContribution, totalPayment]);
 
+  const payrollColumns = useMemo(
+    () => [
+      { field: 'payrollNumber', headerName: 'Payroll Number', flex: 1, minWidth: 120 },
+      { field: 'firstName', headerName: 'First Name', flex: 1, minWidth: 100 },
+      { field: 'lastName', headerName: 'Last Name', flex: 1, minWidth: 100 },
+      {
+        field: 'contribution',
+        headerName: 'Contribution',
+        flex: 1,
+        minWidth: 100,
+        valueFormatter: (value) => numberFormat(value),
+      },
+      {
+        field: 'amended',
+        headerName: 'Amended',
+        flex: 0.8,
+        minWidth: 80,
+        renderCell: (params) => (
+          <Checkbox checked={params.value} onChange={() => handleToggleAmended(params.row.id)} />
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const payrollGridRows = useMemo(
+    () => filteredPayrollRows.map((row) => ({ ...row, _originalData: row })),
+    [filteredPayrollRows],
+  );
+
+  const accountColumns = useMemo(
+    () => [
+      { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 120 },
+      { field: 'accountName', headerName: 'Account Name', flex: 1, minWidth: 120 },
+      { field: 'accountType', headerName: 'Account Type', flex: 1, minWidth: 100 },
+      {
+        field: 'accountBalance',
+        headerName: 'Account Balance',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => numberFormat(value),
+      },
+      {
+        field: 'totalRepayment',
+        headerName: 'Total Repayment',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => numberFormat(value),
+      },
+      {
+        field: 'accruedInterest',
+        headerName: 'Accured Interest',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => numberFormat(value),
+      },
+      {
+        field: 'totalPayment',
+        headerName: 'Total Payment',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => numberFormat(value),
+      },
+    ],
+    [],
+  );
+
+  const accountGridRows = useMemo(
+    () => memberAccountDetails.map((row) => ({ ...row, _originalData: row })),
+    [memberAccountDetails],
+  );
+
   const handleToggleAmended = (id) => {
     setPayrollRows((prev) => prev.map((row) => (row.id === id ? { ...row, amended: !row.amended } : row)));
   };
@@ -246,32 +315,23 @@ export default function MemberPayrollManagement() {
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 700 }}>
             Payroll Members
           </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Payroll Number</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>First Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Last Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Contribution</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Amended</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredPayrollRows.map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell>{row.payrollNumber}</TableCell>
-                    <TableCell>{row.firstName}</TableCell>
-                    <TableCell>{row.lastName}</TableCell>
-                    <TableCell>{numberFormat(row.contribution)}</TableCell>
-                    <TableCell>
-                      <Checkbox checked={row.amended} onChange={() => handleToggleAmended(row.id)} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <DataGrid
+            rows={payrollGridRows}
+            columns={payrollColumns}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            density="compact"
+            sx={{
+              '& .MuiDataGrid-columnHeader': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                fontWeight: 700,
+              },
+              '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+              '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+              '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+            }}
+          />
         </CardContent>
       </Card>
 
@@ -313,34 +373,23 @@ export default function MemberPayrollManagement() {
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 700 }}>
             Member Account Details
           </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Account Number</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Account Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Account Type</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Account Balance</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Total Repayment</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Accured Interest</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Total Payment</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {memberAccountDetails.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.accountNumber}</TableCell>
-                    <TableCell>{row.accountName}</TableCell>
-                    <TableCell>{row.accountType}</TableCell>
-                    <TableCell>{numberFormat(row.accountBalance)}</TableCell>
-                    <TableCell>{numberFormat(row.totalRepayment)}</TableCell>
-                    <TableCell>{numberFormat(row.accruedInterest)}</TableCell>
-                    <TableCell>{numberFormat(row.totalPayment)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <DataGrid
+            rows={accountGridRows}
+            columns={accountColumns}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            density="compact"
+            sx={{
+              '& .MuiDataGrid-columnHeader': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                fontWeight: 700,
+              },
+              '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+              '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+              '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+            }}
+          />
         </CardContent>
       </Card>
 

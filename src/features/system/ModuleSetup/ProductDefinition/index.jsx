@@ -16,15 +16,10 @@ import {
   Paper,
   Radio,
   RadioGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import { notifySaveError, notifySaveSuccess } from '../../../../utils/saveNotifications';
 
@@ -111,6 +106,31 @@ export default function ProductDefinition({ user }) {
   const [editingProductId, setEditingProductId] = useState('');
 
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
+
+  const productColumns = useMemo(() => [
+    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'mainCategory', headerName: 'Main category', width: 130, flex: 0.8 },
+    { field: 'productName', headerName: 'Product name', width: 140, flex: 0.9 },
+    { field: 'productScope', headerName: 'Product scope', width: 130, flex: 0.8 },
+    { field: 'interestRate', headerName: 'Interest rate', width: 120, flex: 0.7 },
+    { field: 'minimumAmount', headerName: 'Min amount', width: 120, flex: 0.7 },
+    { field: 'maximumAmount', headerName: 'Max amount', width: 120, flex: 0.7 },
+  ], []);
+
+  const productRows = useMemo(
+    () =>
+      savedProducts.map((product, idx) => ({
+        id: product.id || `product-${idx}`,
+        mainCategory: product.mainCategory || '-',
+        productName: product.productName || '-',
+        productScope: product.productScope || '-',
+        interestRate: product.interestRate || '-',
+        minimumAmount: product.minimumAmount || '-',
+        maximumAmount: product.maximumAmount || '-',
+        _originalData: product,
+      })),
+    [savedProducts],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -540,48 +560,36 @@ export default function ProductDefinition({ user }) {
       </Box>
 
       <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-        <TableContainer sx={{ maxHeight: 360 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Main category</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Product name</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Product scope</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Interest rate</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Min amount</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Max amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {savedProducts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                    No saved products.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                savedProducts.map((row, index) => (
-                  <TableRow
-                    key={`${row.id || row.productName || 'product'}-${index}`}
-                    hover
-                    onClick={() => openEditFromGrid(row)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: editingProductId && editingProductId === row.id ? 'primary.50' : 'inherit',
-                    }}
-                  >
-                    <TableCell>{row.mainCategory || '-'}</TableCell>
-                    <TableCell>{row.productName || '-'}</TableCell>
-                    <TableCell>{row.productScope || '-'}</TableCell>
-                    <TableCell>{row.interestRate || '-'}</TableCell>
-                    <TableCell>{row.minimumAmount || '-'}</TableCell>
-                    <TableCell>{row.maximumAmount || '-'}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataGrid
+          rows={productRows}
+          columns={productColumns}
+          disableSelectionOnClick
+          density="compact"
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25 } },
+            columns: { columnVisibilityModel: { id: false } },
+          }}
+          onRowClick={(params) => openEditFromGrid(params.row._originalData)}
+          sx={{
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              fontSize: '0.875rem',
+            },
+            '& .MuiDataGrid-columnHeader': {
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 700,
+              borderBottom: 'none',
+            },
+            '& .MuiDataGrid-row': {
+              cursor: 'pointer',
+              '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
+              '&:hover': { backgroundColor: '#e9ecef' },
+            },
+          }}
+        />
       </Paper>
 
       <Dialog open={addMainCategoryOpen} onClose={() => setAddMainCategoryOpen(false)} fullWidth maxWidth="xs">

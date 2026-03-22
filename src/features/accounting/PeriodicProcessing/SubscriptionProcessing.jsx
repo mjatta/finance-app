@@ -7,15 +7,10 @@ import {
   Grid,
   MenuItem,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function SubscriptionProcessing() {
@@ -155,39 +150,31 @@ export default function SubscriptionProcessing() {
           <Typography variant="h6" sx={{ mb: 1.5 }}>
             Due Subscription Batch
           </Typography>
-
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Member No</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Member Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Product</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Expected Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                      No subscription records found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row, index) => (
-                    <TableRow key={row.id || `${row.memberNo}-${index}`} hover>
-                      <TableCell>{row.memberNo}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell>{row.product}</TableCell>
-                      <TableCell>{row.expected}</TableCell>
-                      <TableCell>{row.status}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+            <DataGrid
+              rows={rows.map((row, index) => ({ ...row, id: row.id || `${row.memberNo}-${index}` }))}
+              columns={[
+                { field: 'memberNo', headerName: 'Member No', flex: 1, minWidth: 120 },
+                { field: 'name', headerName: 'Member Name', flex: 1.2, minWidth: 140 },
+                { field: 'product', headerName: 'Product', flex: 1, minWidth: 120 },
+                { field: 'expected', headerName: 'Expected Amount', flex: 1, minWidth: 130 },
+                { field: 'status', headerName: 'Status', flex: 1, minWidth: 120 },
+              ]}
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
+                },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </Paper>
         </CardContent>
       </Card>
     </Box>

@@ -10,12 +10,6 @@ import {
   InputAdornment,
   MenuItem,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -27,6 +21,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { DataGrid } from '@mui/x-data-grid';
 import {
   faCalendarDays,
   faCoins,
@@ -80,6 +75,7 @@ export default function Repayments({ user }) {
   const [formData, setFormData] = useState(initialForm);
   const [rows, setRows] = useState([]);
   const [openRows, setOpenRows] = useState({});
+  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [isLoadingRows, setIsLoadingRows] = useState(true);
   const [isSavingRow, setIsSavingRow] = useState(false);
@@ -250,6 +246,7 @@ export default function Repayments({ user }) {
       setFormData(initialForm);
       setErrors({});
       setOpenRows({});
+      setSelectedRowIdx(null);
       notifySaveSuccess({
         page: 'Loan Management / Loan Repayments',
         action: 'Save Loan Repayment',
@@ -266,10 +263,6 @@ export default function Repayments({ user }) {
     } finally {
       setIsSavingRow(false);
     }
-  };
-
-  const toggleRow = (idx) => {
-    setOpenRows((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const handlePrintGrid = () => {
@@ -717,77 +710,62 @@ export default function Repayments({ user }) {
             </Button>
           </Box>
 
-          <TableContainer sx={{ width: '100%', maxHeight: 420, overflowX: 'auto' }}>
-            <Table sx={{ minWidth: 980, width: 'max-content' }} stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ position: 'sticky', top: 0, bgcolor: 'primary.main', color: 'primary.contrastText', zIndex: 2, width: 48 }}></TableCell>
-                  {headerKeys.map((key) => (
-                    <TableCell
-                      key={key}
-                      sx={{
-                        position: 'sticky',
-                        top: 0,
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        zIndex: 2,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {headerLabels[key]}
-                    </TableCell>
+          <div style={{ height: 420, width: '100%' }}>
+            <DataGrid
+              rows={rows.map((row, idx) => ({ id: idx, ...row }))}
+              columns={[
+                ...headerKeys.map((key) => ({
+                  field: key,
+                  headerName: headerLabels[key] || key,
+                  flex: 1,
+                  minWidth: 120,
+                })),
+              ]}
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              onRowClick={(params) => setSelectedRowIdx(params.row.id === selectedRowIdx ? null : params.row.id)}
+              getRowClassName={(params) => params.row.id === selectedRowIdx ? 'selected-repayment' : ''}
+              sx={{
+                cursor: 'pointer',
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+                '& .selected-repayment': { backgroundColor: '#cfe2ff !important' },
+              }}
+            />
+          </div>
+
+          <Collapse in={selectedRowIdx !== null} timeout="auto" unmountOnExit>
+            {selectedRowIdx !== null && rows[selectedRowIdx] && (
+              <Box sx={{ m: 1.5, p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Repayment Details
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <Chip size="small" label={`Entry #${selectedRowIdx + 1}`} variant="outlined" />
+                    <IconButton size="small" onClick={() => setSelectedRowIdx(null)} aria-label="close details">
+                      <ExpandMoreIcon sx={{ transform: 'rotate(180deg)' }} />
+                    </IconButton>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1 }}>
+                  {Object.entries(rows[selectedRowIdx]).map(([k, v]) => (
+                    <Box key={k} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        {formatLabel(k)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
+                        {String(v || '-')}
+                      </Typography>
+                    </Box>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row, idx) => (
-                  <React.Fragment key={idx}>
-                    <TableRow hover sx={{ bgcolor: idx % 2 === 0 ? 'background.paper' : 'grey.50' }}>
-                      <TableCell>
-                        <IconButton size="small" onClick={() => toggleRow(idx)} aria-label={openRows[idx] ? 'collapse' : 'expand'}>
-                          <ExpandMoreIcon sx={{ transform: openRows[idx] ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }} />
-                        </IconButton>
-                      </TableCell>
-
-                      {headerKeys.map((key) => (
-                        <TableCell key={key} sx={{ wordBreak: 'break-word', maxWidth: 220 }}>
-                          {row[key] || '-'}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-
-                    <TableRow sx={{ bgcolor: 'grey.50' }}>
-                      <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={headerKeys.length + 1}>
-                        <Collapse in={openRows[idx]} timeout="auto" unmountOnExit>
-                          <Box sx={{ m: 1.5, p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                                Repayment Details
-                              </Typography>
-                              <Chip size="small" label={`Entry #${idx + 1}`} variant="outlined" />
-                            </Box>
-
-                            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1 }}>
-                              {Object.entries(row).map(([k, v]) => (
-                                <Box key={k} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
-                                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                    {formatLabel(k)}
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
-                                    {String(v || '-')}
-                                  </Typography>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-                        </Collapse>
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </Box>
+              </Box>
+            )}
+          </Collapse>
         </Paper>
       )}
     </Box>

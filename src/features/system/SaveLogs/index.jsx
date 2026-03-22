@@ -6,14 +6,9 @@ import {
   CardContent,
   Chip,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import { clearSaveLogs, getSaveLogs, SAVE_LOG_KEY } from '../../../utils/saveNotifications';
 
 const formatDateTime = (isoDate) => {
@@ -31,6 +26,61 @@ const formatDateTime = (isoDate) => {
 
 export default function SaveLogs() {
   const [logs, setLogs] = useState(() => getSaveLogs());
+
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 80, hide: true },
+    {
+      field: 'timestamp',
+      headerName: 'Date/Time',
+      width: 180,
+      valueFormatter: (value) => (value ? formatDateTime(value) : '-'),
+    },
+    { field: 'user', headerName: 'User', width: 130, valueFormatter: (value) => value || '-' },
+    { field: 'page', headerName: 'Page', width: 130, valueFormatter: (value) => value || '-' },
+    { field: 'action', headerName: 'Action', width: 130, valueFormatter: (value) => value || '-' },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          size="small"
+          label={params.value || '-'}
+          color={params.value === 'error' ? 'error' : 'success'}
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      field: 'message',
+      headerName: 'Message',
+      flex: 1,
+      minWidth: 150,
+      valueFormatter: (value) => value || '-',
+    },
+    {
+      field: 'error',
+      headerName: 'Error',
+      flex: 1,
+      minWidth: 150,
+      valueFormatter: (value) => value || '-',
+    },
+  ];
+
+  const rows = useMemo(
+    () =>
+      logs.map((log) => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        user: log.user,
+        page: log.page,
+        action: log.action,
+        status: log.status,
+        message: log.message,
+        error: log.error,
+      })),
+    [logs]
+  );
 
   const successCount = useMemo(() => logs.filter((log) => log?.status === 'success').length, [logs]);
   const errorCount = useMemo(() => logs.filter((log) => log?.status === 'error').length, [logs]);
@@ -95,51 +145,41 @@ export default function SaveLogs() {
         </Button>
       </Stack>
 
-      <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Date/Time</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Page</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Message</TableCell>
-              <TableCell>Error</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {logs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-                    No save logs yet.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              logs.map((log) => (
-                <TableRow key={log.id} hover>
-                  <TableCell>{formatDateTime(log.timestamp)}</TableCell>
-                  <TableCell>{log.user || '-'}</TableCell>
-                  <TableCell>{log.page || '-'}</TableCell>
-                  <TableCell>{log.action || '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={log.status || '-'}
-                      color={log.status === 'error' ? 'error' : 'success'}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>{log.message || '-'}</TableCell>
-                  <TableCell>{log.error || '-'}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        disableSelectionOnClick
+        density="compact"
+        pageSizeOptions={[10, 25, 50, 100]}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 25 } },
+          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+        }}
+        sx={{
+          '& .MuiDataGrid-root': {
+            border: 'none',
+            borderRadius: 2,
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          },
+          '& .MuiDataGrid-columnHeader': {
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            fontWeight: 700,
+            borderBottom: 'none',
+          },
+          '& .MuiDataGrid-row': {
+            '&:nth-of-type(odd)': {
+              backgroundColor: '#f8f9fa',
+            },
+            '&:hover': {
+              backgroundColor: '#e9ecef',
+            },
+          },
+        }}
+      />
     </Box>
   );
 }

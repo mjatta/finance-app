@@ -7,15 +7,10 @@ import {
   Checkbox,
   FormControlLabel,
   MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
@@ -616,49 +611,61 @@ export default function Withdrawal() {
             Withdrawal Accounts Grid
           </Typography>
 
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Select</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Payment Made</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Principle</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Interest</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Begin Balance</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>End Balance</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Outstanding Balance</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Order</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      Search by Member Code or Payroll Number to load Regular and Saving accounts.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell>
-                        <FormControlLabel
-                          control={<Checkbox checked={row.selected} onChange={() => handleSelectRow(row.id)} />}
-                          label={row.accountType}
-                        />
-                      </TableCell>
-                      <TableCell>{row.paymentMade || '-'}</TableCell>
-                      <TableCell>{row.principle || '-'}</TableCell>
-                      <TableCell>{row.interest || '-'}</TableCell>
-                      <TableCell>{row.beginBalance || '-'}</TableCell>
-                      <TableCell>{row.endBalance || '-'}</TableCell>
-                      <TableCell>{row.outstandingBalance || '-'}</TableCell>
-                      <TableCell>{row.order || '-'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {rows.length === 0 ? (
+            <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
+              Search by Member Code or Payroll Number to load Regular and Saving accounts.
+            </Typography>
+          ) : (
+            <div style={{ height: 300, width: '100%' }}>
+              <DataGrid
+                rows={rows.map((row) => ({
+                  ...row,
+                  _originalData: row,
+                }))}
+                columns={[
+                  {
+                    field: 'select',
+                    headerName: 'Select',
+                    flex: 0.15,
+                    minWidth: 100,
+                    sortable: false,
+                    renderCell: (params) => (
+                      <FormControlLabel
+                        control={<Checkbox checked={params.row.selected} onChange={() => handleSelectRow(params.row.id)} />}
+                        label={params.row.accountType}
+                      />
+                    ),
+                  },
+                  { field: 'paymentMade', headerName: 'Payment Made', flex: 0.1, minWidth: 100 },
+                  { field: 'principle', headerName: 'Principle', flex: 0.1, minWidth: 100 },
+                  { field: 'interest', headerName: 'Interest', flex: 0.1, minWidth: 100 },
+                  { field: 'beginBalance', headerName: 'Begin Balance', flex: 0.12, minWidth: 120 },
+                  { field: 'endBalance', headerName: 'End Balance', flex: 0.12, minWidth: 120 },
+                  { field: 'outstandingBalance', headerName: 'Outstanding Balance', flex: 0.15, minWidth: 130 },
+                  { field: 'order', headerName: 'Order', flex: 0.08, minWidth: 80 },
+                ]}
+                pageSizeOptions={[10, 25, 50]}
+                initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+                density="compact"
+                sx={{
+                  '& .MuiDataGrid-columnHeader': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    fontWeight: 700,
+                  },
+                  '& .MuiDataGrid-row:nth-of-type(even)': {
+                    backgroundColor: '#f8f9fa',
+                  },
+                  '& .MuiDataGrid-row:hover': {
+                    backgroundColor: '#e9ecef',
+                  },
+                  '& .MuiDataGrid-cell': {
+                    borderColor: '#dee2e6',
+                  },
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </Box>

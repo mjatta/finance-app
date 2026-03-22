@@ -9,15 +9,10 @@ import {
   IconButton,
   MenuItem,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
@@ -471,6 +466,86 @@ export default function UserSetup({ user }) {
     }
   };
 
+  const savedRoleColumns = useMemo(
+    () => [
+      { field: 'id', headerName: 'ID', width: 80 },
+      { field: 'roleName', headerName: 'Role name', width: 140, flex: 0.8 },
+      { field: 'roleDescription', headerName: 'Role description', width: 160, flex: 0.9 },
+      {
+        field: 'featurePermissions',
+        headerName: 'Feature permissions',
+        width: 200,
+        flex: 1,
+        valueFormatter: (value) => {
+          if (value && typeof value === 'object') {
+            return featureOptions
+              .map((feature) => `${feature}: ${value[feature] || 'hide feature'}`)
+              .join(' | ');
+          }
+          return '-';
+        },
+      },
+      {
+        field: 'pagePermissions',
+        headerName: 'Page permissions',
+        width: 200,
+        flex: 1,
+        valueFormatter: (value) => {
+          if (value && typeof value === 'object' && Object.keys(value).length > 0) {
+            return Object.entries(value)
+              .map(([page, permission]) => `${page}: ${permission}`)
+              .join(' | ');
+          }
+          return 'Inherit from feature';
+        },
+      },
+    ],
+    [],
+  );
+
+  const savedRoleRows = useMemo(
+    () =>
+      savedRoles.map((item, idx) => ({
+        id: `role-${idx}`,
+        roleName: item.roleName || '-',
+        roleDescription: item.roleDescription || '-',
+        featurePermissions: item.featurePermissions,
+        pagePermissions: item.pagePermissions,
+        _originalData: item,
+      })),
+    [savedRoles],
+  );
+
+  const savedUserColumns = useMemo(
+    () => [
+      { field: 'id', headerName: 'ID', width: 80 },
+      { field: 'companyName', headerName: 'Company', width: 130, flex: 0.7 },
+      { field: 'branch', headerName: 'Branch', width: 120, flex: 0.6 },
+      { field: 'staffNumber', headerName: 'Staff Number', width: 120, flex: 0.6 },
+      { field: 'userId', headerName: 'User ID', width: 120, flex: 0.6 },
+      { field: 'userName', headerName: 'User Name', width: 130, flex: 0.7 },
+      { field: 'baseRole', headerName: 'Assigned Role', width: 130, flex: 0.7 },
+      { field: 'userType', headerName: 'User Type', width: 120, flex: 0.6 },
+    ],
+    [],
+  );
+
+  const savedUserRows = useMemo(
+    () =>
+      savedUsers.map((item, idx) => ({
+        id: `user-${idx}`,
+        companyName: item.companyName || '-',
+        branch: item.branch || '-',
+        staffNumber: item.staffNumber || '-',
+        userId: item.userId || '-',
+        userName: item.userName || '-',
+        baseRole: item.baseRole || '-',
+        userType: item.userType || '-',
+        _originalData: item,
+      })),
+    [savedUsers],
+  );
+
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
@@ -814,56 +889,36 @@ export default function UserSetup({ user }) {
             </Box>
             {showSavedRoles && (
               <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                <TableContainer sx={{ maxHeight: 220 }}>
-                  <Table stickyHeader size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>Role name</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Role description</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Feature permissions</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Page permissions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {savedRoles.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                            No roles saved.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        savedRoles.map((item, index) => (
-                          <TableRow
-                            key={`${item.roleName || 'role'}-${index}`}
-                            hover
-                            onClick={() => handleEditSavedRole(item)}
-                            sx={{
-                              cursor: 'pointer',
-                              bgcolor: editingRoleName && editingRoleName === item.roleName ? 'primary.50' : 'inherit',
-                            }}
-                          >
-                            <TableCell>{item.roleName || '-'}</TableCell>
-                            <TableCell>{item.roleDescription || '-'}</TableCell>
-                            <TableCell>
-                              {item.featurePermissions && typeof item.featurePermissions === 'object'
-                                ? featureOptions
-                                    .map((feature) => `${feature}: ${item.featurePermissions[feature] || 'hide feature'}`)
-                                    .join(' | ')
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {item.pagePermissions && typeof item.pagePermissions === 'object' && Object.keys(item.pagePermissions).length > 0
-                                ? Object.entries(item.pagePermissions)
-                                    .map(([page, permission]) => `${page}: ${permission}`)
-                                    .join(' | ')
-                                : 'Inherit from feature'}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <DataGrid
+                  rows={savedRoleRows}
+                  columns={savedRoleColumns}
+                  disableSelectionOnClick
+                  density="compact"
+                  pageSizeOptions={[10, 25, 50]}
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 10 } },
+                    columnVisibilityModel: { id: false },
+                  }}
+                  onRowClick={(params) => handleEditSavedRole(params.row._originalData)}
+                  sx={{
+                    '& .MuiDataGrid-cell': {
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      fontSize: '0.875rem',
+                    },
+                    '& .MuiDataGrid-columnHeader': {
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontWeight: 700,
+                      borderBottom: 'none',
+                    },
+                    '& .MuiDataGrid-row': {
+                      cursor: 'pointer',
+                      '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
+                      '&:hover': { backgroundColor: '#e9ecef' },
+                    },
+                  }}
+                />
               </Paper>
             )}
           </CardContent>
@@ -906,56 +961,39 @@ export default function UserSetup({ user }) {
             </Box>
             {showSavedUsers && (
               <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                <TableContainer
-                  sx={{
-                    maxHeight: 360,
-                    overflowY: 'auto',
-                    overflowX: 'auto',
+                <DataGrid
+                  rows={savedUserRows}
+                  columns={savedUserColumns}
+                  disableSelectionOnClick
+                  density="compact"
+                  pageSizeOptions={[10, 25, 50]}
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 25 } },
+                    sorting: { sortModel: [{ field: 'companyName', sort: 'asc' }] },
+                    columnVisibilityModel: { id: false },
                   }}
-                >
-                  <Table stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>COMPANY</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>BRANCH</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>STAFF NUMBER</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>USER ID</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>USER NAME</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>ASSIGNED ROLE</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>USER TYPE</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {savedUsers.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                            NO USERS SAVED.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        savedUsers.map((item, index) => (
-                          <TableRow
-                            key={`${item.userId || 'user'}-${index}`}
-                            hover
-                            onClick={() => handleEditSavedUser(item)}
-                            sx={{
-                              cursor: 'pointer',
-                              bgcolor: editingUserId && editingUserId === item.userId ? 'primary.50' : 'inherit',
-                            }}
-                          >
-                            <TableCell>{item.companyName || '-'}</TableCell>
-                            <TableCell>{item.branch || '-'}</TableCell>
-                            <TableCell>{item.staffNumber || '-'}</TableCell>
-                            <TableCell>{item.userId || '-'}</TableCell>
-                            <TableCell>{item.userName || '-'}</TableCell>
-                            <TableCell>{item.baseRole || '-'}</TableCell>
-                            <TableCell>{item.userType || '-'}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                  onRowClick={(params) => handleEditSavedUser(params.row._originalData)}
+                  sx={{
+                    '& .MuiDataGrid-cell': {
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      fontSize: '0.875rem',
+                    },
+                    '& .MuiDataGrid-columnHeader': {
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontWeight: 700,
+                      borderBottom: 'none',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                    },
+                    '& .MuiDataGrid-row': {
+                      cursor: 'pointer',
+                      '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
+                      '&:hover': { backgroundColor: '#e9ecef' },
+                    },
+                  }}
+                />
               </Paper>
             )}
           </CardContent>

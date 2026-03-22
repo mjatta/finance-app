@@ -6,15 +6,10 @@ import {
   CardContent,
   MenuItem,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import accessControlData from '../../../data/access-control-groups.json';
 
 export default function AccessControlGroups({ user }) {
@@ -161,32 +156,28 @@ export default function AccessControlGroups({ user }) {
               User Groups
             </Typography>
           </Box>
-          <TableContainer sx={{ maxHeight: 320 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Group name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {groups.map((group) => (
-                  <TableRow
-                    key={group.id}
-                    hover
-                    onClick={() => {
-                      setSelectedGroupId(group.id);
-                      setMessage('');
-                    }}
-                    sx={{ cursor: 'pointer', bgcolor: selectedGroupId === group.id ? 'primary.50' : 'inherit' }}
-                  >
-                    <TableCell>{group.groupName}</TableCell>
-                    <TableCell>{group.description}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 320, width: '100%' }}>
+            <DataGrid
+              rows={groups.map((g) => ({ ...g }))}
+              columns={[
+                { field: 'groupName', headerName: 'Group Name', flex: 1, minWidth: 120 },
+                { field: 'description', headerName: 'Description', flex: 1, minWidth: 150 },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              onRowClick={(params) => { setSelectedGroupId(params.row.id); setMessage(''); }}
+              getRowClassName={(params) => params.row.id === selectedGroupId ? 'selected-group' : ''}
+              sx={{
+                cursor: 'pointer',
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+                '& .selected-group': { backgroundColor: '#cfe2ff !important' },
+              }}
+            />
+          </div>
         </Paper>
 
         <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -195,37 +186,28 @@ export default function AccessControlGroups({ user }) {
               Users in selected group{selectedGroup ? ` (${selectedGroup.groupName})` : ''}
             </Typography>
           </Box>
-          <TableContainer sx={{ maxHeight: 320 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Username</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Full name</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {usersInSelectedGroup.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                      No users in this group.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  usersInSelectedGroup.map((entry) => (
-                    <TableRow
-                      key={entry.id}
-                      hover
-                      onClick={() => setSelectedUserId(entry.id)}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      <TableCell>{entry.username}</TableCell>
-                      <TableCell>{entry.fullName}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 320, width: '100%' }}>
+            <DataGrid
+              rows={usersInSelectedGroup.map((u) => ({ ...u }))}
+              columns={[
+                { field: 'username', headerName: 'Username', flex: 1, minWidth: 120 },
+                { field: 'fullName', headerName: 'Full Name', flex: 1, minWidth: 150 },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              onRowClick={(params) => setSelectedUserId(params.row.id)}
+              getRowClassName={(params) => params.row.id === selectedUserId ? 'selected-user' : ''}
+              sx={{
+                cursor: 'pointer',
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+                '& .selected-user': { backgroundColor: '#cfe2ff !important' },
+              }}
+            />
+          </div>
         </Paper>
 
         <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -234,24 +216,24 @@ export default function AccessControlGroups({ user }) {
               System Roles
             </Typography>
           </Box>
-          <TableContainer sx={{ maxHeight: 320 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Role name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {roles.map((role) => (
-                  <TableRow key={role.id} hover>
-                    <TableCell>{role.roleName}</TableCell>
-                    <TableCell>{role.description}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 320, width: '100%' }}>
+            <DataGrid
+              rows={roles.map((r) => ({ ...r }))}
+              columns={[
+                { field: 'roleName', headerName: 'Role Name', flex: 1, minWidth: 120 },
+                { field: 'description', headerName: 'Description', flex: 1, minWidth: 150 },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </div>
         </Paper>
       </Box>
     </Box>

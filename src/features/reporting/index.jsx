@@ -7,14 +7,9 @@ import {
   Chip,
   Grid,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 
 const reportSamples = [
   {
@@ -110,34 +105,36 @@ export default function Reporting() {
             </Box>
           </Box>
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Report ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Report Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Frequency</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Format</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reportSamples.map((report) => (
-                  <TableRow key={report.id} hover>
-                    <TableCell>{report.id}</TableCell>
-                    <TableCell>{report.name}</TableCell>
-                    <TableCell>{report.category}</TableCell>
-                    <TableCell>{report.frequency}</TableCell>
-                    <TableCell>{report.format}</TableCell>
-                    <TableCell>
-                      <Chip label={report.status} size="small" color="success" variant="outlined" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 350, width: '100%' }}>
+            <DataGrid
+              rows={reportSamples.map((r) => ({ ...r }))}
+              columns={[
+                { field: 'id', headerName: 'Report ID', flex: 0.8, minWidth: 90 },
+                { field: 'name', headerName: 'Report Name', flex: 1.5, minWidth: 180 },
+                { field: 'category', headerName: 'Category', flex: 0.8, minWidth: 90 },
+                { field: 'frequency', headerName: 'Frequency', flex: 0.8, minWidth: 90 },
+                { field: 'format', headerName: 'Format', flex: 0.9, minWidth: 100 },
+                {
+                  field: 'status',
+                  headerName: 'Status',
+                  flex: 0.7,
+                  minWidth: 80,
+                  renderCell: (params) => (
+                    <Chip label={params.value} size="small" color="success" variant="outlined" />
+                  ),
+                },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -147,30 +144,27 @@ export default function Reporting() {
             Analytics Samples (Monthly Performance)
           </Typography>
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Month</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Loan Disbursed</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Collection</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>New Members</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>PAR 30+</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {monthlyPerformance.map((row) => (
-                  <TableRow key={row.month} hover>
-                    <TableCell>{row.month}</TableCell>
-                    <TableCell>{row.disbursed}</TableCell>
-                    <TableCell>{row.collected}</TableCell>
-                    <TableCell>{row.newMembers}</TableCell>
-                    <TableCell>{row.par30}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div style={{ height: 300, width: '100%' }}>
+            <DataGrid
+              rows={monthlyPerformance.map((r, idx) => ({ id: idx, ...r }))}
+              columns={[
+                { field: 'month', headerName: 'Month', flex: 0.7, minWidth: 80 },
+                { field: 'disbursed', headerName: 'Loan Disbursed', flex: 1, minWidth: 120 },
+                { field: 'collected', headerName: 'Collection', flex: 1, minWidth: 110 },
+                { field: 'newMembers', headerName: 'New Members', flex: 1, minWidth: 110 },
+                { field: 'par30', headerName: 'PAR 30+', flex: 0.8, minWidth: 90 },
+              ]}
+              pageSizeOptions={[10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              density="compact"
+              sx={{
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </Box>

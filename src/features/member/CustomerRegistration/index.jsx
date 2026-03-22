@@ -11,17 +11,12 @@ import {
   MenuItem,
   Radio,
   RadioGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tab,
   Tabs,
   TextField,
   Typography,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function CustomerRegistration({ user }) {
@@ -1018,23 +1013,24 @@ export default function CustomerRegistration({ user }) {
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
                         Product DataGrid
                       </Typography>
-                      <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 700 }}>Product Name</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Account Number</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell colSpan={2} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                                No records.
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      <div style={{ height: 200, width: '100%' }}>
+                        <DataGrid
+                          rows={[]}
+                          columns={[
+                            { field: 'productName', headerName: 'Product Name', flex: 1, minWidth: 140 },
+                            { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 140 },
+                          ]}
+                          pageSizeOptions={[10, 25]}
+                          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+                          density="compact"
+                          sx={{
+                            '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                            '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                            '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+                          }}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 </Box>
@@ -1161,47 +1157,62 @@ export default function CustomerRegistration({ user }) {
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
                         References List
                       </Typography>
-                      <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Address</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Mobile Phone</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Email Address</TableCell>
-                              <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>Action</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {references.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={5} sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                                  No references added yet.
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              references.map((ref) => (
-                                <TableRow key={ref.id} hover>
-                                  <TableCell>{ref.name}</TableCell>
-                                  <TableCell>{ref.address}</TableCell>
-                                  <TableCell>{ref.mobilePhone}</TableCell>
-                                  <TableCell>{ref.emailAddress}</TableCell>
-                                  <TableCell sx={{ textAlign: 'center' }}>
-                                    <Button
-                                      variant="outlined"
-                                      color="error"
-                                      size="small"
-                                      onClick={() => handleRemoveReference(ref.id)}
-                                    >
-                                      Remove
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      {references.length === 0 ? (
+                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                          No references added yet.
+                        </Typography>
+                      ) : (
+                        <div style={{ height: 400, width: '100%' }}>
+                          <DataGrid
+                            rows={references.map((ref) => ({
+                              ...ref,
+                              id: ref.id || `ref-${Date.now()}`,
+                            }))}
+                            columns={[
+                              { field: 'name', headerName: 'Name', flex: 1, minWidth: 120 },
+                              { field: 'address', headerName: 'Address', flex: 1, minWidth: 120 },
+                              { field: 'mobilePhone', headerName: 'Mobile Phone', flex: 1, minWidth: 120 },
+                              { field: 'emailAddress', headerName: 'Email Address', flex: 1, minWidth: 150 },
+                              {
+                                field: 'action',
+                                headerName: 'Action',
+                                flex: 0.8,
+                                minWidth: 100,
+                                sortable: false,
+                                renderCell: (params) => (
+                                  <Button
+                                    variant="outlined"
+                                    color="error"
+                                    size="small"
+                                    onClick={() => handleRemoveReference(params.row.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                ),
+                              },
+                            ]}
+                            pageSizeOptions={[10, 25, 50]}
+                            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+                            density="compact"
+                            sx={{
+                              '& .MuiDataGrid-columnHeader': {
+                                backgroundColor: 'primary.main',
+                                color: 'primary.contrastText',
+                                fontWeight: 700,
+                              },
+                              '& .MuiDataGrid-row:nth-of-type(even)': {
+                                backgroundColor: '#f8f9fa',
+                              },
+                              '& .MuiDataGrid-row:hover': {
+                                backgroundColor: '#e9ecef',
+                              },
+                              '& .MuiDataGrid-cell': {
+                                borderColor: '#dee2e6',
+                              },
+                            }}
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </Box>
