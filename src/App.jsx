@@ -428,6 +428,7 @@ function App() {
             {/* App header with logo, username and logout */}
             <Box
               component="header"
+              className="app-top-header"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -461,7 +462,7 @@ function App() {
               </Button>
             </Box>
 
-            <header>
+            <header className="app-top-nav-wrap">
               <nav>
                 <ul className="top-nav">
                   <li>
