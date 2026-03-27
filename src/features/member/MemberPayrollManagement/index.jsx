@@ -15,6 +15,8 @@ import {
   Chip,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -298,12 +300,10 @@ export default function MemberPayrollManagement() {
                 <MenuItem value="main-cash">Main Cash</MenuItem>
                 <MenuItem value="payroll-clearing">Payroll Clearing</MenuItem>
               </TextField>
-              <TextField
+              <DatePicker
                 label="Process Date"
-                type="date"
-                value={processDate}
-                onChange={(e) => setProcessDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                value={processDate ? dayjs(processDate) : null}
+                onChange={(value) => setProcessDate(value ? value.format('YYYY-MM-DD') : '')}
               />
             </Box>
           </CardContent>

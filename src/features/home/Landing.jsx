@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -13,6 +12,10 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import InsightsIcon from '@mui/icons-material/Insights';
+import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
+import ManRoundedIcon from '@mui/icons-material/ManRounded';
+import WomanRoundedIcon from '@mui/icons-material/WomanRounded';
+import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
 
 const categories = [
   {
@@ -53,42 +56,91 @@ const categories = [
   },
 ];
 
-const dashboardStats = [
-  {
-    label: 'Active Members',
-    value: '2,450',
-    helper: '12% growth this quarter',
-    accent: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
-    icon: <GroupIcon sx={{ color: 'white', fontSize: 26 }} />,
-  },
-  {
-    label: 'Loan Portfolio',
-    value: 'D 18.6M',
-    helper: 'Healthy performing balance',
-    accent: 'linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)',
-    icon: <AccountBalanceWalletIcon sx={{ color: 'white', fontSize: 26 }} />,
-  },
-  {
-    label: 'Collections Today',
-    value: 'D 96,300',
-    helper: 'Strong branch collection pace',
-    accent: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
-    icon: <CalculateIcon sx={{ color: 'white', fontSize: 26 }} />,
-  },
-  {
-    label: 'Pending Approvals',
-    value: '14',
-    helper: 'Awaiting review across teams',
-    accent: 'linear-gradient(135deg, #7c2d12 0%, #f97316 100%)',
-    icon: <InsightsIcon sx={{ color: 'white', fontSize: 26 }} />,
-  },
-];
+const DASHBOARD_SUMMARY_URL = 'http://alakuyateh-001-site10.atempurl.com/api/dashboard/summary?compId=30';
+
+const defaultMembersSummary = {
+  male: 2025,
+  female: 580,
+  group: 421,
+  total: 3026,
+};
+
+const toCount = (value) => {
+  if (typeof value === 'number') return value;
+  const parsed = Number(String(value ?? '0').replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatCount = (value) => toCount(value).toLocaleString();
 
 export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
+  const [membersSummary, setMembersSummary] = useState(defaultMembersSummary);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSummary = async () => {
+      try {
+        const response = await fetch(DASHBOARD_SUMMARY_URL);
+        if (!response.ok || !isMounted) return;
+
+        const payload = await response.json();
+        const members = payload?.data?.members;
+        if (!members || !isMounted) return;
+
+        setMembersSummary({
+          male: toCount(members.male),
+          female: toCount(members.female),
+          group: toCount(members.group),
+          total: toCount(members.total),
+        });
+      } catch {
+        // keep fallback values if endpoint is unavailable
+      }
+    };
+
+    loadSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const visibleCategories =
     allowedFeatures.length > 0
       ? categories.filter((cat) => allowedFeatures.includes(cat.key))
       : categories;
+
+  const dashboardStats = [
+    {
+      label: 'Active Members',
+      value: formatCount(membersSummary.total),
+      helper: 'Total members',
+      accent: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+      icon: <Groups2RoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
+    },
+    {
+      label: 'Male',
+      value: formatCount(membersSummary.male),
+      helper: 'Male members',
+      accent: 'linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)',
+      icon: <ManRoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
+    },
+    {
+      label: 'Female',
+      value: formatCount(membersSummary.female),
+      helper: 'Female members',
+      accent: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
+      icon: <WomanRoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
+    },
+    {
+      label: 'Group',
+      value: formatCount(membersSummary.group),
+      helper: 'Group members',
+      accent: 'linear-gradient(135deg, #7c2d12 0%, #f97316 100%)',
+      icon: <Diversity3RoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
+    },
+  ];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f6f8fc' }}>
@@ -129,26 +181,7 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
         >
           <CardContent sx={{ p: { xs: 2.5, md: 4 }, position: 'relative', zIndex: 1 }}>
             <Stack spacing={1.5}>
-              <Chip
-                label="Social Development Fund"
-                sx={{
-                  alignSelf: 'flex-start',
-                  height: 30,
-                  px: 0.5,
-                  bgcolor: 'rgba(255,255,255,0.14)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                  backdropFilter: 'blur(8px)',
-                  '& .MuiChip-label': {
-                    px: 0.9,
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                  },
-                }}
-              />
-              <Box sx={{ display: 'grid', gap: 1.25, maxWidth: 820 }}>
+              <Box sx={{ display: 'grid', gap: 1.25, width: '100%' }}>
                 <Typography
                   variant="h4"
                   sx={{
@@ -156,20 +189,10 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
                     lineHeight: 1.1,
                     letterSpacing: '-0.03em',
                     fontSize: { xs: '1.55rem', md: '2.3rem' },
+                    textAlign: 'center',
                   }}
                 >
                   Welcome to the Social Development Fund operations dashboard
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    maxWidth: 640,
-                    color: 'rgba(255,255,255,0.84)',
-                    lineHeight: 1.7,
-                    fontSize: { xs: '0.9rem', md: '0.98rem' },
-                  }}
-                >
-                  Manage daily activity across members, finance, processing, and reporting from one unified workspace.
                 </Typography>
               </Box>
             </Stack>

@@ -11,17 +11,44 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function SubscriptionProcessing() {
   const [processingDate, setProcessingDate] = useState('');
-  const [branch, setBranch] = useState('All Branches');
+  const [branch, setBranch] = useState('');
+  const [branches, setBranches] = useState([]);
   const [subscriptionType, setSubscriptionType] = useState('All');
   const [rows, setRows] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
     let isMounted = true;
+
+    const loadBranches = async () => {
+      try {
+        const response = await fetch('/api/remote-branches/branches');
+        if (!response.ok || !isMounted) {
+          return;
+        }
+
+        const payload = await response.json();
+        const branchOptions = Array.from(
+          new Set(
+            (Array.isArray(payload) ? payload : [])
+              .map((item) => (item?.br_name || item?.branchName || item?.name || '').toString().trim())
+              .filter(Boolean),
+          ),
+        );
+
+        setBranches(branchOptions);
+      } catch {
+        if (isMounted) {
+          setBranches([]);
+        }
+      }
+    };
 
     const loadRows = async () => {
       try {
@@ -39,6 +66,7 @@ export default function SubscriptionProcessing() {
       }
     };
 
+    loadBranches();
     loadRows();
 
     return () => {
@@ -50,7 +78,7 @@ export default function SubscriptionProcessing() {
     const nextRow = {
       id: `sub-${Date.now()}`,
       memberNo: `MBR-${String((rows.length + 1) * 37).padStart(4, '0')}`,
-      name: `${branch === 'All Branches' ? 'Batch' : branch} Member`,
+      name: `${branch || 'Batch'} Member`,
       product: subscriptionType === 'All' ? 'Monthly Savings' : subscriptionType,
       expected: subscriptionType === 'Group Subscription' ? 'GMD 750' : 'GMD 500',
       status: processingDate ? `Processed ${processingDate}` : 'Processed',
@@ -106,21 +134,29 @@ export default function SubscriptionProcessing() {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12} md={3}>
-              <TextField
+              <DatePicker
                 label="Processing Date"
-                type="date"
-                fullWidth
-                value={processingDate}
-                onChange={(event) => setProcessingDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
+                value={processingDate ? dayjs(processingDate) : null}
+                onChange={(value) => setProcessingDate(value ? value.format('YYYY-MM-DD') : '')}
+                slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
             <Grid item xs={12} md={3}>
-              <TextField select label="Branch" fullWidth value={branch} onChange={(event) => setBranch(event.target.value)}>
-                <MenuItem value="All Branches">All Branches</MenuItem>
-                <MenuItem value="Banjul Main">Banjul Main</MenuItem>
-                <MenuItem value="Serekunda">Serekunda</MenuItem>
-                <MenuItem value="Brikama">Brikama</MenuItem>
+              <TextField
+                select
+                label="Branch"
+                fullWidth
+                value={branch}
+                onChange={(event) => setBranch(event.target.value)}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => selected || 'Select branch',
+                }}
+              >
+                <MenuItem value="" disabled>Select branch</MenuItem>
+                {branches.map((item) => (
+                  <MenuItem key={item} value={item}>{item}</MenuItem>
+                ))}
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>

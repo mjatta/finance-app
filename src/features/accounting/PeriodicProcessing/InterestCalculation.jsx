@@ -11,6 +11,8 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function InterestCalculation() {
@@ -111,13 +113,11 @@ export default function InterestCalculation() {
         <CardContent>
           <Grid container spacing={2}>
             <Grid item xs={12} md={3}>
-              <TextField
+              <DatePicker
                 label="Interest Date"
-                type="date"
-                fullWidth
-                value={interestDate}
-                onChange={(event) => setInterestDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
+                value={interestDate ? dayjs(interestDate) : null}
+                onChange={(value) => setInterestDate(value ? value.format('YYYY-MM-DD') : '')}
+                slotProps={{ textField: { fullWidth: true } }}
               />
             </Grid>
             <Grid item xs={12} md={3}>

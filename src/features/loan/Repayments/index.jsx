@@ -61,7 +61,7 @@ export default function Repayments({ user }) {
   ];
 
   const headerLabels = {
-    memberCode: 'Member Code',
+    memberCode: 'Customer Code',
     loanAccountNumber: 'Loan Account No',
     repaymentDate: 'Repayment Date',
     paymentType: 'Payment Type',
@@ -177,7 +177,7 @@ export default function Repayments({ user }) {
   const validate = (data) => {
     const nextErrors = {};
     if (!data.memberCode.trim()) {
-      nextErrors.memberCode = 'Member Code is required';
+      nextErrors.memberCode = 'Customer Code is required';
     }
     if (!data.loanAccountNumber.trim()) {
       nextErrors.loanAccountNumber = 'Loan Account Number is required';
@@ -542,7 +542,7 @@ export default function Repayments({ user }) {
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 <TextField
-                  label="Member Code"
+                  label="Customer Code"
                   name="memberCode"
                   value={formData.memberCode}
                   onChange={handleChange}

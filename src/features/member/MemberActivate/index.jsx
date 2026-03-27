@@ -59,7 +59,7 @@ export default function MemberActivate() {
         setStatusError(false);
       } else {
         setFormData((prev) => ({ ...prev, firstName: '', middleName: '', lastName: '' }));
-        setStatusMessage('Member ID not found.');
+        setStatusMessage('Customer code not found.');
         setStatusError(true);
       }
     } catch {
@@ -123,7 +123,7 @@ export default function MemberActivate() {
         <CardContent>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             <TextField
-              label="Member ID"
+              label="Customer Code"
               name="memberId"
               value={formData.memberId}
               onChange={handleChange}

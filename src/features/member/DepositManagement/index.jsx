@@ -11,6 +11,8 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
@@ -175,6 +177,13 @@ export default function DepositManagement() {
     }));
   };
 
+  const handleDateChange = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value ? value.format('YYYY-MM-DD') : '',
+    }));
+  };
+
   const handleSelectRow = (rowId) => {
     setRows((prevRows) => {
       const nextRows = prevRows.map((row) => ({ ...row, selected: row.id === rowId }));
@@ -313,7 +322,7 @@ export default function DepositManagement() {
 
     const now = new Date().toLocaleString();
     const infoRows = [
-      ['Member Code', formData.memberCode || '-'],
+      ['Customer Code', formData.memberCode || '-'],
       ['Payroll Number', formData.payrollNumber || '-'],
       ['Account Type', selectedRow.accountType || '-'],
       ['Account Number', selectedRow.accountNumber || '-'],
@@ -468,7 +477,7 @@ export default function DepositManagement() {
             </Typography>
             <Box sx={{ display: 'grid', gap: 2 }}>
               <TextField
-                label="Member Code"
+                label="Customer Code"
                 name="memberCode"
                 value={formData.memberCode}
                 onChange={handleChange}
@@ -582,14 +591,12 @@ export default function DepositManagement() {
               control={<Checkbox name="printReceipt" checked={formData.printReceipt} onChange={handleChange} />}
               label="Check to print receipt"
             />
-            <TextField
+            <DatePicker
               label="Transaction Date"
-              name="transactionDate"
-              type="date"
-              value={formData.transactionDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ max: todayIso }}
+              value={formData.transactionDate ? dayjs(formData.transactionDate) : null}
+              onChange={(value) => handleDateChange('transactionDate', value)}
+              maxDate={dayjs(todayIso)}
+              slotProps={{ textField: { name: 'transactionDate' } }}
             />
 
             <FormControlLabel
@@ -609,14 +616,12 @@ export default function DepositManagement() {
             <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} />
 
             <TextField label="Check Number" name="checkNumber" value={formData.checkNumber} onChange={handleChange} />
-            <TextField
+            <DatePicker
               label="Check Date"
-              name="checkDate"
-              type="date"
-              value={formData.checkDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ max: todayIso }}
+              value={formData.checkDate ? dayjs(formData.checkDate) : null}
+              onChange={(value) => handleDateChange('checkDate', value)}
+              maxDate={dayjs(todayIso)}
+              slotProps={{ textField: { name: 'checkDate' } }}
             />
           </Box>
 
@@ -639,7 +644,7 @@ export default function DepositManagement() {
 
           {rows.length === 0 ? (
             <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-              Search by Member Code or Payroll Number to load Regular and Saving accounts.
+              Search by Customer Code or Payroll Number to load Regular and Saving accounts.
             </Typography>
           ) : (
             <div style={{ height: 300, width: '100%' }}>

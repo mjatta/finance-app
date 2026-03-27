@@ -10,6 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 
 export default function Reprint() {
@@ -282,21 +284,17 @@ export default function Reprint() {
               onChange={(e) => setMemberId(e.target.value)}
               sx={{ flex: '1 1 240px', minWidth: 220 }}
             />
-            <TextField
+            <DatePicker
               label="From Date"
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flex: '1 1 220px', minWidth: 200 }}
+              value={fromDate ? dayjs(fromDate) : null}
+              onChange={(value) => setFromDate(value ? value.format('YYYY-MM-DD') : '')}
+              slotProps={{ textField: { sx: { flex: '1 1 220px', minWidth: 200 } } }}
             />
-            <TextField
+            <DatePicker
               label="To Date"
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ flex: '1 1 220px', minWidth: 200 }}
+              value={toDate ? dayjs(toDate) : null}
+              onChange={(value) => setToDate(value ? value.format('YYYY-MM-DD') : '')}
+              slotProps={{ textField: { sx: { flex: '1 1 220px', minWidth: 200 } } }}
             />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Button variant="contained" onClick={runSearch}>

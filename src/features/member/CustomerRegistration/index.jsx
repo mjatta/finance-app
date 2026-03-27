@@ -17,6 +17,8 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function CustomerRegistration({ user }) {
@@ -31,13 +33,13 @@ export default function CustomerRegistration({ user }) {
   const [institutionBranches, setInstitutionBranches] = useState([]);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
-  const [references, setReferences] = useState([]);
+  const [additionalReferences, setAdditionalReferences] = useState([]);
+  const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
   const [formData, setFormData] = useState({
     institutionType: 'corporate',
     institutionName: '',
     institutionNature: '',
     institutionMemberCode: '',
-    institutionCreditUnion: '',
     institutionBranch: '',
     institutionIncoporationNumber: '',
     institutionTIN: '',
@@ -47,12 +49,10 @@ export default function CustomerRegistration({ user }) {
     institutionDistrict: '',
     institutionWard: '',
     institutionResidency: 'resident',
-    institutionMembershipType: 'conventional-member',
     firstName: '',
     middleName: '',
     surname: '',
     memberCode: '',
-    creditUnion: '',
     branch: '',
     memberEmployed: false,
     sendSms: false,
@@ -63,9 +63,6 @@ export default function CustomerRegistration({ user }) {
     levelOfEducation: '',
     dateOfBirth: '',
     dateJoined: '',
-    payChildrenEducation: false,
-    provideFoodForFamily: false,
-    dependance: false,
     gender: '',
     maritalStatus: '',
     idType: '',
@@ -114,7 +111,6 @@ export default function CustomerRegistration({ user }) {
     accountSignatory: '',
     deductedFromSourcePayroll: false,
     residency: 'resident',
-    membershipType: 'conventional-member',
     // Institution board members
     chairName: '',
     chairTIN: '',
@@ -263,6 +259,15 @@ export default function CustomerRegistration({ user }) {
     }));
   };
 
+  const handleDateChange = (name, value) => {
+    setStatusMessage('');
+    setStatusError(false);
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value ? value.format('YYYY-MM-DD') : '',
+    }));
+  };
+
   const handleBiometricFileChange = (fieldName, event) => {
     const selectedFile = event.target.files?.[0] || null;
     setStatusMessage('');
@@ -320,39 +325,42 @@ export default function CustomerRegistration({ user }) {
     }));
   };
 
-  const handleAddReference = () => {
-    const { referenceDetailsName, referenceDetailsAddress, referenceDetailsMobilePhone, referenceDetailsEmailAddress } = formData;
-
-    if (!referenceDetailsName.trim() || !referenceDetailsAddress.trim() || !referenceDetailsMobilePhone.trim() || !referenceDetailsEmailAddress.trim()) {
-      setStatusMessage('Please fill all reference details fields.');
-      setStatusError(true);
-      return;
-    }
-
-    const newReference = {
-      id: Date.now(),
-      name: referenceDetailsName,
-      address: referenceDetailsAddress,
-      mobilePhone: referenceDetailsMobilePhone,
-      emailAddress: referenceDetailsEmailAddress,
-    };
-
-    setReferences((prev) => [...prev, newReference]);
-    
-    setFormData((prev) => ({
+  const handleAddReferenceCard = () => {
+    setAdditionalReferences((prev) => [
       ...prev,
-      referenceDetailsName: '',
-      referenceDetailsAddress: '',
-      referenceDetailsMobilePhone: '',
-      referenceDetailsEmailAddress: '',
-    }));
-
-    setStatusMessage('Reference added successfully.');
-    setStatusError(false);
+      {
+        id: Date.now(),
+        name: '',
+        address: '',
+        mobilePhone: '',
+        emailAddress: '',
+      },
+    ]);
   };
 
-  const handleRemoveReference = (id) => {
-    setReferences((prev) => prev.filter((ref) => ref.id !== id));
+  const handleAdditionalReferenceChange = (id, field, value) => {
+    setAdditionalReferences((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleAddNextOfKinCard = () => {
+    setAdditionalNextOfKins((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: '',
+        address: '',
+        relationship: '',
+        mobilePhone: '',
+      },
+    ]);
+  };
+
+  const handleAdditionalNextOfKinChange = (id, field, value) => {
+    setAdditionalNextOfKins((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
   };
 
   const handleSave = async () => {
@@ -365,8 +373,36 @@ export default function CustomerRegistration({ user }) {
     setStatusError(false);
 
     try {
+      const references = [
+        {
+          name: formData.referenceDetailsName,
+          address: formData.referenceDetailsAddress,
+          mobilePhone: formData.referenceDetailsMobilePhone,
+          emailAddress: formData.referenceDetailsEmailAddress,
+        },
+        ...additionalReferences,
+      ].filter((item) =>
+        [item.name, item.address, item.mobilePhone, item.emailAddress]
+          .some((value) => String(value || '').trim().length > 0),
+      );
+
+      const nextOfKins = [
+        {
+          name: formData.nextOfKinName,
+          address: formData.nextOfKinAddress,
+          relationship: formData.nextOfKinRelationship,
+          mobilePhone: formData.nextOfKinMobilePhone,
+        },
+        ...additionalNextOfKins,
+      ].filter((item) =>
+        [item.name, item.address, item.relationship, item.mobilePhone]
+          .some((value) => String(value || '').trim().length > 0),
+      );
+
       const payload = {
         ...formData,
+        references,
+        nextOfKins,
         createdAt: new Date().toISOString(),
       };
 
@@ -431,7 +467,7 @@ export default function CustomerRegistration({ user }) {
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
-        Customer Registration / Individual / Listing
+        Registration Individual or Institution
       </Typography>
 
       {statusMessage && (
@@ -472,9 +508,27 @@ export default function CustomerRegistration({ user }) {
                     <TextField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
                     <TextField label="Middle Name" name="middleName" value={formData.middleName} onChange={handleChange} />
                     <TextField label="Surname" name="surname" value={formData.surname} onChange={handleChange} />
-                    <TextField label="Member Code" name="memberCode" value={formData.memberCode} onChange={handleChange} />
-                    <TextField label="Credit Union" name="creditUnion" value={formData.creditUnion} onChange={handleChange} />
-                    <TextField label="Branch" name="branch" value={formData.branch} onChange={handleChange} />
+                    <TextField label="Customer Code" name="memberCode" value={formData.memberCode} onChange={handleChange} />
+                    <TextField
+                      select
+                      label="Branch"
+                      name="branch"
+                      value={formData.branch}
+                      onChange={handleChange}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select branch',
+                      }}
+                    >
+                      <MenuItem value="" disabled>
+                        Select branch
+                      </MenuItem>
+                      {institutionBranches.map((item) => (
+                        <MenuItem key={item} value={item}>
+                          {item}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Box>
 
                   <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -494,15 +548,11 @@ export default function CustomerRegistration({ user }) {
                 </>
               ) : (
                 <Box sx={{ display: 'grid', gap: 2 }}>
-                  <FormControl>
-                    <FormLabel>Institution Type</FormLabel>
-                    <RadioGroup row name="institutionType" value={formData.institutionType} onChange={handleChange}>
-                      <FormControlLabel value="corporate" control={<Radio />} label="Corporate" />
-                      <FormControlLabel value="group" control={<Radio />} label="Group" />
-                    </RadioGroup>
-                  </FormControl>
-
-                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                    <TextField select label="Institution Type" name="institutionType" value={formData.institutionType} onChange={handleChange}>
+                      <MenuItem value="corporate">Corporate</MenuItem>
+                      <MenuItem value="group">Group</MenuItem>
+                    </TextField>
                     <TextField label="Name" name="institutionName" value={formData.institutionName} onChange={handleChange} />
                     <TextField select label="Nature" name="institutionNature" value={formData.institutionNature} onChange={handleChange}>
                       <MenuItem value="">Select nature</MenuItem>
@@ -511,10 +561,19 @@ export default function CustomerRegistration({ user }) {
                       <MenuItem value="ngo">NGO</MenuItem>
                       <MenuItem value="cooperative">Cooperative</MenuItem>
                     </TextField>
-                    <TextField label="Member Code" name="institutionMemberCode" value={formData.institutionMemberCode} onChange={handleChange} />
-                    <TextField label="Credit Union" name="institutionCreditUnion" value={formData.institutionCreditUnion} onChange={handleChange} />
-                    <TextField select label="Branch" name="institutionBranch" value={formData.institutionBranch} onChange={handleChange}>
-                      <MenuItem value="">Select branch</MenuItem>
+                    <TextField label="Customer Code" name="institutionMemberCode" value={formData.institutionMemberCode} onChange={handleChange} />
+                    <TextField
+                      select
+                      label="Branch"
+                      name="institutionBranch"
+                      value={formData.institutionBranch}
+                      onChange={handleChange}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select branch',
+                      }}
+                    >
+                      <MenuItem value="" disabled>Select branch</MenuItem>
                       {institutionBranches.map((item) => (
                         <MenuItem key={item} value={item}>
                           {item}
@@ -553,7 +612,7 @@ export default function CustomerRegistration({ user }) {
                           Info
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField select label="Country" name="country" value={formData.country} onChange={handleChange}>
+                          <TextField select label="Country of Residence" name="country" value={formData.country} onChange={handleChange}>
                             <MenuItem value="">Select country</MenuItem>
                             <MenuItem value="gambia">Gambia</MenuItem>
                             <MenuItem value="senegal">Senegal</MenuItem>
@@ -584,15 +643,6 @@ export default function CustomerRegistration({ user }) {
                               <FormControlLabel value="non-resident" control={<Radio />} label="Non Residence" />
                             </RadioGroup>
                           </FormControl>
-
-                          <FormControl sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
-                            <FormLabel>Member Type</FormLabel>
-                            <RadioGroup row name="institutionMembershipType" value={formData.institutionMembershipType} onChange={handleChange}>
-                              <FormControlLabel value="conventional-member" control={<Radio />} label="Conventional Member" />
-                              <FormControlLabel value="sharia-member" control={<Radio />} label="Sharia Member" />
-                              <FormControlLabel value="both" control={<Radio />} label="Both" />
-                            </RadioGroup>
-                          </FormControl>
                         </Box>
                       </CardContent>
                     </Card>
@@ -615,21 +665,19 @@ export default function CustomerRegistration({ user }) {
                             value={formData.institutionTIN}
                             onChange={handleChange}
                           />
-                          <TextField
+                          <DatePicker
                             label="Incoporation date"
-                            type="date"
-                            name="institutionIncoporationDate"
-                            value={formData.institutionIncoporationDate}
-                            onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
+                            value={formData.institutionIncoporationDate ? dayjs(formData.institutionIncoporationDate) : null}
+                            onChange={(value) => handleDateChange('institutionIncoporationDate', value)}
+                            disableFuture
+                            slotProps={{ textField: { name: 'institutionIncoporationDate' } }}
                           />
-                          <TextField
+                          <DatePicker
                             label="Date joined"
-                            type="date"
-                            name="institutionDateJoined"
-                            value={formData.institutionDateJoined}
-                            onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
+                            value={formData.institutionDateJoined ? dayjs(formData.institutionDateJoined) : null}
+                            onChange={(value) => handleDateChange('institutionDateJoined', value)}
+                            disableFuture
+                            slotProps={{ textField: { name: 'institutionDateJoined' } }}
                           />
                           <TextField
                             select
@@ -679,109 +727,92 @@ export default function CustomerRegistration({ user }) {
                     </Card>
                   </Box>
                 ) : (
-                  <Box>
-                    <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
-                      <TextField label="Title" name="title" value={formData.title} onChange={handleChange} />
-                      <TextField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} />
-                      <TextField label="Tribe" name="tribe" value={formData.tribe} onChange={handleChange} />
-                      <TextField label="Level of Education" name="levelOfEducation" value={formData.levelOfEducation} onChange={handleChange} />
-                      <TextField
-                        label="Date of Birth"
-                        name="dateOfBirth"
-                        type="date"
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        label="Date Joined"
-                        name="dateJoined"
-                        type="date"
-                        value={formData.dateJoined}
-                        onChange={handleChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Box>
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                    <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                          Personal Profile
+                        </Typography>
+                        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                          <TextField label="Title" name="title" value={formData.title} onChange={handleChange} />
+                          <TextField select label="Gender" name="gender" value={formData.gender} onChange={handleChange}>
+                            <MenuItem value="male">Male</MenuItem>
+                            <MenuItem value="female">Female</MenuItem>
+                            <MenuItem value="other">Other</MenuItem>
+                          </TextField>
+                          <TextField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} />
+                          <TextField label="Tribe" name="tribe" value={formData.tribe} onChange={handleChange} />
+                          <TextField label="Level of Education" name="levelOfEducation" value={formData.levelOfEducation} onChange={handleChange} />
+                          <TextField select label="Marital status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange}>
+                            <MenuItem value="single">Single</MenuItem>
+                            <MenuItem value="married">Married</MenuItem>
+                            <MenuItem value="divorced">Divorced</MenuItem>
+                            <MenuItem value="widowed">Widowed</MenuItem>
+                          </TextField>
+                          <DatePicker
+                            label="Date of Birth"
+                            value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
+                            onChange={(value) => handleDateChange('dateOfBirth', value)}
+                            disableFuture
+                            slotProps={{ textField: { name: 'dateOfBirth' } }}
+                          />
+                          <DatePicker
+                            label="Date Joined"
+                            value={formData.dateJoined ? dayjs(formData.dateJoined) : null}
+                            onChange={(value) => handleDateChange('dateJoined', value)}
+                            disableFuture
+                            slotProps={{ textField: { name: 'dateJoined' } }}
+                          />
+                          <TextField select label="Income Range" name="povertyLevel" value={formData.povertyLevel} onChange={handleChange}>
+                            <MenuItem value="0-5000">0 - 5,000</MenuItem>
+                            <MenuItem value="5001-10000">5,001 - 10,000</MenuItem>
+                            <MenuItem value="10001-25000">10,001 - 25,000</MenuItem>
+                            <MenuItem value="25001-50000">25,001 - 50,000</MenuItem>
+                            <MenuItem value="50001+">50,001+</MenuItem>
+                          </TextField>
+                          <FormControl sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
+                            <FormLabel>Resident Type</FormLabel>
+                            <RadioGroup row name="residency" value={formData.residency} onChange={handleChange}>
+                              <FormControlLabel value="resident" control={<Radio />} label="Resident" />
+                              <FormControlLabel value="non-resident" control={<Radio />} label="Non Resident" />
+                            </RadioGroup>
+                          </FormControl>
+                        </Box>
+                      </CardContent>
+                    </Card>
 
-                    <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                      <FormControlLabel
-                        control={<Checkbox name="payChildrenEducation" checked={formData.payChildrenEducation} onChange={handleChange} />}
-                        label="Ablity to pay for children education"
-                      />
-                      <FormControlLabel
-                        control={<Checkbox name="provideFoodForFamily" checked={formData.provideFoodForFamily} onChange={handleChange} />}
-                        label="Ablity to provide food for the family"
-                      />
-                      <FormControlLabel
-                        control={<Checkbox name="dependance" checked={formData.dependance} onChange={handleChange} />}
-                        label="Dependance"
-                      />
-                    </Box>
-
-                    <Box sx={{ mt: 2, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
-                      <TextField select label="Gender" name="gender" value={formData.gender} onChange={handleChange}>
-                        <MenuItem value="male">Male</MenuItem>
-                        <MenuItem value="female">Female</MenuItem>
-                        <MenuItem value="other">Other</MenuItem>
-                      </TextField>
-                      <TextField select label="Marital status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange}>
-                        <MenuItem value="single">Single</MenuItem>
-                        <MenuItem value="married">Married</MenuItem>
-                        <MenuItem value="divorced">Divorced</MenuItem>
-                        <MenuItem value="widowed">Widowed</MenuItem>
-                      </TextField>
-                      <TextField select label="ID Type" name="idType" value={formData.idType} onChange={handleChange}>
-                        <MenuItem value="national-id">National ID</MenuItem>
-                        <MenuItem value="passport">Passport</MenuItem>
-                        <MenuItem value="driver-license">Driver License</MenuItem>
-                      </TextField>
-                      <TextField label="ID number" name="idNumber" value={formData.idNumber} onChange={handleChange} />
-                      <TextField label="Place Issue" name="placeIssue" value={formData.placeIssue} onChange={handleChange} />
-                      <TextField
-                        label="Date Issued"
-                        name="dateIssued"
-                        type="date"
-                        value={formData.dateIssued}
-                        onChange={handleChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        label="Expiry Date"
-                        name="expiryDate"
-                        type="date"
-                        value={formData.expiryDate}
-                        onChange={handleChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField select label="Select Poverty level" name="povertyLevel" value={formData.povertyLevel} onChange={handleChange}>
-                        <MenuItem value="extreme">Extreme</MenuItem>
-                        <MenuItem value="high">High</MenuItem>
-                        <MenuItem value="medium">Medium</MenuItem>
-                        <MenuItem value="low">Low</MenuItem>
-                      </TextField>
-                      <TextField label="Region" name="region" value={formData.region} onChange={handleChange} />
-                      <TextField label="Distric" name="district" value={formData.district} onChange={handleChange} />
-                      <TextField label="Ward" name="ward" value={formData.ward} onChange={handleChange} />
-                    </Box>
-
-                    <Box sx={{ mt: 2, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                      <FormControl>
-                        <FormLabel>Resident Type</FormLabel>
-                        <RadioGroup row name="residency" value={formData.residency} onChange={handleChange}>
-                          <FormControlLabel value="resident" control={<Radio />} label="Resident" />
-                          <FormControlLabel value="non-resident" control={<Radio />} label="Non Resident" />
-                        </RadioGroup>
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel>Member Type</FormLabel>
-                        <RadioGroup row name="membershipType" value={formData.membershipType} onChange={handleChange}>
-                          <FormControlLabel value="conventional-member" control={<Radio />} label="Conventional Member" />
-                          <FormControlLabel value="sharia-member" control={<Radio />} label="Sharia Member" />
-                          <FormControlLabel value="both" control={<Radio />} label="Both" />
-                        </RadioGroup>
-                      </FormControl>
-                    </Box>
+                    <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                          Identity And Location
+                        </Typography>
+                        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                          <TextField select label="ID Type" name="idType" value={formData.idType} onChange={handleChange}>
+                            <MenuItem value="national-id">National ID</MenuItem>
+                            <MenuItem value="passport">Passport</MenuItem>
+                            <MenuItem value="driver-license">Driver License</MenuItem>
+                          </TextField>
+                          <TextField label="ID number" name="idNumber" value={formData.idNumber} onChange={handleChange} />
+                          <TextField label="Place Issue" name="placeIssue" value={formData.placeIssue} onChange={handleChange} />
+                          <DatePicker
+                            label="Date Issued"
+                            value={formData.dateIssued ? dayjs(formData.dateIssued) : null}
+                            onChange={(value) => handleDateChange('dateIssued', value)}
+                            disableFuture
+                            slotProps={{ textField: { name: 'dateIssued' } }}
+                          />
+                          <DatePicker
+                            label="Expiry Date"
+                            value={formData.expiryDate ? dayjs(formData.expiryDate) : null}
+                            onChange={(value) => handleDateChange('expiryDate', value)}
+                            slotProps={{ textField: { name: 'expiryDate' } }}
+                          />
+                          <TextField label="Region" name="region" value={formData.region} onChange={handleChange} />
+                          <TextField label="Distric" name="district" value={formData.district} onChange={handleChange} />
+                          <TextField label="Ward" name="ward" value={formData.ward} onChange={handleChange} />
+                        </Box>
+                      </CardContent>
+                    </Card>
                   </Box>
                 )
               )}
@@ -878,7 +909,7 @@ export default function CustomerRegistration({ user }) {
                         Info
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                        <TextField select label="Country" name="country" value={formData.country} onChange={handleChange}>
+                        <TextField select label="Country of Residence" name="country" value={formData.country} onChange={handleChange}>
                           <MenuItem value="">Select country</MenuItem>
                           <MenuItem value="gambia">Gambia</MenuItem>
                           <MenuItem value="senegal">Senegal</MenuItem>
@@ -915,9 +946,14 @@ export default function CustomerRegistration({ user }) {
 
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-                        Next of kin Details
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          Next of kin Details
+                        </Typography>
+                        <Button variant="outlined" size="small" onClick={handleAddNextOfKinCard}>
+                          Add More Next of Kin
+                        </Button>
+                      </Box>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                         <TextField label="Name" name="nextOfKinName" value={formData.nextOfKinName} onChange={handleChange} />
                         <TextField label="Address" name="nextOfKinAddress" value={formData.nextOfKinAddress} onChange={handleChange} />
@@ -926,6 +962,38 @@ export default function CustomerRegistration({ user }) {
                       </Box>
                     </CardContent>
                   </Card>
+
+                  {additionalNextOfKins.map((nextOfKin, index) => (
+                    <Card key={nextOfKin.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                          Next of kin Details {index + 2}
+                        </Typography>
+                        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                          <TextField
+                            label="Name"
+                            value={nextOfKin.name}
+                            onChange={(event) => handleAdditionalNextOfKinChange(nextOfKin.id, 'name', event.target.value)}
+                          />
+                          <TextField
+                            label="Address"
+                            value={nextOfKin.address}
+                            onChange={(event) => handleAdditionalNextOfKinChange(nextOfKin.id, 'address', event.target.value)}
+                          />
+                          <TextField
+                            label="Relationship"
+                            value={nextOfKin.relationship}
+                            onChange={(event) => handleAdditionalNextOfKinChange(nextOfKin.id, 'relationship', event.target.value)}
+                          />
+                          <TextField
+                            label="Mobile Phone"
+                            value={nextOfKin.mobilePhone}
+                            onChange={(event) => handleAdditionalNextOfKinChange(nextOfKin.id, 'mobilePhone', event.target.value)}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </Box>
               )}
 
@@ -956,18 +1024,45 @@ export default function CustomerRegistration({ user }) {
                             name="sharePrice"
                             value={formData.sharePrice}
                             onChange={handleChange}
+                            disabled
+                            sx={{
+                              '& .MuiInputBase-root.Mui-disabled': {
+                                bgcolor: 'action.disabledBackground',
+                              },
+                              '& .MuiInputBase-input.Mui-disabled': {
+                                WebkitTextFillColor: (theme) => theme.palette.text.disabled,
+                              },
+                            }}
                           />
                           <TextField
                             label="Share Purchased"
                             name="sharesPurchase"
                             value={formData.sharesPurchase}
                             onChange={handleChange}
+                            disabled
+                            sx={{
+                              '& .MuiInputBase-root.Mui-disabled': {
+                                bgcolor: 'action.disabledBackground',
+                              },
+                              '& .MuiInputBase-input.Mui-disabled': {
+                                WebkitTextFillColor: (theme) => theme.palette.text.disabled,
+                              },
+                            }}
                           />
                           <TextField
                             label="Share Value"
                             name="shareValue"
                             value={formData.shareValue}
                             onChange={handleChange}
+                            disabled
+                            sx={{
+                              '& .MuiInputBase-root.Mui-disabled': {
+                                bgcolor: 'action.disabledBackground',
+                              },
+                              '& .MuiInputBase-input.Mui-disabled': {
+                                WebkitTextFillColor: (theme) => theme.palette.text.disabled,
+                              },
+                            }}
                           />
                         </Box>
                       </CardContent>
@@ -1113,9 +1208,14 @@ export default function CustomerRegistration({ user }) {
 
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-                        References Details
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          References Details
+                        </Typography>
+                        <Button variant="outlined" size="small" onClick={handleAddReferenceCard}>
+                          Add More References
+                        </Button>
+                      </Box>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                         <TextField
                           label="Name"
@@ -1142,79 +1242,40 @@ export default function CustomerRegistration({ user }) {
                           onChange={handleChange}
                         />
                       </Box>
-                      <Button
-                        variant="contained"
-                        onClick={handleAddReference}
-                        sx={{ mt: 2 }}
-                      >
-                        Add Reference
-                      </Button>
                     </CardContent>
                   </Card>
 
-                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-                        References List
-                      </Typography>
-                      {references.length === 0 ? (
-                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                          No references added yet.
+                  {additionalReferences.map((reference, index) => (
+                    <Card key={reference.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                          References Details {index + 2}
                         </Typography>
-                      ) : (
-                        <div style={{ height: 400, width: '100%' }}>
-                          <DataGrid
-                            rows={references.map((ref) => ({
-                              ...ref,
-                              id: ref.id || `ref-${Date.now()}`,
-                            }))}
-                            columns={[
-                              { field: 'name', headerName: 'Name', flex: 1, minWidth: 120 },
-                              { field: 'address', headerName: 'Address', flex: 1, minWidth: 120 },
-                              { field: 'mobilePhone', headerName: 'Mobile Phone', flex: 1, minWidth: 120 },
-                              { field: 'emailAddress', headerName: 'Email Address', flex: 1, minWidth: 150 },
-                              {
-                                field: 'action',
-                                headerName: 'Action',
-                                flex: 0.8,
-                                minWidth: 100,
-                                sortable: false,
-                                renderCell: (params) => (
-                                  <Button
-                                    variant="outlined"
-                                    color="error"
-                                    size="small"
-                                    onClick={() => handleRemoveReference(params.row.id)}
-                                  >
-                                    Remove
-                                  </Button>
-                                ),
-                              },
-                            ]}
-                            pageSizeOptions={[10, 25, 50]}
-                            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                            density="compact"
-                            sx={{
-                              '& .MuiDataGrid-columnHeader': {
-                                backgroundColor: 'primary.main',
-                                color: 'primary.contrastText',
-                                fontWeight: 700,
-                              },
-                              '& .MuiDataGrid-row:nth-of-type(even)': {
-                                backgroundColor: '#f8f9fa',
-                              },
-                              '& .MuiDataGrid-row:hover': {
-                                backgroundColor: '#e9ecef',
-                              },
-                              '& .MuiDataGrid-cell': {
-                                borderColor: '#dee2e6',
-                              },
-                            }}
+                        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                          <TextField
+                            label="Name"
+                            value={reference.name}
+                            onChange={(event) => handleAdditionalReferenceChange(reference.id, 'name', event.target.value)}
                           />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                          <TextField
+                            label="Address"
+                            value={reference.address}
+                            onChange={(event) => handleAdditionalReferenceChange(reference.id, 'address', event.target.value)}
+                          />
+                          <TextField
+                            label="Mobile Phone"
+                            value={reference.mobilePhone}
+                            onChange={(event) => handleAdditionalReferenceChange(reference.id, 'mobilePhone', event.target.value)}
+                          />
+                          <TextField
+                            label="Email Address"
+                            value={reference.emailAddress}
+                            onChange={(event) => handleAdditionalReferenceChange(reference.id, 'emailAddress', event.target.value)}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </Box>
               )}
 

@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, lazy, Suspense, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -442,9 +443,24 @@ function App() {
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <img src={logo} alt="Company logo" style={{ height: 36, borderRadius: 6 }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, letterSpacing: 0.3 }}>
-                  Social Development Fund
-                </Typography>
+                <Chip
+                  label="Social Development Fund"
+                  sx={{
+                    height: 30,
+                    px: 0.5,
+                    bgcolor: 'rgba(255,255,255,0.14)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.16)',
+                    backdropFilter: 'blur(8px)',
+                    '& .MuiChip-label': {
+                      px: 0.9,
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    },
+                  }}
+                />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <FontAwesomeIcon icon={faUser} />

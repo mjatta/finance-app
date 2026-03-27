@@ -92,7 +92,7 @@ export default function AddMemberAccount() {
           ...prev,
           memberName: '',
         }));
-        setStatusMessage('Member code not found.');
+        setStatusMessage('Customer code not found.');
         setStatusError(true);
       }
     } catch {
@@ -160,7 +160,7 @@ export default function AddMemberAccount() {
         <CardContent>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             <TextField
-              label="Member Code"
+              label="Customer Code"
               name="memberCode"
               value={formData.memberCode}
               onChange={handleChange}
@@ -193,8 +193,18 @@ export default function AddMemberAccount() {
               <MenuItem value="GBP">GBP</MenuItem>
             </TextField>
 
-            <TextField select label="Branch" name="branch" value={formData.branch} onChange={handleChange}>
-              <MenuItem value="">Select branch</MenuItem>
+            <TextField
+              select
+              label="Branch"
+              name="branch"
+              value={formData.branch}
+              onChange={handleChange}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => selected || 'Select branch',
+              }}
+            >
+              <MenuItem value="" disabled>Select branch</MenuItem>
               {branches.map((item) => (
                 <MenuItem key={item} value={item}>
                   {item}

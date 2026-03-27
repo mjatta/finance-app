@@ -129,7 +129,7 @@ export default function LoanChangeOff() {
         <DataGrid
           rows={rows.map((row) => ({ ...row }))}
           columns={[
-            { field: 'memberCode', headerName: 'Member Code', flex: 1, minWidth: 120 },
+            { field: 'memberCode', headerName: 'Customer Code', flex: 1, minWidth: 120 },
             { field: 'memberName', headerName: 'Member Name', flex: 1.2, minWidth: 140 },
             { field: 'loanType', headerName: 'Loan Type', flex: 1, minWidth: 110 },
             { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 110 },
