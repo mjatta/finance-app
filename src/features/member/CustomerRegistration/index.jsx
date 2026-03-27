@@ -28,6 +28,7 @@ export default function CustomerRegistration({ user }) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [reportData, setReportData] = useState(null);
 
   const [institutionBranches, setInstitutionBranches] = useState([]);
@@ -253,6 +254,12 @@ export default function CustomerRegistration({ user }) {
     const { name, value, type, checked } = event.target;
     setStatusMessage('');
     setStatusError(false);
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -367,6 +374,72 @@ export default function CustomerRegistration({ user }) {
     if (isReadOnlyRole || isSaving) {
       return;
     }
+
+    if (mainTab === 0) {
+      const requiredFieldLabels = {
+        firstName: 'First Name',
+        surname: 'Surname',
+        branch: 'Branch',
+        title: 'Title',
+        nationality: 'Nationality',
+        gender: 'Gender',
+        maritalStatus: 'Marital status',
+        idType: 'ID type',
+        idNumber: 'ID number',
+        placeIssue: 'Place issued',
+        country: 'Country of residence',
+        mobilePhoneNumber: 'Mobile Phone',
+        nextOfKinName: 'Next of kin',
+        registrationFee: 'Registration fee',
+        contributionAccountNumber: 'Account Number',
+        contributionAccountName: 'Account Name',
+        accountSignatory: 'Account Signatory',
+      };
+
+      const missingKeys = Object.keys(requiredFieldLabels).filter(
+        (key) => !String(formData[key] ?? '').trim(),
+      );
+
+      if (missingKeys.length > 0) {
+        setFieldErrors(missingKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {}));
+        setStatusMessage(`Please fill required fields: ${missingKeys.map((key) => requiredFieldLabels[key]).join(', ')}.`);
+        setStatusError(true);
+        return;
+      }
+    } else {
+      const requiredFieldLabels = {
+        institutionType: 'Institution type',
+        institutionName: 'Name',
+        institutionNature: 'Nature',
+        institutionBranch: 'Branch',
+        country: 'Country of residence',
+        mobilePhoneNumber: 'Phone number',
+        institutionIncoporationNumber: 'Incorporation Number',
+        institutionTIN: 'TIN',
+        registrationFee: 'Registration fee',
+        signatory1: 'Signatory 1',
+        signatory2: 'Signatory 2',
+        chairName: 'Chair name',
+        chairMobilePhone: 'Chair mobile phone',
+        chairEmailAddress: 'Chair email address',
+        treasurerName: 'Treasurer name',
+        treasurerMobilePhone: 'Treasurer mobile phone',
+        treasurerEmailAddress: 'Treasurer email address',
+      };
+
+      const missingKeys = Object.keys(requiredFieldLabels).filter(
+        (key) => !String(formData[key] ?? '').trim(),
+      );
+
+      if (missingKeys.length > 0) {
+        setFieldErrors(missingKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {}));
+        setStatusMessage(`Please fill required fields: ${missingKeys.map((key) => requiredFieldLabels[key]).join(', ')}.`);
+        setStatusError(true);
+        return;
+      }
+    }
+
+    setFieldErrors({});
 
     setIsSaving(true);
     setStatusMessage('');
@@ -498,23 +571,54 @@ export default function CustomerRegistration({ user }) {
         <Box
           component="fieldset"
           disabled={isReadOnlyRole}
-          sx={{ border: 'none', p: 0, m: 0, opacity: isReadOnlyRole ? 0.55 : 1, pointerEvents: isReadOnlyRole ? 'none' : 'auto' }}
+          sx={{
+            border: 'none',
+            p: 0,
+            m: 0,
+            opacity: isReadOnlyRole ? 0.55 : 1,
+            pointerEvents: isReadOnlyRole ? 'none' : 'auto',
+            '& .MuiInputLabel-root, & .MuiFormLabel-root': {
+              fontWeight: 600,
+              fontSize: '1.2rem',
+            },
+            '& .MuiFormLabel-asterisk': {
+              color: 'error.main',
+              fontSize: '2rem',
+              fontWeight: 800,
+            },
+          }}
         >
           <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               {mainTab === 0 ? (
                 <>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
-                    <TextField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
+                    <TextField
+                      required
+                      label="First Name"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      error={Boolean(fieldErrors.firstName)}
+                    />
                     <TextField label="Middle Name" name="middleName" value={formData.middleName} onChange={handleChange} />
-                    <TextField label="Surname" name="surname" value={formData.surname} onChange={handleChange} />
+                    <TextField
+                      required
+                      label="Surname"
+                      name="surname"
+                      value={formData.surname}
+                      onChange={handleChange}
+                      error={Boolean(fieldErrors.surname)}
+                    />
                     <TextField label="Customer Code" name="memberCode" value={formData.memberCode} onChange={handleChange} />
                     <TextField
                       select
+                      required
                       label="Branch"
                       name="branch"
                       value={formData.branch}
                       onChange={handleChange}
+                      error={Boolean(fieldErrors.branch)}
                       SelectProps={{
                         displayEmpty: true,
                         renderValue: (selected) => selected || 'Select branch',
@@ -549,12 +653,35 @@ export default function CustomerRegistration({ user }) {
               ) : (
                 <Box sx={{ display: 'grid', gap: 2 }}>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                    <TextField select label="Institution Type" name="institutionType" value={formData.institutionType} onChange={handleChange}>
+                    <TextField
+                      select
+                      required
+                      label="Institution Type"
+                      name="institutionType"
+                      value={formData.institutionType}
+                      onChange={handleChange}
+                      error={Boolean(fieldErrors.institutionType)}
+                    >
                       <MenuItem value="corporate">Corporate</MenuItem>
                       <MenuItem value="group">Group</MenuItem>
                     </TextField>
-                    <TextField label="Name" name="institutionName" value={formData.institutionName} onChange={handleChange} />
-                    <TextField select label="Nature" name="institutionNature" value={formData.institutionNature} onChange={handleChange}>
+                    <TextField
+                      required
+                      label="Name"
+                      name="institutionName"
+                      value={formData.institutionName}
+                      onChange={handleChange}
+                      error={Boolean(fieldErrors.institutionName)}
+                    />
+                    <TextField
+                      select
+                      required
+                      label="Nature"
+                      name="institutionNature"
+                      value={formData.institutionNature}
+                      onChange={handleChange}
+                      error={Boolean(fieldErrors.institutionNature)}
+                    >
                       <MenuItem value="">Select nature</MenuItem>
                       <MenuItem value="business">Business</MenuItem>
                       <MenuItem value="association">Association</MenuItem>
@@ -564,10 +691,12 @@ export default function CustomerRegistration({ user }) {
                     <TextField label="Customer Code" name="institutionMemberCode" value={formData.institutionMemberCode} onChange={handleChange} />
                     <TextField
                       select
+                      required
                       label="Branch"
                       name="institutionBranch"
                       value={formData.institutionBranch}
                       onChange={handleChange}
+                      error={Boolean(fieldErrors.institutionBranch)}
                       SelectProps={{
                         displayEmpty: true,
                         renderValue: (selected) => selected || 'Select branch',
@@ -612,7 +741,15 @@ export default function CustomerRegistration({ user }) {
                           Info
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField select label="Country of Residence" name="country" value={formData.country} onChange={handleChange}>
+                          <TextField
+                            select
+                            required
+                            label="Country of Residence"
+                            name="country"
+                            value={formData.country}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.country)}
+                          >
                             <MenuItem value="">Select country</MenuItem>
                             <MenuItem value="gambia">Gambia</MenuItem>
                             <MenuItem value="senegal">Senegal</MenuItem>
@@ -627,7 +764,14 @@ export default function CustomerRegistration({ user }) {
                             <MenuItem value="bakau">Bakau</MenuItem>
                           </TextField>
                           <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
-                          <TextField label="Mobile Phone number" name="mobilePhoneNumber" value={formData.mobilePhoneNumber} onChange={handleChange} />
+                          <TextField
+                            required
+                            label="Mobile Phone number"
+                            name="mobilePhoneNumber"
+                            value={formData.mobilePhoneNumber}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.mobilePhoneNumber)}
+                          />
                           <TextField
                             label="Email address"
                             name="emailAddress"
@@ -654,16 +798,20 @@ export default function CustomerRegistration({ user }) {
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                           <TextField
+                            required
                             label="Incoporation Number"
                             name="institutionIncoporationNumber"
                             value={formData.institutionIncoporationNumber}
                             onChange={handleChange}
+                            error={Boolean(fieldErrors.institutionIncoporationNumber)}
                           />
                           <TextField
+                            required
                             label="TIN"
                             name="institutionTIN"
                             value={formData.institutionTIN}
                             onChange={handleChange}
+                            error={Boolean(fieldErrors.institutionTIN)}
                           />
                           <DatePicker
                             label="Incoporation date"
@@ -734,16 +882,46 @@ export default function CustomerRegistration({ user }) {
                           Personal Profile
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField label="Title" name="title" value={formData.title} onChange={handleChange} />
-                          <TextField select label="Gender" name="gender" value={formData.gender} onChange={handleChange}>
+                          <TextField
+                            required
+                            label="Title"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.title)}
+                          />
+                          <TextField
+                            select
+                            required
+                            label="Gender"
+                            name="gender"
+                            value={formData.gender}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.gender)}
+                          >
                             <MenuItem value="male">Male</MenuItem>
                             <MenuItem value="female">Female</MenuItem>
                             <MenuItem value="other">Other</MenuItem>
                           </TextField>
-                          <TextField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} />
+                          <TextField
+                            required
+                            label="Nationality"
+                            name="nationality"
+                            value={formData.nationality}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.nationality)}
+                          />
                           <TextField label="Tribe" name="tribe" value={formData.tribe} onChange={handleChange} />
                           <TextField label="Level of Education" name="levelOfEducation" value={formData.levelOfEducation} onChange={handleChange} />
-                          <TextField select label="Marital status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange}>
+                          <TextField
+                            select
+                            required
+                            label="Marital status"
+                            name="maritalStatus"
+                            value={formData.maritalStatus}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.maritalStatus)}
+                          >
                             <MenuItem value="single">Single</MenuItem>
                             <MenuItem value="married">Married</MenuItem>
                             <MenuItem value="divorced">Divorced</MenuItem>
@@ -787,13 +965,35 @@ export default function CustomerRegistration({ user }) {
                           Identity And Location
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField select label="ID Type" name="idType" value={formData.idType} onChange={handleChange}>
+                          <TextField
+                            select
+                            required
+                            label="ID Type"
+                            name="idType"
+                            value={formData.idType}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.idType)}
+                          >
                             <MenuItem value="national-id">National ID</MenuItem>
                             <MenuItem value="passport">Passport</MenuItem>
                             <MenuItem value="driver-license">Driver License</MenuItem>
                           </TextField>
-                          <TextField label="ID number" name="idNumber" value={formData.idNumber} onChange={handleChange} />
-                          <TextField label="Place Issue" name="placeIssue" value={formData.placeIssue} onChange={handleChange} />
+                          <TextField
+                            required
+                            label="ID number"
+                            name="idNumber"
+                            value={formData.idNumber}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.idNumber)}
+                          />
+                          <TextField
+                            required
+                            label="Place Issued"
+                            name="placeIssue"
+                            value={formData.placeIssue}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.placeIssue)}
+                          />
                           <DatePicker
                             label="Date Issued"
                             value={formData.dateIssued ? dayjs(formData.dateIssued) : null}
@@ -826,10 +1026,32 @@ export default function CustomerRegistration({ user }) {
                           Chair
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField label="Name" name="chairName" value={formData.chairName} onChange={handleChange} sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }} />
+                          <TextField
+                            required
+                            label="Name"
+                            name="chairName"
+                            value={formData.chairName}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.chairName)}
+                            sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                          />
                           <TextField label="TIN" name="chairTIN" value={formData.chairTIN} onChange={handleChange} />
-                          <TextField label="Mobile Phone" name="chairMobilePhone" value={formData.chairMobilePhone} onChange={handleChange} />
-                          <TextField label="Email Address" name="chairEmailAddress" value={formData.chairEmailAddress} onChange={handleChange} />
+                          <TextField
+                            required
+                            label="Mobile Phone"
+                            name="chairMobilePhone"
+                            value={formData.chairMobilePhone}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.chairMobilePhone)}
+                          />
+                          <TextField
+                            required
+                            label="Email Address"
+                            name="chairEmailAddress"
+                            value={formData.chairEmailAddress}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.chairEmailAddress)}
+                          />
                           <FormControlLabel
                             control={<Checkbox name="chairAccountSignatory" checked={formData.chairAccountSignatory} onChange={handleChange} />}
                             label="Account Signatory"
@@ -866,10 +1088,32 @@ export default function CustomerRegistration({ user }) {
                           Treasurer
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                          <TextField label="Name" name="treasurerName" value={formData.treasurerName} onChange={handleChange} sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }} />
+                          <TextField
+                            required
+                            label="Name"
+                            name="treasurerName"
+                            value={formData.treasurerName}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.treasurerName)}
+                            sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                          />
                           <TextField label="TIN" name="treasurerTIN" value={formData.treasurerTIN} onChange={handleChange} />
-                          <TextField label="Mobile Phone" name="treasurerMobilePhone" value={formData.treasurerMobilePhone} onChange={handleChange} />
-                          <TextField label="Email Address" name="treasurerEmailAddress" value={formData.treasurerEmailAddress} onChange={handleChange} />
+                          <TextField
+                            required
+                            label="Mobile Phone"
+                            name="treasurerMobilePhone"
+                            value={formData.treasurerMobilePhone}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.treasurerMobilePhone)}
+                          />
+                          <TextField
+                            required
+                            label="Email Address"
+                            name="treasurerEmailAddress"
+                            value={formData.treasurerEmailAddress}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.treasurerEmailAddress)}
+                          />
                           <FormControlLabel
                             control={<Checkbox name="treasurerAccountSignatory" checked={formData.treasurerAccountSignatory} onChange={handleChange} />}
                             label="Account Signatory"
@@ -909,7 +1153,15 @@ export default function CustomerRegistration({ user }) {
                         Info
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                        <TextField select label="Country of Residence" name="country" value={formData.country} onChange={handleChange}>
+                        <TextField
+                          select
+                          required
+                          label="Country of Residence"
+                          name="country"
+                          value={formData.country}
+                          onChange={handleChange}
+                          error={Boolean(fieldErrors.country)}
+                        >
                           <MenuItem value="">Select country</MenuItem>
                           <MenuItem value="gambia">Gambia</MenuItem>
                           <MenuItem value="senegal">Senegal</MenuItem>
@@ -924,7 +1176,14 @@ export default function CustomerRegistration({ user }) {
                           <MenuItem value="bakau">Bakau</MenuItem>
                         </TextField>
                         <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
-                        <TextField label="Mobile Phone number" name="mobilePhoneNumber" value={formData.mobilePhoneNumber} onChange={handleChange} />
+                        <TextField
+                          required
+                          label="Mobile Phone number"
+                          name="mobilePhoneNumber"
+                          value={formData.mobilePhoneNumber}
+                          onChange={handleChange}
+                          error={Boolean(fieldErrors.mobilePhoneNumber)}
+                        />
                         <TextField label="Email address" name="emailAddress" value={formData.emailAddress} onChange={handleChange} sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }} />
                       </Box>
                     </CardContent>
@@ -955,7 +1214,14 @@ export default function CustomerRegistration({ user }) {
                         </Button>
                       </Box>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                        <TextField label="Name" name="nextOfKinName" value={formData.nextOfKinName} onChange={handleChange} />
+                        <TextField
+                          required
+                          label="Name"
+                          name="nextOfKinName"
+                          value={formData.nextOfKinName}
+                          onChange={handleChange}
+                          error={Boolean(fieldErrors.nextOfKinName)}
+                        />
                         <TextField label="Address" name="nextOfKinAddress" value={formData.nextOfKinAddress} onChange={handleChange} />
                         <TextField label="Relationship" name="nextOfKinRelationship" value={formData.nextOfKinRelationship} onChange={handleChange} />
                         <TextField label="Mobile Phone" name="nextOfKinMobilePhone" value={formData.nextOfKinMobilePhone} onChange={handleChange} />
@@ -1013,6 +1279,28 @@ export default function CustomerRegistration({ user }) {
                               <FormControlLabel value="varible" control={<Radio />} label="Variable" />
                             </RadioGroup>
                           </FormControl>
+                          <TextField
+                            required
+                            label="Registration Fee"
+                            name="registrationFee"
+                            value={formData.registrationFee}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.registrationFee)}
+                          />
+                          <TextField
+                            label="Account Number"
+                            name="contributionAccountNumber"
+                            value={formData.contributionAccountNumber}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.contributionAccountNumber)}
+                          />
+                          <TextField
+                            label="Account Name"
+                            name="contributionAccountName"
+                            value={formData.contributionAccountName}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.contributionAccountName)}
+                          />
                           <TextField
                             label="Saving Amount"
                             name="savingAmount"
@@ -1075,16 +1363,20 @@ export default function CustomerRegistration({ user }) {
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2 }}>
                           <TextField
+                            required
                             label="Signatory 1"
                             name="signatory1"
                             value={formData.signatory1}
                             onChange={handleChange}
+                            error={Boolean(fieldErrors.signatory1)}
                           />
                           <TextField
+                            required
                             label="Signatory 2"
                             name="signatory2"
                             value={formData.signatory2}
                             onChange={handleChange}
+                            error={Boolean(fieldErrors.signatory2)}
                           />
                           <TextField
                             label="Signatory 3"
