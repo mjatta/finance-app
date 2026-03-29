@@ -805,6 +805,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-client/, '/api/client'),
       },
+      // Proxy /api/client for get-code endpoint to avoid CORS
+      '/api/client': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/client/, '/api/client'),
+      },
       // Proxy mandatory products lookup for Product Definition main category
       '/api/mandatory-products': {
         target: 'http://alakuyateh-001-site10.atempurl.com',

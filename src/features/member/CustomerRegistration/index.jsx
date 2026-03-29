@@ -1,4 +1,60 @@
+
+// Columns for Recently Registered Member DataGrid
+const recentMemberColumns = [
+  { field: 'memberCode', headerName: 'Customer Code', flex: 1, minWidth: 120 },
+  { field: 'fullName', headerName: 'First Name and Surname', flex: 1.5, minWidth: 180 },
+  { field: 'dateJoined', headerName: 'Date Joined', flex: 1, minWidth: 140 },
+  { field: 'dateOfBirth', headerName: 'Date of Birthday', flex: 1, minWidth: 140 },
+  { field: 'branch', headerName: 'Branch', flex: 1, minWidth: 120 },
+];
+
+// Helper to format row for DataGrid
+function formatRecentMemberRow(row, institutionBranches = []) {
+  if (!row) return {};
+  // Helper to format date
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === '1900-01-01T00:00:00') return '';
+    // Accept both string and Date
+    const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
+  }
+  // Try all possible date fields for join and birth
+  const dateJoinedRaw = row.dateJoined || row.date_joined || row.datejoin || row.ddatejoin;
+  const dateOfBirthRaw = row.dateOfBirth || row.date_of_birth || row.ddatebirth || row.dob;
+
+  // Branch: try string, fallback to branch id (number)
+  let branchVal = row.branch || row.bracnh || row.branchid || row.branch_id || '';
+  // If branchVal is a number and institutionBranches is available, map to branch name
+  if (typeof branchVal === 'number' && Array.isArray(institutionBranches) && institutionBranches.length > 0) {
+    // Assume branchVal is 1-based index or matches the order in institutionBranches
+    // If your branch IDs map differently, adjust this logic accordingly
+    if (branchVal > 0 && branchVal <= institutionBranches.length) {
+      branchVal = institutionBranches[branchVal - 1] || branchVal.toString();
+    } else {
+      branchVal = branchVal.toString();
+    }
+  }
+  if (typeof branchVal === 'number' && branchVal === 0) branchVal = '';
+
+  return {
+    memberCode:
+      row.memberCode || row.clientCode || row.ccustcode || row.custcode || '',
+    fullName:
+      (row.firstName || row.ccustfname || '').trim() +
+      ' ' +
+      (row.surname || row.ccustlname || '').trim(),
+    dateJoined: formatDate(dateJoinedRaw),
+    dateOfBirth: formatDate(dateOfBirthRaw),
+    branch: branchVal,
+    id:
+      row.memberCode || row.clientCode || row.ccustcode || row.custcode || Math.random(),
+  };
+}
+
 import React, { useEffect, useState } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+
 import {
   Box,
   Button,
@@ -16,12 +72,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
-export default function CustomerRegistration({ user }) {
+export default function CustomerRegistration(props) {
+  // If you need user, get it from props.user, else remove
+  const user = props.user;
+  const isReadOnlyRole = Boolean(user?.access?.readOnly);
+  const [recentMember, setRecentMember] = useState(null);
   const [mainTab, setMainTab] = useState(0);
   const [detailTab, setDetailTab] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,8 +89,28 @@ export default function CustomerRegistration({ user }) {
   const [statusError, setStatusError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [reportData, setReportData] = useState(null);
-
   const [institutionBranches, setInstitutionBranches] = useState([]);
+    // Fetch institution branches for branch dropdowns
+    useEffect(() => {
+      const loadInstitutionBranches = async () => {
+        try {
+          const response = await fetch('/api/remote-branches/branches');
+          if (!response.ok) return;
+          const payload = await response.json();
+          const branchOptions = Array.from(
+            new Set(
+              (Array.isArray(payload) ? payload : [])
+                .map((item) => (item?.br_name || item?.branchName || item?.name || '').trim())
+                .filter(Boolean)
+            )
+          );
+          setInstitutionBranches(branchOptions);
+        } catch {
+          setInstitutionBranches([]);
+        }
+      };
+      loadInstitutionBranches();
+    }, []);
   const [countries, setCountries] = useState([]);
     // Fetch countries for nationality and country of residence
     useEffect(() => {
@@ -58,7 +137,7 @@ export default function CustomerRegistration({ user }) {
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
-  const [formData, setFormData] = useState({
+  const initialForm = {
     institutionType: 'corporate',
     institutionName: '',
     institutionNature: '',
@@ -165,112 +244,8 @@ export default function CustomerRegistration({ user }) {
     signatory2: '',
     signatory3: '',
     defaultBatch: '',
-  });
-
-  const isReadOnlyRole = Boolean(user?.access?.readOnly);
-
-
-
-  useEffect(() => {
-    const loadInstitutionBranches = async () => {
-      try {
-        const response = await fetch('/api/remote-branches/branches');
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = await response.json();
-        const branchOptions = Array.from(
-          new Set(
-            (Array.isArray(payload) ? payload : [])
-              .map((item) => (item?.br_name || item?.branchName || item?.name || '').toString().trim())
-              .filter(Boolean),
-          ),
-        );
-
-        setInstitutionBranches(branchOptions);
-      } catch {
-        setInstitutionBranches([]);
-      }
-    };
-
-    loadInstitutionBranches();
-  }, []);
-
-  useEffect(() => () => {
-    if (photoPreviewUrl) {
-      URL.revokeObjectURL(photoPreviewUrl);
-    }
-    if (signaturePreviewUrl) {
-      URL.revokeObjectURL(signaturePreviewUrl);
-    }
-  }, [photoPreviewUrl, signaturePreviewUrl]);
-
-
-
-  const mainTabGroupSx = {
-    minHeight: 52,
-    mb: 2,
-    p: 0.6,
-    borderRadius: 2.5,
-    border: '1px solid',
-    borderColor: 'divider',
-    bgcolor: 'action.hover',
-    '& .MuiTabs-indicator': {
-      display: 'none',
-    },
-    '& .MuiTab-root': {
-      minHeight: 38,
-      textTransform: 'none',
-      borderRadius: 1.75,
-      fontWeight: 700,
-      fontSize: '0.95rem',
-      color: 'text.secondary',
-      px: 2,
-      transition: 'all 0.2s ease',
-    },
-    '& .MuiTab-root:hover': {
-      color: 'text.primary',
-      bgcolor: 'action.selected',
-    },
-    '& .MuiTab-root.Mui-selected': {
-      color: 'primary.main',
-      bgcolor: 'background.paper',
-      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.10)',
-    },
   };
-
-  const detailTabGroupSx = {
-    minHeight: 50,
-    mb: 2,
-    p: 0.6,
-    borderRadius: 2,
-    bgcolor: 'action.hover',
-    border: '1px solid',
-    borderColor: 'divider',
-    '& .MuiTabs-indicator': {
-      display: 'none',
-    },
-    '& .MuiTab-root': {
-      minHeight: 36,
-      textTransform: 'none',
-      borderRadius: 1.5,
-      fontWeight: 600,
-      fontSize: '0.88rem',
-      color: 'text.secondary',
-      px: 1.8,
-      transition: 'all 0.2s ease',
-    },
-    '& .MuiTab-root:hover': {
-      color: 'text.primary',
-      bgcolor: 'action.selected',
-    },
-    '& .MuiTab-root.Mui-selected': {
-      color: 'primary.main',
-      bgcolor: 'background.paper',
-      boxShadow: '0 1px 4px rgba(15, 23, 42, 0.08)',
-    },
-  };
+  const [formData, setFormData] = useState(initialForm);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -413,9 +388,6 @@ export default function CustomerRegistration({ user }) {
         mobilePhoneNumber: 'Mobile Phone',
         nextOfKinName: 'Next of kin',
         registrationFee: 'Registration fee',
-        contributionAccountNumber: 'Account Number',
-        contributionAccountName: 'Account Name',
-        accountSignatory: 'Account Signatory',
       };
 
       const missingKeys = Object.keys(requiredFieldLabels).filter(
@@ -519,6 +491,34 @@ export default function CustomerRegistration({ user }) {
         action: 'Save Customer Registration',
         message: 'Customer registration saved successfully.',
       });
+      setFormData(initialForm);
+      setAdditionalReferences([]);
+      setAdditionalNextOfKins([]);
+      setPhotoPreviewUrl('');
+      setSignaturePreviewUrl('');
+
+      // Fetch the latest member code
+      try {
+        const codeRes = await fetch('/api/client/get-code?fieldName=clientid');
+        const codeData = await codeRes.json();
+        let memberCode = codeData?.data?.memberCode;
+        if (memberCode) {
+          // Subtract 1 from the numeric part
+          let num = parseInt(memberCode, 10);
+          let prevNum = num - 1;
+          let prevCode = prevNum.toString().padStart(memberCode.length, '0');
+          // Fetch member details
+          const memberRes = await fetch(`/api/remote-member-details/${prevCode}`);
+          if (memberRes.ok) {
+            const memberData = await memberRes.json();
+            setRecentMember(memberData);
+          } else {
+            setRecentMember(null);
+          }
+        }
+      } catch {
+        setRecentMember(null);
+      }
     } catch (error) {
       setStatusMessage('Unable to save customer registration.');
       setStatusError(true);
@@ -586,8 +586,6 @@ export default function CustomerRegistration({ user }) {
         <Tab label="Individual" />
         <Tab label="Institution" />
       </Tabs>
-
-
 
       {(mainTab === 0 || mainTab === 1) && (
         <Box
@@ -1745,6 +1743,93 @@ export default function CustomerRegistration({ user }) {
           )}
         </Box>
       )}
+
+      {/* Recently Registered Member DataGrid moved to bottom */}
+      {recentMember && (
+        <Card sx={{ mt: 4, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+              Recently Registered Member
+            </Typography>
+            <div style={{ width: '100%' }}>
+              <DataGrid
+                rows={Array.isArray(recentMember) ? recentMember.map(r => formatRecentMemberRow(r, institutionBranches)) : [formatRecentMemberRow(recentMember, institutionBranches)]}
+                columns={recentMemberColumns}
+                getRowId={(row) => row.memberCode || row.id || row.clientCode || Math.random()}
+                pageSizeOptions={[5, 10]}
+                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+                density="compact"
+                autoHeight
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }
+
+// Tab group styles
+const mainTabGroupSx = {
+  minHeight: 52,
+  mb: 2,
+  p: 0.6,
+  borderRadius: 2.5,
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'action.hover',
+  '& .MuiTabs-indicator': {
+    display: 'none',
+  },
+  '& .MuiTab-root': {
+    minHeight: 38,
+    textTransform: 'none',
+    borderRadius: 1.75,
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    color: 'text.secondary',
+    px: 2,
+    transition: 'all 0.2s ease',
+  },
+  '& .MuiTab-root:hover': {
+    color: 'text.primary',
+    bgcolor: 'action.selected',
+  },
+  '& .MuiTab-root.Mui-selected': {
+    color: 'primary.main',
+    bgcolor: 'background.paper',
+    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.10)',
+  },
+};
+
+const detailTabGroupSx = {
+  minHeight: 50,
+  mb: 2,
+  p: 0.6,
+  borderRadius: 2,
+  bgcolor: 'action.hover',
+  border: '1px solid',
+  borderColor: 'divider',
+  '& .MuiTabs-indicator': {
+    display: 'none',
+  },
+  '& .MuiTab-root': {
+    minHeight: 36,
+    textTransform: 'none',
+    borderRadius: 1.5,
+    fontWeight: 600,
+    fontSize: '0.88rem',
+    color: 'text.secondary',
+    px: 1.8,
+    transition: 'all 0.2s ease',
+  },
+  '& .MuiTab-root:hover': {
+    color: 'text.primary',
+    bgcolor: 'action.selected',
+  },
+  '& .MuiTab-root.Mui-selected': {
+    color: 'primary.main',
+    bgcolor: 'background.paper',
+    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.08)',
+  },
+};
