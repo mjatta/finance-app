@@ -56,7 +56,7 @@ const categories = [
   },
 ];
 
-const DASHBOARD_SUMMARY_URL = 'http://alakuyateh-001-site10.atempurl.com/api/dashboard/summary?compId=30';
+const DASHBOARD_SUMMARY_URL = '/api/dashboard/summary?compId=30';
 
 const defaultMembersSummary = {
   male: 2025,

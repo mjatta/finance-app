@@ -767,12 +767,43 @@ export default defineConfig({
   base: '/finance-app/',
   server: {
     proxy: {
+      // Proxy dashboard summary to avoid CORS during development
+      '/api/dashboard': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/dashboard/, '/api/dashboard'),
+      },
       // Proxy remote branches lookup to avoid CORS during development
       '/api/remote-branches': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-branches/, '/api/lookups'),
+      },
+      '/api/remote-countries': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-countries/, '/api/lookups'),
+      },
+      '/api/remote-member-details': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-member-details/, '/api/getmemberdetails'),
+      },
+      '/api/remote-member': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-member/, '/api/member'),
+      },
+      '/api/remote-client': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-client/, '/api/client'),
       },
       // Proxy mandatory products lookup for Product Definition main category
       '/api/mandatory-products': {
