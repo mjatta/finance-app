@@ -32,6 +32,28 @@ export default function CustomerRegistration({ user }) {
   const [reportData, setReportData] = useState(null);
 
   const [institutionBranches, setInstitutionBranches] = useState([]);
+  const [countries, setCountries] = useState([]);
+    // Fetch countries for nationality and country of residence
+    useEffect(() => {
+      const loadCountries = async () => {
+        try {
+          const response = await fetch('/api/remote-countries/countries');
+          if (!response.ok) return;
+          const payload = await response.json();
+          const countryOptions = Array.from(
+            new Set(
+              (Array.isArray(payload) ? payload : [])
+                .map((item) => (item?.cou_name || '').trim())
+                .filter(Boolean)
+            )
+          ).sort();
+          setCountries(countryOptions);
+        } catch {
+          setCountries([]);
+        }
+      };
+      loadCountries();
+    }, []);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [additionalReferences, setAdditionalReferences] = useState([]);
@@ -610,7 +632,17 @@ export default function CustomerRegistration({ user }) {
                       onChange={handleChange}
                       error={Boolean(fieldErrors.surname)}
                     />
-                    <TextField label="Customer Code" name="memberCode" value={formData.memberCode} onChange={handleChange} />
+                    <TextField
+                      label="Customer Code"
+                      name="memberCode"
+                      value={formData.memberCode}
+                      InputProps={{ readOnly: true }}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          backgroundColor: '#f0f0f0',
+                        },
+                      }}
+                    />
                     <TextField
                       select
                       required
@@ -688,7 +720,17 @@ export default function CustomerRegistration({ user }) {
                       <MenuItem value="ngo">NGO</MenuItem>
                       <MenuItem value="cooperative">Cooperative</MenuItem>
                     </TextField>
-                    <TextField label="Customer Code" name="institutionMemberCode" value={formData.institutionMemberCode} onChange={handleChange} />
+                    <TextField
+                      label="Customer Code"
+                      name="institutionMemberCode"
+                      value={formData.institutionMemberCode}
+                      InputProps={{ readOnly: true }}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          backgroundColor: '#f0f0f0',
+                        },
+                      }}
+                    />
                     <TextField
                       select
                       required
@@ -904,13 +946,19 @@ export default function CustomerRegistration({ user }) {
                             <MenuItem value="other">Other</MenuItem>
                           </TextField>
                           <TextField
-                            required
-                            label="Nationality"
-                            name="nationality"
-                            value={formData.nationality}
-                            onChange={handleChange}
-                            error={Boolean(fieldErrors.nationality)}
-                          />
+                              required
+                              select
+                              label="Nationality"
+                              name="nationality"
+                              value={formData.nationality}
+                              onChange={handleChange}
+                              error={Boolean(fieldErrors.nationality)}
+                            >
+                              <MenuItem value="">Select nationality</MenuItem>
+                              {countries.map((country) => (
+                                <MenuItem key={country} value={country}>{country}</MenuItem>
+                              ))}
+                            </TextField>
                           <TextField label="Tribe" name="tribe" value={formData.tribe} onChange={handleChange} />
                           <TextField label="Level of Education" name="levelOfEducation" value={formData.levelOfEducation} onChange={handleChange} />
                           <TextField
@@ -1154,20 +1202,19 @@ export default function CustomerRegistration({ user }) {
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                         <TextField
-                          select
-                          required
-                          label="Country of Residence"
-                          name="country"
-                          value={formData.country}
-                          onChange={handleChange}
-                          error={Boolean(fieldErrors.country)}
-                        >
-                          <MenuItem value="">Select country</MenuItem>
-                          <MenuItem value="gambia">Gambia</MenuItem>
-                          <MenuItem value="senegal">Senegal</MenuItem>
-                          <MenuItem value="guinea">Guinea</MenuItem>
-                          <MenuItem value="sierra-leone">Sierra Leone</MenuItem>
-                        </TextField>
+                                  select
+                                  required
+                                  label="Country of Residence"
+                                  name="country"
+                                  value={formData.country}
+                                  onChange={handleChange}
+                                  error={Boolean(fieldErrors.country)}
+                                >
+                                  <MenuItem value="">Select country</MenuItem>
+                                  {countries.map((country) => (
+                                    <MenuItem key={country} value={country}>{country}</MenuItem>
+                                  ))}
+                                </TextField>
                         <TextField select label="City" name="city" value={formData.city} onChange={handleChange}>
                           <MenuItem value="">Select city</MenuItem>
                           <MenuItem value="banjul">Banjul</MenuItem>
@@ -1288,20 +1335,6 @@ export default function CustomerRegistration({ user }) {
                             error={Boolean(fieldErrors.registrationFee)}
                           />
                           <TextField
-                            label="Account Number"
-                            name="contributionAccountNumber"
-                            value={formData.contributionAccountNumber}
-                            onChange={handleChange}
-                            error={Boolean(fieldErrors.contributionAccountNumber)}
-                          />
-                          <TextField
-                            label="Account Name"
-                            name="contributionAccountName"
-                            value={formData.contributionAccountName}
-                            onChange={handleChange}
-                            error={Boolean(fieldErrors.contributionAccountName)}
-                          />
-                          <TextField
                             label="Saving Amount"
                             name="savingAmount"
                             value={formData.savingAmount}
@@ -1370,56 +1403,10 @@ export default function CustomerRegistration({ user }) {
                             onChange={handleChange}
                             error={Boolean(fieldErrors.signatory1)}
                           />
-                          <TextField
-                            required
-                            label="Signatory 2"
-                            name="signatory2"
-                            value={formData.signatory2}
-                            onChange={handleChange}
-                            error={Boolean(fieldErrors.signatory2)}
-                          />
-                          <TextField
-                            label="Signatory 3"
-                            name="signatory3"
-                            value={formData.signatory3}
-                            onChange={handleChange}
-                          />
-                          <TextField
-                            label="Default Batch"
-                            name="defaultBatch"
-                            value={formData.defaultBatch}
-                            onChange={handleChange}
-                          />
                         </Box>
                       </CardContent>
                     </Card>
                   </Box>
-
-                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-                        Product DataGrid
-                      </Typography>
-                      <div style={{ height: 200, width: '100%' }}>
-                        <DataGrid
-                          rows={[]}
-                          columns={[
-                            { field: 'productName', headerName: 'Product Name', flex: 1, minWidth: 140 },
-                            { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 140 },
-                          ]}
-                          pageSizeOptions={[10, 25]}
-                          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                          density="compact"
-                          sx={{
-                            '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
-                            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
-                            '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
-                            '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
-                          }}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
                 </Box>
               )}
 
