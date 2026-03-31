@@ -767,6 +767,20 @@ export default defineConfig({
   base: '/finance-app/',
   server: {
     proxy: {
+      // Proxy for lookups (branches, etc.) to avoid CORS
+      '/api/lookups': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/lookups/, '/api/lookups'),
+      },
+      // Proxy for getmember endpoint to avoid CORS
+      '/api/getmember': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/getmember/, '/api/getmember'),
+      },
       // Proxy dashboard summary to avoid CORS during development
       '/api/dashboard': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
@@ -811,6 +825,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/client/, '/api/client'),
+      },
+      // Proxy for institution registration to avoid CORS
+      '/api/corporategroupmember': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/corporategroupmember/, '/api/corporategroupmember'),
       },
       // Proxy mandatory products lookup for Product Definition main category
       '/api/mandatory-products': {
