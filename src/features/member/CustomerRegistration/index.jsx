@@ -81,10 +81,16 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
+import { useGetRecentMemberCode } from './hooks/useGetRecentMemberCode';
+import { useFetchRecentIndividualDetails } from './hooks/useFetchRecentIndividualDetails';
+import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function CustomerRegistration(props) {
+  const { getRecentMemberCode } = useGetRecentMemberCode();
+  const { fetchRecentIndividualDetails } = useFetchRecentIndividualDetails();
   const { registerInstitution } = useRegisterInstitution();
+  const { registerIndividual } = useRegisterIndividual();
   // If you need user, get it from props.user, else remove
   const user = props.user;
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
@@ -381,10 +387,89 @@ export default function CustomerRegistration(props) {
     }
 
     // Validation (unchanged)
+
     if (mainTab === 0) {
-      // ...existing code...
+      // Individual tab: map fields to backend payload and call useRegisterIndividual
+      const individualPayload = {
+        FName: formData.firstName,
+        MName: formData.middleName,
+        LName: formData.surname,
+        Employed: !!formData.memberEmployed,
+        Title: Number(formData.title) || '',
+        NatCode: Number(formData.nationality) || '',
+        DOB: formData.dateOfBirth,
+        DateJoin: formData.dateJoined,
+        Gender: Number(formData.gender) || '',
+        Marital: Number(formData.maritalStatus) || '',
+        IDType: Number(formData.idType) || '',
+        IDNumber: formData.idNumber,
+        PlaceIssued: formData.placeIssue,
+        DateIssue: formData.dateIssued,
+        DateExpire: formData.expiryDate,
+        Region: Number(formData.region) || '',
+        District: Number(formData.district) || '',
+        Ward: Number(formData.ward) || '',
+        Residents: !!formData.residency,
+        CustType: 'C',
+        Country: Number(formData.country) || '',
+        City: Number(formData.city) || '',
+        Street: formData.address,
+        Tel: formData.mobilePhoneNumber,
+        Tel1: formData.mobilePhoneNumber,
+        Email: formData.emailAddress,
+        Employer: Number(formData.employer) || '',
+        Salary: Number(formData.currentSalary) || '',
+        Shares: Number(formData.sharesPurchase) || '',
+        RegFee: Number(formData.registrationFee) || '',
+        RefName: formData.refereeName,
+        RefEmail: formData.refereeEmailAddress,
+        RefAddress: formData.refereeAddress,
+        RefMobile: formData.refereeMobilePhone,
+        NokName: formData.nextOfKinName,
+        NokAddress: formData.nextOfKinAddress,
+        NokMobile: formData.nextOfKinMobilePhone,
+        StaffNo: formData.employmentNumber,
+        SharePrice: Number(formData.sharePrice) || '',
+        Signatory: formData.signatory1,
+        MemberPicture: null,
+        MemberSignature: null,
+      };
+      try {
+        await registerIndividual(individualPayload);
+        // Fetch the previous (just saved) member code (decremented, zero-padded)
+        const memberCode = await getRecentMemberCode();
+        // Fetch the member details using the code
+        const memberDetails = await fetchRecentIndividualDetails(memberCode);
+        setRecentMember(memberDetails);
+        setStatusMessage('Individual registration saved successfully.');
+        notifySaveSuccess({
+          page: 'Member Administration / Registration',
+          action: 'Save Individual Registration',
+          message: 'Individual registration saved successfully.',
+          metadata: individualPayload,
+        });
+        setFormData(initialForm);
+        setAdditionalReferences([]);
+        setAdditionalNextOfKins([]);
+        setPhotoPreviewUrl('');
+        setSignaturePreviewUrl('');
+        setIsSaving(false);
+        return;
+      } catch (error) {
+        setStatusMessage('Unable to save individual registration.');
+        setStatusError(true);
+        notifySaveError({
+          page: 'Member Administration / Registration',
+          action: 'Save Individual Registration',
+          message: 'Unable to save individual registration.',
+          error,
+          metadata: individualPayload,
+        });
+        setIsSaving(false);
+        return;
+      }
     } else {
-      // ...existing code...
+      // ...existing code for institution...
     }
 
     setFieldErrors({});

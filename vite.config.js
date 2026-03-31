@@ -833,6 +833,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/corporategroupmember/, '/api/corporategroupmember'),
       },
+      // Proxy for member create endpoint to avoid CORS
+      '/api/member/create': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/member\/create/, '/api/member/create'),
+      },
       // Proxy mandatory products lookup for Product Definition main category
       '/api/mandatory-products': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
