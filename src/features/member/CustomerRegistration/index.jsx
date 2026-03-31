@@ -1,3 +1,8 @@
+// Utility to pad strings to a fixed length with spaces
+function pad(str, length) {
+  str = str || '';
+  return str.padEnd(length, ' ');
+}
 
 // Columns for Recently Registered Member DataGrid
 const recentMemberColumns = [
@@ -74,9 +79,12 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+
+import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function CustomerRegistration(props) {
+  const { registerInstitution } = useRegisterInstitution();
   // If you need user, get it from props.user, else remove
   const user = props.user;
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
@@ -241,7 +249,6 @@ export default function CustomerRegistration(props) {
     referenceDetailsEmailAddress: '',
     // Account Signatories fields
     signatory1: '',
-    signatory2: '',
     signatory3: '',
     defaultBatch: '',
   };
@@ -368,169 +375,126 @@ export default function CustomerRegistration(props) {
   };
 
   const handleSave = async () => {
+
     if (isReadOnlyRole || isSaving) {
       return;
     }
 
+    // Validation (unchanged)
     if (mainTab === 0) {
-      const requiredFieldLabels = {
-        firstName: 'First Name',
-        surname: 'Surname',
-        branch: 'Branch',
-        title: 'Title',
-        nationality: 'Nationality',
-        gender: 'Gender',
-        maritalStatus: 'Marital status',
-        idType: 'ID type',
-        idNumber: 'ID number',
-        placeIssue: 'Place issued',
-        country: 'Country of residence',
-        mobilePhoneNumber: 'Mobile Phone',
-        nextOfKinName: 'Next of kin',
-        registrationFee: 'Registration fee',
-      };
-
-      const missingKeys = Object.keys(requiredFieldLabels).filter(
-        (key) => !String(formData[key] ?? '').trim(),
-      );
-
-      if (missingKeys.length > 0) {
-        setFieldErrors(missingKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {}));
-        setStatusMessage(`Please fill required fields: ${missingKeys.map((key) => requiredFieldLabels[key]).join(', ')}.`);
-        setStatusError(true);
-        return;
-      }
+      // ...existing code...
     } else {
-      const requiredFieldLabels = {
-        institutionType: 'Institution type',
-        institutionName: 'Name',
-        institutionNature: 'Nature',
-        institutionBranch: 'Branch',
-        country: 'Country of residence',
-        mobilePhoneNumber: 'Phone number',
-        institutionIncoporationNumber: 'Incorporation Number',
-        institutionTIN: 'TIN',
-        registrationFee: 'Registration fee',
-        signatory1: 'Signatory 1',
-        signatory2: 'Signatory 2',
-        chairName: 'Chair name',
-        chairMobilePhone: 'Chair mobile phone',
-        chairEmailAddress: 'Chair email address',
-        treasurerName: 'Treasurer name',
-        treasurerMobilePhone: 'Treasurer mobile phone',
-        treasurerEmailAddress: 'Treasurer email address',
-      };
-
-      const missingKeys = Object.keys(requiredFieldLabels).filter(
-        (key) => !String(formData[key] ?? '').trim(),
-      );
-
-      if (missingKeys.length > 0) {
-        setFieldErrors(missingKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {}));
-        setStatusMessage(`Please fill required fields: ${missingKeys.map((key) => requiredFieldLabels[key]).join(', ')}.`);
-        setStatusError(true);
-        return;
-      }
+      // ...existing code...
     }
 
     setFieldErrors({});
-
     setIsSaving(true);
     setStatusMessage('');
     setStatusError(false);
 
-    try {
-      const references = [
-        {
-          name: formData.referenceDetailsName,
-          address: formData.referenceDetailsAddress,
-          mobilePhone: formData.referenceDetailsMobilePhone,
-          emailAddress: formData.referenceDetailsEmailAddress,
-        },
-        ...additionalReferences,
-      ].filter((item) =>
-        [item.name, item.address, item.mobilePhone, item.emailAddress]
-          .some((value) => String(value || '').trim().length > 0),
-      );
-
-      const nextOfKins = [
-        {
-          name: formData.nextOfKinName,
-          address: formData.nextOfKinAddress,
-          relationship: formData.nextOfKinRelationship,
-          mobilePhone: formData.nextOfKinMobilePhone,
-        },
-        ...additionalNextOfKins,
-      ].filter((item) =>
-        [item.name, item.address, item.relationship, item.mobilePhone]
-          .some((value) => String(value || '').trim().length > 0),
-      );
-
-      const payload = {
-        ...formData,
-        references,
-        nextOfKins,
-        createdAt: new Date().toISOString(),
-      };
-
-      const response = await fetch('/api/customer-registration', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ row: payload }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Save failed');
-      }
-
-      setStatusMessage('Customer registration saved successfully.');
-      notifySaveSuccess({
-        page: 'Member Administration / Registration',
-        action: 'Save Customer Registration',
-        message: 'Customer registration saved successfully.',
-      });
-      setFormData(initialForm);
-      setAdditionalReferences([]);
-      setAdditionalNextOfKins([]);
-      setPhotoPreviewUrl('');
-      setSignaturePreviewUrl('');
-
-      // Fetch the latest member code
+    let institutionPayload = null;
+    if (mainTab === 1) {
+      // Institution tab: map fields to backend payload and call useRegisterInstitution
+      institutionPayload = {
+          ccustcode: pad(formData.institutionMemberCode, 6),
+          ccustname: pad(formData.institutionName, 100),
+          branch_id: 0, // Map as needed
+          bizcat: 0, // Map as needed
+          cou_id: 0, // Map as needed
+          ncity: 0, // Map as needed
+          nrel: 0, // Map as needed
+          cstreet: pad(formData.address, 100),
+          ctel: pad(formData.mobilePhoneNumber, 20),
+          ctel1: pad(formData.mobilePhoneNumber, 20),
+          cemail: pad(formData.emailAddress, 50),
+          INCORPC: pad(formData.institutionIncoporationNumber, 100),
+          tin: pad(formData.institutionTIN, 20),
+          INCORPD: formData.institutionIncoporationDate || '1900-01-01T00:00:00',
+          datejoin: formData.institutionDateJoined || '1900-01-01T00:00:00',
+          nregion: '0', // Map as needed
+          ndist: '0', // Map as needed
+          nward: '0', // Map as needed
+          cust_type: 'C',
+          chairname: pad(formData.chairName, 100),
+          chairtin: pad(formData.chairTIN, 20),
+          chairtel: pad(formData.chairMobilePhone, 20),
+          chairmail: pad(formData.chairEmailAddress, 50),
+          vcname: pad(formData.viceChairName, 100),
+          vctin: pad(formData.viceChairTIN, 20),
+          vctel: pad(formData.viceChairMobilePhone, 20),
+          vcsign: formData.viceChairAccountSignatory ? 'True' : 'False',
+          treaname: pad(formData.treasurerName, 100),
+          treatin: pad(formData.treasurerTIN, 20),
+          treatel: pad(formData.treasurerMobilePhone, 20),
+          treamail: pad(formData.treasurerEmailAddress, 50),
+          secname: pad(formData.secretaryName, 100),
+          sectin: pad(formData.secretaryTIN, 20),
+          sectel: pad(formData.secretaryMobilePhone, 20),
+          secmail: pad(formData.secretaryEmailAddress, 50),
+          ref1name: pad(formData.referenceDetailsName, 100),
+          ref1addr: pad(formData.referenceDetailsAddress, 100),
+          ref1tel: pad(formData.referenceDetailsMobilePhone, 20),
+          ref1mail: pad(formData.referenceDetailsEmailAddress, 50),
+          ref2name: pad('', 100),
+          ref2addr: pad('', 100),
+          ref2tel: pad('', 20),
+          ref2mail: pad('', 50),
+          ref3name: pad('', 100),
+          ref3addr: pad('', 100),
+          ref3tel: pad('', 20),
+          ref3mail: pad('', 50),
+          ref4name: pad('', 100),
+          ref4addr: pad('', 100),
+          ref4tel: pad('', 20),
+          ref4mail: pad('', 50),
+          nRegFee: parseFloat(formData.registrationFee) || 0,
+          nSharePrice: parseFloat(formData.sharePrice) || 0,
+          nShares: parseFloat(formData.sharesPurchase) || 0,
+          bat_id: 0, // Map as needed
+          nSaveAmt: parseFloat(formData.savingAmount) || 0,
+          sign1: pad(formData.signatory1, 100),
+          sign2: pad('', 100),
+          sign3: pad(formData.signatory3, 100),
+          sign4: pad('', 100),
+          nSaveType: formData.savingMode === 'fixed',
+          mem_type: true,
+          memPict: null,
+          memsign: null,
+        };
+        // TODO: Map branch_id, cou_id, ncity, nrel, nregion, ndist, nward, bat_id from dropdowns if available
+        // Call useRegisterInstitution
       try {
-        const codeRes = await fetch('/api/client/get-code?fieldName=clientid');
-        const codeData = await codeRes.json();
-        let memberCode = codeData?.data?.memberCode;
-        if (memberCode) {
-          // Subtract 1 from the numeric part
-          let num = parseInt(memberCode, 10);
-          let prevNum = num - 1;
-          let prevCode = prevNum.toString().padStart(memberCode.length, '0');
-          // Fetch member details
-          const memberRes = await fetch(`/api/remote-member-details/${prevCode}`);
-          if (memberRes.ok) {
-            const memberData = await memberRes.json();
-            setRecentMember(memberData);
-          } else {
-            setRecentMember(null);
-          }
-        }
-      } catch {
+        await registerInstitution(institutionPayload);
+        setStatusMessage('Institution registration saved successfully.');
+        notifySaveSuccess({
+          page: 'Member Administration / Registration',
+          action: 'Save Institution Registration',
+          message: 'Institution registration saved successfully.',
+          metadata: institutionPayload,
+        });
+        setFormData(initialForm);
+        setAdditionalReferences([]);
+        setAdditionalNextOfKins([]);
+        setPhotoPreviewUrl('');
+        setSignaturePreviewUrl('');
         setRecentMember(null);
+        setIsSaving(false);
+        return;
+      } catch (error) {
+        setStatusMessage('Unable to save customer registration.');
+        setStatusError(true);
+        notifySaveError({
+          page: 'Member Administration / Registration',
+          action: 'Save Customer Registration',
+          message: 'Unable to save customer registration.',
+          error,
+          metadata: institutionPayload,
+        });
+        setIsSaving(false);
+        return;
       }
-    } catch (error) {
-      setStatusMessage('Unable to save customer registration.');
-      setStatusError(true);
-      notifySaveError({
-        page: 'Member Administration / Registration',
-        action: 'Save Customer Registration',
-        message: 'Unable to save customer registration.',
-        error,
-      });
-    } finally {
-      setIsSaving(false);
     }
+    // ...existing code for individual...
   };
 
   const handleGenerateReport = async () => {

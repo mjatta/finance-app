@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import DownloadIcon from '@mui/icons-material/Download';
 import {
   Box,
   Button,
@@ -26,6 +27,23 @@ const formatDateTime = (isoDate) => {
 
 export default function SaveLogs() {
   const [logs, setLogs] = useState(() => getSaveLogs());
+
+  const handleDownloadLog = (log) => {
+    // If log.metadata is the payload, include it as 'payload' in the output
+    const logWithPayload = { ...log };
+    if (log.metadata) {
+      logWithPayload.payload = log.metadata;
+    }
+    const blob = new Blob([JSON.stringify(logWithPayload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `save-log-${log.id}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 80, hide: true },
@@ -64,6 +82,23 @@ export default function SaveLogs() {
       flex: 1,
       minWidth: 150,
       valueFormatter: (value) => value || '-',
+    },
+    {
+      field: 'download',
+      headerName: 'Download',
+      width: 110,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={() => handleDownloadLog(logs.find((l) => l.id === params.row.id))}
+        >
+          Download
+        </Button>
+      ),
     },
   ];
 
