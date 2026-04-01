@@ -819,6 +819,12 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-client/, '/api/client'),
       },
+      '/api/remote-cities': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-cities/, '/api/lookups'),
+      },
       // Proxy /api/client for get-code endpoint to avoid CORS
       '/api/client': {
         target: 'http://alakuyateh-001-site10.atempurl.com',

@@ -1,10 +1,163 @@
-// Utility to pad strings to a fixed length with spaces
-function pad(str, length) {
-  str = str || '';
-  return str.padEnd(length, ' ');
-}
 
-// Columns for Recently Registered Member DataGrid
+import React, { useEffect, useState } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  MenuItem,
+  Radio,
+  RadioGroup,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import { useRegisterInstitution } from './hooks/useRegisterInstitution';
+import { useGetRecentMemberCode } from './hooks/useGetRecentMemberCode';
+import { useFetchRecentIndividualDetails } from './hooks/useFetchRecentIndividualDetails';
+import { useRegisterIndividual } from './hooks/useRegisterIndividual';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useCities } from './hooks/useCities';
+
+// Tab group styles
+const mainTabGroupSx = {
+  minHeight: 52,
+  mb: 2,
+  p: 0.6,
+  borderRadius: 2.5,
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'action.hover',
+  '& .MuiTabs-indicator': {
+    display: 'none',
+  },
+  '& .MuiTab-root': {
+    minHeight: 38,
+    textTransform: 'none',
+    borderRadius: 1.75,
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    color: 'text.secondary',
+    px: 2,
+    transition: 'all 0.2s ease',
+  },
+  '& .MuiTab-root:hover': {
+    color: 'text.primary',
+    bgcolor: 'action.selected',
+  },
+  '& .MuiTab-root.Mui-selected': {
+    color: 'primary.main',
+    bgcolor: 'background.paper',
+    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.10)',
+  },
+};
+
+const detailTabGroupSx = {
+  minHeight: 50,
+  mb: 2,
+  p: 0.6,
+  borderRadius: 2,
+  bgcolor: 'action.hover',
+  border: '1px solid',
+  borderColor: 'divider',
+  '& .MuiTabs-indicator': {
+    display: 'none',
+  },
+  '& .MuiTab-root': {
+    minHeight: 36,
+    textTransform: 'none',
+    borderRadius: 1.5,
+    fontWeight: 600,
+    fontSize: '0.88rem',
+    color: 'text.secondary',
+    px: 1.8,
+    transition: 'all 0.2s ease',
+  },
+  '& .MuiTab-root:hover': {
+    color: 'text.primary',
+    bgcolor: 'action.selected',
+  },
+  '& .MuiTab-root.Mui-selected': {
+    color: 'primary.main',
+    bgcolor: 'background.paper',
+    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.08)',
+  },
+};
+
+export default function CustomerRegistration(props) {
+  const { getRecentMemberCode } = useGetRecentMemberCode();
+  const { fetchRecentIndividualDetails } = useFetchRecentIndividualDetails();
+  const { registerInstitution } = useRegisterInstitution();
+  const { registerIndividual } = useRegisterIndividual();
+  const { cities } = useCities();
+  // If you need user, get it from props.user, else remove
+  const user = props.user;
+  const isReadOnlyRole = Boolean(user?.access?.readOnly);
+  const [recentMember, setRecentMember] = useState(null);
+  const [mainTab, setMainTab] = useState(0);
+  const [detailTab, setDetailTab] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusError, setStatusError] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [reportData, setReportData] = useState(null);
+  const [institutionBranches, setInstitutionBranches] = useState([]);
+  const [countries, setCountries] = useState([]);
+
+  // Fetch institution branches for branch dropdowns
+  useEffect(() => {
+    const loadInstitutionBranches = async () => {
+      try {
+        const response = await fetch('/api/remote-branches/branches');
+        if (!response.ok) return;
+        const payload = await response.json();
+        const branchOptions = Array.from(
+          new Set(
+            (Array.isArray(payload) ? payload : [])
+              .map((item) => (item?.br_name || item?.branchName || item?.name || '').trim())
+              .filter(Boolean)
+          )
+        );
+        setInstitutionBranches(branchOptions);
+      } catch {
+        setInstitutionBranches([]);
+      }
+    };
+    loadInstitutionBranches();
+  }, []);
+
+  // Fetch countries for nationality and country of residence
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        const response = await fetch('/api/remote-countries/countries');
+        if (!response.ok) return;
+        const payload = await response.json();
+        const countryOptions = Array.from(
+          new Set(
+            (Array.isArray(payload) ? payload : [])
+              .map((item) => (item?.cou_name || '').trim())
+              .filter(Boolean)
+          )
+        ).sort();
+        setCountries(countryOptions);
+      } catch {
+        setCountries([]);
+      }
+    };
+    loadCountries();
+  }, []);
+
+  // Columns for Recently Registered Member DataGrid
 const recentMemberColumns = [
   { field: 'memberCode', headerName: 'Customer Code', flex: 1, minWidth: 120 },
   { field: 'fullName', headerName: 'First Name and Surname', flex: 1.5, minWidth: 180 },
@@ -23,7 +176,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
     if (isNaN(d.getTime())) return '';
     return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
-  }
+  };
+
   // Try all possible date fields for join and birth
   const dateJoinedRaw = row.dateJoined || row.date_joined || row.datejoin || row.ddatejoin;
   const dateOfBirthRaw = row.dateOfBirth || row.date_of_birth || row.ddatebirth || row.dob;
@@ -57,100 +211,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   };
 }
 
-import React, { useEffect, useState } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
-
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Checkbox,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
-
-import { useRegisterInstitution } from './hooks/useRegisterInstitution';
-import { useGetRecentMemberCode } from './hooks/useGetRecentMemberCode';
-import { useFetchRecentIndividualDetails } from './hooks/useFetchRecentIndividualDetails';
-import { useRegisterIndividual } from './hooks/useRegisterIndividual';
-import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-
-export default function CustomerRegistration(props) {
-  const { getRecentMemberCode } = useGetRecentMemberCode();
-  const { fetchRecentIndividualDetails } = useFetchRecentIndividualDetails();
-  const { registerInstitution } = useRegisterInstitution();
-  const { registerIndividual } = useRegisterIndividual();
-  // If you need user, get it from props.user, else remove
-  const user = props.user;
-  const isReadOnlyRole = Boolean(user?.access?.readOnly);
-  const [recentMember, setRecentMember] = useState(null);
-  const [mainTab, setMainTab] = useState(0);
-  const [detailTab, setDetailTab] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusError, setStatusError] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [reportData, setReportData] = useState(null);
-  const [institutionBranches, setInstitutionBranches] = useState([]);
-    // Fetch institution branches for branch dropdowns
-    useEffect(() => {
-      const loadInstitutionBranches = async () => {
-        try {
-          const response = await fetch('/api/remote-branches/branches');
-          if (!response.ok) return;
-          const payload = await response.json();
-          const branchOptions = Array.from(
-            new Set(
-              (Array.isArray(payload) ? payload : [])
-                .map((item) => (item?.br_name || item?.branchName || item?.name || '').trim())
-                .filter(Boolean)
-            )
-          );
-          setInstitutionBranches(branchOptions);
-        } catch {
-          setInstitutionBranches([]);
-        }
-      };
-      loadInstitutionBranches();
-    }, []);
-  const [countries, setCountries] = useState([]);
-    // Fetch countries for nationality and country of residence
-    useEffect(() => {
-      const loadCountries = async () => {
-        try {
-          const response = await fetch('/api/remote-countries/countries');
-          if (!response.ok) return;
-          const payload = await response.json();
-          const countryOptions = Array.from(
-            new Set(
-              (Array.isArray(payload) ? payload : [])
-                .map((item) => (item?.cou_name || '').trim())
-                .filter(Boolean)
-            )
-          ).sort();
-          setCountries(countryOptions);
-        } catch {
-          setCountries([]);
-        }
-      };
-      loadCountries();
-    }, []);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
+
   const initialForm = {
     institutionType: 'corporate',
     institutionName: '',
@@ -227,7 +292,6 @@ export default function CustomerRegistration(props) {
     accountSignatory: '',
     deductedFromSourcePayroll: false,
     residency: 'resident',
-    // Institution board members
     chairName: '',
     chairTIN: '',
     chairMobilePhone: '',
@@ -248,16 +312,15 @@ export default function CustomerRegistration(props) {
     secretaryMobilePhone: '',
     secretaryEmailAddress: '',
     secretaryAccountSignatory: false,
-    // Reference details form fields
     referenceDetailsName: '',
     referenceDetailsAddress: '',
     referenceDetailsMobilePhone: '',
     referenceDetailsEmailAddress: '',
-    // Account Signatories fields
     signatory1: '',
     signatory3: '',
     defaultBatch: '',
   };
+
   const [formData, setFormData] = useState(initialForm);
 
   const handleChange = (event) => {
@@ -481,75 +544,85 @@ export default function CustomerRegistration(props) {
     if (mainTab === 1) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
       institutionPayload = {
-          ccustcode: pad(formData.institutionMemberCode, 6),
-          ccustname: pad(formData.institutionName, 100),
-          branch_id: 0, // Map as needed
-          bizcat: 0, // Map as needed
-          cou_id: 0, // Map as needed
-          ncity: 0, // Map as needed
-          nrel: 0, // Map as needed
-          cstreet: pad(formData.address, 100),
-          ctel: pad(formData.mobilePhoneNumber, 20),
-          ctel1: pad(formData.mobilePhoneNumber, 20),
-          cemail: pad(formData.emailAddress, 50),
-          INCORPC: pad(formData.institutionIncoporationNumber, 100),
-          tin: pad(formData.institutionTIN, 20),
-          INCORPD: formData.institutionIncoporationDate || '1900-01-01T00:00:00',
-          datejoin: formData.institutionDateJoined || '1900-01-01T00:00:00',
-          nregion: '0', // Map as needed
-          ndist: '0', // Map as needed
-          nward: '0', // Map as needed
-          cust_type: 'C',
-          chairname: pad(formData.chairName, 100),
-          chairtin: pad(formData.chairTIN, 20),
-          chairtel: pad(formData.chairMobilePhone, 20),
-          chairmail: pad(formData.chairEmailAddress, 50),
-          vcname: pad(formData.viceChairName, 100),
-          vctin: pad(formData.viceChairTIN, 20),
-          vctel: pad(formData.viceChairMobilePhone, 20),
-          vcsign: formData.viceChairAccountSignatory ? 'True' : 'False',
-          treaname: pad(formData.treasurerName, 100),
-          treatin: pad(formData.treasurerTIN, 20),
-          treatel: pad(formData.treasurerMobilePhone, 20),
-          treamail: pad(formData.treasurerEmailAddress, 50),
-          secname: pad(formData.secretaryName, 100),
-          sectin: pad(formData.secretaryTIN, 20),
-          sectel: pad(formData.secretaryMobilePhone, 20),
-          secmail: pad(formData.secretaryEmailAddress, 50),
-          ref1name: pad(formData.referenceDetailsName, 100),
-          ref1addr: pad(formData.referenceDetailsAddress, 100),
-          ref1tel: pad(formData.referenceDetailsMobilePhone, 20),
-          ref1mail: pad(formData.referenceDetailsEmailAddress, 50),
-          ref2name: pad('', 100),
-          ref2addr: pad('', 100),
-          ref2tel: pad('', 20),
-          ref2mail: pad('', 50),
-          ref3name: pad('', 100),
-          ref3addr: pad('', 100),
-          ref3tel: pad('', 20),
-          ref3mail: pad('', 50),
-          ref4name: pad('', 100),
-          ref4addr: pad('', 100),
-          ref4tel: pad('', 20),
-          ref4mail: pad('', 50),
-          nRegFee: parseFloat(formData.registrationFee) || 0,
-          nSharePrice: parseFloat(formData.sharePrice) || 0,
-          nShares: parseFloat(formData.sharesPurchase) || 0,
-          bat_id: 0, // Map as needed
-          nSaveAmt: parseFloat(formData.savingAmount) || 0,
-          sign1: pad(formData.signatory1, 100),
-          sign2: pad('', 100),
-          sign3: pad(formData.signatory3, 100),
-          sign4: pad('', 100),
-          nSaveType: formData.savingMode === 'fixed',
-          mem_type: true,
-          memPict: null,
-          memsign: null,
-        };
+        CustName: formData.institutionName, // Mandatory
+        BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
+        Country: Number(formData.country) || 0, // Mandatory
+        City: Number(formData.city) || 0, // Mandatory
+        Street: formData.address, // Mandatory
+        Tel: formData.mobilePhoneNumber, // Mandatory
+        Tel1: formData.mobilePhoneNumber,
+        Email: formData.emailAddress,
+        IncorporationNo: formData.institutionIncoporationNumber,
+        Tin: formData.institutionTIN,
+        IncorporationDate: formData.institutionIncoporationDate,
+        DateJoin: formData.institutionDateJoined,
+        Region: Number(formData.institutionRegion) || 0,
+        District: Number(formData.institutionDistrict) || 0,
+        Ward: Number(formData.institutionWard) || 0,
+        Residents: formData.institutionResidency === 'resident',
+        CustType: 'C',
+        ChairName: formData.chairName, // Mandatory
+        ChairTin: formData.chairTIN, // Mandatory
+        ChairTel: formData.chairMobilePhone, // Mandatory
+        ChairMail: formData.chairEmailAddress, // Mandatory
+        ChairSign: !!formData.chairAccountSignatory, // Mandatory
+        ViceName: formData.viceChairName, // Mandatory
+        ViceTin: formData.viceChairTIN, // Mandatory
+        ViceTel: formData.viceChairMobilePhone, // Mandatory
+        ViceMail: formData.viceChairEmailAddress, // Mandatory
+        ViceSign: !!formData.viceChairAccountSignatory, // Mandatory
+        TreasurerName: formData.treasurerName,
+        TreasurerTin: formData.treasurerTIN,
+        TreasurerTel: formData.treasurerMobilePhone,
+        TreasurerMail: formData.treasurerEmailAddress,
+        TreasurerSign: !!formData.treasurerAccountSignatory,
+        SecName: formData.secretaryName,
+        SecTin: formData.secretaryTIN,
+        SecTel: formData.secretaryMobilePhone,
+        SecMail: formData.secretaryEmailAddress,
+        SecSign: !!formData.secretaryAccountSignatory,
+        Ref1Name: formData.referenceDetailsName,
+        Ref1Address: formData.referenceDetailsAddress,
+        Ref1Tel: formData.referenceDetailsMobilePhone,
+        Ref1Mail: formData.referenceDetailsEmailAddress,
+        Ref2Name: '',
+        Ref2Address: '',
+        Ref2Tel: '',
+        Ref2Mail: '',
+        Ref3Name: '',
+        Ref3Address: '',
+        Ref3Tel: '',
+        Ref3Mail: '',
+        Ref4Name: '',
+        Ref4Address: '',
+        Ref4Tel: '',
+        Ref4Mail: '',
+        RegFee: Number(formData.registrationFee) || 0,
+        SharePrice: Number(formData.sharePrice) || 0,
+        Shares: Number(formData.sharesPurchase) || 0,
+        SaveAmount: Number(formData.savingAmount) || 0,
+        SaveType: formData.savingMode === 'fixed',
+        Sign1: formData.signatory1, // Mandatory
+        Sign2: '', // Mandatory (should be mapped from form if available)
+        Sign3: formData.signatory3,
+        Sign4: '',
+        // CompanyId will be set from backend response after registration
+        // BranchId is set from branches API, not user input
+        BranchId: institutionBranches && institutionBranches.length > 0 ? 1 : 0, // Default to first branch (1-based index)
+        BatId: 0,
+        MemType: 0, // Mandatory (should be mapped from dropdown)
+        Gender: Number(formData.gender) || 0, // Mandatory
+        MemberPicture: null,
+        MemberSignature: null,
+      };
         // TODO: Map branch_id, cou_id, ncity, nrel, nregion, ndist, nward, bat_id from dropdowns if available
         // Call useRegisterInstitution
       try {
-        await registerInstitution(institutionPayload);
+        const response = await registerInstitution(institutionPayload);
+        // If backend returns companyId, set it in formData
+        if (response && response.companyId) {
+          setFormData((prev) => ({ ...prev, companyId: response.companyId }));
+        }
         setStatusMessage('Institution registration saved successfully.');
         notifySaveSuccess({
           page: 'Member Administration / Registration',
@@ -694,10 +767,10 @@ export default function CustomerRegistration(props) {
                       select
                       required
                       label="Branch"
-                      name="branch"
-                      value={formData.branch}
+                      name="institutionBranch"
+                      value={formData.institutionBranch}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.branch)}
+                      error={Boolean(fieldErrors.institutionBranch)}
                       SelectProps={{
                         displayEmpty: true,
                         renderValue: (selected) => selected || 'Select branch',
@@ -746,7 +819,7 @@ export default function CustomerRegistration(props) {
                     </TextField>
                     <TextField
                       required
-                      label="Name"
+                      label="Institution Name"
                       name="institutionName"
                       value={formData.institutionName}
                       onChange={handleChange}
@@ -755,17 +828,17 @@ export default function CustomerRegistration(props) {
                     <TextField
                       select
                       required
-                      label="Nature"
+                      label="Business Category"
                       name="institutionNature"
                       value={formData.institutionNature}
                       onChange={handleChange}
                       error={Boolean(fieldErrors.institutionNature)}
                     >
-                      <MenuItem value="">Select nature</MenuItem>
-                      <MenuItem value="business">Business</MenuItem>
-                      <MenuItem value="association">Association</MenuItem>
-                      <MenuItem value="ngo">NGO</MenuItem>
-                      <MenuItem value="cooperative">Cooperative</MenuItem>
+                      <MenuItem value="">Select business category</MenuItem>
+                      <MenuItem value={1}>Business</MenuItem>
+                      <MenuItem value={2}>Association</MenuItem>
+                      <MenuItem value={3}>NGO</MenuItem>
+                      <MenuItem value={4}>Cooperative</MenuItem>
                     </TextField>
                     <TextField
                       label="Customer Code"
@@ -778,26 +851,7 @@ export default function CustomerRegistration(props) {
                         },
                       }}
                     />
-                    <TextField
-                      select
-                      required
-                      label="Branch"
-                      name="institutionBranch"
-                      value={formData.institutionBranch}
-                      onChange={handleChange}
-                      error={Boolean(fieldErrors.institutionBranch)}
-                      SelectProps={{
-                        displayEmpty: true,
-                        renderValue: (selected) => selected || 'Select branch',
-                      }}
-                    >
-                      <MenuItem value="" disabled>Select branch</MenuItem>
-                      {institutionBranches.map((item) => (
-                        <MenuItem key={item} value={item}>
-                          {item}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    {/* Company ID and Branch ID fields removed: set from backend/API only */}
                   </Box>
                 </Box>
               )}
@@ -833,36 +887,59 @@ export default function CustomerRegistration(props) {
                           <TextField
                             select
                             required
-                            label="Country of Residence"
+                            label="Country"
                             name="country"
                             value={formData.country}
                             onChange={handleChange}
                             error={Boolean(fieldErrors.country)}
                           >
                             <MenuItem value="">Select country</MenuItem>
-                            <MenuItem value="gambia">Gambia</MenuItem>
-                            <MenuItem value="senegal">Senegal</MenuItem>
-                            <MenuItem value="guinea">Guinea</MenuItem>
-                            <MenuItem value="sierra-leone">Sierra Leone</MenuItem>
+                            {countries.map((country) => (
+                              <MenuItem key={country} value={country}>
+                                {country}
+                              </MenuItem>
+                            ))}
                           </TextField>
-                          <TextField select label="City" name="city" value={formData.city} onChange={handleChange}>
+                          <TextField
+                            select
+                            required
+                            label="City"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.city)}
+                          >
                             <MenuItem value="">Select city</MenuItem>
-                            <MenuItem value="banjul">Banjul</MenuItem>
-                            <MenuItem value="serrekunda">Serrekunda</MenuItem>
-                            <MenuItem value="brikama">Brikama</MenuItem>
-                            <MenuItem value="bakau">Bakau</MenuItem>
+                            {cities.map((city) => (
+                              <MenuItem key={city} value={city}>
+                                {city}
+                              </MenuItem>
+                            ))}
                           </TextField>
-                          <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
                           <TextField
                             required
-                            label="Mobile Phone number"
+                            label="Street"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.address)}
+                          />
+                          <TextField
+                            required
+                            label="Tel"
                             name="mobilePhoneNumber"
                             value={formData.mobilePhoneNumber}
                             onChange={handleChange}
                             error={Boolean(fieldErrors.mobilePhoneNumber)}
                           />
                           <TextField
-                            label="Email address"
+                            label="Tel1"
+                            name="tel1"
+                            value={formData.tel1 || ''}
+                            onChange={handleChange}
+                          />
+                          <TextField
+                            label="Email"
                             name="emailAddress"
                             value={formData.emailAddress}
                             onChange={handleChange}
@@ -1264,10 +1341,9 @@ export default function CustomerRegistration(props) {
                                 </TextField>
                         <TextField select label="City" name="city" value={formData.city} onChange={handleChange}>
                           <MenuItem value="">Select city</MenuItem>
-                          <MenuItem value="banjul">Banjul</MenuItem>
-                          <MenuItem value="serrekunda">Serrekunda</MenuItem>
-                          <MenuItem value="brikama">Brikama</MenuItem>
-                          <MenuItem value="bakau">Bakau</MenuItem>
+                          {cities.map((city) => (
+                            <MenuItem key={city} value={city}>{city}</MenuItem>
+                          ))}
                         </TextField>
                         <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
                         <TextField
@@ -1817,68 +1893,3 @@ export default function CustomerRegistration(props) {
     </Box>
   );
 }
-
-// Tab group styles
-const mainTabGroupSx = {
-  minHeight: 52,
-  mb: 2,
-  p: 0.6,
-  borderRadius: 2.5,
-  border: '1px solid',
-  borderColor: 'divider',
-  bgcolor: 'action.hover',
-  '& .MuiTabs-indicator': {
-    display: 'none',
-  },
-  '& .MuiTab-root': {
-    minHeight: 38,
-    textTransform: 'none',
-    borderRadius: 1.75,
-    fontWeight: 700,
-    fontSize: '0.95rem',
-    color: 'text.secondary',
-    px: 2,
-    transition: 'all 0.2s ease',
-  },
-  '& .MuiTab-root:hover': {
-    color: 'text.primary',
-    bgcolor: 'action.selected',
-  },
-  '& .MuiTab-root.Mui-selected': {
-    color: 'primary.main',
-    bgcolor: 'background.paper',
-    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.10)',
-  },
-};
-
-const detailTabGroupSx = {
-  minHeight: 50,
-  mb: 2,
-  p: 0.6,
-  borderRadius: 2,
-  bgcolor: 'action.hover',
-  border: '1px solid',
-  borderColor: 'divider',
-  '& .MuiTabs-indicator': {
-    display: 'none',
-  },
-  '& .MuiTab-root': {
-    minHeight: 36,
-    textTransform: 'none',
-    borderRadius: 1.5,
-    fontWeight: 600,
-    fontSize: '0.88rem',
-    color: 'text.secondary',
-    px: 1.8,
-    transition: 'all 0.2s ease',
-  },
-  '& .MuiTab-root:hover': {
-    color: 'text.primary',
-    bgcolor: 'action.selected',
-  },
-  '& .MuiTab-root.Mui-selected': {
-    color: 'primary.main',
-    bgcolor: 'background.paper',
-    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.08)',
-  },
-};
