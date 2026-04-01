@@ -57,7 +57,7 @@ const CustomerRegistration = lazy(() => import('./features/member/CustomerRegist
 const AddMemberAccount = lazy(() => import('./features/member/AddMemberAccount'));
 const MemberActivate = lazy(() => import('./features/member/MemberActivate'));
 const MemberCloseAccount = lazy(() => import('./features/member/MemberCloseAccount'));
-const MemberActivation = lazy(() => import('./features/member/MemberActivation'));
+const AccountActivation = lazy(() => import('./features/member/AccountActivation'));
 const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
 const MemberClose = lazy(() => import('./features/member/MemberClose'));
 const MemberPayrollManagement = lazy(() => import('./features/member/MemberPayrollManagement'));
@@ -613,7 +613,7 @@ function App() {
                     />
                     <Route
                       path="/member/member-activation"
-                      element={renderWithAccess('member', <MemberActivation />)}
+                      element={renderWithAccess('member', <AccountActivation />)}
                     />
                     <Route
                       path="/member/member-close"
