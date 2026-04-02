@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -11,12 +11,15 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useMembersForActivation } from './Hooks/useMembersForActivation';
 
 const COLUMNS = [
-  { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 150 },
-  { field: 'accountName', headerName: 'Account Name', flex: 1.5, minWidth: 200 },
-  { field: 'accountBalance', headerName: 'Account Balance', flex: 1, minWidth: 150 },
-  { field: 'status', headerName: 'Status', flex: 1, minWidth: 120 },
+  { field: 'customerCode', headerName: 'Customer Code', flex: 1, minWidth: 150, sortable: true },
+  { field: 'name', headerName: 'Name', flex: 1.5, minWidth: 200, sortable: true },
+  { field: 'dateJoined', headerName: 'Date Joined', flex: 1, minWidth: 140, sortable: true },
+  { field: 'dateOfBirth', headerName: 'Date of Birth', flex: 1, minWidth: 140, sortable: true },
+  { field: 'phoneNumber', headerName: 'Phone Number', flex: 1, minWidth: 150, sortable: true },
+  { field: 'status', headerName: 'Status', flex: 1, minWidth: 120, sortable: true },
 ];
 
 export default function AccountActivation() {
@@ -32,88 +35,72 @@ export default function AccountActivation() {
     page: 0,
   });
 
-  // Load accounts on mount
-  useEffect(() => {
-    loadAccounts();
-  }, []);
+  const [sortModel, setSortModel] = useState([]);
 
-  const loadAccounts = async () => {
+  const { fetchMembersForActivation } = useMembersForActivation();
+
+  const loadAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      // In production, replace with actual API call
-      // const response = await fetch('/api/accounts/activate');
-      // const data = await response.json();
+      const data = await fetchMembersForActivation();
 
-      // Mock data for development
-      const mockAccounts = [
-        {
-          id: 1,
-          accountNumber: 'ACC001',
-          accountName: 'John Doe Savings Account',
-          accountBalance: '25,500.00',
-          status: 'PENDING',
-        },
-        {
-          id: 2,
-          accountNumber: 'ACC002',
-          accountName: 'Jane Smith Checking Account',
-          accountBalance: '12,300.50',
-          status: 'ACTIVE',
-        },
-        {
-          id: 3,
-          accountNumber: 'ACC003',
-          accountName: 'Business Operating Account',
-          accountBalance: '45,200.75',
-          status: 'PENDING',
-        },
-        {
-          id: 4,
-          accountNumber: 'ACC004',
-          accountName: 'Emergency Fund Account',
-          accountBalance: '8,900.25',
-          status: 'INACTIVE',
-        },
-        {
-          id: 5,
-          accountNumber: 'ACC005',
-          accountName: 'Corporate Account',
-          accountBalance: '120,450.00',
-          status: 'PENDING',
-        },
-      ];
+      if (!data || data.length === 0) {
+        setAccounts([]);
+        setStatusMessage('No members pending activation.');
+        setStatusError(false);
+        return;
+      }
 
-      setAccounts(mockAccounts);
+      // Transform API response to table rows
+      const members = data.map((item, index) => ({
+        id: item.ccustcode || index,
+        customerCode: item.ccustcode?.trim() || '',
+        name: [item.ccustfname, item.ccustmname, item.ccustlname]
+          .filter((v) => v && v.trim())
+          .join(' ')
+          .trim(),
+        dateJoined: item.datejoin || '',
+        dateOfBirth: item.ddatebirth || '',
+        phoneNumber: item.ctel?.trim() || '',
+        status: 'PENDING',
+      }));
+
+      setAccounts(members);
       setStatusMessage('');
       setStatusError(false);
     } catch (error) {
-      console.error('Failed to load accounts:', error);
-      setStatusMessage('Failed to load accounts.');
+      console.error('Failed to load members:', error);
+      setStatusMessage('Failed to load member data.');
       setStatusError(true);
       notifySaveError({
         page: 'Member Administration / Account Activation',
-        action: 'Load Accounts',
-        message: 'Failed to load accounts.',
+        action: 'Load Members',
+        message: 'Failed to load member data.',
         error,
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchMembersForActivation]);
+
+  // Load members on mount only
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
 
   const handleActivateClick = () => {
     if (selectedIds.length === 0) {
-      setStatusMessage('Please select at least one account to activate.');
+      setStatusMessage('Please select at least one member to activate.');
       setStatusError(true);
       return;
     }
 
-    // Validate that all selected accounts have PENDING status
-    const selectedAccounts = accounts.filter((a) => selectedIds.includes(a.id));
-    const nonPendingAccounts = selectedAccounts.filter((a) => a.status !== 'PENDING');
+    // Validate that all selected members have PENDING status
+    const selectedMembers = accounts.filter((a) => selectedIds.includes(a.id));
+    const nonPendingMembers = selectedMembers.filter((a) => a.status !== 'PENDING');
 
-    if (nonPendingAccounts.length > 0) {
-      setStatusMessage(`Cannot activate accounts with status: ${nonPendingAccounts.map((a) => a.status).join(', ')}. Only PENDING accounts can be activated.`);
+    if (nonPendingMembers.length > 0) {
+      setStatusMessage(`Cannot activate members with status: ${nonPendingMembers.map((a) => a.status).join(', ')}. Only PENDING members can be activated.`);
       setStatusError(true);
       return;
     }
@@ -126,12 +113,12 @@ export default function AccountActivation() {
     setOpenConfirmModal(false);
 
     try {
-      const selectedAccounts = accounts.filter((a) => selectedIds.includes(a.id));
+      const selectedMembers = accounts.filter((a) => selectedIds.includes(a.id));
 
-      // Call endpoint for each selected account
-      for (let i = 0; i < selectedAccounts.length; i += 1) {
+      // Call endpoint for each selected member
+      for (let i = 0; i < selectedMembers.length; i += 1) {
         // In production, replace with actual API endpoint
-        // const response = await fetch(`/api/accounts/${selectedAccounts[i].id}/activate`, {
+        // const response = await fetch(`/api/members/${selectedMembers[i].id}/activate`, {
         //   method: 'POST',
         //   headers: { 'Content-Type': 'application/json' },
         // });
@@ -141,30 +128,30 @@ export default function AccountActivation() {
       }
 
       // Update local state to reflect status change
-      const updatedAccounts = accounts.map((a) =>
+      const updatedMembers = accounts.map((a) =>
         selectedIds.includes(a.id) ? { ...a, status: 'ACTIVE' } : a
       );
-      setAccounts(updatedAccounts);
+      setAccounts(updatedMembers);
 
       setStatusMessage(
-        `Successfully activated ${selectedAccounts.length} account${selectedAccounts.length > 1 ? 's' : ''}.`
+        `Successfully activated ${selectedMembers.length} member${selectedMembers.length > 1 ? 's' : ''}.`
       );
       setStatusError(false);
       setSelectedIds([]);
 
       notifySaveSuccess({
         page: 'Member Administration / Account Activation',
-        action: 'Activate Accounts',
-        message: `Successfully activated ${selectedAccounts.length} account(s).`,
+        action: 'Activate Members',
+        message: `Successfully activated ${selectedMembers.length} member(s).`,
       });
     } catch (error) {
-      console.error('Failed to activate accounts:', error);
-      setStatusMessage('Failed to activate selected accounts.');
+      console.error('Failed to activate members:', error);
+      setStatusMessage('Failed to activate selected members.');
       setStatusError(true);
       notifySaveError({
         page: 'Member Administration / Account Activation',
-        action: 'Activate Accounts',
-        message: 'Failed to activate selected accounts.',
+        action: 'Activate Members',
+        message: 'Failed to activate selected members.',
         error,
       });
     } finally {
@@ -190,10 +177,10 @@ export default function AccountActivation() {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          Account Activation
+          Member Activation
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>
-          Manage and activate member accounts efficiently
+          Activate pending members and manage their account status
         </Typography>
       </Box>
 
@@ -264,7 +251,7 @@ export default function AccountActivation() {
         }}
       >
         <Typography variant="body2" sx={{ color: '#1565c0' }}>
-          💡 <strong>Tip:</strong> Click on any row to select/deselect accounts with PENDING status. Click the "Activate Selected" button to proceed with activation.
+          💡 <strong>Tip:</strong> Click on any row to select/deselect members with PENDING status. Click the "Activate Selected" button to proceed with activation.
         </Typography>
       </Box>
 
@@ -322,7 +309,7 @@ export default function AccountActivation() {
 
       <Box 
         sx={{ 
-          height: 400, 
+          height: 450, 
           width: '100%',
           borderRadius: 1.5,
           border: '1px solid #e0e0e0',
@@ -336,7 +323,8 @@ export default function AccountActivation() {
           pageSizeOptions={[5, 10, 25]}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
-          hideFooter
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
           onRowClick={(params) => {
             const accountId = params.id;
             if (selectedIds.includes(accountId)) {
@@ -361,6 +349,23 @@ export default function AccountActivation() {
             '& .MuiDataGrid-columnHeader': {
               backgroundColor: '#2c3e50',
               borderBottom: '2px solid #1a252f',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              backgroundColor: '#f5f5f5',
+              borderTop: '1px solid #e0e0e0',
+              fontWeight: 500,
+            },
+            '& .MuiDataGrid-toolbarContainer': {
+              padding: '8px',
+              color: '#2c3e50',
+            },
+            '& .MuiTablePagination-root': {
+              color: '#2c3e50',
+              fontWeight: 500,
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              margin: '0 8px',
+              fontSize: '0.875rem',
             },
             '& .MuiDataGrid-row': {
               cursor: 'pointer',
@@ -391,12 +396,12 @@ export default function AccountActivation() {
         <DialogTitle sx={{ fontWeight: 700 }}>Confirm Activation</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Are you sure you want to activate the following account{selectedAccountDetails.length > 1 ? 's' : ''}?
+            Are you sure you want to activate the following member{selectedAccountDetails.length > 1 ? 's' : ''}?
           </Typography>
           <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
-            {selectedAccountDetails.map((account) => (
-              <Typography key={account.id} variant="body2" sx={{ mb: 1 }}>
-                • {account.accountNumber} - {account.accountName}
+            {selectedAccountDetails.map((member) => (
+              <Typography key={member.id} variant="body2" sx={{ mb: 1 }}>
+                • {member.customerCode} - {member.name}
               </Typography>
             ))}
           </Box>

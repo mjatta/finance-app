@@ -807,6 +807,17 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-member-details/, '/api/getmemberdetails'),
       },
+      '/api/remote-member-activate': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => {
+          // Preserve query parameters while rewriting the path
+          const [pathname, search] = path.split('?');
+          const rewrittenPath = pathname.replace(/^\/api\/remote-member-activate/, '/api/Cusystem/GetMember4Activate');
+          return search ? `${rewrittenPath}?${search}` : rewrittenPath;
+        },
+      },
       '/api/remote-member': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
