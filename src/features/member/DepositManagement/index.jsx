@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -65,6 +66,7 @@ export default function DepositManagement() {
   const [statusError, setStatusError] = useState(false);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { fetchMemberDetails, loading: isLoadingRemoteMember, error: remoteMemberError } = useGetMemberDetails();
 
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
@@ -74,6 +76,7 @@ export default function DepositManagement() {
     phoneNumber: '',
     email: '',
     postingAccount: '',
+    memberAccounts: [],
     accountBalance: '',
     accountNumber: '',
     clearedBalance: '',
@@ -105,6 +108,7 @@ export default function DepositManagement() {
       profilePicture: member.profilePicture,
       phoneNumber: member.phoneNumber,
       email: member.email,
+      memberAccounts: member.memberAccounts || [],
       accountNumber: selectedAccount?.accountNumber || '',
       accountBalance: selectedAccount?.accountBalance || '',
       clearedBalance: selectedAccount?.accountBalance || '',
@@ -123,14 +127,41 @@ export default function DepositManagement() {
     setStatusError(false);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 450));
-      const lookup = rawValue.trim().toUpperCase();
-      const member = mockMembers.find((item) => {
-        if (searchBy === 'memberCode') {
-          return item.memberCode.toUpperCase() === lookup;
+      let member = null;
+
+      // For member code, try fetching from backend API
+      if (searchBy === 'memberCode') {
+        const remoteMemberData = await fetchMemberDetails(rawValue.trim());
+        if (remoteMemberData) {
+          // Transform API response to match our local member structure
+          // Map Accounts array from API (with capital A) to accounts
+          const accounts = Array.isArray(remoteMemberData.Accounts) 
+            ? remoteMemberData.Accounts.map(acc => ({
+                accountType: acc.AccountName || 'Account',
+                accountNumber: acc.AccountNumber || '',
+                accountBalance: '0.00'
+              }))
+            : [];
+          
+          member = {
+            memberCode: remoteMemberData.memberCode || rawValue.trim(),
+            payrollNumber: remoteMemberData.payrollNumber || '',
+            profilePicture: remoteMemberData.MemberPicture || defaultProfileImage,
+            phoneNumber: remoteMemberData.Phone || '',
+            email: remoteMemberData.email || '',
+            memberAccounts: Array.isArray(remoteMemberData.Accounts) ? remoteMemberData.Accounts : [],
+            accounts: accounts.length > 0 ? accounts : [{
+              accountType: 'Account',
+              accountNumber: '',
+              accountBalance: '0.00'
+            }]
+          };
         }
-        return item.payrollNumber.toUpperCase() === lookup;
-      });
+      } else {
+        // For payroll number, use mock data as fallback
+        const lookup = rawValue.trim().toUpperCase();
+        member = mockMembers.find((item) => item.payrollNumber.toUpperCase() === lookup);
+      }
 
       if (!member) {
         setRows([]);
@@ -139,6 +170,7 @@ export default function DepositManagement() {
           profilePicture: '',
           phoneNumber: '',
           email: '',
+          memberAccounts: [],
           accountBalance: '',
           accountNumber: '',
           clearedBalance: '',
@@ -152,7 +184,8 @@ export default function DepositManagement() {
       applyMemberData(member);
       setStatusMessage('Member accounts and contact details loaded successfully.');
       setStatusError(false);
-    } catch {
+    } catch (error) {
+      console.error('Error searching for member:', error);
       setStatusMessage('Failed to load member details.');
       setStatusError(true);
     } finally {
@@ -464,7 +497,24 @@ export default function DepositManagement() {
   };
 
   return (
-    <Box p={3}>
+    <Box
+      component="fieldset"
+      p={3}
+      sx={{
+        border: 'none',
+        p: 3,
+        m: 0,
+        '& .MuiInputLabel-root, & .MuiFormLabel-root': {
+          fontWeight: 600,
+          fontSize: '1.2rem',
+        },
+        '& .MuiFormLabel-asterisk': {
+          color: 'error.main',
+          fontSize: '1.2rem',
+          fontWeight: 800,
+        },
+      }}
+    >
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
         Member Deposit
       </Typography>
@@ -503,7 +553,8 @@ export default function DepositManagement() {
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
               Contact
             </Typography>
-            <Box sx={{ display: 'grid', gap: 2 }}>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' }, alignItems: 'flex-start' }}>
+              {/* Image Column */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                 <Box
                   component="img"
@@ -522,22 +573,25 @@ export default function DepositManagement() {
                   Member profile picture
                 </Typography>
               </Box>
-              <TextField
-                label="Phone Number"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
-              />
-              <TextField
-                label="Email"
-                name="email"
-                value={formData.email}
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
-              />
+              {/* Contact Info Column */}
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <TextField
+                  label="Phone Number"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                  sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
+                />
+                <TextField
+                  label="Email"
+                  name="email"
+                  value={formData.email}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                  sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
+                />
+              </Box>
             </Box>
           </CardContent>
         </Card>
@@ -557,80 +611,285 @@ export default function DepositManagement() {
         </Typography>
       )}
 
-      <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#2c3e50' }}>
             Deposit Information
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-            Selected account to deposit to: {selectedAccountLabel}
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3, fontSize: '0.9rem' }}>
+            📌 Selected account: <strong>{selectedAccountLabel}</strong>
           </Typography>
 
+          {/* Two Column Card Layout */}
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-            <TextField
-              label="Transcation Type"
-              name="transactionType"
-              value={formData.transactionType}
-              InputProps={{ readOnly: true }}
-            />
-            <TextField select label="Posting Account" name="postingAccount" value={formData.postingAccount} onChange={handleChange}>
-              <MenuItem value="">Select posting account</MenuItem>
-              <MenuItem value="MAIN-CASH">Main Cash</MenuItem>
-              <MenuItem value="TELLER-CASH">Teller Cash</MenuItem>
-              <MenuItem value="BANK-CLEARING">Bank Clearing</MenuItem>
-            </TextField>
+            {/* Deposit Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Deposit Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    select
+                    label="Deposit Type"
+                    name="depositType"
+                    value={formData.depositType}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="cash">Cash</MenuItem>
+                    <MenuItem value="cheque">Cheque</MenuItem>
+                    <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
+                  </TextField>
+                  <TextField label="Deposit Amount" name="depositAmount" value={formData.depositAmount} onChange={handleChange} size="small" fullWidth />
+                  <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
+                  <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} size="small" fullWidth />
+                </Box>
+              </CardContent>
+            </Card>
 
-            <TextField label="Account Balance" name="accountBalance" value={formData.accountBalance} onChange={handleChange} />
-            <TextField label="Account Number" name="accountNumber" value={formData.accountNumber} onChange={handleChange} />
-            <TextField label="Cleared Balance" name="clearedBalance" value={formData.clearedBalance} onChange={handleChange} />
+            {/* Account Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Account Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Account Number"
+                    name="accountNumber"
+                    value={formData.accountNumber}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Account Balance"
+                    name="accountBalance"
+                    value={formData.accountBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Cleared Balance"
+                    name="clearedBalance"
+                    value={formData.clearedBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Uncleared Balance"
+                    name="unclearedBalance"
+                    value={formData.unclearedBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
 
-            <TextField label="Uncleared Balance" name="unclearedBalance" value={formData.unclearedBalance} onChange={handleChange} />
-            <TextField label="Reference Number" name="referenceNumber" value={formData.referenceNumber} onChange={handleChange} />
+            {/* Transaction Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Transaction Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Transaction Type"
+                    name="transactionType"
+                    value={formData.transactionType}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    select
+                    label="Posting Account"
+                    name="postingAccount"
+                    value={formData.postingAccount}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select posting account</MenuItem>
+                    {formData.memberAccounts.map((account) => (
+                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
+                        {account.AccountName}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    label="Reference Number"
+                    name="referenceNumber"
+                    value={formData.referenceNumber}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <DatePicker
+                    label="Transaction Date"
+                    value={formData.transactionDate ? dayjs(formData.transactionDate) : null}
+                    onChange={(value) => handleDateChange('transactionDate', value)}
+                    maxDate={dayjs(todayIso)}
+                    disabled
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                        disabled: true,
+                        sx: {
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            backgroundColor: '#f5f5f5',
+                            color: '#666',
+                            fontWeight: 600,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pt: 1 }}>
+                    <FormControlLabel
+                      control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}
+                      label="Send SMS fee"
+                      sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, m: 0 }}
+                    />
+                    <TextField label="Fee Amount" name="feeAmount" value={formData.feeAmount} onChange={handleChange} size="small" sx={{ width: '120px' }} />
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
 
+            {/* Check Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Check Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Check Number"
+                    name="checkNumber"
+                    value={formData.checkNumber}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <DatePicker
+                    label="Check Date"
+                    value={formData.checkDate ? dayjs(formData.checkDate) : null}
+                    onChange={(value) => handleDateChange('checkDate', value)}
+                    maxDate={dayjs(todayIso)}
+                    disabled
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                        disabled: true,
+                        sx: {
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            backgroundColor: '#f5f5f5',
+                            color: '#666',
+                            fontWeight: 600,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Additional Options - Full Width */}
+          <Box sx={{ mt: 2, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             <FormControlLabel
               control={<Checkbox name="printReceipt" checked={formData.printReceipt} onChange={handleChange} />}
-              label="Check to print receipt"
-            />
-            <DatePicker
-              label="Transaction Date"
-              value={formData.transactionDate ? dayjs(formData.transactionDate) : null}
-              onChange={(value) => handleDateChange('transactionDate', value)}
-              maxDate={dayjs(todayIso)}
-              slotProps={{ textField: { name: 'transactionDate' } }}
-            />
-
-            <FormControlLabel
-              control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}
-              label="Check to send SMS fee"
-            />
-            <TextField label="Fee Amount" name="feeAmount" value={formData.feeAmount} onChange={handleChange} />
-
-            <TextField label="Deposit Amount" name="depositAmount" value={formData.depositAmount} onChange={handleChange} />
-            <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} />
-
-            <TextField select label="Deposit Type" name="depositType" value={formData.depositType} onChange={handleChange}>
-              <MenuItem value="cash">Cash</MenuItem>
-              <MenuItem value="cheque">Cheque</MenuItem>
-              <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
-            </TextField>
-            <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} />
-
-            <TextField label="Check Number" name="checkNumber" value={formData.checkNumber} onChange={handleChange} />
-            <DatePicker
-              label="Check Date"
-              value={formData.checkDate ? dayjs(formData.checkDate) : null}
-              onChange={(value) => handleDateChange('checkDate', value)}
-              maxDate={dayjs(todayIso)}
-              slotProps={{ textField: { name: 'checkDate' } }}
+              label="Print receipt after saving"
+              sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, pt: 1 }}
             />
           </Box>
 
-          <Box sx={{ mt: 2, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-            <Button variant="contained" onClick={handleSaveDeposit} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Deposit'}
+          {/* Action Buttons */}
+          <Box sx={{ mt: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              onClick={handleSaveDeposit}
+              disabled={isSaving}
+              sx={{
+                backgroundColor: '#667eea',
+                '&:hover': { backgroundColor: '#5568d3' },
+                fontWeight: 600,
+                paddingX: 3,
+                boxShadow: 'none',
+                textTransform: 'none',
+              }}
+            >
+              {isSaving ? 'Saving...' : '💾 Save Deposit'}
             </Button>
-            <Button variant="outlined" onClick={handlePrintReceipt}>
-              Print Receipt
+            <Button
+              variant="outlined"
+              onClick={handlePrintReceipt}
+              sx={{
+                fontWeight: 600,
+                paddingX: 3,
+                textTransform: 'none',
+              }}
+            >
+              🖨️ Print Receipt
             </Button>
           </Box>
         </CardContent>
