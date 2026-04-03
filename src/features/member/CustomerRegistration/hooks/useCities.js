@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 
 // Default fallback cities if API endpoint is not available
 const DEFAULT_CITIES = [
-  'Banjul',
-  'Bakau',
-  'Brikama',
-  'Fajara',
-  'Kairaba',
-  'Kingston',
-  'Lamin',
-  'Manjai',
-  'Serrekunda',
-  'Westfield',
+  { id: 1, name: 'Banjul' },
+  { id: 2, name: 'Bakau' },
+  { id: 3, name: 'Brikama' },
+  { id: 4, name: 'Fajara' },
+  { id: 5, name: 'Kairaba' },
+  { id: 6, name: 'Kingston' },
+  { id: 7, name: 'Lamin' },
+  { id: 8, name: 'Manjai' },
+  { id: 9, name: 'Serrekunda' },
+  { id: 10, name: 'Westfield' },
 ];
 
 // Hook to fetch cities from the API with fallback to default cities
@@ -56,10 +56,13 @@ export function useCities() {
         const cityOptions = Array.from(
           new Set(
             (Array.isArray(payload) ? payload : [])
-              .map((item) => (item?.city_name || item?.cityName || item?.name || '').trim())
-              .filter(Boolean)
+              .map((item, index) => ({
+                id: item?.city_id || item?.id || index + 1,
+                name: (item?.city_name || item?.cityName || item?.name || '').trim(),
+              }))
+              .filter((item) => item.name)
           )
-        ).sort();
+        ).sort((a, b) => a.name.localeCompare(b.name));
 
         if (cityOptions.length === 0) {
           console.warn('No cities found in API response, using default cities');

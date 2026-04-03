@@ -21,11 +21,11 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
-import { useGetRecentMemberCode } from './hooks/useGetRecentMemberCode';
-import { useFetchRecentIndividualDetails } from './hooks/useFetchRecentIndividualDetails';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCities } from './hooks/useCities';
+import { initialForm } from './constants/initialFormData';
+import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
 
 // Tab group styles
 const mainTabGroupSx = {
@@ -93,8 +93,6 @@ const detailTabGroupSx = {
 };
 
 export default function CustomerRegistration(props) {
-  const { getRecentMemberCode } = useGetRecentMemberCode();
-  const { fetchRecentIndividualDetails } = useFetchRecentIndividualDetails();
   const { registerInstitution } = useRegisterInstitution();
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
@@ -142,13 +140,13 @@ export default function CustomerRegistration(props) {
         const response = await fetch('/api/remote-countries/countries');
         if (!response.ok) return;
         const payload = await response.json();
-        const countryOptions = Array.from(
-          new Set(
-            (Array.isArray(payload) ? payload : [])
-              .map((item) => (item?.cou_name || '').trim())
-              .filter(Boolean)
-          )
-        ).sort();
+        const countryOptions = (Array.isArray(payload) ? payload : [])
+          .map((item) => ({
+            id: item.cou_id || item.id || 0,
+            name: (item.cou_name || '').trim(),
+          }))
+          .filter((item) => item.name && item.id)
+          .sort((a, b) => a.name.localeCompare(b.name));
         setCountries(countryOptions);
       } catch {
         setCountries([]);
@@ -215,111 +213,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
-
-  const initialForm = {
-    institutionType: 'corporate',
-    institutionName: '',
-    institutionNature: '',
-    institutionMemberCode: '',
-    institutionBranch: '',
-    institutionIncoporationNumber: '',
-    institutionTIN: '',
-    institutionIncoporationDate: '',
-    institutionDateJoined: '',
-    institutionRegion: '',
-    institutionDistrict: '',
-    institutionWard: '',
-    institutionResidency: 'resident',
-    firstName: '',
-    middleName: '',
-    surname: '',
-    memberCode: '',
-    branch: '',
-    memberEmployed: false,
-    sendSms: false,
-    registerMobileWallet: false,
-    title: '',
-    nationality: '',
-    tribe: '',
-    levelOfEducation: '',
-    dateOfBirth: '',
-    dateJoined: '',
-    gender: '',
-    maritalStatus: '',
-    idType: '',
-    idNumber: '',
-    placeIssue: '',
-    dateIssued: '',
-    expiryDate: '',
-    povertyLevel: '',
-    region: '',
-    district: '',
-    ward: '',
-    country: '',
-    city: '',
-    address: '',
-    mobilePhoneNumber: '',
-    emailAddress: '',
-    refereeName: '',
-    refereeAddress: '',
-    refereeMobilePhone: '',
-    refereeEmailAddress: '',
-    nextOfKinName: '',
-    nextOfKinAddress: '',
-    nextOfKinRelationship: '',
-    nextOfKinMobilePhone: '',
-    employer: '',
-    employmentCountry: '',
-    employmentCity: '',
-    employmentAddress: '',
-    employmentMobilePhone: '',
-    employmentEmailAddress: '',
-    employmentNumber: '',
-    designation: '',
-    department: '',
-    yearsWithCurrentEmployment: '',
-    currentSalary: '',
-    biometricPhotoName: '',
-    biometricSignatureName: '',
-    registrationFee: '',
-    contributionAccountNumber: '',
-    contributionAccountName: '',
-    sharePrice: '',
-    sharesPurchase: '',
-    shareValue: '',
-    savingMode: 'fixed',
-    savingAmount: '',
-    accountSignatory: '',
-    deductedFromSourcePayroll: false,
-    residency: 'resident',
-    chairName: '',
-    chairTIN: '',
-    chairMobilePhone: '',
-    chairEmailAddress: '',
-    chairAccountSignatory: false,
-    viceChairName: '',
-    viceChairTIN: '',
-    viceChairMobilePhone: '',
-    viceChairEmailAddress: '',
-    viceChairAccountSignatory: false,
-    treasurerName: '',
-    treasurerTIN: '',
-    treasurerMobilePhone: '',
-    treasurerEmailAddress: '',
-    treasurerAccountSignatory: false,
-    secretaryName: '',
-    secretaryTIN: '',
-    secretaryMobilePhone: '',
-    secretaryEmailAddress: '',
-    secretaryAccountSignatory: false,
-    referenceDetailsName: '',
-    referenceDetailsAddress: '',
-    referenceDetailsMobilePhone: '',
-    referenceDetailsEmailAddress: '',
-    signatory1: '',
-    signatory3: '',
-    defaultBatch: '',
-  };
 
   const [formData, setFormData] = useState(initialForm);
 
@@ -453,57 +346,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     if (mainTab === 0) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
-      const individualPayload = {
-        FName: formData.firstName,
-        MName: formData.middleName,
-        LName: formData.surname,
-        Employed: !!formData.memberEmployed,
-        Title: Number(formData.title) || '',
-        NatCode: Number(formData.nationality) || '',
-        DOB: formData.dateOfBirth,
-        DateJoin: formData.dateJoined,
-        Gender: Number(formData.gender) || '',
-        Marital: Number(formData.maritalStatus) || '',
-        IDType: Number(formData.idType) || '',
-        IDNumber: formData.idNumber,
-        PlaceIssued: formData.placeIssue,
-        DateIssue: formData.dateIssued,
-        DateExpire: formData.expiryDate,
-        Region: Number(formData.region) || '',
-        District: Number(formData.district) || '',
-        Ward: Number(formData.ward) || '',
-        Residents: !!formData.residency,
-        CustType: 'C',
-        Country: Number(formData.country) || '',
-        City: Number(formData.city) || '',
-        Street: formData.address,
-        Tel: formData.mobilePhoneNumber,
-        Tel1: formData.mobilePhoneNumber,
-        Email: formData.emailAddress,
-        Employer: Number(formData.employer) || '',
-        Salary: Number(formData.currentSalary) || '',
-        Shares: Number(formData.sharesPurchase) || '',
-        RegFee: Number(formData.registrationFee) || '',
-        RefName: formData.refereeName,
-        RefEmail: formData.refereeEmailAddress,
-        RefAddress: formData.refereeAddress,
-        RefMobile: formData.refereeMobilePhone,
-        NokName: formData.nextOfKinName,
-        NokAddress: formData.nextOfKinAddress,
-        NokMobile: formData.nextOfKinMobilePhone,
-        StaffNo: formData.employmentNumber,
-        SharePrice: Number(formData.sharePrice) || '',
-        Signatory: formData.signatory1,
-        MemberPicture: null,
-        MemberSignature: null,
-      };
+      const individualPayload = buildIndividualPayload(formData, countries, cities);
       try {
         await registerIndividual(individualPayload);
-        // Fetch the previous (just saved) member code (decremented, zero-padded)
-        const memberCode = await getRecentMemberCode();
-        // Fetch the member details using the code
-        const memberDetails = await fetchRecentIndividualDetails(memberCode);
-        setRecentMember(memberDetails);
         setStatusMessage('Individual registration saved successfully.');
         notifySaveSuccess({
           page: 'Member Administration / Registration',
@@ -543,78 +388,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     let institutionPayload = null;
     if (mainTab === 1) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
-      institutionPayload = {
-        CustName: formData.institutionName, // Mandatory
-        BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
-        Country: Number(formData.country) || 0, // Mandatory
-        City: Number(formData.city) || 0, // Mandatory
-        Street: formData.address, // Mandatory
-        Tel: formData.mobilePhoneNumber, // Mandatory
-        Tel1: formData.mobilePhoneNumber,
-        Email: formData.emailAddress,
-        IncorporationNo: formData.institutionIncoporationNumber,
-        Tin: formData.institutionTIN,
-        IncorporationDate: formData.institutionIncoporationDate,
-        DateJoin: formData.institutionDateJoined,
-        Region: Number(formData.institutionRegion) || 0,
-        District: Number(formData.institutionDistrict) || 0,
-        Ward: Number(formData.institutionWard) || 0,
-        Residents: formData.institutionResidency === 'resident',
-        CustType: 'C',
-        ChairName: formData.chairName, // Mandatory
-        ChairTin: formData.chairTIN, // Mandatory
-        ChairTel: formData.chairMobilePhone, // Mandatory
-        ChairMail: formData.chairEmailAddress, // Mandatory
-        ChairSign: !!formData.chairAccountSignatory, // Mandatory
-        ViceName: formData.viceChairName, // Mandatory
-        ViceTin: formData.viceChairTIN, // Mandatory
-        ViceTel: formData.viceChairMobilePhone, // Mandatory
-        ViceMail: formData.viceChairEmailAddress, // Mandatory
-        ViceSign: !!formData.viceChairAccountSignatory, // Mandatory
-        TreasurerName: formData.treasurerName,
-        TreasurerTin: formData.treasurerTIN,
-        TreasurerTel: formData.treasurerMobilePhone,
-        TreasurerMail: formData.treasurerEmailAddress,
-        TreasurerSign: !!formData.treasurerAccountSignatory,
-        SecName: formData.secretaryName,
-        SecTin: formData.secretaryTIN,
-        SecTel: formData.secretaryMobilePhone,
-        SecMail: formData.secretaryEmailAddress,
-        SecSign: !!formData.secretaryAccountSignatory,
-        Ref1Name: formData.referenceDetailsName,
-        Ref1Address: formData.referenceDetailsAddress,
-        Ref1Tel: formData.referenceDetailsMobilePhone,
-        Ref1Mail: formData.referenceDetailsEmailAddress,
-        Ref2Name: '',
-        Ref2Address: '',
-        Ref2Tel: '',
-        Ref2Mail: '',
-        Ref3Name: '',
-        Ref3Address: '',
-        Ref3Tel: '',
-        Ref3Mail: '',
-        Ref4Name: '',
-        Ref4Address: '',
-        Ref4Tel: '',
-        Ref4Mail: '',
-        RegFee: Number(formData.registrationFee) || 0,
-        SharePrice: Number(formData.sharePrice) || 0,
-        Shares: Number(formData.sharesPurchase) || 0,
-        SaveAmount: Number(formData.savingAmount) || 0,
-        SaveType: formData.savingMode === 'fixed',
-        Sign1: formData.signatory1, // Mandatory
-        Sign2: '', // Mandatory (should be mapped from form if available)
-        Sign3: formData.signatory3,
-        Sign4: '',
-        // CompanyId will be set from backend response after registration
-        // BranchId is set from branches API, not user input
-        BranchId: institutionBranches && institutionBranches.length > 0 ? 1 : 0, // Default to first branch (1-based index)
-        BatId: 0,
-        MemType: 0, // Mandatory (should be mapped from dropdown)
-        Gender: Number(formData.gender) || 0, // Mandatory
-        MemberPicture: null,
-        MemberSignature: null,
-      };
+      institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities);
         // TODO: Map branch_id, cou_id, ncity, nrel, nregion, ndist, nward, bat_id from dropdowns if available
         // Call useRegisterInstitution
       try {
@@ -895,8 +669,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           >
                             <MenuItem value="">Select country</MenuItem>
                             {countries.map((country) => (
-                              <MenuItem key={country} value={country}>
-                                {country}
+                              <MenuItem key={country.id} value={country.id}>
+                                {country.name}
                               </MenuItem>
                             ))}
                           </TextField>
@@ -911,8 +685,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           >
                             <MenuItem value="">Select city</MenuItem>
                             {cities.map((city) => (
-                              <MenuItem key={city} value={city}>
-                                {city}
+                              <MenuItem key={`city-${city.id}-${city.name}`} value={city.name}>
+                                {city.name}
                               </MenuItem>
                             ))}
                           </TextField>
@@ -980,60 +754,65 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             error={Boolean(fieldErrors.institutionTIN)}
                           />
                           <DatePicker
+                            required
                             label="Incoporation date"
                             value={formData.institutionIncoporationDate ? dayjs(formData.institutionIncoporationDate) : null}
                             onChange={(value) => handleDateChange('institutionIncoporationDate', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'institutionIncoporationDate' } }}
+                            slotProps={{ textField: { name: 'institutionIncoporationDate', required: true } }}
                           />
                           <DatePicker
+                            required
                             label="Date joined"
                             value={formData.institutionDateJoined ? dayjs(formData.institutionDateJoined) : null}
                             onChange={(value) => handleDateChange('institutionDateJoined', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'institutionDateJoined' } }}
+                            slotProps={{ textField: { name: 'institutionDateJoined', required: true } }}
                           />
                           <TextField
                             select
+                            required
                             label="Region"
                             name="institutionRegion"
                             value={formData.institutionRegion}
                             onChange={handleChange}
                           >
                             <MenuItem value="">Select region</MenuItem>
-                            <MenuItem value="banjul">Banjul</MenuItem>
-                            <MenuItem value="kanifing">Kanifing</MenuItem>
-                            <MenuItem value="west-coast">West Coast</MenuItem>
-                            <MenuItem value="north-bank">North Bank</MenuItem>
-                            <MenuItem value="lower-river">Lower River</MenuItem>
-                            <MenuItem value="central-river">Central River</MenuItem>
-                            <MenuItem value="upper-river">Upper River</MenuItem>
+                            <MenuItem value={1}>Banjul</MenuItem>
+                            <MenuItem value={2}>Kanifing</MenuItem>
+                            <MenuItem value={3}>West Coast</MenuItem>
+                            <MenuItem value={4}>North Bank</MenuItem>
+                            <MenuItem value={5}>Lower River</MenuItem>
+                            <MenuItem value={6}>Central River</MenuItem>
+                            <MenuItem value={7}>Upper River</MenuItem>
                           </TextField>
                           <TextField
                             select
+                            required
                             label="District"
                             name="institutionDistrict"
                             value={formData.institutionDistrict}
                             onChange={handleChange}
                           >
                             <MenuItem value="">Select district</MenuItem>
-                            <MenuItem value="banjul">Banjul</MenuItem>
-                            <MenuItem value="kanifing">Kanifing</MenuItem>
-                            <MenuItem value="kombo-north">Kombo North</MenuItem>
-                            <MenuItem value="kombo-south">Kombo South</MenuItem>
+                            <MenuItem value={1}>Banjul</MenuItem>
+                            <MenuItem value={2}>Kanifing</MenuItem>
+                            <MenuItem value={3}>Kombo North</MenuItem>
+                            <MenuItem value={4}>Kombo South</MenuItem>
                           </TextField>
                           <TextField
                             select
+                            required
                             label="Ward"
                             name="institutionWard"
                             value={formData.institutionWard}
                             onChange={handleChange}
                           >
                             <MenuItem value="">Select ward</MenuItem>
-                            <MenuItem value="ward-1">Ward 1</MenuItem>
-                            <MenuItem value="ward-2">Ward 2</MenuItem>
-                            <MenuItem value="ward-3">Ward 3</MenuItem>
-                            <MenuItem value="ward-4">Ward 4</MenuItem>
+                            <MenuItem value={1}>Ward 1</MenuItem>
+                            <MenuItem value={2}>Ward 2</MenuItem>
+                            <MenuItem value={3}>Ward 3</MenuItem>
+                            <MenuItem value={4}>Ward 4</MenuItem>
                           </TextField>
 
                         </Box>
@@ -1065,9 +844,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             onChange={handleChange}
                             error={Boolean(fieldErrors.gender)}
                           >
-                            <MenuItem value="male">Male</MenuItem>
-                            <MenuItem value="female">Female</MenuItem>
-                            <MenuItem value="other">Other</MenuItem>
+                            <MenuItem value={1}>Male</MenuItem>
+                            <MenuItem value={2}>Female</MenuItem>
                           </TextField>
                           <TextField
                               required
@@ -1080,7 +858,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             >
                               <MenuItem value="">Select nationality</MenuItem>
                               {countries.map((country) => (
-                                <MenuItem key={country} value={country}>{country}</MenuItem>
+                                <MenuItem key={`nationality-${country.id}-${country.name}`} value={country.name}>{country.name}</MenuItem>
                               ))}
                             </TextField>
                           <TextField label="Tribe" name="tribe" value={formData.tribe} onChange={handleChange} />
@@ -1101,17 +879,19 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           </TextField>
                           <DatePicker
                             label="Date of Birth"
+                            required
                             value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
                             onChange={(value) => handleDateChange('dateOfBirth', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateOfBirth' } }}
+                            slotProps={{ textField: { name: 'dateOfBirth', required: true } }}
                           />
                           <DatePicker
                             label="Date Joined"
+                            required
                             value={formData.dateJoined ? dayjs(formData.dateJoined) : null}
                             onChange={(value) => handleDateChange('dateJoined', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateJoined' } }}
+                            slotProps={{ textField: { name: 'dateJoined', required: true } }}
                           />
                           <TextField select label="Income Range" name="povertyLevel" value={formData.povertyLevel} onChange={handleChange}>
                             <MenuItem value="0-5000">0 - 5,000</MenuItem>
@@ -1168,20 +948,61 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           />
                           <DatePicker
                             label="Date Issued"
+                            required
                             value={formData.dateIssued ? dayjs(formData.dateIssued) : null}
                             onChange={(value) => handleDateChange('dateIssued', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateIssued' } }}
+                            slotProps={{ textField: { name: 'dateIssued', required: true } }}
                           />
                           <DatePicker
                             label="Expiry Date"
+                            required
                             value={formData.expiryDate ? dayjs(formData.expiryDate) : null}
                             onChange={(value) => handleDateChange('expiryDate', value)}
-                            slotProps={{ textField: { name: 'expiryDate' } }}
+                            slotProps={{ textField: { name: 'expiryDate', required: true } }}
                           />
-                          <TextField label="Region" name="region" value={formData.region} onChange={handleChange} />
-                          <TextField label="Distric" name="district" value={formData.district} onChange={handleChange} />
-                          <TextField label="Ward" name="ward" value={formData.ward} onChange={handleChange} />
+                          <TextField
+                            select
+                            label="Region"
+                            name="region"
+                            value={formData.region}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select region</MenuItem>
+                            <MenuItem value={1}>Banjul</MenuItem>
+                            <MenuItem value={2}>Kanifing</MenuItem>
+                            <MenuItem value={3}>West Coast</MenuItem>
+                            <MenuItem value={4}>North Bank</MenuItem>
+                            <MenuItem value={5}>Lower River</MenuItem>
+                            <MenuItem value={6}>Central River</MenuItem>
+                            <MenuItem value={7}>Upper River</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            label="District"
+                            name="district"
+                            value={formData.district}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select district</MenuItem>
+                            <MenuItem value={1}>Banjul</MenuItem>
+                            <MenuItem value={2}>Kanifing</MenuItem>
+                            <MenuItem value={3}>Kombo North</MenuItem>
+                            <MenuItem value={4}>Kombo South</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            label="Ward"
+                            name="ward"
+                            value={formData.ward}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select ward</MenuItem>
+                            <MenuItem value={1}>Ward 1</MenuItem>
+                            <MenuItem value={2}>Ward 2</MenuItem>
+                            <MenuItem value={3}>Ward 3</MenuItem>
+                            <MenuItem value={4}>Ward 4</MenuItem>
+                          </TextField>
                         </Box>
                       </CardContent>
                     </Card>
@@ -1336,13 +1157,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                 >
                                   <MenuItem value="">Select country</MenuItem>
                                   {countries.map((country) => (
-                                    <MenuItem key={country} value={country}>{country}</MenuItem>
+                                    <MenuItem key={country.id} value={country.id}>{country.name}</MenuItem>
                                   ))}
                                 </TextField>
                         <TextField select label="City" name="city" value={formData.city} onChange={handleChange}>
                           <MenuItem value="">Select city</MenuItem>
                           {cities.map((city) => (
-                            <MenuItem key={city} value={city}>{city}</MenuItem>
+                            <MenuItem key={`city-${city.id}-${city.name}`} value={city.name}>{city.name}</MenuItem>
                           ))}
                         </TextField>
                         <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
@@ -1450,7 +1271,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             </RadioGroup>
                           </FormControl>
                           <TextField
-                            required
                             label="Registration Fee"
                             name="registrationFee"
                             value={formData.registrationFee}
