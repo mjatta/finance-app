@@ -818,6 +818,12 @@ export default defineConfig({
           return search ? `${rewrittenPath}?${search}` : rewrittenPath;
         },
       },
+      '/api/update-customer-authorisation': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/update-customer-authorisation/, '/api/Cusystem/UpdateCustomerAuthorisation'),
+      },
       '/api/remote-member': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,

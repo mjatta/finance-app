@@ -12,6 +12,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useMembersForActivation } from './Hooks/useMembersForActivation';
+import { useUpdateCustomerAuthorisation } from './Hooks/useUpdateCustomerAuthorisation';
 
 const COLUMNS = [
   { field: 'customerCode', headerName: 'Customer Code', flex: 1, minWidth: 150, sortable: true },
@@ -38,6 +39,7 @@ export default function AccountActivation() {
   const [sortModel, setSortModel] = useState([]);
 
   const { fetchMembersForActivation } = useMembersForActivation();
+  const { updateAuthorisation } = useUpdateCustomerAuthorisation();
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -114,36 +116,42 @@ export default function AccountActivation() {
 
     try {
       const selectedMembers = accounts.filter((a) => selectedIds.includes(a.id));
+      const failedMembers = [];
 
-      // Call endpoint for each selected member
+      // Call UpdateCustomerAuthorisation endpoint for each selected member
       for (let i = 0; i < selectedMembers.length; i += 1) {
-        // In production, replace with actual API endpoint
-        // const response = await fetch(`/api/members/${selectedMembers[i].id}/activate`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        // });
-
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const result = await updateAuthorisation(selectedMembers[i].customerCode);
+        if (!result.success) {
+          failedMembers.push(selectedMembers[i].customerCode);
+        }
+        // Small delay between requests
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      // Update local state to reflect status change
-      const updatedMembers = accounts.map((a) =>
-        selectedIds.includes(a.id) ? { ...a, status: 'ACTIVE' } : a
-      );
-      setAccounts(updatedMembers);
+      // If any requests failed, show error and don't refresh
+      if (failedMembers.length > 0) {
+        setStatusMessage(
+          `Failed to activate ${failedMembers.length} member(s): ${failedMembers.join(', ')}`
+        );
+        setStatusError(true);
+        return;
+      }
 
+      // All requests succeeded - refresh the datatable
+      setSelectedIds([]);
       setStatusMessage(
         `Successfully activated ${selectedMembers.length} member${selectedMembers.length > 1 ? 's' : ''}.`
       );
       setStatusError(false);
-      setSelectedIds([]);
 
       notifySaveSuccess({
         page: 'Member Administration / Account Activation',
         action: 'Activate Members',
         message: `Successfully activated ${selectedMembers.length} member(s).`,
       });
+
+      // Refresh the datatable to remove activated members
+      await loadAccounts();
     } catch (error) {
       console.error('Failed to activate members:', error);
       setStatusMessage('Failed to activate selected members.');
