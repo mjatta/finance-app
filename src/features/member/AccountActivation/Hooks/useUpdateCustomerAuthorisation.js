@@ -15,7 +15,7 @@ export const useUpdateCustomerAuthorisation = () => {
 
     try {
       const payload = {
-        customerCode: customerCode.trim(),
+        memberCode: customerCode.trim(),
       };
 
       const response = await fetch(
