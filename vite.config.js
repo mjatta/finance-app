@@ -884,6 +884,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/banks/, '/api/banks'),
       },
+      // Proxy auth login endpoint to avoid CORS
+      '/api/auth/login': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),
+      },
     },
   },
   plugins: [

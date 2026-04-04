@@ -19,6 +19,7 @@ import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
+import { useGetCashDetails } from './hooks/useGetCashDetails';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -73,6 +74,7 @@ export default function Withdrawal() {
   const { fetchAccountDetails } = useGetAccountDetails();
   const { fetchBanks, isLoading: isLoadingBanks } = useGetBanks();
   const { fetchBankAccounts, isLoading: isLoadingBankAccounts } = useGetBankAccounts();
+  const { fetchCashDetails, isLoading: isLoadingCashDetails } = useGetCashDetails();
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -97,12 +99,16 @@ export default function Withdrawal() {
     feeAmount: '',
     withdrawalAmount: '',
     comments: '',
-    depositType: 'cash',
+    depositType: '',
     contraAccount: '',
     checkNumber: '',
     checkDate: todayIso,
     bank: '',
     bankAccount: '',
+    cashAccount: '',
+    creditLimit: '',
+    debitLimit: '',
+    loanLimit: '',
   });
 
   const [rows, setRows] = useState([]);
@@ -138,6 +144,23 @@ export default function Withdrawal() {
       });
     }
   }, [formData.postingAccount, fetchAccountDetails]);
+
+  // Fetch cash details when withdrawal type is cash
+  useEffect(() => {
+    if (formData.depositType === 'cash') {
+      fetchCashDetails().then((result) => {
+        if (result.success && result.data) {
+          setFormData((prev) => ({
+            ...prev,
+            cashAccount: result.data.cashAccount,
+            creditLimit: result.data.creditLimit,
+            debitLimit: result.data.debitLimit,
+            loanLimit: result.data.loanLimit,
+          }));
+        }
+      });
+    }
+  }, [formData.depositType, fetchCashDetails]);
 
   const searchMember = async (searchBy) => {
     const rawValue = searchBy === 'memberCode' ? formData.memberCode : formData.payrollNumber;
@@ -657,9 +680,6 @@ export default function Withdrawal() {
           <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#2c3e50' }}>
             Withdrawal Information
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3, fontSize: '0.9rem' }}>
-            📌 Selected account: <strong>{selectedAccountLabel}</strong>
-          </Typography>
 
           {/* Two Column Card Layout */}
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -737,14 +757,6 @@ export default function Withdrawal() {
                       },
                     }}
                   />
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pt: 1 }}>
-                    <FormControlLabel
-                      control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}
-                      label="Send SMS fee"
-                      sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, m: 0 }}
-                    />
-                    <TextField label="Fee Amount" name="feeAmount" value={formData.feeAmount} onChange={handleChange} size="small" sx={{ width: '120px' }} />
-                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -848,6 +860,7 @@ export default function Withdrawal() {
                     size="small"
                     fullWidth
                   >
+                    <MenuItem value="">Select Type</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
                     <MenuItem value="cheque">Cheque</MenuItem>
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
@@ -855,9 +868,90 @@ export default function Withdrawal() {
                   <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth />
                   <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
                   <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} size="small" fullWidth />
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pt: 1 }}>
+                    <FormControlLabel
+                      control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}
+                      label="Send SMS fee"
+                      sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, m: 0 }}
+                    />
+                    <TextField label="Fee Amount" name="feeAmount" value={formData.feeAmount} onChange={handleChange} size="small" sx={{ width: '120px' }} />
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
+
+            {/* Cash Details Card - Only show when withdrawal type is cash */}
+            {formData.depositType === 'cash' && (
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Cash Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Cash Account"
+                    name="cashAccount"
+                    value={formData.cashAccount}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Credit Limit"
+                    name="creditLimit"
+                    value={formData.creditLimit}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Debit Limit"
+                    name="debitLimit"
+                    value={formData.debitLimit}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Loan Limit"
+                    name="loanLimit"
+                    value={formData.loanLimit}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+            )}
 
             {/* Check Details Card - Only show when withdrawal type is cheque */}
             {formData.depositType === 'cheque' && (
@@ -965,70 +1059,6 @@ export default function Withdrawal() {
               🖨️ Print Receipt
             </Button>
           </Box>
-        </CardContent>
-      </Card>
-
-      <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-            Withdrawal Accounts Grid
-          </Typography>
-
-          {rows.length === 0 ? (
-            <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-              Search by Customer Code or Payroll Number to load Regular and Saving accounts.
-            </Typography>
-          ) : (
-            <div style={{ height: 300, width: '100%' }}>
-              <DataGrid
-                rows={rows.map((row) => ({
-                  ...row,
-                  _originalData: row,
-                }))}
-                columns={[
-                  {
-                    field: 'select',
-                    headerName: 'Select',
-                    flex: 0.15,
-                    minWidth: 100,
-                    sortable: false,
-                    renderCell: (params) => (
-                      <FormControlLabel
-                        control={<Checkbox checked={params.row.selected} onChange={() => handleSelectRow(params.row.id)} />}
-                        label={params.row.accountType}
-                      />
-                    ),
-                  },
-                  { field: 'paymentMade', headerName: 'Payment Made', flex: 0.1, minWidth: 100 },
-                  { field: 'principle', headerName: 'Principle', flex: 0.1, minWidth: 100 },
-                  { field: 'interest', headerName: 'Interest', flex: 0.1, minWidth: 100 },
-                  { field: 'beginBalance', headerName: 'Begin Balance', flex: 0.12, minWidth: 120 },
-                  { field: 'endBalance', headerName: 'End Balance', flex: 0.12, minWidth: 120 },
-                  { field: 'outstandingBalance', headerName: 'Outstanding Balance', flex: 0.15, minWidth: 130 },
-                  { field: 'order', headerName: 'Order', flex: 0.08, minWidth: 80 },
-                ]}
-                pageSizeOptions={[10, 25, 50]}
-                initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                density="compact"
-                sx={{
-                  '& .MuiDataGrid-columnHeader': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    fontWeight: 700,
-                  },
-                  '& .MuiDataGrid-row:nth-of-type(even)': {
-                    backgroundColor: '#f8f9fa',
-                  },
-                  '& .MuiDataGrid-row:hover': {
-                    backgroundColor: '#e9ecef',
-                  },
-                  '& .MuiDataGrid-cell': {
-                    borderColor: '#dee2e6',
-                  },
-                }}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
     </Box>
