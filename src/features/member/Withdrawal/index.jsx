@@ -20,6 +20,7 @@ import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useGetCashDetails } from './hooks/useGetCashDetails';
+import { useWithdrawalTransaction } from './hooks/useWithdrawalTransaction';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -75,6 +76,7 @@ export default function Withdrawal() {
   const { fetchBanks, isLoading: isLoadingBanks } = useGetBanks();
   const { fetchBankAccounts, isLoading: isLoadingBankAccounts } = useGetBankAccounts();
   const { fetchCashDetails, isLoading: isLoadingCashDetails } = useGetCashDetails();
+  const { saveWithdrawalTransaction } = useWithdrawalTransaction();
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -324,14 +326,6 @@ export default function Withdrawal() {
   const selectedAccountLabel = useMemo(() => rows.find((row) => row.selected)?.accountType || '-', [rows]);
 
   const handleSaveWithdrawal = async () => {
-    const selectedRow = rows.find((row) => row.selected);
-
-    if (!selectedRow) {
-      setStatusMessage('Please select an account (Regular or Saving) from the grid.');
-      setStatusError(true);
-      return;
-    }
-
     if (!formData.postingAccount || !formData.withdrawalAmount || !formData.transactionDate) {
       setStatusMessage('Posting Account, Withdrawal Amount and Transaction Date are required.');
       setStatusError(true);
@@ -349,44 +343,50 @@ export default function Withdrawal() {
     setStatusError(false);
 
     try {
-      const payload = {
-        ...formData,
-        selectedAccountType: selectedRow.accountType,
-        selectedAccountNumber: selectedRow.accountNumber,
-        accountAllocations: rows.map((row) => ({
-          accountType: row.accountType,
-          accountNumber: row.accountNumber,
-          selected: row.selected,
-          paymentMade: row.paymentMade,
-          principle: row.principle,
-          interest: row.interest,
-          beginBalance: row.beginBalance,
-          endBalance: row.endBalance,
-          outstandingBalance: row.outstandingBalance,
-          order: row.order,
-        })),
-        createdAt: new Date().toISOString(),
-      };
+      // Get user ID from localStorage (assuming it's stored during login)
+      const userId = localStorage.getItem('userId') || 'AKH';
 
-      const response = await fetch('/api/withdrawals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ row: payload }),
-      });
+      // Call the withdrawal transaction API with minimal payload
+      const result = await saveWithdrawalTransaction(formData, userId);
 
-      if (!response.ok) {
-        throw new Error('Failed to save withdrawal.');
+      if (result) {
+        setStatusMessage('Withdrawal saved successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Member Administration / Withdrawals',
+          action: 'Save Withdrawal',
+          message: 'Withdrawal saved successfully.',
+        });
+        // Reset form after successful save
+        setFormData({
+          memberCode: '',
+          payrollNumber: '',
+          postingAccount: '',
+          bookBalance: '',
+          accountNumber: '',
+          clearedBalance: '',
+          unclearedBalance: '',
+          refNo: '',
+          printReceipt: false,
+          transactionDate: todayIso,
+          sendSmsFee: false,
+          feeAmount: '',
+          withdrawalAmount: '',
+          comments: '',
+          depositType: '',
+          contraAccount: '',
+          checkNumber: '',
+          checkDate: '',
+          bank: '',
+          bankAccount: '',
+          cashAccount: '',
+          creditLimit: '',
+          debitLimit: '',
+          loanLimit: '',
+        });
+      } else {
+        throw new Error('Failed to save withdrawal transaction.');
       }
-
-      setStatusMessage('Withdrawal saved successfully.');
-      setStatusError(false);
-      notifySaveSuccess({
-        page: 'Member Administration / Withdrawals',
-        action: 'Save Withdrawal',
-        message: 'Withdrawal saved successfully.',
-      });
     } catch (error) {
       setStatusMessage('Failed to save withdrawal.');
       setStatusError(true);

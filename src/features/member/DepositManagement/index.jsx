@@ -20,6 +20,7 @@ import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useGetCashDetails } from './hooks/useGetCashDetails';
+import { useDepositTransaction } from './hooks/useDepositTransaction';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -75,6 +76,7 @@ export default function DepositManagement() {
   const { fetchBanks, isLoading: isLoadingBanks } = useGetBanks();
   const { fetchBankAccounts, isLoading: isLoadingBankAccounts } = useGetBankAccounts();
   const { fetchCashDetails, isLoading: isLoadingCashDetails } = useGetCashDetails();
+  const { saveDepositTransaction } = useDepositTransaction();
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -350,14 +352,6 @@ export default function DepositManagement() {
   const selectedAccountLabel = useMemo(() => rows.find((row) => row.selected)?.accountType || '-', [rows]);
 
   const handleSaveDeposit = async () => {
-    const selectedRow = rows.find((row) => row.selected);
-
-    if (!selectedRow) {
-      setStatusMessage('Please select an account (Regular or Saving) from the grid.');
-      setStatusError(true);
-      return;
-    }
-
     if (!formData.postingAccount || !formData.depositAmount || !formData.transactionDate) {
       setStatusMessage('Posting Account, Deposit Amount and Transaction Date are required.');
       setStatusError(true);
@@ -375,44 +369,50 @@ export default function DepositManagement() {
     setStatusError(false);
 
     try {
-      const payload = {
-        ...formData,
-        selectedAccountType: selectedRow.accountType,
-        selectedAccountNumber: selectedRow.accountNumber,
-        accountAllocations: rows.map((row) => ({
-          accountType: row.accountType,
-          accountNumber: row.accountNumber,
-          selected: row.selected,
-          paymentMade: row.paymentMade,
-          principle: row.principle,
-          interest: row.interest,
-          beginBalance: row.beginBalance,
-          endBalance: row.endBalance,
-          outstandingBalance: row.outstandingBalance,
-          order: row.order,
-        })),
-        createdAt: new Date().toISOString(),
-      };
+      // Get user ID from localStorage (assuming it's stored during login)
+      const userId = localStorage.getItem('userId') || 'AKH';
 
-      const response = await fetch('/api/deposits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ row: payload }),
-      });
+      // Call the deposit transaction API with minimal payload
+      const result = await saveDepositTransaction(formData, userId);
 
-      if (!response.ok) {
-        throw new Error('Failed to save deposit.');
+      if (result) {
+        setStatusMessage('Deposit saved successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Member Administration / Deposits',
+          action: 'Save Deposit',
+          message: 'Deposit saved successfully.',
+        });
+        // Reset form after successful save
+        setFormData({
+          memberCode: '',
+          payrollNumber: '',
+          postingAccount: '',
+          bookBalance: '',
+          accountNumber: '',
+          clearedBalance: '',
+          unclearedBalance: '',
+          refNo: '',
+          printReceipt: false,
+          transactionDate: todayIso,
+          sendSmsFee: false,
+          feeAmount: '',
+          depositAmount: '',
+          comments: '',
+          depositType: '',
+          contraAccount: '',
+          checkNumber: '',
+          checkDate: '', 
+          bank: '',
+          bankAccount: '',
+          cashAccount: '',
+          creditLimit: '',
+          debitLimit: '',
+          loanLimit: '',
+        });
+      } else {
+        throw new Error('Failed to save deposit transaction.');
       }
-
-      setStatusMessage('Deposit saved successfully.');
-      setStatusError(false);
-      notifySaveSuccess({
-        page: 'Member Administration / Deposits',
-        action: 'Save Deposit',
-        message: 'Deposit saved successfully.',
-      });
     } catch (error) {
       setStatusMessage('Failed to save deposit.');
       setStatusError(true);

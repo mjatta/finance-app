@@ -211,7 +211,20 @@ const depositsApiPlugin = () => ({
 
           if (!incomingRow || typeof incomingRow !== 'object') {
             res.statusCode = 400
-            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object.' }))
+            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object with minimal transaction data.' }))
+            return
+          }
+
+          // Validate that only required API fields are present
+          const requiredFields = ['tcAcctNumb', 'gcContraAcct', 'gcControlAcct', 'tnTranAmt', 'tnContAmt', 'dTranDate', 'tcChqno', 'lnServID', 'gcUserid']
+          const hasRequiredFields = requiredFields.every(field => field in incomingRow)
+          
+          if (!hasRequiredFields) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ 
+              message: 'Invalid payload. Missing required transaction fields.',
+              required: requiredFields
+            }))
             return
           }
 
@@ -890,6 +903,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),
+      },
+      // Proxy deposit and withdrawal transaction endpoints to avoid CORS
+      '/api/Cusystem': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/Cusystem/, '/api/Cusystem'),
       },
     },
   },
