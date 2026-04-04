@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -16,6 +16,9 @@ import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
+import { useGetAccountDetails } from './hooks/useGetAccountDetails';
+import { useGetBanks } from './hooks/useGetBanks';
+import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -67,6 +70,12 @@ export default function Withdrawal() {
   const [isLoadingMember, setIsLoadingMember] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { fetchMemberDetails } = useGetMemberDetails();
+  const { fetchAccountDetails } = useGetAccountDetails();
+  const { fetchBanks, isLoading: isLoadingBanks } = useGetBanks();
+  const { fetchBankAccounts, isLoading: isLoadingBankAccounts } = useGetBankAccounts();
+
+  const [banks, setBanks] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
 
   const [formData, setFormData] = useState({
     transactionType: 'withdrawals',
@@ -92,13 +101,14 @@ export default function Withdrawal() {
     contraAccount: '',
     checkNumber: '',
     checkDate: todayIso,
+    bank: '',
+    bankAccount: '',
   });
 
   const [rows, setRows] = useState([]);
 
   const applyMemberData = (member) => {
     const nextRows = member.accounts.map((account, index) => makeWithdrawalRow(account, index));
-    const selectedAccount = member.accounts[0];
 
     setRows(nextRows);
     setFormData((prev) => ({
@@ -109,12 +119,25 @@ export default function Withdrawal() {
       phoneNumber: member.phoneNumber,
       email: member.email,
       memberAccounts: member.memberAccounts || [],
-      accountNumber: selectedAccount?.accountNumber || '',
-      accountBalance: selectedAccount?.accountBalance || '',
-      clearedBalance: selectedAccount?.accountBalance || '',
-      unclearedBalance: '0.00',
     }));
   };
+
+  // Fetch account details when posting account changes
+  useEffect(() => {
+    if (formData.postingAccount) {
+      fetchAccountDetails(formData.postingAccount).then((result) => {
+        if (result.success && result.data) {
+          setFormData((prev) => ({
+            ...prev,
+            accountNumber: result.data.accountNumber,
+            accountBalance: result.data.accountBalance,
+            clearedBalance: result.data.clearedBalance,
+            unclearedBalance: result.data.unclearedBalance,
+          }));
+        }
+      });
+    }
+  }, [formData.postingAccount, fetchAccountDetails]);
 
   const searchMember = async (searchBy) => {
     const rawValue = searchBy === 'memberCode' ? formData.memberCode : formData.payrollNumber;
@@ -201,6 +224,50 @@ export default function Withdrawal() {
         ...prev,
         [name]: checked,
       }));
+      return;
+    }
+
+    // Handle deposit type change
+    if (name === 'depositType') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        bank: '',
+        bankAccount: '',
+      }));
+
+      // If cheque is selected, fetch banks
+      if (value === 'cheque') {
+        fetchBanks().then((result) => {
+          if (result.success && result.data) {
+            setBanks(result.data);
+          }
+        });
+      } else {
+        setBanks([]);
+        setBankAccounts([]);
+      }
+      return;
+    }
+
+    // Handle bank change
+    if (name === 'bank') {
+      setFormData((prev) => ({
+        ...prev,
+        bank: value,
+        bankAccount: '',
+      }));
+
+      // Fetch bank accounts for the selected bank
+      if (value) {
+        fetchBankAccounts(value).then((result) => {
+          if (result.success && result.data) {
+            setBankAccounts(result.data);
+          }
+        });
+      } else {
+        setBankAccounts([]);
+      }
       return;
     }
 
@@ -596,104 +663,6 @@ export default function Withdrawal() {
 
           {/* Two Column Card Layout */}
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-            {/* Withdrawal Details Card */}
-            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
-                  Withdrawal Details
-                </Typography>
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <TextField
-                    select
-                    label="Withdrawal Type"
-                    name="depositType"
-                    value={formData.depositType}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  >
-                    <MenuItem value="cash">Cash</MenuItem>
-                    <MenuItem value="cheque">Cheque</MenuItem>
-                    <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
-                  </TextField>
-                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth />
-                  <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
-                  <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} size="small" fullWidth />
-                </Box>
-              </CardContent>
-            </Card>
-
-            {/* Account Details Card */}
-            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
-                  Account Details
-                </Typography>
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <TextField
-                    label="Account Number"
-                    name="accountNumber"
-                    value={formData.accountNumber}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Account Balance"
-                    name="accountBalance"
-                    value={formData.accountBalance}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Cleared Balance"
-                    name="clearedBalance"
-                    value={formData.clearedBalance}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Uncleared Balance"
-                    name="unclearedBalance"
-                    value={formData.unclearedBalance}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-
             {/* Transaction Details Card */}
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
@@ -780,7 +749,118 @@ export default function Withdrawal() {
               </CardContent>
             </Card>
 
-            {/* Check Details Card */}
+            {/* Account Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Account Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Account Number"
+                    name="accountNumber"
+                    value={formData.accountNumber}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                      '& .MuiInputAdornment-positionEnd': {
+                        display: 'none',
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Account Balance"
+                    name="accountBalance"
+                    value={formData.accountBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                      '& .MuiInputAdornment-positionEnd': {
+                        display: 'none',
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Cleared Balance"
+                    name="clearedBalance"
+                    value={formData.clearedBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                      '& .MuiInputAdornment-positionEnd': {
+                        display: 'none',
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Uncleared Balance"
+                    name="unclearedBalance"
+                    value={formData.unclearedBalance}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                      '& .MuiInputAdornment-positionEnd': {
+                        display: 'none',
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Withdrawal Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Withdrawal Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    select
+                    label="Withdrawal Type"
+                    name="depositType"
+                    value={formData.depositType}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="cash">Cash</MenuItem>
+                    <MenuItem value="cheque">Cheque</MenuItem>
+                    <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
+                  </TextField>
+                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth />
+                  <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
+                  <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} size="small" fullWidth />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Check Details Card - Only show when withdrawal type is cheque */}
+            {formData.depositType === 'cheque' && (
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
@@ -791,41 +871,60 @@ export default function Withdrawal() {
                     label="Check Number"
                     name="checkNumber"
                     value={formData.checkNumber}
-                    disabled
+                    onChange={handleChange}
                     size="small"
                     fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
                   />
                   <DatePicker
                     label="Check Date"
                     value={formData.checkDate ? dayjs(formData.checkDate) : null}
                     onChange={(value) => handleDateChange('checkDate', value)}
                     maxDate={dayjs(todayIso)}
-                    disabled
                     slotProps={{
                       textField: {
                         size: 'small',
                         fullWidth: true,
-                        disabled: true,
-                        sx: {
-                          '& .MuiInputBase-input.Mui-disabled': {
-                            backgroundColor: '#f5f5f5',
-                            color: '#666',
-                            fontWeight: 600,
-                          },
-                        },
                       },
                     }}
                   />
+                  <TextField
+                    select
+                    label="Bank"
+                    name="bank"
+                    value={formData.bank}
+                    onChange={handleChange}
+                    disabled={formData.depositType !== 'cheque'}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select bank</MenuItem>
+                    {banks.map((bank) => (
+                      <MenuItem key={bank.id} value={bank.id}>
+                        {bank.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Bank Account"
+                    name="bankAccount"
+                    value={formData.bankAccount}
+                    onChange={handleChange}
+                    disabled={bankAccounts.length === 0}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select account</MenuItem>
+                    {bankAccounts.map((account) => (
+                      <MenuItem key={account.id} value={account.id}>
+                        {account.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </Box>
               </CardContent>
             </Card>
+            )}
           </Box>
 
           {/* Additional Options - Full Width */}

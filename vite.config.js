@@ -870,6 +870,20 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/mandatory-products/, '/api/lookups'),
       },
+      // Proxy account details endpoint to avoid CORS
+      '/api/account/details': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/account\/details/, '/api/account/details'),
+      },
+      // Proxy banks endpoint to avoid CORS
+      '/api/banks': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/banks/, '/api/banks'),
+      },
     },
   },
   plugins: [
