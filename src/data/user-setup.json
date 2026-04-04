@@ -187,6 +187,7 @@
         "/member/customer-registration": "write",
         "/member/add-member-account": "write",
         "/member/deposits": "write",
+        "/member/account-enquiries": "read",
         "/member/member-close": "write",
         "/member/member-activation": "write",
         "/member/member-activate": "write",

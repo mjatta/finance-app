@@ -39,6 +39,7 @@ const featurePageMap = {
     { path: '/member/add-member-account', label: 'Add Member Account' },
     { path: '/member/member-activate', label: 'Member Activate' },
     { path: '/member/deposits', label: 'Deposits' },
+    { path: '/member/account-enquiries', label: 'Account Enquiries' },
     { path: '/member/member-close-account', label: 'Member Close' },
     { path: '/member/withdrawal', label: 'Withdrawal' },
     { path: '/member/transfer', label: 'Member Transfer' },
@@ -735,7 +736,7 @@ export default function UserSetup({ user }) {
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: editingRoleName ? 'warning.main' : 'divider', bgcolor: editingRoleName ? 'rgba(255, 193, 7, 0.05)' : 'transparent' }}>
           <CardContent>
             <Box
               onClick={() => setShowCreateUserRoles((prev) => !prev)}
@@ -749,9 +750,16 @@ export default function UserSetup({ user }) {
                 px: 0.5,
               }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                CREATE USER ROLES
-              </Typography>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {editingRoleName ? `EDIT USER ROLE: ${editingRoleName}` : 'CREATE USER ROLES'}
+                </Typography>
+                {editingRoleName && (
+                  <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                    Editing existing role • Click Save to update
+                  </Typography>
+                )}
+              </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
                   {showCreateUserRoles ? 'Collapse' : 'Expand'}
@@ -838,7 +846,7 @@ export default function UserSetup({ user }) {
                     </Box>
                   </Box>
                 </Box>
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
                   <Button
                     variant="contained"
                     onClick={handleSaveRole}
@@ -846,6 +854,23 @@ export default function UserSetup({ user }) {
                   >
                     {isSavingRole ? 'Saving...' : editingRoleName ? 'Update user role' : 'Save user role'}
                   </Button>
+                  {editingRoleName && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setEditingRoleName('');
+                        setRoleForm({
+                          roleName: '',
+                          roleDescription: '',
+                          featurePermissions: defaultFeaturePermissions,
+                          pagePermissions: {},
+                        });
+                        setStatusMessage('');
+                      }}
+                    >
+                      Clear Edit
+                    </Button>
+                  )}
                 </Box>
               </>
             )}

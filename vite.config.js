@@ -911,6 +911,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/Cusystem/, '/api/Cusystem'),
       },
+      // Proxy account transaction endpoints to avoid CORS
+      '/api/transaction': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/transaction/, '/api/transaction'),
+      },
     },
   },
   plugins: [

@@ -51,6 +51,7 @@ import './App.css';
 
 // feature pages (lazy-loaded)
 const DepositManagement = lazy(() => import('./features/member/DepositManagement'));
+const AccountEnquiries = lazy(() => import('./features/member/AccountEnquiries'));
 const MemberTransfer = lazy(() => import('./features/member/MemberTransfer'));
 const Reprint = lazy(() => import('./features/member/Reprint'));
 const CustomerRegistration = lazy(() => import('./features/member/CustomerRegistration'));
@@ -226,6 +227,7 @@ function App() {
         { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
         { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
+        { label: 'Account Enquiries', to: '/member/account-enquiries', icon: ManageSearchRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
@@ -582,6 +584,10 @@ function App() {
                     <Route
                       path="/member/deposits"
                       element={renderWithAccess('member', <DepositManagement user={user} />)}
+                    />
+                    <Route
+                      path="/member/account-enquiries"
+                      element={renderWithAccess('member', <AccountEnquiries user={user} />)}
                     />
                     <Route
                       path="/member/withdrawal"
