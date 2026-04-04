@@ -65,6 +65,7 @@ export default function AccountEnquiries({ user }) {
   useEffect(() => {
     const fetchTransactionsForSelectedRow = async () => {
       if (!memberDetails || !memberDetails.Accounts || memberDetails.Accounts.length === 0) {
+        console.log('No member details or accounts');
         return;
       }
 
