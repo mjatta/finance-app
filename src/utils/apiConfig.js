@@ -6,8 +6,9 @@
 
 // Determine if running in production (GitHub Pages)
 const isProd = import.meta.env.PROD;
+// Use CORS proxy to bypass mixed content - converts HTTPS request to HTTP backend
 const API_BASE_URL = isProd 
-  ? 'http://alakuyateh-001-site10.atempurl.com'  // Production backend
+  ? 'https://cors-anywhere.herokuapp.com/http://alakuyateh-001-site10.atempurl.com'  // Via CORS proxy
   : (import.meta.env.VITE_API_BASE_URL || '');    // Dev or env override
 
 /**
