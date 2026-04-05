@@ -2,10 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 
 const CACHE_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
+// Determine if running in production (GitHub Pages)
+const isProd = import.meta.env.PROD;
+const API_BASE_URL = isProd 
+  ? 'http://alakuyateh-001-site10.atempurl.com'  // Production backend
+  : '';                                            // Dev (uses relative paths)
+
 // Get API URL - handles both dev (Vite middleware) and production (backend API)
 const getApiUrl = (endpoint) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-  return baseUrl ? `${baseUrl}${endpoint}` : endpoint;
+  return API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
 };
 
 export const useCities = () => {
@@ -14,8 +19,7 @@ export const useCities = () => {
     queryFn: async () => {
       // In dev: calls /api/cities (Vite middleware)
       // In prod: calls https://backend/api/lookups/cities
-      const isDev = !import.meta.env.VITE_API_BASE_URL;
-      const endpoint = isDev ? '/api/cities' : '/api/lookups/cities';
+      const endpoint = isProd ? '/api/lookups/cities' : '/api/cities';
       const url = getApiUrl(endpoint);
       
       const response = await fetch(url);
@@ -35,8 +39,7 @@ export const useBranches = () => {
     queryFn: async () => {
       // In dev: calls /api/branches (Vite middleware)
       // In prod: calls https://backend/api/lookups/branches
-      const isDev = !import.meta.env.VITE_API_BASE_URL;
-      const endpoint = isDev ? '/api/branches' : '/api/lookups/branches';
+      const endpoint = isProd ? '/api/lookups/branches' : '/api/branches';
       const url = getApiUrl(endpoint);
       
       const response = await fetch(url);
@@ -56,8 +59,7 @@ export const useCountries = () => {
     queryFn: async () => {
       // In dev: calls /api/countries (Vite middleware)
       // In prod: calls https://backend/api/lookups/countries
-      const isDev = !import.meta.env.VITE_API_BASE_URL;
-      const endpoint = isDev ? '/api/countries' : '/api/lookups/countries';
+      const endpoint = isProd ? '/api/lookups/countries' : '/api/countries';
       const url = getApiUrl(endpoint);
       
       const response = await fetch(url);

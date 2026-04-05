@@ -4,7 +4,11 @@
  * In production: Routes to actual backend API
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Determine if running in production (GitHub Pages)
+const isProd = import.meta.env.PROD;
+const API_BASE_URL = isProd 
+  ? 'http://alakuyateh-001-site10.atempurl.com'  // Production backend
+  : (import.meta.env.VITE_API_BASE_URL || '');    // Dev or env override
 
 /**
  * Map of endpoint patterns to their dev and production paths
