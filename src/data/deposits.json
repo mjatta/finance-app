@@ -243,6 +243,19 @@
       "gcUserid": "AKH",
       "ncompid": 30,
       "gnBranchid": 16
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 325,
+      "tnContAmt": -325,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "232",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
     }
   ]
 }

@@ -6,6 +6,7 @@ import process from 'node:process'
 import { Buffer } from 'node:buffer'
 
 const depositsFilePath = path.resolve(process.cwd(), 'src/data/deposits.json')
+const withdrawalsFilePath = path.resolve(process.cwd(), 'src/data/withdrawals.json')
 const loanRepaymentsFilePath = path.resolve(process.cwd(), 'src/data/loan-repayments.json')
 const userSetupFilePath = path.resolve(process.cwd(), 'src/data/user-setup.json')
 const securitySettingsFilePath = path.resolve(process.cwd(), 'src/data/security-settings.json')
@@ -46,6 +47,27 @@ const readDepositsFile = async () => {
 const writeDepositsFile = async (rows) => {
   const payload = JSON.stringify({ rows }, null, 2)
   await fs.writeFile(depositsFilePath, payload, 'utf8')
+}
+
+const readWithdrawalsFile = async () => {
+  try {
+    const raw = await fs.readFile(withdrawalsFilePath, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed
+    }
+    return Array.isArray(parsed?.rows) ? parsed.rows : []
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+}
+
+const writeWithdrawalsFile = async (rows) => {
+  const payload = JSON.stringify({ rows }, null, 2)
+  await fs.writeFile(withdrawalsFilePath, payload, 'utf8')
 }
 
 const readLoanRepaymentsFile = async () => {
@@ -251,6 +273,71 @@ const depositsApiPlugin = () => ({
       } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process deposits data.' }))
+      }
+    })
+  },
+})
+
+const withdrawalsApiPlugin = () => ({
+  name: 'withdrawals-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/Withdrawals/WithdrawalUser', async (req, res, next) => {
+      try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'GET') {
+          const rows = await readWithdrawalsFile()
+          res.statusCode = 200
+          res.end(JSON.stringify({ rows }))
+          return
+        }
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          const incomingRow = body?.row
+
+          if (!incomingRow || typeof incomingRow !== 'object') {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object with minimal transaction data.' }))
+            return
+          }
+
+          // Validate that only required API fields are present
+          const requiredFields = ['tcAcctNumb', 'gcContraAcct', 'gcControlAcct', 'tnTranAmt', 'tnContAmt', 'dTranDate', 'tcChqno', 'lnServID', 'gcUserid']
+          const hasRequiredFields = requiredFields.every(field => field in incomingRow)
+          
+          if (!hasRequiredFields) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ 
+              message: 'Invalid payload. Missing required transaction fields.',
+              required: requiredFields
+            }))
+            return
+          }
+
+          const rows = await readWithdrawalsFile()
+          rows.push(incomingRow)
+          await writeWithdrawalsFile(rows)
+
+          res.statusCode = 201
+          res.end(JSON.stringify({ rows }))
+          return
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process withdrawal data.' }))
       }
     })
   },
@@ -955,6 +1042,7 @@ export default defineConfig({
   plugins: [
     react(),
     depositsApiPlugin(),
+    withdrawalsApiPlugin(),
     loanRepaymentsApiPlugin(),
     userSetupApiPlugin(),
     securitySettingsApiPlugin(),

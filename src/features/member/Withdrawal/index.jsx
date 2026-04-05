@@ -77,7 +77,6 @@ export default function Withdrawal() {
     accountNumber: '',
     clearedBalance: '',
     unclearedBalance: '',
-    referenceNumber: '',
     printReceipt: false,
     transactionDate: todayIso,
     sendSmsFee: false,
@@ -368,7 +367,6 @@ export default function Withdrawal() {
           accountNumber: '',
           clearedBalance: '',
           unclearedBalance: '',
-          refNo: '',
           printReceipt: false,
           transactionDate: todayIso,
           sendSmsFee: false,
@@ -429,7 +427,6 @@ export default function Withdrawal() {
       ['Withdrawal Type', formData.depositType || '-'],
       ['Withdrawal Amount', formData.withdrawalAmount || '0.00'],
       ['Transaction Date', formData.transactionDate || '-'],
-      ['Reference Number', formData.referenceNumber || '-'],
       ['Phone Number', formData.phoneNumber || '-'],
       ['Comments', formData.comments || '-'],
     ];
@@ -545,7 +542,6 @@ export default function Withdrawal() {
             </div>
             <div class="meta">
               <span>Printed On: ${now}</span>
-              <span>Receipt Ref: ${formData.referenceNumber || '-'}</span>
             </div>
 
             <div class="section">
@@ -734,14 +730,6 @@ export default function Withdrawal() {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField
-                    label="Reference Number"
-                    name="referenceNumber"
-                    value={formData.referenceNumber}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  />
                   <DatePicker
                     label="Transaction Date"
                     value={formData.transactionDate ? dayjs(formData.transactionDate) : null}

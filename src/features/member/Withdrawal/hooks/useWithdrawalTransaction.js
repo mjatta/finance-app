@@ -26,9 +26,11 @@ export function useWithdrawalTransaction() {
         tnTranAmt: parseFloat(formData.withdrawalAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.withdrawalAmount)) || 0, // Negative of withdrawal amount
         dTranDate: formData.transactionDate || new Date().toISOString(),
-        tcChqno: formData.memberCode || '', // Map to customer code (member code)
+        tcChqno: formData.checkNumber || '', // Map to check number
         lnServID: formData.productId || 5, // Product ID from Posting Account endpoint, default to 5
         gcUserid: userId,
+        ncompid: 30,
+        gnBranchid: 16,
       };
 
       // Validate required fields
@@ -36,7 +38,7 @@ export function useWithdrawalTransaction() {
         throw new Error('Account number is required');
       }
 
-      const url = getFullApiUrl('/api/Cusystem/WithdrawalUser');
+      const url = getFullApiUrl('/api/Withdrawals/WithdrawalUser');
       const response = await fetch(
         url,
         {
