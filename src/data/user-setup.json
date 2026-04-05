@@ -33,6 +33,10 @@
     {
       "companyName": "Social Development Fund",
       "branchName": "Bansang"
+    },
+    {
+      "companyName": "Microfinance Management",
+      "branchName": "Banjul"
     }
   ],
   "users": [
@@ -47,11 +51,12 @@
       "cashAccount": "11000124401 ",
       "userType": "approver",
       "debitMit": "30000.00",
-      "creditLimit": "1,000,000",
+      "creditLimit": "30000.00",
       "loanApprovalLimit": true,
       "disableUser": false,
       "resetPassword": false,
-      "createdAt": "2026-04-05T17:27:15.287Z"
+      "createdAt": "2026-04-05T17:35:05.124Z",
+      "loanLimit": "540000.00"
     },
     {
       "companyName": "Unity SACCO",

@@ -196,6 +196,10 @@ const depositsApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/deposits', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -257,6 +261,10 @@ const loanRepaymentsApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/loan-repayments', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -305,6 +313,10 @@ const userSetupApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/user-setup/password-change', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'POST') {
@@ -388,6 +400,10 @@ const userSetupApiPlugin = () => ({
 
     server.middlewares.use('/api/user-setup', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -492,6 +508,10 @@ const securitySettingsApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/security-settings', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -569,6 +589,10 @@ const productDefinitionApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/product-definition', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -645,6 +669,10 @@ const periodicProcessingApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/periodic-processing', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET') {
@@ -711,6 +739,10 @@ const customerRegistrationApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/customer-registration', async (req, res, next) => {
       try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
         if (req.method === 'GET' && req.url?.startsWith('/report')) {

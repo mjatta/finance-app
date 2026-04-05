@@ -64,6 +64,7 @@ export default function DepositManagement() {
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [contraAccounts, setContraAccounts] = useState([]);
 
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
@@ -98,6 +99,7 @@ export default function DepositManagement() {
 
   const [rows, setRows] = useState([]);
   const [touched, setTouched] = useState({});
+  const [lastTransactionData, setLastTransactionData] = useState(null);
 
   const handleBlur = (fieldName) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
@@ -230,6 +232,7 @@ export default function DepositManagement() {
         [name]: value,
         bank: '',
         bankAccount: '',
+        contraAccount: '',
       }));
 
       // If cheque is selected, fetch banks
@@ -242,6 +245,7 @@ export default function DepositManagement() {
       } else {
         setBanks([]);
         setBankAccounts([]);
+        setContraAccounts([]);
       }
       return;
     }
@@ -252,6 +256,7 @@ export default function DepositManagement() {
         ...prev,
         bank: value,
         bankAccount: '',
+        contraAccount: '',
       }));
 
       // Fetch bank accounts for the selected bank
@@ -263,6 +268,46 @@ export default function DepositManagement() {
         });
       } else {
         setBankAccounts([]);
+        setContraAccounts([]);
+      }
+      return;
+    }
+
+    // Handle bank account change
+    if (name === 'bankAccount') {
+      // When bank account is selected, fetch its details as contra accounts
+      if (value && bankAccounts.length > 0) {
+        const selectedAccount = bankAccounts.find((acc) => acc.id === value);
+        if (selectedAccount) {
+          // The bank account API returns array of accounts with AccountNumber and AccountName
+          // Map this to contraAccounts for the dropdown
+          const accounts = Array.isArray(selectedAccount.accounts)
+            ? selectedAccount.accounts
+            : [selectedAccount];
+          setContraAccounts(accounts);
+          
+          // Auto-fill contraAccount with the first AccountNumber
+          const firstAccountNumber = accounts.length > 0 ? accounts[0].AccountNumber : '';
+          setFormData((prev) => ({
+            ...prev,
+            bankAccount: value,
+            contraAccount: firstAccountNumber,
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            bankAccount: value,
+            contraAccount: '',
+          }));
+          setContraAccounts([]);
+        }
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          bankAccount: value,
+          contraAccount: '',
+        }));
+        setContraAccounts([]);
       }
       return;
     }
@@ -351,21 +396,37 @@ export default function DepositManagement() {
       if (result) {
         setStatusMessage('Deposit saved successfully.');
         setStatusError(false);
+        
+        // Capture the newly created transaction from the 201 response
+        if (result.rows && Array.isArray(result.rows) && result.rows.length > 0) {
+          const newTransaction = result.rows[result.rows.length - 1];
+          const transactionId = `${newTransaction.tcChqno || 'TXN'}-${new Date().getTime()}`;
+          setLastTransactionData({
+            transactionId,
+            timestamp: new Date().toLocaleString(),
+            transactionData: newTransaction,
+          });
+        }
+        
         notifySaveSuccess({
           page: 'Member Administration / Deposits',
           action: 'Save Deposit',
           message: 'Deposit saved successfully.',
         });
-        // Reset form after successful save
+        // Reset all fields after successful save
         setFormData({
+          transactionType: 'deposits',
           memberCode: '',
           payrollNumber: '',
+          profilePicture: '',
+          phoneNumber: '',
           postingAccount: '',
-          bookBalance: '',
+          memberAccounts: [],
+          accountBalance: '',
           accountNumber: '',
           clearedBalance: '',
           unclearedBalance: '',
-          refNo: '',
+          referenceNumber: '',
           printReceipt: false,
           transactionDate: todayIso,
           sendSmsFee: false,
@@ -375,7 +436,7 @@ export default function DepositManagement() {
           depositType: '',
           contraAccount: '',
           checkNumber: '',
-          checkDate: '', 
+          checkDate: todayIso,
           bank: '',
           bankAccount: '',
           cashAccount: '',
@@ -383,6 +444,13 @@ export default function DepositManagement() {
           debitLimit: '',
           loanLimit: '',
         });
+        setRows([]);
+        setTouched({});
+        setBankAccounts([]);
+        setContraAccounts([]);
+        setBanks([]);
+        // Auto dismiss success message after 5 seconds
+        setTimeout(() => setStatusMessage(''), 5000);
       } else {
         throw new Error('Failed to save deposit transaction.');
       }
@@ -422,13 +490,22 @@ export default function DepositManagement() {
       ['Payroll Number', formData.payrollNumber || '-'],
       ['Account Type', selectedRow.accountType || '-'],
       ['Account Number', selectedRow.accountNumber || '-'],
-      ['Posting Account', formData.postingAccount || '-'],
-      ['Deposit Type', formData.depositType || '-'],
-      ['Deposit Amount', formData.depositAmount || '0.00'],
       ['Transaction Date', formData.transactionDate || '-'],
-      ['Reference Number', formData.referenceNumber || '-'],
       ['Phone Number', formData.phoneNumber || '-'],
       ['Comments', formData.comments || '-'],
+      // Fields from 201 response payload
+      ...(lastTransactionData?.transactionData ? [
+        ['', ''], // Empty row for spacing
+        ['API Transaction Details', ''],
+        ['Check Number', lastTransactionData.transactionData.tcChqno || '-'],
+        ['Posting Amount (API)', lastTransactionData.transactionData.tnTranAmt || '-'],
+        ['Account Number (API)', lastTransactionData.transactionData.tcAcctNumb || '-'],
+        ['Control Account', lastTransactionData.transactionData.gcControlAcct || '-'],
+        ['User ID', lastTransactionData.transactionData.gcUserid || '-'],
+        ['API Transaction Date', lastTransactionData.transactionData.dTranDate || '-'],
+        ['Transaction ID', lastTransactionData.transactionId],
+        ['Transaction Time', lastTransactionData.timestamp],
+      ] : []),
     ];
 
     const detailsHtml = infoRows
@@ -542,7 +619,6 @@ export default function DepositManagement() {
             </div>
             <div class="meta">
               <span>Printed On: ${now}</span>
-              <span>Receipt Ref: ${formData.referenceNumber || '-'}</span>
             </div>
 
             <div class="section">
@@ -731,14 +807,6 @@ export default function DepositManagement() {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField
-                    label="Reference Number"
-                    name="referenceNumber"
-                    value={formData.referenceNumber}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  />
                   <DatePicker
                     label="Transaction Date"
                     value={formData.transactionDate ? dayjs(formData.transactionDate) : null}
@@ -882,7 +950,6 @@ export default function DepositManagement() {
                       },
                     }}
                   />
-                  <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
                   <TextField
                     label="Comments"
                     name="comments"
@@ -1036,6 +1103,31 @@ export default function DepositManagement() {
                     {bankAccounts.map((account) => (
                       <MenuItem key={account.id} value={account.id}>
                         {account.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Contra Account"
+                    name="contraAccount"
+                    value={formData.contraAccount}
+                    onChange={handleChange}
+                    onBlur={() => handleBlur('contraAccount')}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  >
+                    <MenuItem value="">Select contra account</MenuItem>
+                    {contraAccounts.map((account) => (
+                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
+                        {account.AccountName?.trim()}
                       </MenuItem>
                     ))}
                   </TextField>

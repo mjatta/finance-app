@@ -134,6 +134,115 @@
         }
       ],
       "createdAt": "2026-04-04T18:47:35.778Z"
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 13,
+      "tnContAmt": -13,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH"
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 14,
+      "tnContAmt": -14,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH"
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 15,
+      "tnContAmt": -15,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH"
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 16,
+      "tnContAmt": -16,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH"
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 100,
+      "tnContAmt": -100,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 200,
+      "tnContAmt": -200,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "00001",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 300,
+      "tnContAmt": -300,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "000001",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 316,
+      "tnContAmt": -316,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "1234",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
+    },
+    {
+      "tcAcctNumb": "25000000101",
+      "gcContraAcct": "25000000101",
+      "gcControlAcct": "25000000101",
+      "tnTranAmt": 319,
+      "tnContAmt": -319,
+      "dTranDate": "2026-04-05",
+      "tcChqno": "456",
+      "lnServID": 5,
+      "gcUserid": "AKH",
+      "ncompid": 30,
+      "gnBranchid": 16
     }
   ]
 }

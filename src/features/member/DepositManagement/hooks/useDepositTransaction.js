@@ -26,9 +26,11 @@ export function useDepositTransaction() {
         tnTranAmt: parseFloat(formData.depositAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.depositAmount)) || 0, // Negative of deposit amount
         dTranDate: formData.transactionDate || new Date().toISOString(),
-        tcChqno: formData.memberCode || '', // Map to customer code (member code)
+        tcChqno: formData.checkNumber || '', // Map to check number
         lnServID: formData.productId || 5, // Product ID from Posting Account endpoint, default to 5
         gcUserid: userId,
+        ncompid: 30,
+        gnBranchid: 16,
       };
 
       // Validate required fields
@@ -36,7 +38,7 @@ export function useDepositTransaction() {
         throw new Error('Account number is required');
       }
 
-      const url = getFullApiUrl('/api/Cusystem/DepositUser');
+      const url = getFullApiUrl('/api/deposits');
       const response = await fetch(
         url,
         {
@@ -44,7 +46,7 @@ export function useDepositTransaction() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ row: payload }),
         }
       );
 
