@@ -114,6 +114,19 @@ export default function Withdrawal() {
   });
 
   const [rows, setRows] = useState([]);
+  const [touched, setTouched] = useState({});
+
+  const handleBlur = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+  };
+
+  const isFieldInvalid = (fieldName) => {
+    if (!touched[fieldName]) return false;
+    if (fieldName === 'postingAccount') return !formData.postingAccount.trim();
+    if (fieldName === 'withdrawalAmount') return !formData.withdrawalAmount.toString().trim();
+    if (fieldName === 'transactionDate') return !formData.transactionDate;
+    return false;
+  };
 
   const applyMemberData = (member) => {
     const nextRows = member.accounts.map((account, index) => makeWithdrawalRow(account, index));
@@ -711,6 +724,9 @@ export default function Withdrawal() {
                     name="postingAccount"
                     value={formData.postingAccount}
                     onChange={handleChange}
+                    onBlur={() => handleBlur('postingAccount')}
+                    error={isFieldInvalid('postingAccount')}
+                    helperText={isFieldInvalid('postingAccount') ? 'Posting Account is required' : ''}
                     size="small"
                     fullWidth
                     required
@@ -859,7 +875,7 @@ export default function Withdrawal() {
                     <MenuItem value="cheque">Cheque</MenuItem>
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
                   </TextField>
-                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth required />
+                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} onBlur={() => handleBlur('withdrawalAmount')} error={isFieldInvalid('withdrawalAmount')} helperText={isFieldInvalid('withdrawalAmount') ? 'Withdrawal Amount is required' : ''} size="small" fullWidth required />
                   <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
                   <TextField
                     label="Comments"
