@@ -120,6 +120,7 @@ export default function UserSetup({ user }) {
     userType: '',
     debitMit: '',
     creditLimit: '',
+    loanLimit: '',
     loanApprovalLimit: false,
     disableUser: false,
     resetPassword: false,
@@ -319,6 +320,7 @@ export default function UserSetup({ user }) {
       userType: userRecord?.userType || '',
       debitMit: userRecord?.debitMit || '',
       creditLimit: userRecord?.creditLimit || '',
+      loanLimit: userRecord?.loanLimit || '',
       loanApprovalLimit: Boolean(userRecord?.loanApprovalLimit),
       disableUser: Boolean(userRecord?.disableUser),
       resetPassword: Boolean(userRecord?.resetPassword),
@@ -391,6 +393,7 @@ export default function UserSetup({ user }) {
         userType: '',
         debitMit: '',
         creditLimit: '',
+        loanLimit: '',
         loanApprovalLimit: false,
         disableUser: false,
         resetPassword: false,
@@ -586,9 +589,9 @@ export default function UserSetup({ user }) {
 
             <Box
               sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 2,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2.5,
                 '& .MuiInputLabel-root': {
                   fontWeight: 700,
                 },
@@ -604,7 +607,6 @@ export default function UserSetup({ user }) {
                 value={userForm.companyName}
                 onChange={handleUserFormChange}
                 disabled
-                sx={{ flex: '1 1 320px', minWidth: 260 }}
               >
                 {companies.map((item) => (
                   <MenuItem key={item} value={item}>
@@ -623,7 +625,6 @@ export default function UserSetup({ user }) {
                   displayEmpty: true,
                   renderValue: (selected) => selected || 'Select a Branch',
                 }}
-                sx={{ flex: '1 1 320px', minWidth: 260 }}
               >
                 <MenuItem value="" disabled>
                   Select a Branch
@@ -640,28 +641,24 @@ export default function UserSetup({ user }) {
                 name="staffNumber"
                 value={userForm.staffNumber}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 label="User id"
                 name="userId"
                 value={userForm.userId}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 label="User name"
                 name="userName"
                 value={userForm.userName}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 label="Temporary password"
                 name="temporaryPassword"
                 value={userForm.temporaryPassword}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 select
@@ -671,7 +668,6 @@ export default function UserSetup({ user }) {
                 onChange={handleUserFormChange}
                 required
                 helperText={!userForm.baseRole ? 'Role is required for new user setup' : 'Selected role determines user permissions'}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               >
                 {baseRoles.map((item) => (
                   <MenuItem key={item} value={item}>
@@ -684,7 +680,6 @@ export default function UserSetup({ user }) {
                 name="cashAccount"
                 value={userForm.cashAccount}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 select
@@ -692,7 +687,6 @@ export default function UserSetup({ user }) {
                 name="userType"
                 value={userForm.userType}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               >
                 <MenuItem value="maker">Maker</MenuItem>
                 <MenuItem value="checker">Checker</MenuItem>
@@ -700,21 +694,25 @@ export default function UserSetup({ user }) {
                 <MenuItem value="viewer">Viewer</MenuItem>
               </TextField>
               <TextField
-                label="Debit mit"
+                label="Debit Limit"
                 name="debitMit"
                 value={userForm.debitMit}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
               />
               <TextField
                 label="Credit limit"
                 name="creditLimit"
                 value={userForm.creditLimit}
                 onChange={handleUserFormChange}
-                sx={{ flex: '1 1 220px', minWidth: 220 }}
+              />
+              <TextField
+                label="Loan limit"
+                name="loanLimit"
+                value={userForm.loanLimit}
+                onChange={handleUserFormChange}
               />
 
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: '100%' }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
                 <FormControlLabel
                   control={<Checkbox name="loanApprovalLimit" checked={userForm.loanApprovalLimit} onChange={handleUserFormChange} />}
                   label="Loan approval limit"

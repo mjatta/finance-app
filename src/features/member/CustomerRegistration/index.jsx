@@ -372,14 +372,22 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }
 
     if (missingFields.length > 0) {
-      setTouched({
-        firstName: !formData.firstName,
-        surname: !formData.surname,
-        institutionBranch: !formData.institutionBranch,
-        institutionType: !formData.institutionType,
-        institutionName: !formData.institutionName,
-        institutionNature: !formData.institutionNature,
-      });
+      // Only set touched for fields in the current tab
+      if (mainTab === 0) {
+        // Individual tab touched fields
+        setTouched({
+          firstName: !formData.firstName,
+          surname: !formData.surname,
+          institutionBranch: !formData.institutionBranch,
+        });
+      } else {
+        // Institution tab touched fields
+        setTouched({
+          institutionType: !formData.institutionType,
+          institutionName: !formData.institutionName,
+          institutionNature: !formData.institutionNature,
+        });
+      }
       setStatusMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
       setStatusError(true);
       return;
@@ -418,6 +426,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setAdditionalNextOfKins([]);
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
+        setTouched({});
         setIsSaving(false);
         return;
       } catch (error) {
@@ -480,6 +489,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setAdditionalNextOfKins([]);
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
+        setTouched({});
         setIsSaving(false);
         return;
       } catch (error) {
@@ -1013,7 +1023,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.title)}
+                            onBlur={() => handleBlur('title')}
+                            error={isFieldInvalid('title')}
+                            helperText={isFieldInvalid('title') ? 'Title is required' : ''}
                           />
                           <TextField
                             select
@@ -1022,7 +1034,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.gender)}
+                            onBlur={() => handleBlur('gender')}
+                            error={isFieldInvalid('gender')}
+                            helperText={isFieldInvalid('gender') ? 'Gender is required' : ''}
                           >
                             <MenuItem value={1}>Male</MenuItem>
                             <MenuItem value={2}>Female</MenuItem>
@@ -1034,7 +1048,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               name="nationality"
                               value={formData.nationality}
                               onChange={handleChange}
-                              error={Boolean(fieldErrors.nationality)}
+                              onBlur={() => handleBlur('nationality')}
+                              error={isFieldInvalid('nationality')}
+                              helperText={isFieldInvalid('nationality') ? 'Nationality is required' : ''}
                             >
                               <MenuItem value="">Select nationality</MenuItem>
                               {countries.map((country) => (
@@ -1050,7 +1066,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="maritalStatus"
                             value={formData.maritalStatus}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.maritalStatus)}
+                            onBlur={() => handleBlur('maritalStatus')}
+                            error={isFieldInvalid('maritalStatus')}
+                            helperText={isFieldInvalid('maritalStatus') ? 'Marital status is required' : ''}
                           >
                             <MenuItem value="single">Single</MenuItem>
                             <MenuItem value="married">Married</MenuItem>
@@ -1104,7 +1122,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="idType"
                             value={formData.idType}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.idType)}
+                            onBlur={() => handleBlur('idType')}
+                            error={isFieldInvalid('idType')}
+                            helperText={isFieldInvalid('idType') ? 'ID Type is required' : ''}
                           >
                             <MenuItem value="national-id">National ID</MenuItem>
                             <MenuItem value="passport">Passport</MenuItem>
@@ -1116,7 +1136,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="idNumber"
                             value={formData.idNumber}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.idNumber)}
+                            onBlur={() => handleBlur('idNumber')}
+                            error={isFieldInvalid('idNumber')}
+                            helperText={isFieldInvalid('idNumber') ? 'ID number is required' : ''}
                           />
                           <TextField
                             required
@@ -1124,7 +1146,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="placeIssue"
                             value={formData.placeIssue}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.placeIssue)}
+                            onBlur={() => handleBlur('placeIssue')}
+                            error={isFieldInvalid('placeIssue')}
+                            helperText={isFieldInvalid('placeIssue') ? 'Place Issued is required' : ''}
                           />
                           <DatePicker
                             label="Date Issued"
@@ -1333,7 +1357,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                   name="country"
                                   value={formData.country}
                                   onChange={handleChange}
-                                  error={Boolean(fieldErrors.country)}
+                                  onBlur={() => handleBlur('country')}
+                                  error={isFieldInvalid('country')}
+                                  helperText={isFieldInvalid('country') ? 'Country of Residence is required' : ''}
                                 >
                                   <MenuItem value="">Select country</MenuItem>
                                   {countries.map((country) => (
@@ -1353,7 +1379,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           name="mobilePhoneNumber"
                           value={formData.mobilePhoneNumber}
                           onChange={handleChange}
-                          error={Boolean(fieldErrors.mobilePhoneNumber)}
+                          onBlur={() => handleBlur('mobilePhoneNumber')}
+                          error={isFieldInvalid('mobilePhoneNumber')}
+                          helperText={isFieldInvalid('mobilePhoneNumber') ? 'Mobile Phone number is required' : ''}
                         />
                         <TextField label="Email address" name="emailAddress" value={formData.emailAddress} onChange={handleChange} sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }} />
                       </Box>
@@ -1391,7 +1419,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           name="nextOfKinName"
                           value={formData.nextOfKinName}
                           onChange={handleChange}
-                          error={Boolean(fieldErrors.nextOfKinName)}
+                          onBlur={() => handleBlur('nextOfKinName')}
+                          error={isFieldInvalid('nextOfKinName')}
+                          helperText={isFieldInvalid('nextOfKinName') ? 'Name is required' : ''}
                         />
                         <TextField label="Address" name="nextOfKinAddress" value={formData.nextOfKinAddress} onChange={handleChange} />
                         <TextField label="Relationship" name="nextOfKinRelationship" value={formData.nextOfKinRelationship} onChange={handleChange} />
@@ -1455,7 +1485,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="registrationFee"
                             value={formData.registrationFee}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.registrationFee)}
+                            onBlur={() => handleBlur('registrationFee')}
+                            error={isFieldInvalid('registrationFee')}
+                            helperText={isFieldInvalid('registrationFee') ? 'Registration Fee is required' : ''}
                           />
                           <TextField
                             label="Saving Amount"
@@ -1524,7 +1556,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="signatory1"
                             value={formData.signatory1}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.signatory1)}
+                            onBlur={() => handleBlur('signatory1')}
+                            error={isFieldInvalid('signatory1')}
+                            helperText={isFieldInvalid('signatory1') ? 'Signatory 1 is required' : ''}
                           />
                         </Box>
                       </CardContent>
