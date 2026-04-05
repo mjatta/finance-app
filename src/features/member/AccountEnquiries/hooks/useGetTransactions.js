@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 // Hook to fetch transactions by account number
 export function useGetTransactions() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchTransactions = async (accountNumber) => {
+  const fetchTransactions = useCallback(async (accountNumber) => {
     if (!accountNumber || !accountNumber.trim()) {
       return null;
     }
@@ -64,7 +64,7 @@ export function useGetTransactions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return { fetchTransactions, loading, error };
 }

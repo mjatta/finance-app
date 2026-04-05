@@ -379,10 +379,15 @@ export default function AccountActivation() {
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               '&.selected-row': {
-                backgroundColor: '#bbdefb',
-                fontWeight: 500,
+                backgroundColor: '#1976d2 !important',
+                color: '#ffffff',
+                fontWeight: 600,
+                '& .MuiDataGrid-cell': {
+                  color: '#ffffff',
+                  borderBottomColor: '#1565c0',
+                },
                 '&:hover': {
-                  backgroundColor: '#90caf9',
+                  backgroundColor: '#1565c0 !important',
                 },
               },
               '&:nth-of-type(odd)': {

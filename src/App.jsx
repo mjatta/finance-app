@@ -223,11 +223,11 @@ function App() {
       children: [
         { label: 'Registration', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
         { label: 'Account Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
-        { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
-        { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
         { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
         { label: 'Account Enquiries', to: '/member/account-enquiries', icon: ManageSearchRoundedIcon },
+        { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
+        { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
