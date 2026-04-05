@@ -185,14 +185,17 @@
       },
       "pagePermissions": {
         "/member/customer-registration": "write",
-        "/member/add-member-account": "write",
+        "/member/add-member-account": "hide page",
         "/member/deposits": "write",
-        "/member/account-enquiries": "read",
-        "/member/member-close": "write",
+        "/member/account-enquiries": "write",
+        "/member/member-close": "hide page",
         "/member/member-activation": "write",
-        "/member/member-activate": "write",
-        "/member/withdrawal": "hide page",
-        "/member/member-payroll-management": "hide page"
+        "/member/member-activate": "hide page",
+        "/member/withdrawal": "write",
+        "/member/member-payroll-management": "hide page",
+        "/member/reprint": "hide page",
+        "/member/transfer": "hide page",
+        "/member/member-close-account": "hide page"
       }
     }
   ]
