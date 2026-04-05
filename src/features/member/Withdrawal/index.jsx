@@ -713,6 +713,7 @@ export default function Withdrawal() {
                     onChange={handleChange}
                     size="small"
                     fullWidth
+                    required
                   >
                     <MenuItem value="">Select posting account</MenuItem>
                     {formData.memberAccounts.map((account) => (
@@ -725,16 +726,8 @@ export default function Withdrawal() {
                     label="Reference Number"
                     name="referenceNumber"
                     value={formData.referenceNumber}
-                    disabled
                     size="small"
                     fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
                   />
                   <DatePicker
                     label="Transaction Date"
@@ -859,15 +852,24 @@ export default function Withdrawal() {
                     onChange={handleChange}
                     size="small"
                     fullWidth
+                    required
                   >
                     <MenuItem value="">Select Type</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
                     <MenuItem value="cheque">Cheque</MenuItem>
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
                   </TextField>
-                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth />
+                  <TextField label="Withdrawal Amount" name="withdrawalAmount" value={formData.withdrawalAmount} onChange={handleChange} size="small" fullWidth required />
                   <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
-                  <TextField label="Comments" name="comments" value={formData.comments} onChange={handleChange} size="small" fullWidth />
+                  <TextField
+                    label="Comments"
+                    name="comments"
+                    value={formData.comments}
+                    onChange={handleChange}
+                    multiline
+                    minRows={4}
+                    fullWidth
+                  />
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pt: 1 }}>
                     <FormControlLabel
                       control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}

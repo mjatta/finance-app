@@ -103,11 +103,9 @@ export default function CustomerRegistration(props) {
   const [mainTab, setMainTab] = useState(0);
   const [detailTab, setDetailTab] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [reportData, setReportData] = useState(null);
   const [institutionBranches, setInstitutionBranches] = useState([]);
   const [countries, setCountries] = useState([]);
 
@@ -348,7 +346,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
       const individualPayload = buildIndividualPayload(formData, countries, cities);
       try {
-        await registerIndividual(individualPayload);
+        const result = await registerIndividual(individualPayload);
         setStatusMessage('Individual registration saved successfully.');
         notifySaveSuccess({
           page: 'Member Administration / Registration',
@@ -356,6 +354,20 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           message: 'Individual registration saved successfully.',
           metadata: individualPayload,
         });
+
+        // Set recent member data for printing
+        if (result) {
+          const memberData = formatRecentMemberRow(result, institutionBranches);
+          setRecentMember({ ...result, ...memberData });
+        }
+
+        // Trigger print if checkbox is checked
+        if (formData.printReceipt) {
+          setTimeout(() => {
+            handlePrintReceipt();
+          }, 500);
+        }
+
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
@@ -404,12 +416,25 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           message: 'Institution registration saved successfully.',
           metadata: institutionPayload,
         });
+
+        // Set recent member data for printing
+        if (response) {
+          const memberData = formatRecentMemberRow(response, institutionBranches);
+          setRecentMember({ ...response, ...memberData });
+        }
+
+        // Trigger print if checkbox is checked
+        if (formData.printReceipt) {
+          setTimeout(() => {
+            handlePrintReceipt();
+          }, 500);
+        }
+
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
-        setRecentMember(null);
         setIsSaving(false);
         return;
       } catch (error) {
@@ -429,31 +454,93 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     // ...existing code for individual...
   };
 
-  const handleGenerateReport = async () => {
-    if (isReadOnlyRole || isGeneratingReport) {
+  const handlePrintReceipt = () => {
+    if (!recentMember) {
+      setStatusMessage('Please save a registration before printing receipt.');
+      setStatusError(true);
       return;
     }
 
-    setIsGeneratingReport(true);
-    setStatusMessage('');
-    setStatusError(false);
-
-    try {
-      const response = await fetch('/api/customer-registration/report');
-      if (!response.ok) {
-        throw new Error('Report generation failed');
-      }
-
-      const payload = await response.json();
-      setReportData(payload?.report || null);
-      setStatusMessage('Report generated successfully.');
-    } catch {
-      setStatusMessage('Unable to generate customer registration report.');
+    const printWindow = window.open('', '_blank', 'width=720,height=820');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print window. Please allow pop-ups and try again.');
       setStatusError(true);
-    } finally {
-      setIsGeneratingReport(false);
+      return;
     }
+
+    const now = new Date().toLocaleString();
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Customer Registration Receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
+          .receipt-container { max-width: 600px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .header h2 { margin: 0; color: #333; }
+          .header p { margin: 5px 0; font-size: 12px; color: #666; }
+          .section { margin-bottom: 20px; }
+          .section-title { font-weight: bold; background-color: #f0f0f0; padding: 10px; margin-bottom: 10px; }
+          .content-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .content-row span:first-child { font-weight: bold; }
+          .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 2px solid #333; font-size: 12px; color: #666; }
+          .print-button { text-align: center; margin-top: 20px; }
+          button { padding: 10px 30px; font-size: 16px; background-color: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; }
+          button:hover { background-color: #5568d3; }
+          @media print { .print-button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="header">
+            <h2>Customer Registration Receipt</h2>
+            <p>Date: ${now}</p>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Registration Details</div>
+            <div class="content-row">
+              <span>Customer Code:</span>
+              <span>${recentMember.memberCode || '-'}</span>
+            </div>
+            <div class="content-row">
+              <span>Full Name:</span>
+              <span>${recentMember.fullName || '-'}</span>
+            </div>
+            <div class="content-row">
+              <span>Date Joined:</span>
+              <span>${recentMember.dateJoined || '-'}</span>
+            </div>
+            <div class="content-row">
+              <span>Date of Birth:</span>
+              <span>${recentMember.dateOfBirth || '-'}</span>
+            </div>
+            <div class="content-row">
+              <span>Branch:</span>
+              <span>${recentMember.branch || '-'}</span>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>This is an automated receipt. Please keep for your records.</p>
+            <p>Registration System © 2024</p>
+          </div>
+          
+          <div class="print-button">
+            <button onclick="window.print()">🖨️ Print</button>
+            <button onclick="window.close()" style="margin-left: 10px; background-color: #999;">Close</button>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
   };
+
+
 
   return (
     <Box p={3}>
@@ -1659,33 +1746,34 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             </CardContent>
           </Card>
 
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button variant="contained" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-            <Button variant="outlined" onClick={handleGenerateReport} disabled={isGeneratingReport}>
-              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
-            </Button>
+          <Box sx={{ mt: 2, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+            <FormControlLabel
+              control={<Checkbox name="printReceipt" checked={formData.printReceipt} onChange={handleChange} />}
+              label="Print receipt after saving"
+              sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, pt: 1 }}
+            />
           </Box>
 
-          {reportData && (
-            <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                  Customer Registration Report
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Generated At: {reportData.generatedAt || '-'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Records: {reportData.totalRecords ?? 0}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Latest Member: {reportData.latestMember?.fullName || '-'}
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 3 }}>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={isSaving}
+              sx={{
+                backgroundColor: '#667eea',
+                '&:hover': { backgroundColor: '#5568d3' },
+                fontWeight: 600,
+                paddingX: 3,
+                boxShadow: 'none',
+                textTransform: 'none',
+              }}
+            >
+              {isSaving ? 'Saving...' : '💾 Save'}
+            </Button>
+            <Button variant="outlined" onClick={handlePrintReceipt}>
+              🖨️ Print Receipt
+            </Button>
+          </Box>
         </Box>
       )}
 

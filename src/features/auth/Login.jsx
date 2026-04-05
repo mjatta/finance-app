@@ -207,7 +207,7 @@ export default function Login({ onLogin }) {
                 mb: 1.5,
               }}
             >
-              Social Development Fund
+              Microfinance Management
             </Typography>
             <Typography
               variant="h5"

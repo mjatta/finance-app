@@ -101,4 +101,5 @@ export const initialForm = {
   signatory1: '',
   signatory3: '',
   defaultBatch: '',
+  printReceipt: false,
 };
