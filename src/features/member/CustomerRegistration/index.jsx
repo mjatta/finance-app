@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -214,8 +215,20 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
+  const [touched, setTouched] = useState({});
 
   const [formData, setFormData] = useState(initialForm);
+
+  const handleBlur = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+  };
+
+  const isFieldInvalid = (fieldName) => {
+    if (!touched[fieldName]) return false;
+    const value = formData[fieldName];
+    if (typeof value === 'string') return !value.trim();
+    return !value;
+  };
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -340,6 +353,35 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const handleSave = async () => {
 
     if (isReadOnlyRole || isSaving) {
+      return;
+    }
+
+    // Validation with specific field names
+    let missingFields = [];
+    
+    if (mainTab === 0) {
+      // Individual validation
+      if (!formData.firstName) missingFields.push('First Name');
+      if (!formData.surname) missingFields.push('Surname');
+      if (!formData.institutionBranch) missingFields.push('Branch');
+    } else {
+      // Institution validation
+      if (!formData.institutionType) missingFields.push('Institution Type');
+      if (!formData.institutionName) missingFields.push('Institution Name');
+      if (!formData.institutionNature) missingFields.push('Business Category');
+    }
+
+    if (missingFields.length > 0) {
+      setTouched({
+        firstName: !formData.firstName,
+        surname: !formData.surname,
+        institutionBranch: !formData.institutionBranch,
+        institutionType: !formData.institutionType,
+        institutionName: !formData.institutionName,
+        institutionNature: !formData.institutionNature,
+      });
+      setStatusMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      setStatusError(true);
       return;
     }
 
@@ -552,13 +594,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       </Typography>
 
       {statusMessage && (
-        <Typography
-          variant="body2"
-          color={statusError ? 'error.main' : 'success.main'}
-          sx={{ mb: 2, fontWeight: 700 }}
+        <Alert
+          severity={statusError ? 'error' : 'success'}
+          sx={{ mb: 2 }}
+          onClose={() => setStatusMessage('')}
         >
           {statusMessage}
-        </Typography>
+        </Alert>
       )}
 
       <Tabs
@@ -605,7 +647,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.firstName)}
+                      onBlur={() => handleBlur('firstName')}
+                      error={isFieldInvalid('firstName')}
+                      helperText={isFieldInvalid('firstName') ? 'First Name is required' : ''}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
                     />
                     <TextField label="Middle Name" name="middleName" value={formData.middleName} onChange={handleChange} />
                     <TextField
@@ -614,7 +664,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="surname"
                       value={formData.surname}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.surname)}
+                      onBlur={() => handleBlur('surname')}
+                      error={isFieldInvalid('surname')}
+                      helperText={isFieldInvalid('surname') ? 'Surname is required' : ''}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
                     />
                     <TextField
                       label="Customer Code"
@@ -634,10 +692,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="institutionBranch"
                       value={formData.institutionBranch}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.institutionBranch)}
+                      onBlur={() => handleBlur('institutionBranch')}
+                      error={isFieldInvalid('institutionBranch')}
+                      helperText={isFieldInvalid('institutionBranch') ? 'Branch is required' : ''}
                       SelectProps={{
                         displayEmpty: true,
                         renderValue: (selected) => selected || 'Select branch',
+                      }}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
                       }}
                     >
                       <MenuItem value="" disabled>
@@ -676,7 +742,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="institutionType"
                       value={formData.institutionType}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.institutionType)}
+                      onBlur={() => handleBlur('institutionType')}
+                      error={isFieldInvalid('institutionType')}
+                      helperText={isFieldInvalid('institutionType') ? 'Institution Type is required' : ''}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
                     >
                       <MenuItem value="corporate">Corporate</MenuItem>
                       <MenuItem value="group">Group</MenuItem>
@@ -687,7 +761,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="institutionName"
                       value={formData.institutionName}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.institutionName)}
+                      onBlur={() => handleBlur('institutionName')}
+                      error={isFieldInvalid('institutionName')}
+                      helperText={isFieldInvalid('institutionName') ? 'Institution Name is required' : ''}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
                     />
                     <TextField
                       select
@@ -696,7 +778,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       name="institutionNature"
                       value={formData.institutionNature}
                       onChange={handleChange}
-                      error={Boolean(fieldErrors.institutionNature)}
+                      onBlur={() => handleBlur('institutionNature')}
+                      error={isFieldInvalid('institutionNature')}
+                      helperText={isFieldInvalid('institutionNature') ? 'Business Category is required' : ''}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
                     >
                       <MenuItem value="">Select business category</MenuItem>
                       <MenuItem value={1}>Business</MenuItem>

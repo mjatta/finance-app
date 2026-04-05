@@ -49,6 +49,7 @@ export function buildIndividualPayload(formData, countries = [], cities = []) {
     Signatory: formData.signatory1,
     MemberPicture: null,
     MemberSignature: null,
+    suers: 'AKH',
   };
 }
 
@@ -131,5 +132,6 @@ export function buildInstitutionPayload(formData, institutionBranches = [], citi
     Ward: Number(formData.institutionWard) || 0,
     MemberPicture: null,
     MemberSignature: null,
+    suers: 'AKH',
   };
 }

@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -27,30 +28,13 @@ const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="130" viewBox="0 0 180 130"><rect width="180" height="130" fill="#f1f5f9"/><circle cx="90" cy="48" r="18" fill="#cbd5e1"/><rect x="52" y="76" width="76" height="30" rx="15" fill="#cbd5e1"/></svg>',
 )}`;
 
-const mockMembers = [
-  {
-    memberCode: 'MEM001',
-    payrollNumber: 'PAY001',
-    profilePicture: 'https://i.pravatar.cc/120?img=12',
-    phoneNumber: '2207001111',
-    email: 'member001@sdf.org',
-    accounts: [
-      { accountType: 'Regular Account', accountNumber: 'REG-0001', accountBalance: '12,500.00' },
-      { accountType: 'Saving Account', accountNumber: 'SAV-0001', accountBalance: '22,300.00' },
-    ],
-  },
-  {
-    memberCode: 'MEM002',
-    payrollNumber: 'PAY002',
-    profilePicture: 'https://i.pravatar.cc/120?img=32',
-    phoneNumber: '2207112222',
-    email: 'member002@sdf.org',
-    accounts: [
-      { accountType: 'Regular Account', accountNumber: 'REG-0002', accountBalance: '8,400.00' },
-      { accountType: 'Saving Account', accountNumber: 'SAV-0002', accountBalance: '15,900.00' },
-    ],
-  },
-];
+const formatProfileImage = (imageData) => {
+  if (!imageData) return defaultProfileImage;
+  // If image already has data URI format, return as is
+  if (imageData.startsWith('data:')) return imageData;
+  // If it's base64 without prefix, add the proper prefix
+  return `data:image/jpeg;base64,${imageData}`;
+};
 
 const makeDepositRow = (account, index) => ({
   id: `${account.accountNumber}-${index}`,
@@ -71,11 +55,11 @@ export default function DepositManagement() {
   const [statusError, setStatusError] = useState(false);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { fetchMemberDetails, loading: isLoadingRemoteMember, error: remoteMemberError } = useGetMemberDetails();
-  const { fetchAccountDetails, isLoading: isLoadingAccountDetails } = useGetAccountDetails();
-  const { fetchBanks, isLoading: isLoadingBanks } = useGetBanks();
-  const { fetchBankAccounts, isLoading: isLoadingBankAccounts } = useGetBankAccounts();
-  const { fetchCashDetails, isLoading: isLoadingCashDetails } = useGetCashDetails();
+  const { fetchMemberDetails } = useGetMemberDetails();
+  const { fetchAccountDetails } = useGetAccountDetails();
+  const { fetchBanks } = useGetBanks();
+  const { fetchBankAccounts } = useGetBankAccounts();
+  const { fetchCashDetails } = useGetCashDetails();
   const { saveDepositTransaction } = useDepositTransaction();
 
   const [banks, setBanks] = useState([]);
@@ -87,7 +71,6 @@ export default function DepositManagement() {
     payrollNumber: '',
     profilePicture: '',
     phoneNumber: '',
-    email: '',
     postingAccount: '',
     memberAccounts: [],
     accountBalance: '',
@@ -138,7 +121,6 @@ export default function DepositManagement() {
       payrollNumber: member.payrollNumber,
       profilePicture: member.profilePicture,
       phoneNumber: member.phoneNumber,
-      email: member.email,
       memberAccounts: member.memberAccounts || [],
     }));
   };
@@ -173,9 +155,8 @@ export default function DepositManagement() {
           member = {
             memberCode: remoteMemberData.memberCode || rawValue.trim(),
             payrollNumber: remoteMemberData.payrollNumber || '',
-            profilePicture: remoteMemberData.MemberPicture || defaultProfileImage,
+            profilePicture: formatProfileImage(remoteMemberData.MemberPicture),
             phoneNumber: remoteMemberData.Phone || '',
-            email: remoteMemberData.email || '',
             memberAccounts: Array.isArray(remoteMemberData.Accounts) ? remoteMemberData.Accounts : [],
             accounts: accounts.length > 0 ? accounts : [{
               accountType: 'Account',
@@ -185,9 +166,21 @@ export default function DepositManagement() {
           };
         }
       } else {
-        // For payroll number, use mock data as fallback
-        const lookup = rawValue.trim().toUpperCase();
-        member = mockMembers.find((item) => item.payrollNumber.toUpperCase() === lookup);
+        // Payroll number search only from backend - no fallback\n        setRows([]);
+        setFormData((prev) => ({
+          ...prev,
+          profilePicture: '',
+          phoneNumber: '',
+          memberAccounts: [],
+          accountBalance: '',
+          accountNumber: '',
+          clearedBalance: '',
+          unclearedBalance: '',
+        }));
+        setStatusMessage('Member not found for provided search details.');
+        setStatusError(true);
+        setIsLoadingMember(false);
+        return;
       }
 
       if (!member) {
@@ -196,7 +189,6 @@ export default function DepositManagement() {
           ...prev,
           profilePicture: '',
           phoneNumber: '',
-          email: '',
           memberAccounts: [],
           accountBalance: '',
           accountNumber: '',
@@ -288,46 +280,6 @@ export default function DepositManagement() {
     }));
   };
 
-  const handleSelectRow = (rowId) => {
-    setRows((prevRows) => {
-      const nextRows = prevRows.map((row) => ({ ...row, selected: row.id === rowId }));
-      const selected = nextRows.find((row) => row.selected);
-      setFormData((prev) => ({
-        ...prev,
-        accountNumber: selected?.accountNumber || '',
-        accountBalance: selected?.beginBalance || '',
-        clearedBalance: selected?.beginBalance || '',
-      }));
-      return nextRows;
-    });
-  };
-
-  const handleRowValueChange = (rowId, field, value) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => {
-        if (row.id !== rowId) {
-          return row;
-        }
-
-        const next = {
-          ...row,
-          [field]: value,
-        };
-
-        if (field === 'paymentMade' || field === 'beginBalance') {
-          const begin = Number(String(field === 'beginBalance' ? value : next.beginBalance).replace(/,/g, '')) || 0;
-          const payment = Number(String(field === 'paymentMade' ? value : next.paymentMade).replace(/,/g, '')) || 0;
-          const end = begin + payment;
-          const endFormatted = end.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-          next.endBalance = endFormatted;
-          next.outstandingBalance = endFormatted;
-        }
-
-        return next;
-      }),
-    );
-  };
-
   // Fetch account details when posting account changes
   useEffect(() => {
     if (formData.postingAccount) {
@@ -362,11 +314,19 @@ export default function DepositManagement() {
     }
   }, [formData.depositType, fetchCashDetails]);
 
-  const selectedAccountLabel = useMemo(() => rows.find((row) => row.selected)?.accountType || '-', [rows]);
-
   const handleSaveDeposit = async () => {
-    if (!formData.postingAccount || !formData.depositAmount || !formData.transactionDate) {
-      setStatusMessage('Posting Account, Deposit Amount and Transaction Date are required.');
+    const missingFields = [];
+    if (!formData.postingAccount) missingFields.push('Posting Account');
+    if (!formData.depositAmount) missingFields.push('Deposit Amount');
+    if (!formData.transactionDate) missingFields.push('Transaction Date');
+
+    if (missingFields.length > 0) {
+      setTouched({
+        postingAccount: !formData.postingAccount,
+        depositAmount: !formData.depositAmount,
+        transactionDate: !formData.transactionDate,
+      });
+      setStatusMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
       setStatusError(true);
       return;
     }
@@ -468,7 +428,6 @@ export default function DepositManagement() {
       ['Transaction Date', formData.transactionDate || '-'],
       ['Reference Number', formData.referenceNumber || '-'],
       ['Phone Number', formData.phoneNumber || '-'],
-      ['Email', formData.email || '-'],
       ['Comments', formData.comments || '-'],
     ];
 
@@ -636,7 +595,7 @@ export default function DepositManagement() {
                 onChange={handleChange}
                 onBlur={() => searchMember('memberCode')}
                 disabled={isLoadingMember}
-                placeholder="e.g. MEM001"
+                placeholder="Member Code"
               />
               <TextField
                 label="Payroll Number"
@@ -684,15 +643,15 @@ export default function DepositManagement() {
                   value={formData.phoneNumber}
                   InputProps={{ readOnly: true }}
                   disabled
-                  sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
-                />
-                <TextField
-                  label="Email"
-                  name="email"
-                  value={formData.email}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
+                  size="small"
+                  sx={{
+                    maxWidth: '280px',
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      backgroundColor: '#e8e8e8',
+                      color: '#666',
+                      fontWeight: 600,
+                    },
+                  }}
                 />
               </Box>
             </Box>
@@ -701,17 +660,19 @@ export default function DepositManagement() {
       </Box>
 
       {statusMessage && (
-        <Typography
+        <Alert
+          severity={statusError ? 'error' : 'success'}
           sx={{
             mt: 2,
-            p: 1.5,
-            borderRadius: 1,
-            bgcolor: statusError ? 'error.light' : 'success.light',
-            color: statusError ? 'error.dark' : 'success.dark',
+            '& .MuiAlert-message': {
+              fontSize: '1.1rem',
+              fontWeight: statusError ? 600 : 700,
+            },
           }}
+          onClose={() => setStatusMessage('')}
         >
           {statusMessage}
-        </Typography>
+        </Alert>
       )}
 
       <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
@@ -756,6 +717,12 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
+                    sx={{
+                      '& .MuiFormLabel-root.Mui-required::after': {
+                        color: '#fff',
+                        fontWeight: 'bold',
+                      },
+                    }}
                   >
                     <MenuItem value="">Select posting account</MenuItem>
                     {formData.memberAccounts.map((account) => (
@@ -768,6 +735,7 @@ export default function DepositManagement() {
                     label="Reference Number"
                     name="referenceNumber"
                     value={formData.referenceNumber}
+                    onChange={handleChange}
                     size="small"
                     fullWidth
                   />
@@ -776,19 +744,10 @@ export default function DepositManagement() {
                     value={formData.transactionDate ? dayjs(formData.transactionDate) : null}
                     onChange={(value) => handleDateChange('transactionDate', value)}
                     maxDate={dayjs(todayIso)}
-                    disabled
                     slotProps={{
                       textField: {
                         size: 'small',
                         fullWidth: true,
-                        disabled: true,
-                        sx: {
-                          '& .MuiInputBase-input.Mui-disabled': {
-                            backgroundColor: '#f5f5f5',
-                            color: '#666',
-                            fontWeight: 600,
-                          },
-                        },
                       },
                     }}
                   />
@@ -811,6 +770,7 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     sx={{
+                      maxWidth: '280px',
                       '& .MuiInputBase-input.Mui-disabled': {
                         backgroundColor: '#f5f5f5',
                         color: '#666',
@@ -824,11 +784,12 @@ export default function DepositManagement() {
                   <TextField
                     label="Account Balance"
                     name="accountBalance"
-                    value={formData.accountBalance}
+                    value={formData.accountBalance !== '' ? parseFloat(formData.accountBalance).toFixed(2) : ''}
                     disabled
                     size="small"
                     fullWidth
                     sx={{
+                      maxWidth: '280px',
                       '& .MuiInputBase-input.Mui-disabled': {
                         backgroundColor: '#f5f5f5',
                         color: '#666',
@@ -842,11 +803,12 @@ export default function DepositManagement() {
                   <TextField
                     label="Cleared Balance"
                     name="clearedBalance"
-                    value={formData.clearedBalance}
+                    value={formData.clearedBalance !== '' ? parseFloat(formData.clearedBalance).toFixed(2) : ''}
                     disabled
                     size="small"
                     fullWidth
                     sx={{
+                      maxWidth: '280px',
                       '& .MuiInputBase-input.Mui-disabled': {
                         backgroundColor: '#f5f5f5',
                         color: '#666',
@@ -860,11 +822,12 @@ export default function DepositManagement() {
                   <TextField
                     label="Uncleared Balance"
                     name="unclearedBalance"
-                    value={formData.unclearedBalance}
+                    value={formData.unclearedBalance !== '' ? parseFloat(formData.unclearedBalance).toFixed(2) : ''}
                     disabled
                     size="small"
                     fullWidth
                     sx={{
+                      maxWidth: '280px',
                       '& .MuiInputBase-input.Mui-disabled': {
                         backgroundColor: '#f5f5f5',
                         color: '#666',
@@ -912,6 +875,12 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
+                    sx={{
+                      '& .MuiFormLabel-root.Mui-required::after': {
+                        color: '#fff',
+                        fontWeight: 'bold',
+                      },
+                    }}
                   />
                   <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
                   <TextField
