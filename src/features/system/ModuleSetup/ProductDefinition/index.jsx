@@ -22,6 +22,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import { notifySaveError, notifySaveSuccess } from '../../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 const MANDATORY_PRODUCTS_CACHE_KEY = 'productDefinition_mandatoryProducts';
 
@@ -198,7 +199,8 @@ export default function ProductDefinition({ user }) {
           // keep cached values if remote lookup fails
         }
 
-        const response = await fetch('/api/product-definition');
+        const url = getFullApiUrl('/api/product-definition');
+        const response = await fetch(url);
         if (!response.ok) {
           return;
         }
@@ -253,7 +255,8 @@ export default function ProductDefinition({ user }) {
         id: form.id || `prd-${Date.now()}`,
       };
 
-      const response = await fetch('/api/product-definition', {
+      const url = getFullApiUrl('/api/product-definition');
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

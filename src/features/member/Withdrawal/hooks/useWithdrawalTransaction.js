@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to save withdrawal transaction
 export function useWithdrawalTransaction() {
@@ -35,8 +36,9 @@ export function useWithdrawalTransaction() {
         throw new Error('Account number is required');
       }
 
+      const url = getFullApiUrl('/api/Cusystem/WithdrawalUser');
       const response = await fetch(
-        '/api/Cusystem/WithdrawalUser',
+        url,
         {
           method: 'POST',
           headers: {

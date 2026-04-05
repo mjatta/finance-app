@@ -30,7 +30,8 @@ export default function AddMemberAccount() {
   useEffect(() => {
     const loadBranches = async () => {
       try {
-        const response = await fetch('/api/remote-branches/branches');
+        const url = getFullApiUrl('/api/remote-branches/branches');
+        const response = await fetch(url);
         if (!response.ok) return;
 
         const payload = await response.json();

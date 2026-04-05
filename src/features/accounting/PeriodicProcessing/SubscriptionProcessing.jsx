@@ -14,6 +14,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 export default function SubscriptionProcessing() {
   const [processingDate, setProcessingDate] = useState('');
@@ -28,7 +29,8 @@ export default function SubscriptionProcessing() {
 
     const loadBranches = async () => {
       try {
-        const response = await fetch('/api/remote-branches/branches');
+        const url = getFullApiUrl('/api/remote-branches/branches');
+        const response = await fetch(url);
         if (!response.ok || !isMounted) {
           return;
         }
@@ -52,7 +54,8 @@ export default function SubscriptionProcessing() {
 
     const loadRows = async () => {
       try {
-        const response = await fetch('/api/periodic-processing');
+        const url = getFullApiUrl('/api/periodic-processing');
+        const response = await fetch(url);
         if (!response.ok) {
           return;
         }
@@ -85,7 +88,8 @@ export default function SubscriptionProcessing() {
     };
 
     try {
-      const response = await fetch('/api/periodic-processing', {
+      const url = getFullApiUrl('/api/periodic-processing');
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscriptionRow: nextRow }),

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Default fallback cities if API endpoint is not available
 const DEFAULT_CITIES = [
@@ -24,7 +25,8 @@ export function useCities() {
     const loadCities = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/remote-cities/cities', {
+        const url = getFullApiUrl('/api/remote-cities/cities');
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

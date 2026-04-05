@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export const useGetBanks = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,7 +10,8 @@ export const useGetBanks = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/banks', {
+      const url = getFullApiUrl('/api/banks');
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getFullApiUrl } from '../utils/apiConfig';
 
 // Simple in-memory cache for branches
 let cachedBranches = null;
@@ -17,7 +18,8 @@ export function useBranches() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/lookups/branches');
+      const url = getFullApiUrl('/api/lookups/branches');
+      const res = await fetch(url);
       let data = null;
       try {
         data = await res.json();

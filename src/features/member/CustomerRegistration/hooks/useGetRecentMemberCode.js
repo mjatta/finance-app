@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch the most recent member code, subtract 1, pad with zeros, and return as string
 export function useGetRecentMemberCode() {
   const getRecentMemberCode = useCallback(async () => {
-    const response = await fetch('/api/client/get-code?fieldName=clientid');
+    const url = getFullApiUrl('/api/client/get-code?fieldName=clientid');
+    const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch member code');
     const data = await response.json();
     let memberCode = data?.memberCode;

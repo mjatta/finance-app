@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
@@ -113,7 +114,8 @@ export default function CustomerRegistration(props) {
   useEffect(() => {
     const loadInstitutionBranches = async () => {
       try {
-        const response = await fetch('/api/remote-branches/branches');
+        const url = getFullApiUrl('/api/remote-branches/branches');
+        const response = await fetch(url);
         if (!response.ok) return;
         const payload = await response.json();
         const branchOptions = Array.from(
@@ -135,7 +137,8 @@ export default function CustomerRegistration(props) {
   useEffect(() => {
     const loadCountries = async () => {
       try {
-        const response = await fetch('/api/remote-countries/countries');
+        const url = getFullApiUrl('/api/remote-countries/countries');
+        const response = await fetch(url);
         if (!response.ok) return;
         const payload = await response.json();
         const countryOptions = (Array.isArray(payload) ? payload : [])

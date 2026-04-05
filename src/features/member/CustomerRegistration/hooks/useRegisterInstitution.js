@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 /**
  * Custom hook to register an institution by calling the corporate group member API endpoint.
@@ -19,7 +20,8 @@ export function useRegisterInstitution() {
     setError(null);
     setData(null);
     try {
-      const response = await fetch('/api/corporategroupmember/create', {
+      const url = getFullApiUrl('/api/corporategroupmember/create');
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

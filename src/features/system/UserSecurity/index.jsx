@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 export default function UserSecurity({ user }) {
   const [settingsForm, setSettingsForm] = useState({
@@ -49,7 +50,8 @@ export default function UserSecurity({ user }) {
 
     const loadSecurityData = async () => {
       try {
-        const response = await fetch('/api/security-settings');
+        const url = getFullApiUrl('/api/security-settings');
+        const response = await fetch(url);
         if (!response.ok) {
           return;
         }
@@ -161,7 +163,8 @@ export default function UserSecurity({ user }) {
     setStatusMessage('');
 
     try {
-      const response = await fetch('/api/security-settings', {
+      const url = getFullApiUrl('/api/security-settings');
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

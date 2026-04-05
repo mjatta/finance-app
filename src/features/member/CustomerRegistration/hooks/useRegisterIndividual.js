@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export function useRegisterIndividual() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,8 @@ export function useRegisterIndividual() {
     setError(null);
     setData(null);
     try {
-      const response = await fetch('/api/member/create', {
+      const url = getFullApiUrl('/api/member/create');
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

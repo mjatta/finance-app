@@ -176,9 +176,23 @@ export const apiFetch = async (endpointKey, options = {}) => {
   return fetch(url, options);
 };
 
+/**
+ * CRITICAL: Get full API URL for ANY endpoint path
+ * Use this for endpoints not in ENDPOINT_MAP
+ * @param {string} path - The API path (e.g., '/api/remote-branches/branches')
+ * @returns {string} - Full URL in production, relative path in dev
+ */
+export const getFullApiUrl = (path) => {
+  if (isProd) {
+    return `${API_BASE_URL}${path}`;
+  }
+  return path;
+};
+
 export default {
   getApiUrl,
   buildApiUrl,
   apiFetch,
+  getFullApiUrl,
   ENDPOINT_MAP,
 };

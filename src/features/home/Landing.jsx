@@ -16,6 +16,7 @@ import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
 import ManRoundedIcon from '@mui/icons-material/ManRounded';
 import WomanRoundedIcon from '@mui/icons-material/WomanRounded';
 import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
+import { getFullApiUrl } from '../../utils/apiConfig';
 
 const categories = [
   {
@@ -56,7 +57,7 @@ const categories = [
   },
 ];
 
-const DASHBOARD_SUMMARY_URL = '/api/dashboard/summary?compId=30';
+const DASHBOARD_SUMMARY_URL = getFullApiUrl('/api/dashboard/summary?compId=30');
 
 const defaultMembersSummary = {
   male: 2025,

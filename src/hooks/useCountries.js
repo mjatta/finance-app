@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getFullApiUrl } from '../utils/apiConfig';
 
 // Simple in-memory cache for countries
 let cachedCountries = null;
@@ -17,7 +18,8 @@ export function useCountries() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/lookups/countries');
+      const url = getFullApiUrl('/api/lookups/countries');
+      const res = await fetch(url);
       let data = null;
       try {
         data = await res.json();

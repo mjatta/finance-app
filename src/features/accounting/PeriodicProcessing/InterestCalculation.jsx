@@ -14,6 +14,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 export default function InterestCalculation() {
   const [interestDate, setInterestDate] = useState('');
@@ -27,7 +28,8 @@ export default function InterestCalculation() {
 
     const loadRows = async () => {
       try {
-        const response = await fetch('/api/periodic-processing');
+        const url = getFullApiUrl('/api/periodic-processing');
+        const response = await fetch(url);
         if (!response.ok) {
           return;
         }
@@ -64,7 +66,8 @@ export default function InterestCalculation() {
     };
 
     try {
-      const response = await fetch('/api/periodic-processing', {
+      const url = getFullApiUrl('/api/periodic-processing');
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interestRow: nextRow }),

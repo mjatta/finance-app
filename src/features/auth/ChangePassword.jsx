@@ -10,8 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';import { getFullApiUrl } from '../../utils/apiConfig';
 export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -76,7 +75,8 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
     setStatusError(false);
 
     try {
-      const response = await fetch('/api/user-setup/password-change', {
+      const url = getFullApiUrl('/api/user-setup/password-change');
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

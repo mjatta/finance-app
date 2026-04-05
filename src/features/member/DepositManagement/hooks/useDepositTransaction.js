@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to save deposit transaction
 export function useDepositTransaction() {
@@ -35,8 +36,9 @@ export function useDepositTransaction() {
         throw new Error('Account number is required');
       }
 
+      const url = getFullApiUrl('/api/Cusystem/DepositUser');
       const response = await fetch(
-        '/api/Cusystem/DepositUser',
+        url,
         {
           method: 'POST',
           headers: {

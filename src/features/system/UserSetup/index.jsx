@@ -15,6 +15,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
@@ -201,7 +202,8 @@ export default function UserSetup({ user }) {
     const loadSetupData = async () => {
       try {
         try {
-          const remoteResp = await fetch('/api/remote-branches/branches');
+          const url = getFullApiUrl('/api/remote-branches/branches');
+          const remoteResp = await fetch(url);
           if (remoteResp.ok) {
             const remoteJson = await remoteResp.json();
             if (Array.isArray(remoteJson) && remoteJson.length > 0) {
@@ -222,7 +224,8 @@ export default function UserSetup({ user }) {
           // remote lookup failed — cached data already applied
         }
 
-        const response = await fetch('/api/user-setup');
+        const url = getFullApiUrl('/api/user-setup');
+        const response = await fetch(url);
         if (!response.ok) return;
 
         const payload = await response.json();
@@ -354,7 +357,8 @@ export default function UserSetup({ user }) {
     setStatusMessage('');
 
     try {
-      const response = await fetch('/api/user-setup', {
+      const url = getFullApiUrl('/api/user-setup');
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -426,7 +430,8 @@ export default function UserSetup({ user }) {
         pagePermissions: roleForm.pagePermissions || {},
       };
 
-      const response = await fetch('/api/user-setup', {
+      const url = getFullApiUrl('/api/user-setup');
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: rolePayload }),
