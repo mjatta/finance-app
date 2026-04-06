@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Alert,
@@ -214,6 +214,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
+  const photoFileRef = useRef(null);
+  const signatureFileRef = useRef(null);
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
   const [touched, setTouched] = useState({});
@@ -262,6 +264,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setStatusError(false);
 
     if (fieldName === 'biometricPhotoName') {
+      photoFileRef.current = selectedFile;
       setPhotoPreviewUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl);
@@ -271,6 +274,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }
 
     if (fieldName === 'biometricSignatureName') {
+      signatureFileRef.current = selectedFile;
       setSignaturePreviewUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl);
@@ -290,6 +294,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setStatusError(false);
 
     if (fieldName === 'biometricPhotoName') {
+      photoFileRef.current = null;
       setPhotoPreviewUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl);
@@ -299,6 +304,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }
 
     if (fieldName === 'biometricSignatureName') {
+      signatureFileRef.current = null;
       setSignaturePreviewUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl);
@@ -404,9 +410,26 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     // Validation (unchanged)
 
+    // Convert uploaded images to base64
+    const fileToBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
+    const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+
     if (mainTab === 0) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
       const individualPayload = buildIndividualPayload(formData, countries, cities);
+      individualPayload.MemberPicture = pictureBase64;
+      individualPayload.MemberSignature = signatureBase64;
       try {
         const result = await registerIndividual(individualPayload);
         setStatusMessage('Individual registration saved successfully.');
@@ -433,6 +456,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
+        photoFileRef.current = null;
+        signatureFileRef.current = null;
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
         setTouched({});
@@ -464,8 +489,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     if (mainTab === 1) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
       institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities);
-        // TODO: Map branch_id, cou_id, ncity, nrel, nregion, ndist, nward, bat_id from dropdowns if available
-        // Call useRegisterInstitution
+      institutionPayload.MemberPicture = pictureBase64;
+      institutionPayload.MemberSignature = signatureBase64;
       try {
         const response = await registerInstitution(institutionPayload);
         // If backend returns companyId, set it in formData
@@ -496,6 +521,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
+        photoFileRef.current = null;
+        signatureFileRef.current = null;
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
         setTouched({});
@@ -1575,6 +1602,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       </CardContent>
                     </Card>
 
+                    {mainTab === 0 && (
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
@@ -1594,6 +1622,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         </Box>
                       </CardContent>
                     </Card>
+                    )}
                   </Box>
                 </Box>
               )}
