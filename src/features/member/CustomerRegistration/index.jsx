@@ -365,6 +365,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       if (!formData.firstName) missingFields.push('First Name');
       if (!formData.surname) missingFields.push('Surname');
       if (!formData.institutionBranch) missingFields.push('Branch');
+      if (!formData.address) missingFields.push('Address');
+      if (!formData.region) missingFields.push('Region');
+      if (!formData.district) missingFields.push('District');
+      if (!formData.ward) missingFields.push('Ward');
     } else {
       // Institution validation
       if (!formData.institutionType) missingFields.push('Institution Type');
@@ -380,6 +384,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           firstName: !formData.firstName,
           surname: !formData.surname,
           institutionBranch: !formData.institutionBranch,
+          address: !formData.address,
+          region: !formData.region,
+          district: !formData.district,
+          ward: !formData.ward,
         });
       } else {
         // Institution tab touched fields
@@ -686,17 +694,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       }}
                     />
                     <TextField
-                      label="Customer Code"
-                      name="memberCode"
-                      value={formData.memberCode}
-                      InputProps={{ readOnly: true }}
-                      sx={{
-                        '& .MuiInputBase-input': {
-                          backgroundColor: '#f0f0f0',
-                        },
-                      }}
-                    />
-                    <TextField
                       select
                       required
                       label="Branch"
@@ -805,17 +802,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       <MenuItem value={3}>NGO</MenuItem>
                       <MenuItem value={4}>Cooperative</MenuItem>
                     </TextField>
-                    <TextField
-                      label="Customer Code"
-                      name="institutionMemberCode"
-                      value={formData.institutionMemberCode}
-                      InputProps={{ readOnly: true }}
-                      sx={{
-                        '& .MuiInputBase-input': {
-                          backgroundColor: '#f0f0f0',
-                        },
-                      }}
-                    />
                     {/* Company ID and Branch ID fields removed: set from backend/API only */}
                   </Box>
                 </Box>
@@ -887,7 +873,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="address"
                             value={formData.address}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.address)}
+                            error={Boolean(fieldErrors.address) || (touched.address && !formData.address)}
+                            helperText={touched.address && !formData.address ? 'Address is required' : ''}
                           />
                           <TextField
                             required
@@ -1172,6 +1159,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="region"
                             value={formData.region}
                             onChange={handleChange}
+                            required
+                            error={touched.region && !formData.region}
+                            helperText={touched.region && !formData.region ? 'Region is required' : ''}
                           >
                             <MenuItem value="">Select region</MenuItem>
                             <MenuItem value={1}>Banjul</MenuItem>
@@ -1188,6 +1178,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="district"
                             value={formData.district}
                             onChange={handleChange}
+                            required
+                            error={touched.district && !formData.district}
+                            helperText={touched.district && !formData.district ? 'District is required' : ''}
                           >
                             <MenuItem value="">Select district</MenuItem>
                             <MenuItem value={1}>Banjul</MenuItem>
@@ -1201,6 +1194,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="ward"
                             value={formData.ward}
                             onChange={handleChange}
+                            required
+                            error={touched.ward && !formData.ward}
+                            helperText={touched.ward && !formData.ward ? 'Ward is required' : ''}
                           >
                             <MenuItem value="">Select ward</MenuItem>
                             <MenuItem value={1}>Ward 1</MenuItem>
@@ -1340,6 +1336,32 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       </CardContent>
                     </Card>
                   </Box>
+
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        Account Signatories
+                      </Typography>
+                      <Box sx={{ display: 'grid', gap: 2 }}>
+                        <TextField
+                          required
+                          label="Signatory 1"
+                          name="signatory1"
+                          value={formData.signatory1}
+                          onChange={handleChange}
+                          onBlur={() => handleBlur('signatory1')}
+                          error={isFieldInvalid('signatory1')}
+                          helperText={isFieldInvalid('signatory1') ? 'Signatory 1 is required' : ''}
+                        />
+                        <TextField
+                          label="Signatory 2"
+                          name="signatory2"
+                          value={formData.signatory2}
+                          onChange={handleChange}
+                        />
+                      </Box>
+                    </CardContent>
+                  </Card>
                 </Box>
               )}
 
@@ -1373,7 +1395,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             <MenuItem key={`city-${city.id}-${city.name}`} value={city.name}>{city.name}</MenuItem>
                           ))}
                         </TextField>
-                        <TextField label="Address" name="address" value={formData.address} onChange={handleChange} />
+                        <TextField
+                          required
+                          label="Address"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          error={touched.address && !formData.address}
+                          helperText={touched.address && !formData.address ? 'Address is required' : ''}
+                        />
                         <TextField
                           required
                           label="Mobile Phone number"

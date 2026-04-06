@@ -26,7 +26,7 @@ export function useRegisterInstitution() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, ncompid: 30, gnBranchid: 16 }),
       });
       let result = null;
       try {

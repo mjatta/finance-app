@@ -213,6 +213,46 @@ const writeCustomerRegistrationFile = async (rows) => {
   await fs.writeFile(customerRegistrationFilePath, payload, 'utf8')
 }
 
+const memberActivatePlugin = () => ({
+  name: 'member-activate-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/update-customer-authorisation', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Member4Activate/UpdateCustomerAuthorisation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+          const data = await backendRes.text()
+          res.statusCode = backendRes.status
+          res.end(data)
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Member activate plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error' }))
+      }
+    })
+  },
+})
+
 const depositsApiPlugin = () => ({
   name: 'deposits-api-plugin',
   configureServer(server) {
@@ -938,19 +978,10 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => {
-          // Preserve query parameters while rewriting the path
           const [pathname, search] = path.split('?');
-          const rewrittenPath = pathname.replace(/^\/api\/remote-member-activate/, '/api/Cusystem/GetMember4Activate');
-          const finalPath = search ? `${rewrittenPath}?${search}` : rewrittenPath;
-          console.log(`[proxy] member-activate: ${path} → ${finalPath}`);
-          return finalPath;
+          const rewrittenPath = pathname.replace(/^\/api\/remote-member-activate/, '/api/Member4Activate/GetMember4Activate');
+          return search ? `${rewrittenPath}?${search}` : rewrittenPath;
         },
-      },
-      '/api/update-customer-authorisation': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api\/update-customer-authorisation/, '/api/Cusystem/UpdateCustomerAuthorisation'),
       },
       '/api/remote-member': {
         target: 'http://alakuyateh-001-site10.atempurl.com',
@@ -1043,6 +1074,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    memberActivatePlugin(),
     depositsApiPlugin(),
     withdrawalsApiPlugin(),
     loanRepaymentsApiPlugin(),

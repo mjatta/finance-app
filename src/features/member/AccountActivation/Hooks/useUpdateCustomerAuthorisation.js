@@ -34,7 +34,13 @@ export const useUpdateCustomerAuthorisation = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      let data;
+      const responseText = await response.text();
+      try {
+        data = responseText ? JSON.parse(responseText) : { success: true };
+      } catch (jsonError) {
+        data = { success: true, message: responseText };
+      }
 
       return { success: true, data };
     } catch (err) {
