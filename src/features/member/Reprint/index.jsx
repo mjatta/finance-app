@@ -13,7 +13,6 @@ import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
-import { getFullApiUrl } from '../../../utils/apiConfig';
 
 export default function Reprint() {
   const [memberId, setMemberId] = useState('');
@@ -33,7 +32,8 @@ export default function Reprint() {
       setErrorMessage('');
 
       try {
-        const url = getFullApiUrl('/api/deposits');
+        // Use relative path so Vite middleware can intercept
+        const url = '/api/deposits';
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Failed to load deposits for reprint.');

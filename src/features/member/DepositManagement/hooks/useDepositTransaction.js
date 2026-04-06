@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to save deposit transaction
 export function useDepositTransaction() {
@@ -21,7 +20,7 @@ export function useDepositTransaction() {
       // Map form data to API payload
       const payload = {
         tcAcctNumb: formData.accountNumber || '',
-        gcContraAcct: formData.contraAccount || '', // Map to selected bank account's AccountNumber
+        gcContraAcct: formData.accountNumber || '',
         gcControlAcct: formData.accountNumber || '', // Using account number as control account
         tnTranAmt: parseFloat(formData.depositAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.depositAmount)) || 0, // Negative of deposit amount
@@ -38,7 +37,8 @@ export function useDepositTransaction() {
         throw new Error('Account number is required');
       }
 
-      const url = getFullApiUrl('/api/deposits');
+      // Use relative path so Vite middleware can intercept and handle locally
+      const url = '/api/Deposits/DepositUser';
       const response = await fetch(
         url,
         {
@@ -46,7 +46,7 @@ export function useDepositTransaction() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ row: payload }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -58,21 +58,14 @@ export function useDepositTransaction() {
         );
       }
 
-      // Parse response
+      // Parse response - backend may return text or JSON
       let responseData;
+      const responseText = await response.text();
       try {
-        responseData = await response.json();
+        responseData = responseText ? JSON.parse(responseText) : { success: true };
       } catch (jsonError) {
-        console.warn('Failed to parse deposit transaction response as JSON:', jsonError);
-        setError('Invalid response format');
-        return null;
-      }
-
-      // Validate response structure
-      if (!responseData || typeof responseData !== 'object') {
-        console.warn('Deposit transaction response is not an object:', responseData);
-        setError('Invalid response structure');
-        return null;
+        // Backend returned non-JSON (e.g. plain text success message) — treat as success
+        responseData = { success: true, message: responseText };
       }
 
       setSuccess(true);

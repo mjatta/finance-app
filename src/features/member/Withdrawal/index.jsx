@@ -724,7 +724,7 @@ export default function Withdrawal() {
                     }}
                   >
                     <MenuItem value="">Select posting account</MenuItem>
-                    {formData.memberAccounts.map((account) => (
+                    {Array.isArray(formData.memberAccounts) && formData.memberAccounts.map((account) => (
                       <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
                         {account.AccountName}
                       </MenuItem>
@@ -995,7 +995,7 @@ export default function Withdrawal() {
                     fullWidth
                   >
                     <MenuItem value="">Select bank</MenuItem>
-                    {banks.map((bank) => (
+                    {Array.isArray(banks) && banks.map((bank) => (
                       <MenuItem key={bank.id} value={bank.id}>
                         {bank.name}
                       </MenuItem>
@@ -1007,12 +1007,12 @@ export default function Withdrawal() {
                     name="bankAccount"
                     value={formData.bankAccount}
                     onChange={handleChange}
-                    disabled={bankAccounts.length === 0}
+                    disabled={!Array.isArray(bankAccounts) || bankAccounts.length === 0}
                     size="small"
                     fullWidth
                   >
                     <MenuItem value="">Select account</MenuItem>
-                    {bankAccounts.map((account) => (
+                    {Array.isArray(bankAccounts) && bankAccounts.map((account) => (
                       <MenuItem key={account.id} value={account.id}>
                         {account.name}
                       </MenuItem>

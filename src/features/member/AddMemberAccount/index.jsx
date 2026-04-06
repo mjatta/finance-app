@@ -30,7 +30,8 @@ export default function AddMemberAccount() {
   useEffect(() => {
     const loadBranches = async () => {
       try {
-        const url = getFullApiUrl('/api/remote-branches/branches');
+        // Use relative path so Vite proxy can intercept and handle CORS
+        const url = '/api/remote-branches/branches';
         const response = await fetch(url);
         if (!response.ok) return;
 

@@ -216,56 +216,53 @@ const writeCustomerRegistrationFile = async (rows) => {
 const depositsApiPlugin = () => ({
   name: 'deposits-api-plugin',
   configureServer(server) {
-    server.middlewares.use('/api/deposits', async (req, res, next) => {
+    server.middlewares.use('/api/Deposits/DepositUser', async (req, res, next) => {
       try {
         // Add CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*')
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
         res.setHeader('Content-Type', 'application/json')
+
+        // Forward POST to backend
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Deposits/DepositUser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            // Backend unreachable — fall back to local storage
+            if (!body || typeof body !== 'object') {
+              res.statusCode = 400
+              res.end(JSON.stringify({ message: 'Invalid payload.' }))
+              return
+            }
+            const rows = await readDepositsFile()
+            rows.push(body)
+            await writeDepositsFile(rows)
+            res.statusCode = 201
+            res.end(JSON.stringify({ rows }))
+          }
+          return
+        }
 
         if (req.method === 'GET') {
           const rows = await readDepositsFile()
           res.statusCode = 200
           res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'POST') {
-          const body = await parseRequestBody(req)
-          const incomingRow = body?.row
-
-          if (!incomingRow || typeof incomingRow !== 'object') {
-            res.statusCode = 400
-            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object with minimal transaction data.' }))
-            return
-          }
-
-          // Validate that only required API fields are present
-          const requiredFields = ['tcAcctNumb', 'gcContraAcct', 'gcControlAcct', 'tnTranAmt', 'tnContAmt', 'dTranDate', 'tcChqno', 'lnServID', 'gcUserid']
-          const hasRequiredFields = requiredFields.every(field => field in incomingRow)
-          
-          if (!hasRequiredFields) {
-            res.statusCode = 400
-            res.end(JSON.stringify({ 
-              message: 'Invalid payload. Missing required transaction fields.',
-              required: requiredFields
-            }))
-            return
-          }
-
-          const rows = await readDepositsFile()
-          rows.push(incomingRow)
-          await writeDepositsFile(rows)
-
-          res.statusCode = 201
-          res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
           return
         }
 
@@ -287,50 +284,47 @@ const withdrawalsApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Origin', '*')
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
         res.setHeader('Content-Type', 'application/json')
+
+        // Forward POST to backend
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Withdrawals/WithdrawalUser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            // Backend unreachable — fall back to local storage
+            if (!body || typeof body !== 'object') {
+              res.statusCode = 400
+              res.end(JSON.stringify({ message: 'Invalid payload.' }))
+              return
+            }
+            const rows = await readWithdrawalsFile()
+            rows.push(body)
+            await writeWithdrawalsFile(rows)
+            res.statusCode = 201
+            res.end(JSON.stringify({ rows }))
+          }
+          return
+        }
 
         if (req.method === 'GET') {
           const rows = await readWithdrawalsFile()
           res.statusCode = 200
           res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'POST') {
-          const body = await parseRequestBody(req)
-          const incomingRow = body?.row
-
-          if (!incomingRow || typeof incomingRow !== 'object') {
-            res.statusCode = 400
-            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object with minimal transaction data.' }))
-            return
-          }
-
-          // Validate that only required API fields are present
-          const requiredFields = ['tcAcctNumb', 'gcContraAcct', 'gcControlAcct', 'tnTranAmt', 'tnContAmt', 'dTranDate', 'tcChqno', 'lnServID', 'gcUserid']
-          const hasRequiredFields = requiredFields.every(field => field in incomingRow)
-          
-          if (!hasRequiredFields) {
-            res.statusCode = 400
-            res.end(JSON.stringify({ 
-              message: 'Invalid payload. Missing required transaction fields.',
-              required: requiredFields
-            }))
-            return
-          }
-
-          const rows = await readWithdrawalsFile()
-          rows.push(incomingRow)
-          await writeWithdrawalsFile(rows)
-
-          res.statusCode = 201
-          res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
           return
         }
 
@@ -947,7 +941,9 @@ export default defineConfig({
           // Preserve query parameters while rewriting the path
           const [pathname, search] = path.split('?');
           const rewrittenPath = pathname.replace(/^\/api\/remote-member-activate/, '/api/Cusystem/GetMember4Activate');
-          return search ? `${rewrittenPath}?${search}` : rewrittenPath;
+          const finalPath = search ? `${rewrittenPath}?${search}` : rewrittenPath;
+          console.log(`[proxy] member-activate: ${path} → ${finalPath}`);
+          return finalPath;
         },
       },
       '/api/update-customer-authorisation': {
@@ -1036,6 +1032,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/transaction/, '/api/transaction'),
+      },
+      // Proxy member activation endpoints to avoid CORS
+      '/api/member/activate': {
+        target: 'http://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

@@ -11,7 +11,8 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
-import testUsers from '../../data/test-users.json';import { getFullApiUrl } from '../../utils/apiConfig';
+import testUsers from '../../data/test-users.json';
+
 const loginHighlights = [
   'Centralized member and loan operations',
   'Role-based access for secure workflows',
@@ -58,7 +59,8 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      const url = getFullApiUrl('/api/user-setup');
+      // Use relative path so Vite proxy can intercept and handle CORS
+      const url = '/api/user-setup';
       const response = await fetch(url);
       if (!response.ok) {
         setErrorMessage('Invalid username or password');

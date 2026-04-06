@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getFullApiUrl } from '../utils/apiConfig';
 
 // Simple in-memory cache for countries
 let cachedCountries = null;
@@ -18,7 +17,8 @@ export function useCountries() {
     setLoading(true);
     setError(null);
     try {
-      const url = getFullApiUrl('/api/lookups/countries');
+      // Use relative path so Vite proxy can intercept and handle CORS
+      const url = '/api/lookups/countries';
       const res = await fetch(url);
       let data = null;
       try {

@@ -29,7 +29,8 @@ export default function SubscriptionProcessing() {
 
     const loadBranches = async () => {
       try {
-        const url = getFullApiUrl('/api/remote-branches/branches');
+        // Use relative path so Vite proxy can intercept and handle CORS
+        const url = '/api/remote-branches/branches';
         const response = await fetch(url);
         if (!response.ok || !isMounted) {
           return;
@@ -54,7 +55,8 @@ export default function SubscriptionProcessing() {
 
     const loadRows = async () => {
       try {
-        const url = getFullApiUrl('/api/periodic-processing');
+        // Use relative path for consistency with other middleware endpoints
+        const url = '/api/periodic-processing';
         const response = await fetch(url);
         if (!response.ok) {
           return;
@@ -88,7 +90,8 @@ export default function SubscriptionProcessing() {
     };
 
     try {
-      const url = getFullApiUrl('/api/periodic-processing');
+      // Use relative path for consistency with other middleware endpoints
+      const url = '/api/periodic-processing';
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

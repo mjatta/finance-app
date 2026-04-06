@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to save withdrawal transaction
 export function useWithdrawalTransaction() {
@@ -38,7 +37,8 @@ export function useWithdrawalTransaction() {
         throw new Error('Account number is required');
       }
 
-      const url = getFullApiUrl('/api/Withdrawals/WithdrawalUser');
+      // Use relative path so Vite middleware can intercept and handle locally
+      const url = '/api/Withdrawals/WithdrawalUser';
       const response = await fetch(
         url,
         {
@@ -58,21 +58,14 @@ export function useWithdrawalTransaction() {
         );
       }
 
-      // Parse response
+      // Parse response - backend may return text or JSON
       let responseData;
+      const responseText = await response.text();
       try {
-        responseData = await response.json();
+        responseData = responseText ? JSON.parse(responseText) : { success: true };
       } catch (jsonError) {
-        console.warn('Failed to parse withdrawal transaction response as JSON:', jsonError);
-        setError('Invalid response format');
-        return null;
-      }
-
-      // Validate response structure
-      if (!responseData || typeof responseData !== 'object') {
-        console.warn('Withdrawal transaction response is not an object:', responseData);
-        setError('Invalid response structure');
-        return null;
+        // Backend returned non-JSON (e.g. plain text success message) — treat as success
+        responseData = { success: true, message: responseText };
       }
 
       setSuccess(true);

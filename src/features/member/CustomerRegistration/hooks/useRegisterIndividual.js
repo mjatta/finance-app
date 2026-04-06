@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export function useRegisterIndividual() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +10,8 @@ export function useRegisterIndividual() {
     setError(null);
     setData(null);
     try {
-      const url = getFullApiUrl('/api/member/create');
+      // Use relative path so Vite proxy can intercept and handle CORS
+      const url = '/api/member/create';
       const response = await fetch(url, {
         method: 'POST',
         headers: {

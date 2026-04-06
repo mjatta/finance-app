@@ -6,10 +6,10 @@
 
 // Determine if running in production (GitHub Pages)
 const isProd = import.meta.env.PROD;
-// Use CORS proxy to bypass mixed content - converts HTTPS request to HTTP backend
+// Use CORS proxy in production, direct backend in development
 const API_BASE_URL = isProd 
   ? 'https://cors-anywhere.herokuapp.com/http://alakuyateh-001-site10.atempurl.com'  // Via CORS proxy
-  : (import.meta.env.VITE_API_BASE_URL || '');    // Dev or env override
+  : (import.meta.env.VITE_API_BASE_URL || 'http://alakuyateh-001-site10.atempurl.com');    // Dev uses direct backend URL
 
 /**
  * Map of endpoint patterns to their dev and production paths
@@ -138,7 +138,6 @@ const ENDPOINT_MAP = {
  * @returns {string} - Full URL to the endpoint
  */
 export const getApiUrl = (endpointKey) => {
-  const isDev = !API_BASE_URL;
   const endpoints = ENDPOINT_MAP[endpointKey];
   
   if (!endpoints) {
@@ -146,7 +145,7 @@ export const getApiUrl = (endpointKey) => {
     return endpointKey; // fallback to raw key
   }
   
-  const endpoint = isDev ? endpoints.dev : endpoints.prod;
+  const endpoint = isProd ? endpoints.prod : endpoints.dev;
   return API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
 };
 
@@ -181,13 +180,10 @@ export const apiFetch = async (endpointKey, options = {}) => {
  * CRITICAL: Get full API URL for ANY endpoint path
  * Use this for endpoints not in ENDPOINT_MAP
  * @param {string} path - The API path (e.g., '/api/remote-branches/branches')
- * @returns {string} - Full URL in production, relative path in dev
+ * @returns {string} - Full URL with API base
  */
 export const getFullApiUrl = (path) => {
-  if (isProd) {
-    return `${API_BASE_URL}${path}`;
-  }
-  return path;
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 };
 
 export default {

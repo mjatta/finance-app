@@ -203,7 +203,8 @@ export default function UserSetup({ user }) {
     const loadSetupData = async () => {
       try {
         try {
-          const url = getFullApiUrl('/api/remote-branches/branches');
+          // Use relative path so Vite proxy can intercept and handle CORS
+          const url = '/api/remote-branches/branches';
           const remoteResp = await fetch(url);
           if (remoteResp.ok) {
             const remoteJson = await remoteResp.json();
@@ -225,7 +226,8 @@ export default function UserSetup({ user }) {
           // remote lookup failed — cached data already applied
         }
 
-        const url = getFullApiUrl('/api/user-setup');
+        // Use relative path for consistency with middleware
+        const url = '/api/user-setup';
         const response = await fetch(url);
         if (!response.ok) return;
 
@@ -359,7 +361,8 @@ export default function UserSetup({ user }) {
     setStatusMessage('');
 
     try {
-      const url = getFullApiUrl('/api/user-setup');
+      // Use relative path for consistency with middleware
+      const url = '/api/user-setup';
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -433,7 +436,8 @@ export default function UserSetup({ user }) {
         pagePermissions: roleForm.pagePermissions || {},
       };
 
-      const url = getFullApiUrl('/api/user-setup');
+      // Use relative path for consistency with middleware
+      const url = '/api/user-setup';
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

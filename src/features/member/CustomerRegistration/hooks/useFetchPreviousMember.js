@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
+
 
 /**
  * Custom hook to fetch the just-saved institution's details after registration.
@@ -24,7 +24,8 @@ export function useFetchJustSavedInstitution() {
     setData(null);
     try {
       // Step 1: Get latest member code (string)
-      const url = getFullApiUrl('/api/client/get-code?fieldName=clientid');
+      // Use relative path so Vite proxy can intercept and handle CORS
+      const url = '/api/client/get-code?fieldName=clientid';
       const codeRes = await fetch(url);
       let codeData = null;
       try {

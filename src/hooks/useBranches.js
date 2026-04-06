@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getFullApiUrl } from '../utils/apiConfig';
 
 // Simple in-memory cache for branches
 let cachedBranches = null;
@@ -18,7 +17,8 @@ export function useBranches() {
     setLoading(true);
     setError(null);
     try {
-      const url = getFullApiUrl('/api/lookups/branches');
+      // Use relative path so Vite proxy can intercept and handle CORS
+      const url = '/api/lookups/branches';
       const res = await fetch(url);
       let data = null;
       try {
