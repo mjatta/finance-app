@@ -47,6 +47,8 @@ export function buildIndividualPayload(formData, countries = [], cities = []) {
     StaffNo: formData.employmentNumber,
     SharePrice: Number(formData.sharePrice) || '',
     Signatory: formData.signatory1,
+    CompanyId: 30,
+    BranchId: 16,
     MemberPicture: null,
     MemberSignature: null,
     suers: 'AKH',
@@ -121,9 +123,8 @@ export function buildInstitutionPayload(formData, institutionBranches = [], citi
     Sign2: '', // Mandatory (should be mapped from form if available)
     Sign3: formData.signatory3,
     Sign4: '',
-    // CompanyId will be set from backend response after registration
-    // BranchId is set from branches API, not user input
-    BranchId: institutionBranches && institutionBranches.length > 0 ? 1 : 0, // Default to first branch (1-based index)
+    CompanyId: 30,
+    BranchId: 16,
     BatId: 0,
     MemType: 0, // Mandatory (should be mapped from dropdown)
     gender: Number(formData.gender) || 0, // Mandatory

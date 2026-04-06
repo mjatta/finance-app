@@ -70,6 +70,7 @@ export default function Withdrawal() {
     memberCode: '',
     payrollNumber: '',
     profilePicture: '',
+    memberSignature: '',
     phoneNumber: '',
     postingAccount: '',
     memberAccounts: [],
@@ -119,6 +120,7 @@ export default function Withdrawal() {
       memberCode: member.memberCode,
       payrollNumber: member.payrollNumber,
       profilePicture: member.profilePicture,
+      memberSignature: member.memberSignature,
       phoneNumber: member.phoneNumber,
       memberAccounts: member.memberAccounts || [],
     }));
@@ -189,6 +191,7 @@ export default function Withdrawal() {
             memberCode: remoteMemberData.memberCode || rawValue.trim(),
             payrollNumber: remoteMemberData.payrollNumber || '',
             profilePicture: formatProfileImage(remoteMemberData.MemberPicture),
+            memberSignature: formatProfileImage(remoteMemberData.MemberSignature),
             phoneNumber: remoteMemberData.Phone || '',
             memberAccounts: Array.isArray(remoteMemberData.Accounts) ? remoteMemberData.Accounts : [],
             accounts: accounts.length > 0 ? accounts : [{
@@ -204,6 +207,7 @@ export default function Withdrawal() {
         setFormData((prev) => ({
           ...prev,
           profilePicture: '',
+          memberSignature: '',
           phoneNumber: '',
           memberAccounts: [],
           accountBalance: '',
@@ -222,6 +226,7 @@ export default function Withdrawal() {
         setFormData((prev) => ({
           ...prev,
           profilePicture: '',
+          memberSignature: '',
           phoneNumber: '',
           memberAccounts: [],
           accountBalance: '',
@@ -633,9 +638,6 @@ export default function Withdrawal() {
                 <Typography variant="body2" color="text.secondary">
                   Member profile picture
                 </Typography>
-              </Box>
-              {/* Contact Info Column */}
-              <Box sx={{ display: 'grid', gap: 2 }}>
                 <TextField
                   label="Phone Number"
                   name="phoneNumber"
@@ -652,6 +654,26 @@ export default function Withdrawal() {
                     },
                   }}
                 />
+              </Box>
+              {/* Contact Info Column */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box
+                  component="img"
+                  src={formData.memberSignature || defaultProfileImage}
+                  alt="Member signature"
+                  sx={{
+                    width: 180,
+                    height: 130,
+                    borderRadius: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    objectFit: 'contain',
+                    backgroundColor: '#fff',
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Member Signature
+                </Typography>
               </Box>
             </Box>
           </CardContent>
