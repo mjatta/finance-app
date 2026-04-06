@@ -6,10 +6,11 @@
 
 // Determine if running in production (GitHub Pages)
 const isProd = import.meta.env.PROD;
-// Use CORS proxy in production, direct backend in development
+// In dev: use empty string so all requests go through Vite proxy (relative paths)
+// In prod: use CORS proxy to reach the backend
 const API_BASE_URL = isProd 
   ? 'https://cors-anywhere.herokuapp.com/http://alakuyateh-001-site10.atempurl.com'  // Via CORS proxy
-  : (import.meta.env.VITE_API_BASE_URL || 'http://alakuyateh-001-site10.atempurl.com');    // Dev uses direct backend URL
+  : '';    // Dev uses relative paths (Vite proxy handles CORS)
 
 /**
  * Map of endpoint patterns to their dev and production paths

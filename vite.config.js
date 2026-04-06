@@ -5,6 +5,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
 
+// The atempurl.com host redirects HTTP to HTTPS but uses a certificate whose
+// common-name doesn't match.  Disabling TLS verification here is safe because
+// this only affects the Vite dev-server proxy, not production.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 const depositsFilePath = path.resolve(process.cwd(), 'src/data/deposits.json')
 const withdrawalsFilePath = path.resolve(process.cwd(), 'src/data/withdrawals.json')
 const loanRepaymentsFilePath = path.resolve(process.cwd(), 'src/data/loan-repayments.json')
@@ -232,7 +237,7 @@ const memberActivatePlugin = () => ({
 
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
-          const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Member4Activate/UpdateCustomerAuthorisation', {
+          const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/Member4Activate/UpdateCustomerAuthorisation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
@@ -275,7 +280,7 @@ const depositsApiPlugin = () => ({
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
           try {
-            const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Deposits/DepositUser', {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/Deposits/DepositUser', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(body),
@@ -337,7 +342,7 @@ const withdrawalsApiPlugin = () => ({
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
           try {
-            const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/Withdrawals/WithdrawalUser', {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/Withdrawals/WithdrawalUser', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(body),
@@ -935,46 +940,46 @@ export default defineConfig({
     proxy: {
       // Proxy for lookups (branches, etc.) to avoid CORS
       '/api/lookups': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/lookups/, '/api/lookups'),
       },
       // Proxy for getmember endpoint to avoid CORS
       '/api/getmember': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/getmember/, '/api/getmember'),
       },
       // Proxy dashboard summary to avoid CORS during development
       '/api/dashboard': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/dashboard/, '/api/dashboard'),
       },
       // Proxy remote branches lookup to avoid CORS during development
       '/api/remote-branches': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-branches/, '/api/lookups'),
       },
       '/api/remote-countries': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-countries/, '/api/lookups'),
       },
       '/api/remote-member-details': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-member-details/, '/api/getmemberdetails'),
       },
       '/api/remote-member-activate': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => {
@@ -984,89 +989,89 @@ export default defineConfig({
         },
       },
       '/api/remote-member': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-member/, '/api/member'),
       },
       '/api/remote-client': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-client/, '/api/client'),
       },
       '/api/remote-cities': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-cities/, '/api/lookups'),
       },
       // Proxy /api/client for get-code endpoint to avoid CORS
       '/api/client': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/client/, '/api/client'),
       },
       // Proxy for institution registration to avoid CORS
       '/api/corporategroupmember': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/corporategroupmember/, '/api/corporategroupmember'),
       },
       // Proxy for member create endpoint to avoid CORS
       '/api/member/create': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/member\/create/, '/api/member/create'),
       },
       // Proxy mandatory products lookup for Product Definition main category
       '/api/mandatory-products': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/mandatory-products/, '/api/lookups'),
       },
       // Proxy account details endpoint to avoid CORS
       '/api/account/details': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/account\/details/, '/api/account/details'),
       },
       // Proxy banks endpoint to avoid CORS
       '/api/banks': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/banks/, '/api/banks'),
       },
       // Proxy auth login endpoint to avoid CORS
       '/api/auth/login': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),
       },
       // Proxy deposit and withdrawal transaction endpoints to avoid CORS
       '/api/Cusystem': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/Cusystem/, '/api/Cusystem'),
       },
       // Proxy account transaction endpoints to avoid CORS
       '/api/transaction': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/transaction/, '/api/transaction'),
       },
       // Proxy member activation endpoints to avoid CORS
       '/api/member/activate': {
-        target: 'http://alakuyateh-001-site10.atempurl.com',
+        target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
       },

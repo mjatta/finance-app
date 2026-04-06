@@ -15,7 +15,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-import { getFullApiUrl } from '../../../utils/apiConfig';
+import { useCreateUser } from './hooks/useCreateUser';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
@@ -94,6 +94,7 @@ const featurePageMap = {
 export default function UserSetup({ user }) {
   const [companies, setCompanies] = useState(['Social Development Fund']);
   const [branches, setBranches] = useState([]);
+  const [rawBranchesData, setRawBranchesData] = useState([]);
   const [companyBranches, setCompanyBranches] = useState([]);
   const [remoteBranchesLoaded, setRemoteBranchesLoaded] = useState(false);
   const [baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
@@ -107,6 +108,7 @@ export default function UserSetup({ user }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isSavingRole, setIsSavingRole] = useState(false);
+  const { createUser } = useCreateUser();
 
   const [userForm, setUserForm] = useState({
     companyName: 'Social Development Fund',
@@ -209,6 +211,7 @@ export default function UserSetup({ user }) {
           if (remoteResp.ok) {
             const remoteJson = await remoteResp.json();
             if (Array.isArray(remoteJson) && remoteJson.length > 0) {
+              setRawBranchesData(remoteJson);
               const remoteBranches = Array.from(
                 new Set(
                   remoteJson
@@ -361,7 +364,14 @@ export default function UserSetup({ user }) {
     setStatusMessage('');
 
     try {
-      // Use relative path for consistency with middleware
+      // Call the backend API to create the user
+      const result = await createUser(userForm, rawBranchesData);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create user.');
+      }
+
+      // Also persist locally via middleware
       const url = '/api/user-setup';
       const response = await fetch(url, {
         method: 'POST',
