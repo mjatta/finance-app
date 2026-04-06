@@ -591,7 +591,7 @@ function App() {
                     />
                     <Route
                       path="/member/withdrawal"
-                      element={renderWithAccess('member', <Withdrawal />)}
+                      element={renderWithAccess('member', <Withdrawal user={user} />)}
                     />
                     <Route
                       path="/member/transfer"

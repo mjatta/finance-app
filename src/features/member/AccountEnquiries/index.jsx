@@ -662,6 +662,7 @@ export default function AccountEnquiries({ user }) {
                 pageSizeOptions={[10, 25, 50]}
                 initialState={{
                   pagination: { paginationModel: { pageSize: 10 } },
+                  sorting: { sortModel: [{ field: 'PostDate', sort: 'desc' }] },
                 }}
                 sx={{
                   '& .MuiDataGrid-root': {

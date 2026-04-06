@@ -1,16 +1,22 @@
 {
   "users": [
-    {
-      "id": "u-super-001",
-      "name": "Super User",
-      "username": "super.user",
-      "password": "Super@123",
-      "role": "SUPER_USER",
-      "access": {
-        "allPages": true,
-        "features": ["member", "loan", "accounting", "processing", "system", "reporting"]
-      }
-    },
+      {
+        "id": "u-super-001",
+        "name": "Super User",
+        "username": "super.user",
+        "password": "Super@123",
+        "role": "SUPER_USER",
+        "access": {
+          "allPages": true,
+          "features": ["member", "loan", "accounting", "processing", "system", "reporting"]
+        },
+        "Accesslvl": 3,
+        "Cashaccont": "12345",
+        "Surpaccont": "67890",
+        "Debtlimitamt": 5000.0,
+        "Credlimitamt": 10000.0,
+        "Loanlimitamt": 20000.0
+      },
     {
       "id": "u-admin-loan-001",
       "name": "Admin Loan User",

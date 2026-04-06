@@ -50,7 +50,7 @@ const makeWithdrawalRow = (account, index) => ({
   order: '',
 });
 
-export default function Withdrawal() {
+export default function Withdrawal({ user }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
@@ -143,22 +143,18 @@ export default function Withdrawal() {
     }
   }, [formData.postingAccount, fetchAccountDetails]);
 
-  // Fetch cash details when withdrawal type is cash
+  // Map logged-in user's cash details when withdrawal type is cash
   useEffect(() => {
-    if (formData.depositType === 'cash') {
-      fetchCashDetails().then((result) => {
-        if (result.success && result.data) {
-          setFormData((prev) => ({
-            ...prev,
-            cashAccount: result.data.cashAccount,
-            creditLimit: result.data.creditLimit,
-            debitLimit: result.data.debitLimit,
-            loanLimit: result.data.loanLimit,
-          }));
-        }
-      });
+    if (formData.depositType === 'cash' && user) {
+      setFormData((prev) => ({
+        ...prev,
+        cashAccount: user.Cashaccont || '',
+        debitLimit: user.Debtlimitamt != null ? String(user.Debtlimitamt) : '',
+        creditLimit: user.Credlimitamt != null ? String(user.Credlimitamt) : '',
+        loanLimit: user.Loanlimitamt != null ? String(user.Loanlimitamt) : '',
+      }));
     }
-  }, [formData.depositType, fetchCashDetails]);
+  }, [formData.depositType, user]);
 
   const searchMember = async (searchBy) => {
     const rawValue = searchBy === 'memberCode' ? formData.memberCode : formData.payrollNumber;
