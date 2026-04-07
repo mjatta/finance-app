@@ -151,6 +151,7 @@ export default function Withdrawal() {
       setFormData((prev) => ({
         ...prev,
         cashAccount: user.CashAccount || '',
+        contraAccount: user.CashAccount || '',
         debitLimit: user.DebitLimit != null ? String(user.DebitLimit) : '',
         creditLimit: user.CreditLimit != null ? String(user.CreditLimit) : '',
         loanLimit: user.LoanLimit != null ? String(user.LoanLimit) : '',
@@ -878,7 +879,22 @@ export default function Withdrawal() {
                         fontWeight: 'bold',
                       },
                     }} />
-                  <TextField label="Contra Account" name="contraAccount" value={formData.contraAccount} onChange={handleChange} size="small" fullWidth />
+                  <TextField
+                    label="Contra Account"
+                    name="contraAccount"
+                    value={formData.contraAccount}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                    disabled={formData.depositType === 'cash'}
+                    sx={formData.depositType === 'cash' ? {
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    } : {}}
+                  />
                   <TextField
                     label="Comments"
                     name="comments"

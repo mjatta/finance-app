@@ -20,7 +20,7 @@ export function useDepositTransaction() {
       // Map form data to API payload
       const payload = {
         tcAcctNumb: formData.accountNumber || '',
-        gcContraAcct: formData.accountNumber || '',
+        gcContraAcct: formData.contraAccount || formData.accountNumber || '',
         gcControlAcct: formData.accountNumber || '', // Using account number as control account
         tnTranAmt: parseFloat(formData.depositAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.depositAmount)) || 0, // Negative of deposit amount

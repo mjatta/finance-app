@@ -20,7 +20,7 @@ export function useWithdrawalTransaction() {
       // Map form data to API payload
       const payload = {
         tcAcctNumb: formData.accountNumber || '',
-        gcContraAcct: formData.accountNumber || '', // Map to account number
+        gcContraAcct: formData.contraAccount || formData.accountNumber || '',
         gcControlAcct: formData.accountNumber || '', // Using account number as control account
         tnTranAmt: parseFloat(formData.withdrawalAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.withdrawalAmount)) || 0, // Negative of withdrawal amount

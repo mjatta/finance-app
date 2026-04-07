@@ -355,6 +355,7 @@ export default function DepositManagement() {
       setFormData((prev) => ({
         ...prev,
         cashAccount: user.CashAccount || '',
+        contraAccount: user.CashAccount || '',
         debitLimit: user.DebitLimit != null ? String(user.DebitLimit) : '',
         creditLimit: user.CreditLimit != null ? String(user.CreditLimit) : '',
         loanLimit: user.LoanLimit != null ? String(user.LoanLimit) : '',
