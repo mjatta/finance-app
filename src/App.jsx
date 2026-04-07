@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, lazy, Suspense, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -139,6 +140,10 @@ function App() {
   );
 
   const [user, setUser] = useState(() => {
+    // Initialize from Zustand persisted store first
+    const storedUser = useAuthStore.getState().user;
+    if (storedUser) return storedUser;
+    // Fallback to cookie
     const match = document.cookie.split('; ').find((c) => c.startsWith('user='));
     if (!match) {
       return null;
@@ -188,6 +193,8 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     setActiveCategoryOverride(null);
+    // Clear Zustand store + localStorage
+    useAuthStore.getState().clearUser();
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
@@ -583,7 +590,7 @@ function App() {
                     />
                     <Route
                       path="/member/deposits"
-                      element={renderWithAccess('member', <DepositManagement user={user} />)}
+                      element={renderWithAccess('member', <DepositManagement />)}
                     />
                     <Route
                       path="/member/account-enquiries"
@@ -591,7 +598,7 @@ function App() {
                     />
                     <Route
                       path="/member/withdrawal"
-                      element={renderWithAccess('member', <Withdrawal user={user} />)}
+                      element={renderWithAccess('member', <Withdrawal />)}
                     />
                     <Route
                       path="/member/transfer"

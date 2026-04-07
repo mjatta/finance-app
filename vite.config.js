@@ -1050,7 +1050,7 @@ export default defineConfig({
       },
       // Proxy auth login endpoint to avoid CORS
       '/api/auth/login': {
-        target: 'https://alakuyateh-001-site10.atempurl.com',
+        target: 'http://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),

@@ -5,7 +5,7 @@
  * @param {Array} cities - Array of city objects with { id, name }
  * @returns {Object} Individual payload ready for API submission
  */
-export function buildIndividualPayload(formData, countries = [], cities = []) {
+export function buildIndividualPayload(formData, countries = [], cities = [], { compId, branchId } = {}) {
   return {
     FName: formData.firstName,
     MName: formData.middleName,
@@ -47,8 +47,8 @@ export function buildIndividualPayload(formData, countries = [], cities = []) {
     StaffNo: formData.employmentNumber,
     SharePrice: Number(formData.sharePrice) || '',
     Signatory: formData.signatory1,
-    CompanyId: 30,
-    BranchId: 16,
+    CompanyId: compId ?? 30,
+    BranchId: branchId ?? 16,
     MemberPicture: null,
     MemberSignature: null,
     suers: 'AKH',
@@ -62,7 +62,7 @@ export function buildIndividualPayload(formData, countries = [], cities = []) {
  * @param {Array} cities - Array of city objects with { id, name }
  * @returns {Object} Institution payload ready for API submission
  */
-export function buildInstitutionPayload(formData, institutionBranches = [], cities = []) {
+export function buildInstitutionPayload(formData, institutionBranches = [], cities = [], { compId, branchId } = {}) {
   return {
     CustName: formData.institutionName, // Mandatory
     BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
@@ -123,8 +123,8 @@ export function buildInstitutionPayload(formData, institutionBranches = [], citi
     Sign2: '', // Mandatory (should be mapped from form if available)
     Sign3: formData.signatory3,
     Sign4: '',
-    CompanyId: 30,
-    BranchId: 16,
+    CompanyId: compId ?? 30,
+    BranchId: branchId ?? 16,
     BatId: 0,
     MemType: 0, // Mandatory (should be mapped from dropdown)
     gender: Number(formData.gender) || 0, // Mandatory

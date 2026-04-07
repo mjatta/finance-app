@@ -22,6 +22,7 @@ import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useGetCashDetails } from './hooks/useGetCashDetails';
 import { useDepositTransaction } from './hooks/useDepositTransaction';
+import { useAuthStore } from '../../../store/authStore';
 
 const todayIso = new Date().toISOString().split('T')[0];
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -50,7 +51,8 @@ const makeDepositRow = (account, index) => ({
   order: '',
 });
 
-export default function DepositManagement({ user }) {
+export default function DepositManagement() {
+  const user = useAuthStore((state) => state.user);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
@@ -352,10 +354,10 @@ export default function DepositManagement({ user }) {
     if (formData.depositType === 'cash' && user) {
       setFormData((prev) => ({
         ...prev,
-        cashAccount: user.Cashaccont || '',
-        debitLimit: user.Debtlimitamt != null ? String(user.Debtlimitamt) : '',
-        creditLimit: user.Credlimitamt != null ? String(user.Credlimitamt) : '',
-        loanLimit: user.Loanlimitamt != null ? String(user.Loanlimitamt) : '',
+        cashAccount: user.CashAccount || '',
+        debitLimit: user.DebitLimit != null ? String(user.DebitLimit) : '',
+        creditLimit: user.CreditLimit != null ? String(user.CreditLimit) : '',
+        loanLimit: user.LoanLimit != null ? String(user.LoanLimit) : '',
       }));
     }
   }, [formData.depositType, user]);

@@ -6,10 +6,8 @@
         "username": "super.user",
         "password": "Super@123",
         "role": "SUPER_USER",
-        "access": {
-          "allPages": true,
-          "features": ["member", "loan", "accounting", "processing", "system", "reporting"]
-        },
+
+        
         "Accesslvl": 3,
         "Cashaccont": "12345",
         "Surpaccont": "67890",

@@ -12,6 +12,8 @@ import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import testUsers from '../../data/test-users.json';
+import { useLogin } from './hooks/useLogin';
+import { useAuthStore } from '../../store/authStore';
 
 const loginHighlights = [
   'Centralized member and loan operations',
@@ -24,93 +26,62 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const mapRoleToAccess = (roleRecord) => {
-    const permissions = roleRecord?.featurePermissions || {};
-    const pagePermissions = roleRecord?.pagePermissions || {};
-    const visibleFeatures = Object.entries(permissions)
-      .filter(([, permission]) => permission !== 'hide feature')
-      .map(([feature]) => feature);
-
-    const hasWritePermission = Object.values(permissions).some((permission) => permission === 'write');
-
-    return {
-      allPages: false,
-      features: visibleFeatures,
-      readOnly: !hasWritePermission && visibleFeatures.length > 0,
-      featurePermissions: permissions,
-      pagePermissions,
-    };
-  };
+  const { login: backendLogin, loading: loginLoading } = useLogin();
+  const setAuthUser = useAuthStore((state) => state.setUser);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const normalizedUsername = username.trim();
-    const normalizedLookup = normalizedUsername.toLowerCase();
-    const foundDefaultUser = testUsers.users.find(
-      (user) => user.username === normalizedUsername && user.password === password,
-    );
 
-    if (foundDefaultUser) {
-      const { password: _, ...safeUser } = foundDefaultUser;
-      setErrorMessage('');
-      onLogin(safeUser);
-      return;
-    }
-
-    try {
-      // Use relative path so Vite proxy can intercept and handle CORS
-      const url = '/api/user-setup';
-      const response = await fetch(url);
-      if (!response.ok) {
-        setErrorMessage('Invalid username or password');
-        return;
-      }
-
-      const payload = await response.json();
-      const setupUsers = Array.isArray(payload?.users) ? payload.users : [];
-      const setupRoles = Array.isArray(payload?.roles) ? payload.roles : [];
-
-      const foundSetupUser = setupUsers.find((setupUser) => {
-        const setupUserId = String(setupUser.userId || '').trim().toLowerCase();
-        const setupUserName = String(setupUser.userName || '').trim().toLowerCase();
-        const matchesUsername = setupUserId === normalizedLookup || setupUserName === normalizedLookup;
-        const matchesPassword = setupUser.temporaryPassword === password || setupUser.password === password;
-        return matchesUsername && matchesPassword;
-      });
-
-      if (!foundSetupUser || foundSetupUser.disableUser) {
-        setErrorMessage('Invalid username or password');
-        return;
-      }
-
-      const matchedRole = setupRoles.find((role) => role.roleName === foundSetupUser.baseRole);
-      const access = {
-        ...mapRoleToAccess(matchedRole),
-        pagePermissions: {
-          ...(matchedRole?.pagePermissions || {}),
-          ...(foundSetupUser?.pagePermissions || {}),
-        },
-      };
-      const usedTemporaryPassword = foundSetupUser.temporaryPassword === password;
-      const mustChangePassword = foundSetupUser.userId !== 'super.user' && (usedTemporaryPassword || Boolean(foundSetupUser.resetPassword));
+    // Try backend authentication
+    const result = await backendLogin(normalizedUsername, password);
+    if (result.success && result.data && result.data.Success) {
+      const apiUser = result.data;
+      const features = (apiUser.features || '').split(',').map((f) => f.trim()).filter(Boolean);
+      const role = (apiUser.Role || '').split(',')[0].trim();
 
       const safeUser = {
-        id: foundSetupUser.staffNumber || foundSetupUser.userId,
-        name: foundSetupUser.userName,
-        username: foundSetupUser.userId,
-        role: foundSetupUser.baseRole || 'USER',
-        access,
-        mustChangePassword,
+        id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
+        name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
+        username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
+        role: role || 'USER',
+        access: {
+          allPages: apiUser.Allpages ?? false,
+          features,
+        },
+        CompId: apiUser.CompId,
+        BranchId: apiUser.BranchId,
+        CashAccount: apiUser.CashAccount || '',
+        SuspenseAccount: apiUser.SuspenseAccount || '',
+        DebitLimit: apiUser.DebitLimit ?? 0,
+        CreditLimit: apiUser.CreditLimit ?? 0,
+        LoanLimit: apiUser.LoanLimit ?? 0,
+        AccessLevel: apiUser.AccessLevel ?? 0,
+        IsCashier: apiUser.IsCashier ?? false,
+        staffno: apiUser.staffno ? apiUser.staffno.trim() : '',
+        Dateforce: apiUser.Dateforce || '',
       };
 
+      // Save to Zustand + localStorage
+      setAuthUser(safeUser);
       setErrorMessage('');
       onLogin(safeUser);
       return;
-    } catch {
-      setErrorMessage('Invalid username or password');
+    }
+
+    // Fallback: check test-users for dev convenience
+    const foundDefaultUser = testUsers.users.find(
+      (u) => u.username === normalizedUsername && u.password === password,
+    );
+    if (foundDefaultUser) {
+      const { password: _, ...safeUser } = foundDefaultUser;
+      setAuthUser(safeUser);
+      setErrorMessage('');
+      onLogin(safeUser);
       return;
     }
+
+    setErrorMessage('Invalid username or password');
   };
 
   return (
@@ -412,6 +383,7 @@ export default function Login({ onLogin }) {
               type="submit"
               variant="contained"
               fullWidth
+              disabled={loginLoading}
               sx={{
                 mt: 1,
                 py: 1.4,

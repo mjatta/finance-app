@@ -27,6 +27,7 @@ import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotificat
 import { useCities } from './hooks/useCities';
 import { initialForm } from './constants/initialFormData';
 import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
+import { useAuthStore } from '../../../store/authStore';
 
 // Tab group styles
 const mainTabGroupSx = {
@@ -427,7 +428,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     if (mainTab === 0) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
-      const individualPayload = buildIndividualPayload(formData, countries, cities);
+      const individualPayload = buildIndividualPayload(formData, countries, cities, {
+        compId: useAuthStore.getState().user?.CompId,
+        branchId: useAuthStore.getState().user?.BranchId,
+      });
       individualPayload.MemberPicture = pictureBase64;
       individualPayload.MemberSignature = signatureBase64;
       try {
@@ -488,7 +492,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     let institutionPayload = null;
     if (mainTab === 1) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
-      institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities);
+      institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
+        compId: useAuthStore.getState().user?.CompId,
+        branchId: useAuthStore.getState().user?.BranchId,
+      });
       institutionPayload.MemberPicture = pictureBase64;
       institutionPayload.MemberSignature = signatureBase64;
       try {
