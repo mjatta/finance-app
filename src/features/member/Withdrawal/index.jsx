@@ -305,6 +305,17 @@ export default function Withdrawal() {
       return;
     }
 
+    // Handle bank account change
+    if (name === 'bankAccount') {
+      // The selected value is the AccountNumber from the bank accounts dropdown
+      setFormData((prev) => ({
+        ...prev,
+        bankAccount: value,
+        contraAccount: value,
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -880,22 +891,6 @@ export default function Withdrawal() {
                       },
                     }} />
                   <TextField
-                    label="Contra Account"
-                    name="contraAccount"
-                    value={formData.contraAccount}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                    disabled={formData.depositType === 'cash'}
-                    sx={formData.depositType === 'cash' ? {
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    } : {}}
-                  />
-                  <TextField
                     label="Comments"
                     name="comments"
                     value={formData.comments}
@@ -1051,6 +1046,21 @@ export default function Withdrawal() {
                       </MenuItem>
                     ))}
                   </TextField>
+                  <TextField
+                    label="Contra Account"
+                    name="contraAccount"
+                    value={formData.contraAccount}
+                    disabled
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        backgroundColor: '#f5f5f5',
+                        color: '#666',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
                 </Box>
               </CardContent>
             </Card>

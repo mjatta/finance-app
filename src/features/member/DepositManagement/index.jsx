@@ -66,7 +66,6 @@ export default function DepositManagement() {
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
-  const [contraAccounts, setContraAccounts] = useState([]);
 
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
@@ -252,7 +251,6 @@ export default function DepositManagement() {
       } else {
         setBanks([]);
         setBankAccounts([]);
-        setContraAccounts([]);
       }
       return;
     }
@@ -275,47 +273,18 @@ export default function DepositManagement() {
         });
       } else {
         setBankAccounts([]);
-        setContraAccounts([]);
       }
       return;
     }
 
     // Handle bank account change
     if (name === 'bankAccount') {
-      // When bank account is selected, fetch its details as contra accounts
-      if (value && bankAccounts.length > 0) {
-        const selectedAccount = bankAccounts.find((acc) => acc.id === value);
-        if (selectedAccount) {
-          // The bank account API returns array of accounts with AccountNumber and AccountName
-          // Map this to contraAccounts for the dropdown
-          const accounts = Array.isArray(selectedAccount.accounts)
-            ? selectedAccount.accounts
-            : [selectedAccount];
-          setContraAccounts(accounts);
-          
-          // Auto-fill contraAccount with the first AccountNumber
-          const firstAccountNumber = accounts.length > 0 ? accounts[0].AccountNumber : '';
-          setFormData((prev) => ({
-            ...prev,
-            bankAccount: value,
-            contraAccount: firstAccountNumber,
-          }));
-        } else {
-          setFormData((prev) => ({
-            ...prev,
-            bankAccount: value,
-            contraAccount: '',
-          }));
-          setContraAccounts([]);
-        }
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          bankAccount: value,
-          contraAccount: '',
-        }));
-        setContraAccounts([]);
-      }
+      // The selected value is the AccountNumber from the bank accounts dropdown
+      setFormData((prev) => ({
+        ...prev,
+        bankAccount: value,
+        contraAccount: value,
+      }));
       return;
     }
 
@@ -449,7 +418,6 @@ export default function DepositManagement() {
         setRows([]);
         setTouched({});
         setBankAccounts([]);
-        setContraAccounts([]);
         setBanks([]);
         // Auto dismiss success message after 5 seconds
         setTimeout(() => setStatusMessage(''), 5000);
@@ -1126,12 +1094,9 @@ export default function DepositManagement() {
                     ))}
                   </TextField>
                   <TextField
-                    select
                     label="Contra Account"
                     name="contraAccount"
                     value={formData.contraAccount}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur('contraAccount')}
                     disabled
                     size="small"
                     fullWidth
@@ -1142,14 +1107,7 @@ export default function DepositManagement() {
                         fontWeight: 600,
                       },
                     }}
-                  >
-                    <MenuItem value="">Select contra account</MenuItem>
-                    {contraAccounts.map((account) => (
-                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
-                        {account.AccountName?.trim()}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  />
                 </Box>
               </CardContent>
             </Card>
