@@ -3,11 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -372,6 +374,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       if (!formData.firstName) missingFields.push('First Name');
       if (!formData.surname) missingFields.push('Surname');
       if (!formData.institutionBranch) missingFields.push('Branch');
+      if (!formData.city) missingFields.push('City');
       if (!formData.address) missingFields.push('Address');
       if (!formData.region) missingFields.push('Region');
       if (!formData.district) missingFields.push('District');
@@ -391,6 +394,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           firstName: !formData.firstName,
           surname: !formData.surname,
           institutionBranch: !formData.institutionBranch,
+          city: !formData.city,
           address: !formData.address,
           region: !formData.region,
           district: !formData.district,
@@ -641,7 +645,17 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
 
   return (
-    <Box p={3}>
+    <Box p={3} sx={{ position: 'relative' }}>
+      <Backdrop
+        open={isSaving}
+        sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>Saving registration...</Typography>
+        </Box>
+      </Backdrop>
+
       <Typography variant="h4" gutterBottom>
         Registration Individual or Institution
       </Typography>
@@ -892,7 +906,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="city"
                             value={formData.city}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.city)}
+                            onBlur={() => handleBlur('city')}
+                            error={isFieldInvalid('city') || Boolean(fieldErrors.city)}
+                            helperText={isFieldInvalid('city') ? 'City is required' : ''}
                           >
                             <MenuItem value="">Select city</MenuItem>
                             {cities.map((city) => (
@@ -1040,6 +1056,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                           <TextField
+                            select
                             required
                             label="Title"
                             name="title"
@@ -1048,7 +1065,21 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             onBlur={() => handleBlur('title')}
                             error={isFieldInvalid('title')}
                             helperText={isFieldInvalid('title') ? 'Title is required' : ''}
-                          />
+                          >
+                            {[
+                              { tit_name: 'MR.', tit_id: 1 },
+                              { tit_name: 'MRS', tit_id: 2 },
+                              { tit_name: 'MS', tit_id: 3 },
+                              { tit_name: 'ALHAJ', tit_id: 4 },
+                              { tit_name: 'PROF.', tit_id: 5 },
+                              { tit_name: 'DR.', tit_id: 6 },
+                              { tit_name: 'Sister', tit_id: 7 },
+                            ].map((t) => (
+                              <MenuItem key={t.tit_id} value={t.tit_id}>
+                                {t.tit_name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
                           <TextField
                             select
                             required
@@ -1423,7 +1454,17 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                     <MenuItem key={country.id} value={country.id}>{country.name}</MenuItem>
                                   ))}
                                 </TextField>
-                        <TextField select label="City" name="city" value={formData.city} onChange={handleChange}>
+                        <TextField
+                          select
+                          required
+                          label="City"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          onBlur={() => handleBlur('city')}
+                          error={isFieldInvalid('city')}
+                          helperText={isFieldInvalid('city') ? 'City is required' : ''}
+                        >
                           <MenuItem value="">Select city</MenuItem>
                           {cities.map((city) => (
                             <MenuItem key={`city-${city.id}-${city.name}`} value={city.name}>{city.name}</MenuItem>
@@ -1969,28 +2010,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             </Button>
           </Box>
         </Box>
-      )}
-
-      {/* Recently Registered Member DataGrid moved to bottom */}
-      {recentMember && (
-        <Card sx={{ mt: 4, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-              Recently Registered Member
-            </Typography>
-            <div style={{ width: '100%' }}>
-              <DataGrid
-                rows={Array.isArray(recentMember) ? recentMember.map(r => formatRecentMemberRow(r, institutionBranches)) : [formatRecentMemberRow(recentMember, institutionBranches)]}
-                columns={recentMemberColumns}
-                getRowId={(row) => row.memberCode || row.id || row.clientCode || Math.random()}
-                pageSizeOptions={[5, 10]}
-                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
-                density="compact"
-                autoHeight
-              />
-            </div>
-          </CardContent>
-        </Card>
       )}
     </Box>
   );

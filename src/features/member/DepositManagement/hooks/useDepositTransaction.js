@@ -63,7 +63,7 @@ export function useDepositTransaction() {
       const responseText = await response.text();
       try {
         responseData = responseText ? JSON.parse(responseText) : { success: true };
-      } catch (jsonError) {
+      } catch {
         // Backend returned non-JSON (e.g. plain text success message) — treat as success
         responseData = { success: true, message: responseText };
       }

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
+  CircularProgress,
   FormControlLabel,
   MenuItem,
   TextField,
@@ -20,7 +22,6 @@ import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
-import { useGetCashDetails } from './hooks/useGetCashDetails';
 import { useDepositTransaction } from './hooks/useDepositTransaction';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -61,7 +62,6 @@ export default function DepositManagement() {
   const { fetchAccountDetails } = useGetAccountDetails();
   const { fetchBanks } = useGetBanks();
   const { fetchBankAccounts } = useGetBankAccounts();
-  const { fetchCashDetails } = useGetCashDetails();
   const { saveDepositTransaction } = useDepositTransaction();
 
   const [banks, setBanks] = useState([]);
@@ -613,6 +613,7 @@ export default function DepositManagement() {
         border: 'none',
         p: 3,
         m: 0,
+        position: 'relative',
         '& .MuiInputLabel-root, & .MuiFormLabel-root': {
           fontWeight: 600,
           fontSize: '1.2rem',
@@ -624,6 +625,16 @@ export default function DepositManagement() {
         },
       }}
     >
+      <Backdrop
+        open={isSaving}
+        sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>Saving deposit...</Typography>
+        </Box>
+      </Backdrop>
+
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
         Member Deposit
       </Typography>
