@@ -390,11 +390,8 @@ export default function DepositManagement() {
     setStatusError(false);
 
     try {
-      // Get user ID from localStorage (assuming it's stored during login)
-      const userId = localStorage.getItem('userId') || 'AKH';
-
-      // Call the deposit transaction API with minimal payload
-      const result = await saveDepositTransaction(formData, userId);
+      // Call the deposit transaction API with user info from auth store
+      const result = await saveDepositTransaction(formData, user?.username || '', user?.CompId, user?.BranchId);
 
       if (result) {
         setStatusMessage('Deposit saved successfully.');

@@ -347,11 +347,8 @@ export default function Withdrawal() {
     setStatusError(false);
 
     try {
-      // Get user ID from localStorage (assuming it's stored during login)
-      const userId = localStorage.getItem('userId') || 'AKH';
-
-      // Call the withdrawal transaction API with minimal payload
-      const result = await saveWithdrawalTransaction(formData, userId);
+      // Call the withdrawal transaction API with user info from auth store
+      const result = await saveWithdrawalTransaction(formData, user?.username || '', user?.CompId, user?.BranchId);
 
       if (result) {
         setStatusMessage('Withdrawal saved successfully.');

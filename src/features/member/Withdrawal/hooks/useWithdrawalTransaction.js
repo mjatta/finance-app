@@ -6,7 +6,7 @@ export function useWithdrawalTransaction() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const saveWithdrawalTransaction = async (formData, userId) => {
+  const saveWithdrawalTransaction = async (formData, userId, compId, branchId) => {
     if (!formData || !userId) {
       setError('Missing required form data or user information');
       return null;
@@ -28,8 +28,8 @@ export function useWithdrawalTransaction() {
         tcChqno: formData.checkNumber || '', // Map to check number
         lnServID: formData.productId || 5, // Product ID from Posting Account endpoint, default to 5
         gcUserid: userId,
-        ncompid: 30,
-        gnBranchid: 16,
+        ncompid: compId,
+        gnBranchid: branchId,
       };
 
       // Validate required fields
