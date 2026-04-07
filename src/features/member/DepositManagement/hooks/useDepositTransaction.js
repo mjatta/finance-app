@@ -21,7 +21,7 @@ export function useDepositTransaction() {
       const payload = {
         tcAcctNumb: formData.accountNumber || '',
         gcContraAcct: formData.contraAccount || formData.accountNumber || '',
-        gcControlAcct: formData.accountNumber || '', // Using account number as control account
+        gcControlAcct: formData.controlAccount || '',
         tnTranAmt: parseFloat(formData.depositAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.depositAmount)) || 0, // Negative of deposit amount
         dTranDate: formData.transactionDate || new Date().toISOString(),

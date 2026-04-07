@@ -185,7 +185,7 @@ export default function AccountActivation() {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          Member Activation
+          Customer Activation
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>
           Activate pending members and manage their account status

@@ -312,6 +312,7 @@ export default function DepositManagement() {
             accountBalance: result.data.accountBalance,
             clearedBalance: result.data.clearedBalance,
             unclearedBalance: result.data.unclearedBalance,
+            controlAccount: result.data.controlAccount,
           }));
         }
       });

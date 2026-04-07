@@ -35,6 +35,7 @@ export const useGetAccountDetails = () => {
         accountBalance: data.BookBalance || 0,
         clearedBalance: data.ClearedBalance || 0,
         unclearedBalance: data.UnclearedBalance || 0,
+        controlAccount: data.ControlAccount || '',
       };
 
       return { success: true, data: mappedData };

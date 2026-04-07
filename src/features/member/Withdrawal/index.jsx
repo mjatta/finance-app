@@ -139,6 +139,7 @@ export default function Withdrawal() {
             accountBalance: result.data.accountBalance,
             clearedBalance: result.data.clearedBalance,
             unclearedBalance: result.data.unclearedBalance,
+            controlAccount: result.data.controlAccount,
           }));
         }
       });
@@ -370,12 +371,18 @@ export default function Withdrawal() {
           action: 'Save Withdrawal',
           message: 'Withdrawal saved successfully.',
         });
-        // Reset form after successful save
+        // Reset form and validation state after successful save
+        setTouched({});
         setFormData({
+          transactionType: 'withdrawals',
           memberCode: '',
           payrollNumber: '',
+          profilePicture: '',
+          memberSignature: '',
+          phoneNumber: '',
           postingAccount: '',
-          bookBalance: '',
+          memberAccounts: [],
+          accountBalance: '',
           accountNumber: '',
           clearedBalance: '',
           unclearedBalance: '',
@@ -388,7 +395,7 @@ export default function Withdrawal() {
           depositType: '',
           contraAccount: '',
           checkNumber: '',
-          checkDate: '',
+          checkDate: todayIso,
           bank: '',
           bankAccount: '',
           cashAccount: '',

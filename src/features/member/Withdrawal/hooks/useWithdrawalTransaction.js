@@ -21,7 +21,7 @@ export function useWithdrawalTransaction() {
       const payload = {
         tcAcctNumb: formData.accountNumber || '',
         gcContraAcct: formData.contraAccount || formData.accountNumber || '',
-        gcControlAcct: formData.accountNumber || '', // Using account number as control account
+        gcControlAcct: formData.controlAccount || '',
         tnTranAmt: parseFloat(formData.withdrawalAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.withdrawalAmount)) || 0, // Negative of withdrawal amount
         dTranDate: formData.transactionDate || new Date().toISOString(),
