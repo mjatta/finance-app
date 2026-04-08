@@ -19,7 +19,7 @@ This agent ensures that any new backend API endpoints used in the codebase are p
 Missing Vite proxy for endpoint: /api/member/create
 Suggested vite.config.js entry:
 '/api/member/create': {
-  target: 'http://alakuyateh-001-site10.atempurl.com',
+  target: 'https://alakuyateh-001-site10.atempurl.com',
   changeOrigin: true,
   secure: false,
   rewrite: (path) => path.replace(/^/api/member/create/, '/api/member/create'),
@@ -37,4 +37,4 @@ Suggested vite.config.js entry:
 
 **Agent Name:** vite-proxy-checker
 **Scope:** Vite + React projects
-**Author:** GitHub Copilot
+**Author:** 

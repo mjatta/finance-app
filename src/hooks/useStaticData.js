@@ -5,7 +5,7 @@ const CACHE_TIME = 1000 * 60 * 60 * 24; // 24 hours
 // Determine if running in production (GitHub Pages)
 const isProd = import.meta.env.PROD;
 const API_BASE_URL = isProd 
-  ? 'http://alakuyateh-001-site10.atempurl.com'  // Production backend
+  ? 'https://alakuyateh-001-site10.atempurl.com'  // Production backend
   : '';                                            // Dev (uses relative paths)
 
 // Get API URL - handles both dev (Vite middleware) and production (backend API)

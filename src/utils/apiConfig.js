@@ -9,7 +9,7 @@ const isProd = import.meta.env.PROD;
 // In dev: use empty string so all requests go through Vite proxy (relative paths)
 // In prod: use CORS proxy to reach the backend
 const API_BASE_URL = isProd 
-  ? 'https://cors-anywhere.herokuapp.com/http://alakuyateh-001-site10.atempurl.com'  // Via CORS proxy
+  ? 'https://cors-anywhere.herokuapp.com/https://alakuyateh-001-site10.atempurl.com'  // Via CORS proxy
   : '';    // Dev uses relative paths (Vite proxy handles CORS)
 
 /**
