@@ -48,6 +48,8 @@ export default function Login({ onLogin }) {
         access: {
           allPages: apiUser.Allpages ?? false,
           features,
+          featurePermissions: apiUser.featurePermissions || {},
+          pagePermissions: apiUser.pagePermissions || {},
         },
         CompId: apiUser.CompId,
         BranchId: apiUser.BranchId,
