@@ -21,6 +21,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   faCalendarDays,
@@ -82,7 +83,7 @@ export default function Repayments({ user }) {
   const [storageError, setStorageError] = useState('');
 
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
-  const repaymentsApiUrl = '/api/loan-repayments';
+  const repaymentsApiUrl = getFullApiUrl('/api/loan-repayments');
 
   useEffect(() => {
     let isMounted = true;

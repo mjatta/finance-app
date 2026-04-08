@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 
 /**
@@ -25,7 +26,7 @@ export function useFetchJustSavedInstitution() {
     try {
       // Step 1: Get latest member code (string)
       // Use relative path so Vite proxy can intercept and handle CORS
-      const url = '/api/client/get-code?fieldName=clientid';
+      const url = getFullApiUrl('/api/client/get-code?fieldName=clientid');
       const codeRes = await fetch(url);
       let codeData = null;
       try {
@@ -47,7 +48,7 @@ export function useFetchJustSavedInstitution() {
       let newNum = num - 1;
       let newCode = newNum.toString().padStart(memberCode.length, '0');
       // Step 3: Fetch the institution just saved
-      const memberRes = await fetch(`/api/getmember/${newCode}`);
+      const memberRes = await fetch(getFullApiUrl(`/api/getmember/${newCode}`));
       let memberData = null;
       try {
         memberData = await memberRes.json();

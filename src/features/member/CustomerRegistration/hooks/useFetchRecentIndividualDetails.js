@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch the recently saved individual user details by member code (calls the correct endpoint)
 export function useFetchRecentIndividualDetails() {
@@ -12,7 +13,7 @@ export function useFetchRecentIndividualDetails() {
     setData(null);
     try {
       // Use the proxy path to avoid CORS and 404 issues
-      const response = await fetch(`/api/remote-member-details/${memberCode}`);
+      const response = await fetch(getFullApiUrl(`/api/remote-member-details/${memberCode}`));
       if (!response.ok) throw new Error('Failed to fetch member details');
       const result = await response.json();
       setData(result);

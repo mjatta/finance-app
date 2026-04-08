@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch transactions by account number
 export function useGetTransactions() {
@@ -14,7 +15,7 @@ export function useGetTransactions() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/transaction/${accountNumber.trim()}`, {
+      const response = await fetch(getFullApiUrl(`/api/transaction/${accountNumber.trim()}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

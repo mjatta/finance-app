@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export function useCreateUser() {
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,7 @@ export function useCreateUser() {
         Surpaccont: '67890',
       };
 
-      const response = await fetch('/api/Cusystem/AddUser', {
+      const response = await fetch(getFullApiUrl('/api/Cusystem/AddUser'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

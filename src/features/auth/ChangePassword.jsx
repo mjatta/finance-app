@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+import { getFullApiUrl } from '../../utils/apiConfig';
 
 export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -77,7 +78,7 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
 
     try {
       // Use relative path so Vite proxy can intercept and handle CORS
-      const url = '/api/user-setup/password-change';
+      const url = getFullApiUrl('/api/user-setup/password-change');
       const response = await fetch(url, {
         method: 'POST',
         headers: {

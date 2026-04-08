@@ -16,6 +16,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCreateUser } from './hooks/useCreateUser';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
@@ -206,7 +207,7 @@ export default function UserSetup({ user }) {
       try {
         try {
           // Use relative path so Vite proxy can intercept and handle CORS
-          const url = '/api/remote-branches/branches';
+          const url = getFullApiUrl('/api/remote-branches/branches');
           const remoteResp = await fetch(url);
           if (remoteResp.ok) {
             const remoteJson = await remoteResp.json();
@@ -230,7 +231,7 @@ export default function UserSetup({ user }) {
         }
 
         // Use relative path for consistency with middleware
-        const url = '/api/user-setup';
+        const url = getFullApiUrl('/api/user-setup');
         const response = await fetch(url);
         if (!response.ok) return;
 
@@ -372,7 +373,7 @@ export default function UserSetup({ user }) {
       }
 
       // Also persist locally via middleware
-      const url = '/api/user-setup';
+      const url = getFullApiUrl('/api/user-setup');
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -447,7 +448,7 @@ export default function UserSetup({ user }) {
       };
 
       // Use relative path for consistency with middleware
-      const url = '/api/user-setup';
+      const url = getFullApiUrl('/api/user-setup');
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

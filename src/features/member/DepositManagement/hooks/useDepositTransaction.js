@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to save deposit transaction
 export function useDepositTransaction() {
@@ -38,7 +39,7 @@ export function useDepositTransaction() {
       }
 
       // Use relative path so Vite middleware can intercept and handle locally
-      const url = '/api/Deposits/DepositUser';
+      const url = getFullApiUrl('/api/Deposits/DepositUser');
       const response = await fetch(
         url,
         {

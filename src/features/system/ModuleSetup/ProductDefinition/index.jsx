@@ -22,6 +22,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import { notifySaveError, notifySaveSuccess } from '../../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 const MANDATORY_PRODUCTS_CACHE_KEY = 'productDefinition_mandatoryProducts';
 
@@ -176,7 +177,7 @@ export default function ProductDefinition({ user }) {
 
         // Load main categories from remote mandatory products lookup
         try {
-          const mandatoryProductsEndpoint = '/api/mandatory-products/mandatoryproducts';
+          const mandatoryProductsEndpoint = getFullApiUrl('/api/mandatory-products/mandatoryproducts');
           console.log('[ProductDefinition] fetching mandatory products from:', mandatoryProductsEndpoint);
           const remoteResponse = await fetch(mandatoryProductsEndpoint);
           console.log('[ProductDefinition] mandatory products status:', remoteResponse.status, remoteResponse.statusText);
@@ -199,7 +200,7 @@ export default function ProductDefinition({ user }) {
         }
 
         // Use relative path so Vite middleware can intercept
-        const url = '/api/product-definition';
+        const url = getFullApiUrl('/api/product-definition');
         const response = await fetch(url);
         if (!response.ok) {
           return;
@@ -256,7 +257,7 @@ export default function ProductDefinition({ user }) {
       };
 
       // Use relative path so Vite middleware can intercept
-      const url = '/api/product-definition';
+      const url = getFullApiUrl('/api/product-definition');
       const response = await fetch(url, {
         method: 'POST',
         headers: {

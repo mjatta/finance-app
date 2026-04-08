@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export const useGetAccountDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,7 +16,7 @@ export const useGetAccountDetails = () => {
 
     try {
       // Use relative path so Vite proxy can intercept and handle CORS
-      const url = `/api/account/details/${accountNumber.trim()}`;
+      const url = getFullApiUrl(`/api/account/details/${accountNumber.trim()}`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {

@@ -9,6 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 export default function AddMemberAccount() {
   const [branches, setBranches] = useState([]);
@@ -31,7 +32,7 @@ export default function AddMemberAccount() {
     const loadBranches = async () => {
       try {
         // Use relative path so Vite proxy can intercept and handle CORS
-        const url = '/api/remote-branches/branches';
+        const url = getFullApiUrl('/api/remote-branches/branches');
         const response = await fetch(url);
         if (!response.ok) return;
 

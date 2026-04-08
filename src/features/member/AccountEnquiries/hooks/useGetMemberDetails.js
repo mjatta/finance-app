@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch member details by member code
 export function useGetMemberDetails() {
@@ -14,7 +15,7 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/remote-member/details/${memberCode.trim()}`, {
+      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${memberCode.trim()}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

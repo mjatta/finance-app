@@ -30,6 +30,7 @@ import { useCities } from './hooks/useCities';
 import { initialForm } from './constants/initialFormData';
 import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
 import { useAuthStore } from '../../../store/authStore';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 // Tab group styles
 const mainTabGroupSx = {
@@ -118,7 +119,7 @@ export default function CustomerRegistration(props) {
     const loadInstitutionBranches = async () => {
       try {
         // Use relative path so Vite proxy can intercept and handle CORS
-        const url = '/api/remote-branches/branches';
+        const url = getFullApiUrl('/api/remote-branches/branches');
         const response = await fetch(url);
         if (!response.ok) return;
         const payload = await response.json();
@@ -142,7 +143,7 @@ export default function CustomerRegistration(props) {
     const loadCountries = async () => {
       try {
         // Use relative path so Vite proxy can intercept and handle CORS
-        const url = '/api/remote-countries/countries';
+        const url = getFullApiUrl('/api/remote-countries/countries');
         const response = await fetch(url);
         if (!response.ok) return;
         const payload = await response.json();

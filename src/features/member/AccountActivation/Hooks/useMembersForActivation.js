@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch members pending activation
 export function useMembersForActivation() {
@@ -10,7 +11,7 @@ export function useMembersForActivation() {
     setError(null);
 
     try {
-      const response = await fetch('/api/remote-member-activate?memberactivate=0', {
+      const response = await fetch(getFullApiUrl('/api/remote-member-activate?memberactivate=0'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
