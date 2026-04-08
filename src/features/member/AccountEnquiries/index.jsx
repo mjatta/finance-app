@@ -14,6 +14,16 @@ import logo from '../../../assets/company-logo.jpg';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetTransactions } from './hooks/useGetTransactions';
 
+const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="130" viewBox="0 0 180 130"><rect width="180" height="130" fill="#f1f5f9"/><circle cx="90" cy="48" r="18" fill="#cbd5e1"/><rect x="52" y="76" width="76" height="30" rx="15" fill="#cbd5e1"/></svg>',
+)}`;
+
+const formatProfileImage = (imageData) => {
+  if (!imageData) return defaultProfileImage;
+  if (imageData.startsWith('data:')) return imageData;
+  return `data:image/jpeg;base64,${imageData}`;
+};
+
 export default function AccountEnquiries({ user }) {
   const [searchMemberCode, setSearchMemberCode] = useState('');
   const [memberDetails, setMemberDetails] = useState(null);
@@ -512,50 +522,105 @@ export default function AccountEnquiries({ user }) {
 
       {/* Layout Container */}
       <Box sx={{ display: 'grid', gap: 3, maxWidth: '75%' }}>
-        {/* Search Card */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
-              Search Account
-            </Typography>
+        {/* Search + Contact Row */}
+        <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+          {/* Search Card */}
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+                Search Account
+              </Typography>
 
-            <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 400 }}>
-              <TextField
-                label="Member Code"
-                value={searchMemberCode}
-                onChange={(e) => setSearchMemberCode(e.target.value)}
-                placeholder="Enter member code"
-                size="medium"
-                fullWidth
-                disabled={loading}
-              />
+              <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 400 }}>
+                <TextField
+                  label="Member Code"
+                  value={searchMemberCode}
+                  onChange={(e) => setSearchMemberCode(e.target.value)}
+                  placeholder="Enter member code"
+                  size="medium"
+                  fullWidth
+                  disabled={loading}
+                />
 
-              {error && (
-                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                  {error}
+                {error && (
+                  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                    {error}
+                  </Typography>
+                )}
+
+                <Button
+                  variant="contained"
+                  startIcon={loading ? <CircularProgress size={20} /> : <SearchRoundedIcon />}
+                  onClick={handleSearch}
+                  disabled={loading || isReadOnly}
+                  sx={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#667eea',
+                    '&:hover': { backgroundColor: '#5568d3' },
+                    fontWeight: 600,
+                    paddingX: 3,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                  }}
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Contact Card - Profile Picture & Signature */}
+          {memberDetails && (
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                  Contact
                 </Typography>
-              )}
-
-              <Button
-                variant="contained"
-                startIcon={loading ? <CircularProgress size={20} /> : <SearchRoundedIcon />}
-                onClick={handleSearch}
-                disabled={loading || isReadOnly}
-                sx={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: '#667eea',
-                  '&:hover': { backgroundColor: '#5568d3' },
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                }}
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' }, alignItems: 'flex-start' }}>
+                  {/* Profile Picture Column */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                    <Box
+                      component="img"
+                      src={formatProfileImage(memberDetails.MemberPicture)}
+                      alt="Member profile"
+                      sx={{
+                        width: 180,
+                        height: 130,
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Member profile picture
+                    </Typography>
+                  </Box>
+                  {/* Signature Column */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box
+                      component="img"
+                      src={formatProfileImage(memberDetails.MemberSignature)}
+                      alt="Member signature"
+                      sx={{
+                        width: 180,
+                        height: 130,
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        objectFit: 'contain',
+                        backgroundColor: '#fff',
+                      }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Member Signature
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        </Box>
 
         {/* Account Details Table - Full Width */}
         {memberDetails && (
