@@ -2,16 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 
 const CACHE_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
-// Determine if running in production (GitHub Pages)
-const isProd = import.meta.env.PROD;
-const API_BASE_URL = isProd 
-  ? 'https://alakuyateh-001-site10.atempurl.com'  // Production backend
-  : '';                                            // Dev (uses relative paths)
-
-// Get API URL - handles both dev (Vite middleware) and production (backend API)
-const getApiUrl = (endpoint) => {
-  return API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
-};
+// Both dev and prod use relative paths (Vite proxy / Vercel rewrites)
+const getApiUrl = (endpoint) => endpoint;
 
 export const useCities = () => {
   return useQuery({

@@ -4,13 +4,12 @@
  * In production: Routes to actual backend API
  */
 
-// Determine if running in production (GitHub Pages)
+// Determine if running in production (Vercel)
 const isProd = import.meta.env.PROD;
-// In dev: use empty string so all requests go through Vite proxy (relative paths)
-// In prod: use CORS proxy to reach the backend
-const API_BASE_URL = isProd 
-  ? 'https://alakuyateh-001-site10.atempurl.com'  // Direct backend (HTTPS)
-  : '';    // Dev uses relative paths (Vite proxy handles CORS)
+// Both dev and prod use relative paths:
+// - Dev: Vite proxy handles forwarding
+// - Prod: Vercel rewrites handle forwarding
+const API_BASE_URL = '';
 
 /**
  * Map of endpoint patterns to their dev and production paths

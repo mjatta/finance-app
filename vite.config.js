@@ -935,7 +935,7 @@ const customerRegistrationApiPlugin = () => ({
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/finance-app/',
+  base: '/',
   server: {
     proxy: {
       // Proxy for lookups (branches, etc.) to avoid CORS

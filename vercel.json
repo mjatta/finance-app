@@ -1,0 +1,47 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/remote-branches/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
+    },
+    {
+      "source": "/api/remote-countries/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
+    },
+    {
+      "source": "/api/remote-cities/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
+    },
+    {
+      "source": "/api/remote-member-details/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/getmemberdetails/:path*"
+    },
+    {
+      "source": "/api/remote-member-activate",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Member4Activate/GetMember4Activate"
+    },
+    {
+      "source": "/api/remote-member/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/:path*"
+    },
+    {
+      "source": "/api/remote-client/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/client/:path*"
+    },
+    {
+      "source": "/api/mandatory-products/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
