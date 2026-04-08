@@ -24,6 +24,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Member4Activate/GetMember4Activate"
     },
     {
+      "source": "/api/update-customer-authorisation",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Member4Activate/UpdateCustomerAuthorisation"
+    },
+    {
       "source": "/api/remote-member/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/:path*"
     },
