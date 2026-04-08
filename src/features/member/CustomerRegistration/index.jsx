@@ -162,15 +162,6 @@ export default function CustomerRegistration(props) {
     loadCountries();
   }, []);
 
-  // Columns for Recently Registered Member DataGrid
-const recentMemberColumns = [
-  { field: 'memberCode', headerName: 'Customer Code', flex: 1, minWidth: 120 },
-  { field: 'fullName', headerName: 'First Name and Surname', flex: 1.5, minWidth: 180 },
-  { field: 'dateJoined', headerName: 'Date Joined', flex: 1, minWidth: 140 },
-  { field: 'dateOfBirth', headerName: 'Date of Birthday', flex: 1, minWidth: 140 },
-  { field: 'branch', headerName: 'Branch', flex: 1, minWidth: 120 },
-];
-
 // Helper to format row for DataGrid
 function formatRecentMemberRow(row, institutionBranches = []) {
   if (!row) return {};
@@ -414,8 +405,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       return;
     }
 
-    // Validation (unchanged)
-
     // Convert uploaded images to base64
     const fileToBase64 = (file) =>
       new Promise((resolve, reject) => {
@@ -430,6 +419,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
     const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+
+    setIsSaving(true);
+    setFieldErrors({});
+    setStatusMessage('');
+    setStatusError(false);
 
     if (mainTab === 0) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
@@ -470,8 +464,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
         setTouched({});
-        setIsSaving(false);
-        return;
       } catch (error) {
         setStatusMessage('Unable to save individual registration.');
         setStatusError(true);
@@ -482,22 +474,12 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           error,
           metadata: individualPayload,
         });
+      } finally {
         setIsSaving(false);
-        return;
       }
     } else {
-      // ...existing code for institution...
-    }
-
-    setFieldErrors({});
-    setIsSaving(true);
-    setStatusMessage('');
-    setStatusError(false);
-
-    let institutionPayload = null;
-    if (mainTab === 1) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
-      institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
+      const institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
         compId: useAuthStore.getState().user?.CompId,
         branchId: useAuthStore.getState().user?.BranchId,
       });
@@ -538,8 +520,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
         setTouched({});
-        setIsSaving(false);
-        return;
       } catch (error) {
         setStatusMessage('Unable to save customer registration.');
         setStatusError(true);
@@ -550,11 +530,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           error,
           metadata: institutionPayload,
         });
+      } finally {
         setIsSaving(false);
-        return;
       }
     }
-    // ...existing code for individual...
   };
 
   const handlePrintReceipt = () => {
