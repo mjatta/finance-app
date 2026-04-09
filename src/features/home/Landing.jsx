@@ -78,7 +78,10 @@ const formatCount = (value) => toCount(value).toLocaleString();
 
 export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
   const companyDetails = useAuthStore((state) => state.companyDetails);
-  const companyName = companyDetails?.com_name?.trim() || 'Social Development Fund';
+  const companyName = (companyDetails?.com_name?.trim() || 'Social Development Fund')
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
   const [membersSummary, setMembersSummary] = useState(defaultMembersSummary);
 
   useEffect(() => {

@@ -32,6 +32,8 @@ export default function AccountEnquiries({ user }) {
   const [transactionData, setTransactionData] = useState(null);
   const [transactionError, setTransactionError] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const { fetchMemberDetails, loading } = useGetMemberDetails();
   const { fetchTransactions, loading: loadingTransactions } = useGetTransactions();
 
@@ -96,6 +98,8 @@ export default function AccountEnquiries({ user }) {
         setSelectedAccount(null);
         setTransactionData(null);
         setTransactionError('');
+        setFromDate('');
+        setToDate('');
         return;
       }
 
@@ -296,8 +300,33 @@ export default function AccountEnquiries({ user }) {
     return [];
   }, [transactionData]);
 
+  // Filter transactions based on date range
+  const filteredTransactionRows = useMemo(() => {
+    if (!transactionRows.length) return transactionRows;
+
+    return transactionRows.filter((transaction) => {
+      if (!fromDate && !toDate) return true;
+
+      const transactionDate = new Date(transaction.PostDate);
+      if (isNaN(transactionDate.getTime())) return true;
+
+      if (fromDate) {
+        const from = new Date(fromDate);
+        if (transactionDate < from) return false;
+      }
+
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (transactionDate > to) return false;
+      }
+
+      return true;
+    });
+  }, [transactionRows, fromDate, toDate]);
+
   const handlePrintTransactions = useCallback(() => {
-    if (!transactionRows || transactionRows.length === 0) {
+    if (!filteredTransactionRows || filteredTransactionRows.length === 0) {
       return;
     }
 
@@ -309,7 +338,7 @@ export default function AccountEnquiries({ user }) {
     const now = new Date().toLocaleString();
     let transactionTableRows = '';
     
-    transactionRows.forEach((row) => {
+    filteredTransactionRows.forEach((row) => {
       transactionTableRows += `
         <tr class="main-row">
           <td>${row.PostDate || '-'}</td>
@@ -464,7 +493,7 @@ export default function AccountEnquiries({ user }) {
             </div>
             <div class="meta-row">
               <span>Generated: ${now}</span>
-              <span>Total Records: ${transactionRows.length}</span>
+              <span>Total Records: ${filteredTransactionRows.length}</span>
             </div>
             <div class="account-info">
               <strong>Account Number:</strong> ${selectedAccount || '-'}
@@ -501,7 +530,7 @@ export default function AccountEnquiries({ user }) {
 
     printWindow.document.write(html);
     printWindow.document.close();
-  }, [transactionRows, selectedAccount]);
+  }, [filteredTransactionRows, selectedAccount]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
@@ -685,10 +714,71 @@ export default function AccountEnquiries({ user }) {
       {selectedAccount && (
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', mt: 3 }}>
           <CardContent sx={{ p: 0 }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                Account Transactions - {selectedAccount}
-              </Typography>
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 300 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
+                  Account Transactions - {selectedAccount}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <TextField
+                  type="date"
+                  label="From Date"
+                  InputLabelProps={{ shrink: true }}
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  sx={{
+                    width: 180,
+                    '& .MuiOutlinedInput-root': {
+                      color: 'primary.contrastText',
+                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.8)' },
+                    },
+                    '& .MuiOutlinedInput-input': { color: 'primary.contrastText' },
+                    '& .MuiInputBase-input::placeholder': { color: 'rgba(255, 255, 255, 0.7)', opacity: 1 },
+                    '& label': { color: 'rgba(255, 255, 255, 0.7)' },
+                  }}
+                  size="small"
+                />
+                <TextField
+                  type="date"
+                  label="To Date"
+                  InputLabelProps={{ shrink: true }}
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  sx={{
+                    width: 180,
+                    '& .MuiOutlinedInput-root': {
+                      color: 'primary.contrastText',
+                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.8)' },
+                    },
+                    '& .MuiOutlinedInput-input': { color: 'primary.contrastText' },
+                    '& .MuiInputBase-input::placeholder': { color: 'rgba(255, 255, 255, 0.7)', opacity: 1 },
+                    '& label': { color: 'rgba(255, 255, 255, 0.7)' },
+                  }}
+                  size="small"
+                />
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                  sx={{
+                    color: 'primary.contrastText',
+                    borderColor: 'primary.contrastText',
+                    '&:hover': {
+                      borderColor: 'primary.contrastText',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  Clear Filter
+                </Button>
+              </Box>
               <Button
                 variant="outlined"
                 onClick={handlePrintTransactions}
@@ -721,7 +811,7 @@ export default function AccountEnquiries({ user }) {
             )}
             {transactionRows.length > 0 && (
               <DataGrid
-                rows={transactionRows}
+                rows={filteredTransactionRows}
                 columns={transactionColumns}
                 density="compact"
                 pageSizeOptions={[10, 25, 50]}

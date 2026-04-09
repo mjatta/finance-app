@@ -16,7 +16,6 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import logo from '../../../assets/company-logo.jpg';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
