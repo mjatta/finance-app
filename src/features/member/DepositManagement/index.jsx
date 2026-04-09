@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -102,6 +102,7 @@ export default function DepositManagement() {
   const [rows, setRows] = useState([]);
   const [touched, setTouched] = useState({});
   const [lastTransactionData, setLastTransactionData] = useState(null);
+  const shouldAutoPrint = useRef(false);
 
   const handleBlur = (fieldName) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
@@ -368,14 +369,23 @@ export default function DepositManagement() {
         setStatusMessage('Deposit saved successfully.');
         setStatusError(false);
         
-        // Capture the newly created transaction from the 201 response
-        if (result.rows && Array.isArray(result.rows) && result.rows.length > 0) {
-          const newTransaction = result.rows[result.rows.length - 1];
-          const transactionId = `${newTransaction.tcChqno || 'TXN'}-${new Date().getTime()}`;
+        // Capture the receipt from the API response
+        if (formData.printReceipt) {
+          shouldAutoPrint.current = true;
+        }
+        if (result.Receipt) {
           setLastTransactionData({
-            transactionId,
+            receipt: result.Receipt,
+            message: result.Message || 'Deposit inserted successfully.',
             timestamp: new Date().toLocaleString(),
+          });
+        } else if (result.rows && Array.isArray(result.rows) && result.rows.length > 0) {
+          const newTransaction = result.rows[result.rows.length - 1];
+          setLastTransactionData({
+            receipt: null,
+            message: result.Message || 'Deposit inserted successfully.',
             transactionData: newTransaction,
+            timestamp: new Date().toLocaleString(),
           });
         }
         
@@ -439,162 +449,148 @@ export default function DepositManagement() {
     }
   };
 
-  const handlePrintReceipt = () => {
-    const selectedRow = rows.find((row) => row.selected);
+  // Auto-print receipt after save when checkbox is checked
+  useEffect(() => {
+    if (lastTransactionData && shouldAutoPrint.current) {
+      shouldAutoPrint.current = false;
+      handlePrintReceipt();
+    }
+  }, [lastTransactionData]);
 
-    if (!selectedRow) {
-      setStatusMessage('Please select an account before printing receipt.');
+  const handlePrintReceipt = () => {
+    if (!lastTransactionData) {
+      setStatusMessage('Please save a deposit first before printing a receipt.');
       setStatusError(true);
       return;
     }
 
-    const receiptWindow = window.open('', '_blank', 'width=720,height=820');
+    const receiptWindow = window.open('', '_blank', 'width=420,height=700');
     if (!receiptWindow) {
       setStatusMessage('Unable to open print window. Please allow pop-ups and try again.');
       setStatusError(true);
       return;
     }
 
-    const now = new Date().toLocaleString();
-    const infoRows = [
-      ['Customer Code', formData.memberCode || '-'],
-      ['Payroll Number', formData.payrollNumber || '-'],
-      ['Account Type', selectedRow.accountType || '-'],
-      ['Account Number', selectedRow.accountNumber || '-'],
-      ['Transaction Date', formData.transactionDate || '-'],
-      ['Phone Number', formData.phoneNumber || '-'],
-      ['Comments', formData.comments || '-'],
-      // Fields from 201 response payload
-      ...(lastTransactionData?.transactionData ? [
-        ['', ''], // Empty row for spacing
-        ['API Transaction Details', ''],
-        ['Check Number', lastTransactionData.transactionData.tcChqno || '-'],
-        ['Posting Amount (API)', lastTransactionData.transactionData.tnTranAmt || '-'],
-        ['Account Number (API)', lastTransactionData.transactionData.tcAcctNumb || '-'],
-        ['Control Account', lastTransactionData.transactionData.gcControlAcct || '-'],
-        ['User ID', lastTransactionData.transactionData.gcUserid || '-'],
-        ['API Transaction Date', lastTransactionData.transactionData.dTranDate || '-'],
-        ['Transaction ID', lastTransactionData.transactionId],
-        ['Transaction Time', lastTransactionData.timestamp],
-      ] : []),
-    ];
-
-    const detailsHtml = infoRows
-      .map(([label, value]) => `
-        <div class="row">
-          <span class="label">${label}</span>
-          <span class="value">${String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-        </div>
-      `)
-      .join('');
+    const receipt = lastTransactionData.receipt || {};
+    const now = new Date();
+    const printDate = now.toLocaleDateString();
+    const printTime = now.toLocaleTimeString();
+    const cashierName = user?.name || user?.username || '-';
+    const amount = receipt.Amount != null ? parseFloat(receipt.Amount).toFixed(2) : '0.00';
+    const transactionType = (lastTransactionData.message || 'Deposit').replace(' inserted successfully.', '').replace(' saved successfully.', '');
 
     receiptWindow.document.write(`
       <html>
         <head>
           <title>Deposit Receipt</title>
           <style>
-            * { box-sizing: border-box; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
-              margin: 0;
-              font-family: Inter, Segoe UI, Arial, sans-serif;
-              color: #102a43;
-              background: #ffffff;
+              font-family: 'Courier New', Courier, monospace;
+              color: #000;
+              background: #fff;
+              padding: 20px;
+              width: 380px;
+              margin: 0 auto;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .shell {
-              margin: 12px;
-              border: 1px solid #d9e2ec;
-              border-radius: 10px;
-              overflow: hidden;
+            .center { text-align: center; }
+            .bold { font-weight: 700; }
+            .company-name { font-size: 16px; font-weight: 800; margin-bottom: 2px; }
+            .company-info { font-size: 11px; color: #333; margin-bottom: 1px; }
+            .divider { border: none; border-top: 1px solid #000; margin: 10px 0; }
+            .divider-double { border: none; border-top: 2px solid #000; margin: 10px 0; }
+            .row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+            .row .label { color: #333; }
+            .row .value { font-weight: 600; text-align: right; }
+            .section-header { font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 8px 0 4px; text-align: center; letter-spacing: 1px; }
+            .total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; padding: 4px 0; }
+            .sig-section { margin-top: 30px; font-size: 11px; }
+            .sig-line { border-bottom: 1px solid #000; margin: 25px 0 4px; width: 60%; }
+            .sig-label { font-size: 11px; color: #333; }
+            .payment-by { margin-top: 20px; font-size: 12px; font-weight: 600; }
+            .btn-row { text-align: center; margin-top: 20px; }
+            .btn-row button {
+              padding: 8px 20px; margin: 0 5px; font-size: 13px;
+              border: none; border-radius: 4px; cursor: pointer; font-weight: 600;
             }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 1px solid #dbe7f3;
-              padding: 10px 12px;
-              background: linear-gradient(90deg, #f7fbff 0%, #eef5ff 100%);
-            }
-            .brand {
-              display: flex;
-              align-items: center;
-              gap: 10px;
-            }
-            .brand-logo {
-              width: 44px;
-              height: 44px;
-              object-fit: cover;
-              border-radius: 6px;
-              border: 1px solid #dbe7f3;
-            }
-            .brand-title {
-              font-size: 16px;
-              font-weight: 800;
-            }
-            .receipt-title {
-              font-size: 15px;
-              font-weight: 800;
-              color: #0f4c81;
-            }
-            .meta {
-              display: flex;
-              justify-content: space-between;
-              padding: 8px 12px;
-              background: #f8fbff;
-              border-bottom: 1px solid #e4edf5;
-              font-size: 11px;
-              color: #486581;
-            }
-            .section {
-              padding: 10px 12px;
-              display: grid;
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-              gap: 6px 12px;
-            }
-            .row {
-              display: flex;
-              flex-direction: column;
-              border: 1px solid #e4edf5;
-              border-radius: 6px;
-              padding: 6px 8px;
-              min-height: 50px;
-            }
-            .label {
-              font-size: 10px;
-              font-weight: 700;
-              text-transform: uppercase;
-              color: #486581;
-              margin-bottom: 4px;
-            }
-            .value {
-              font-size: 12px;
-              font-weight: 600;
-              color: #102a43;
-              word-break: break-word;
-            }
-            @page {
-              size: A4;
-              margin: 8mm;
-            }
+            .btn-print { background: #667eea; color: #fff; }
+            .btn-print:hover { background: #5568d3; }
+            .btn-close { background: #999; color: #fff; }
+            .btn-close:hover { background: #777; }
+            @page { size: 80mm auto; margin: 5mm; }
+            @media print { .btn-row { display: none; } body { padding: 5px; } }
           </style>
         </head>
         <body>
-          <div class="shell">
-            <div class="header">
-              <div class="brand">
-                <img class="brand-logo" src="${logo}" alt="Company logo" />
-                <div class="brand-title">Microfinance Management</div>
-              </div>
-              <div class="receipt-title">Member Deposit Receipt</div>
-            </div>
-            <div class="meta">
-              <span>Printed On: ${now}</span>
+          <div class="center">
+            <div class="company-name">${(receipt.CompanyName || 'MICROFINANCE').replace(/</g, '&lt;')}</div>
+            <div class="company-info">${(receipt.Address || '').replace(/</g, '&lt;')}</div>
+            <div class="company-info">${(receipt.Email || '').replace(/</g, '&lt;')}</div>
+          </div>
+
+          <hr class="divider-double" />
+
+          <div class="row">
+            <span class="label">Print Date:</span>
+            <span class="value">${printDate}</span>
+          </div>
+          <div class="row">
+            <span class="label">Print Time:</span>
+            <span class="value">${printTime}</span>
+          </div>
+          <div class="row">
+            <span class="label">Receipt Number:</span>
+            <span class="value">${receipt.ReceiptNumber || '-'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Receipt Date:</span>
+            <span class="value"></span>
+          </div>
+          <div class="row">
+            <span class="label">Client Code:</span>
+            <span class="value">${(receipt.ClientCode || '-').replace(/</g, '&lt;')}</span>
+          </div>
+          <div class="row">
+            <span class="label">Client Name:</span>
+            <span class="value">${(receipt.ClientName || '-').replace(/</g, '&lt;')}</span>
+          </div>
+
+          <hr class="divider" />
+          <div class="section-header">Transaction Details</div>
+          <hr class="divider" />
+
+          <div class="row">
+            <span class="label">${transactionType.replace(/</g, '&lt;')}</span>
+            <span class="value">${amount}</span>
+          </div>
+
+          <hr class="divider" />
+          <div class="total-row">
+            <span>Total</span>
+            <span>${amount}</span>
+          </div>
+          <hr class="divider-double" />
+
+          <div class="sig-section">
+            <div class="row">
+              <span class="label">Cashier:</span>
+              <span class="value">${cashierName.replace(/</g, '&lt;')}</span>
             </div>
 
-            <div class="section">
-              ${detailsHtml}
-            </div>
+            <div class="sig-line"></div>
+            <div class="sig-label">Cashier Signature</div>
+
+            <div class="sig-line"></div>
+            <div class="sig-label">Member Signature</div>
+          </div>
+
+          <div class="payment-by">Payment By: _________________</div>
+
+          <div class="btn-row">
+            <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+            <button class="btn-close" onclick="window.close()">Close</button>
           </div>
         </body>
       </html>
@@ -602,7 +598,6 @@ export default function DepositManagement() {
 
     receiptWindow.document.close();
     receiptWindow.focus();
-    receiptWindow.print();
   };
 
   return (
