@@ -93,7 +93,7 @@ export default function MemberCloseAccount() {
       setStatusMessage('Member account closed successfully.');
       setStatusError(false);
       notifySaveSuccess({
-        page: 'Member Administration / Member Close',
+        page: 'Customer Administration / Member Close',
         action: 'Save Member Close',
         message: 'Member account closed successfully.',
       });
@@ -101,7 +101,7 @@ export default function MemberCloseAccount() {
       setStatusMessage('Failed to close member account.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Member Close',
+        page: 'Customer Administration / Member Close',
         action: 'Save Member Close',
         message: 'Failed to close member account.',
         error,

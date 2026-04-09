@@ -226,10 +226,10 @@ function App() {
   const categories = [
     {
       key: 'member',
-      label: 'Member Administration',
+      label: 'Customer Administration',
       children: [
         { label: 'Registration', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
-        { label: 'Account Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
+        { label: 'Customer Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
         { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
         { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
         { label: 'Account Enquiries', to: '/member/account-enquiries', icon: ManageSearchRoundedIcon },

@@ -1075,6 +1075,30 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy loan products endpoint to avoid CORS
+      '/api/products': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy loan product select (new loan details) endpoint
+      '/api/loanproducts': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy loans topup endpoint
+      '/api/loans': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy loan setup details endpoint
+      '/api/loan-setup': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [

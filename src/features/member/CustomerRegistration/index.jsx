@@ -437,7 +437,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         const result = await registerIndividual(individualPayload);
         setStatusMessage('Individual registration saved successfully.');
         notifySaveSuccess({
-          page: 'Member Administration / Registration',
+          page: 'Customer Administration / Registration',
           action: 'Save Individual Registration',
           message: 'Individual registration saved successfully.',
           metadata: individualPayload,
@@ -468,7 +468,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setStatusMessage('Unable to save individual registration.');
         setStatusError(true);
         notifySaveError({
-          page: 'Member Administration / Registration',
+          page: 'Customer Administration / Registration',
           action: 'Save Individual Registration',
           message: 'Unable to save individual registration.',
           error,
@@ -493,7 +493,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         }
         setStatusMessage('Institution registration saved successfully.');
         notifySaveSuccess({
-          page: 'Member Administration / Registration',
+          page: 'Customer Administration / Registration',
           action: 'Save Institution Registration',
           message: 'Institution registration saved successfully.',
           metadata: institutionPayload,
@@ -524,7 +524,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setStatusMessage('Unable to save customer registration.');
         setStatusError(true);
         notifySaveError({
-          page: 'Member Administration / Registration',
+          page: 'Customer Administration / Registration',
           action: 'Save Customer Registration',
           message: 'Unable to save customer registration.',
           error,

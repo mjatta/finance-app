@@ -40,6 +40,18 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
     },
     {
+      "source": "/api/products/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/products/:path*"
+    },
+    {
+      "source": "/api/loanproducts/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanproducts/:path*"
+    },
+    {
+      "source": "/api/loans/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/:path*"
     },

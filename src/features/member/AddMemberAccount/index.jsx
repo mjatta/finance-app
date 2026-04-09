@@ -135,7 +135,7 @@ export default function AddMemberAccount() {
       setStatusMessage('Member account saved successfully.');
       setStatusError(false);
       notifySaveSuccess({
-        page: 'Member Administration / Add Member Account',
+        page: 'Customer Administration / Add Member Account',
         action: 'Save Member Account',
         message: 'Member account saved successfully.',
       });
@@ -143,7 +143,7 @@ export default function AddMemberAccount() {
       setStatusMessage('Failed to save member account.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Add Member Account',
+        page: 'Customer Administration / Add Member Account',
         action: 'Save Member Account',
         message: 'Failed to save member account.',
         error,

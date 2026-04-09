@@ -25,6 +25,18 @@ const featureOptions = ['member', 'loan', 'accounting', 'processing', 'system', 
 const featurePermissionOptions = ['write', 'view only', 'hide feature'];
 const pagePermissionOptions = ['inherit', 'write', 'view only', 'hide page'];
 
+// Map feature keys to display labels
+const featureLabelMap = {
+  member: 'Customer Administration',
+  loan: 'Loan Management',
+  accounting: 'Financial Accounting',
+  processing: 'Processing',
+  system: 'System Administration',
+  reporting: 'Reporting',
+};
+
+const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(0).toUpperCase() + feature.slice(1);
+
 const defaultFeaturePermissions = {
   member: 'hide feature',
   loan: 'hide feature',
@@ -37,7 +49,7 @@ const defaultFeaturePermissions = {
 const featurePageMap = {
   member: [
     { path: '/member/customer-registration', label: 'Registration' },
-    { path: '/member/member-activation', label: 'Account Activation' },
+    { path: '/member/member-activation', label: 'Customer Activation' },
     { path: '/member/add-member-account', label: 'Add Member Account' },
     { path: '/member/member-activate', label: 'Member Activate' },
     { path: '/member/deposits', label: 'Deposits' },
@@ -828,7 +840,7 @@ export default function UserSetup({ user }) {
                             <TextField
                               select
                               size="small"
-                              label={`${feature.charAt(0).toUpperCase() + feature.slice(1)} (Feature level)`}
+                              label={`${getFeatureLabel(feature)} (Feature level)`}
                               value={roleForm.featurePermissions?.[feature] || 'hide feature'}
                               onChange={(e) => handleFeaturePermissionChange(feature, e.target.value)}
                               sx={{ maxWidth: { xs: '100%', md: 340 } }}

@@ -388,7 +388,7 @@ export default function Withdrawal() {
         }
 
         notifySaveSuccess({
-          page: 'Member Administration / Withdrawals',
+          page: 'Customer Administration / Withdrawals',
           action: 'Save Withdrawal',
           message: 'Withdrawal saved successfully.',
         });

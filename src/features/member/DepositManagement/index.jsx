@@ -390,7 +390,7 @@ export default function DepositManagement() {
         }
         
         notifySaveSuccess({
-          page: 'Member Administration / Deposits',
+          page: 'Customer Administration / Deposits',
           action: 'Save Deposit',
           message: 'Deposit saved successfully.',
         });

@@ -93,7 +93,7 @@ export default function MemberActivate() {
       setStatusMessage('Member activated successfully.');
       setStatusError(false);
       notifySaveSuccess({
-        page: 'Member Administration / Member Activate',
+        page: 'Customer Administration / Member Activate',
         action: 'Save Member Activate',
         message: 'Member activated successfully.',
       });
@@ -101,7 +101,7 @@ export default function MemberActivate() {
       setStatusMessage('Failed to activate member.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Member Activate',
+        page: 'Customer Administration / Member Activate',
         action: 'Save Member Activate',
         message: 'Failed to activate member.',
         error,

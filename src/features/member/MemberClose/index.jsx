@@ -119,7 +119,7 @@ export default function AccountClosure() {
       setStatusMessage('Account closure saved successfully.');
       setStatusError(false);
       notifySaveSuccess({
-        page: 'Member Administration / Account Closure',
+        page: 'Customer Administration / Account Closure',
         action: 'Save Account Closure',
         message: 'Account closure saved successfully.',
       });
@@ -127,7 +127,7 @@ export default function AccountClosure() {
       setStatusMessage('Failed to save account closure.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Account Closure',
+        page: 'Customer Administration / Account Closure',
         action: 'Save Account Closure',
         message: 'Failed to save account closure.',
         error,

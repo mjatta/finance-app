@@ -21,7 +21,7 @@ import { getFullApiUrl } from '../../utils/apiConfig';
 const categories = [
   {
     key: 'member',
-    label: 'Member Administration',
+    label: 'Customer Administration',
     description: 'Manage members, deposits, verification and adjustments.',
     icon: <GroupIcon fontSize="large" color="primary" />,
   },

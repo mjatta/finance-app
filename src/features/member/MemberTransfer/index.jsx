@@ -81,7 +81,7 @@ export default function MemberTransfer({ user }) {
       setSaveMessage(`${transferLabel} saved successfully.`);
       setFormData(initialForm);
       notifySaveSuccess({
-        page: 'Member Administration / Member Transfer',
+        page: 'Customer Administration / Member Transfer',
         action: `Save ${transferLabel}`,
         message: `${transferLabel} saved successfully.`,
       });
@@ -89,7 +89,7 @@ export default function MemberTransfer({ user }) {
       const failedMessage = `Failed to save ${transferLabel.toLowerCase()}.`;
       setSaveMessage(failedMessage);
       notifySaveError({
-        page: 'Member Administration / Member Transfer',
+        page: 'Customer Administration / Member Transfer',
         action: `Save ${transferLabel}`,
         message: failedMessage,
         error,

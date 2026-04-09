@@ -75,7 +75,7 @@ export default function AccountActivation() {
       setStatusMessage('Failed to load member data.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Account Activation',
+        page: 'Customer Administration / Customer Activation',
         action: 'Load Members',
         message: 'Failed to load member data.',
         error,
@@ -145,7 +145,7 @@ export default function AccountActivation() {
       setStatusError(false);
 
       notifySaveSuccess({
-        page: 'Member Administration / Account Activation',
+        page: 'Customer Administration / Customer Activation',
         action: 'Activate Members',
         message: `Successfully activated ${selectedMembers.length} member(s).`,
       });
@@ -157,7 +157,7 @@ export default function AccountActivation() {
       setStatusMessage('Failed to activate selected members.');
       setStatusError(true);
       notifySaveError({
-        page: 'Member Administration / Account Activation',
+        page: 'Customer Administration / Customer Activation',
         action: 'Activate Members',
         message: 'Failed to activate selected members.',
         error,
