@@ -631,7 +631,7 @@ export default function DepositManagement() {
       </Backdrop>
 
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
-        Member Deposit
+        Deposit
       </Typography>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>

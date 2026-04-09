@@ -623,7 +623,7 @@ export default function Withdrawal() {
       </Backdrop>
 
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
-        Member Withdrawal
+        Withdrawal
       </Typography>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>

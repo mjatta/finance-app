@@ -17,6 +17,7 @@ import ManRoundedIcon from '@mui/icons-material/ManRounded';
 import WomanRoundedIcon from '@mui/icons-material/WomanRounded';
 import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
 import { getFullApiUrl } from '../../utils/apiConfig';
+import { useAuthStore } from '../../store/authStore';
 
 const categories = [
   {
@@ -76,6 +77,8 @@ const toCount = (value) => {
 const formatCount = (value) => toCount(value).toLocaleString();
 
 export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
+  const companyDetails = useAuthStore((state) => state.companyDetails);
+  const companyName = companyDetails?.com_name?.trim() || 'Social Development Fund';
   const [membersSummary, setMembersSummary] = useState(defaultMembersSummary);
 
   useEffect(() => {
@@ -194,7 +197,7 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
                     textAlign: 'center',
                   }}
                 >
-                  Welcome to the Social Development Fund operations dashboard
+                  {`Welcome to the ${companyName} operations dashboard`}
                 </Typography>
               </Box>
             </Stack>

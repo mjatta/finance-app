@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import testUsers from '../../data/test-users.json';
 import { useLogin } from './hooks/useLogin';
+import { useCreditUnionDetails } from './hooks/useCreditUnionDetails';
 import { useAuthStore } from '../../store/authStore';
 
 const loginHighlights = [
@@ -27,7 +28,9 @@ export default function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login: backendLogin, loading: loginLoading } = useLogin();
+  const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const setAuthUser = useAuthStore((state) => state.setUser);
+  const setCompanyDetails = useAuthStore((state) => state.setCompanyDetails);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,6 +69,15 @@ export default function Login({ onLogin }) {
 
       // Save to Zustand + localStorage
       setAuthUser(safeUser);
+
+      // Fetch credit union details using CompId
+      if (apiUser.CompId) {
+        const companyDetails = await fetchCreditUnionDetails(apiUser.CompId);
+        if (companyDetails) {
+          setCompanyDetails(companyDetails);
+        }
+      }
+
       setErrorMessage('');
       onLogin(safeUser);
       return;

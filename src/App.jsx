@@ -156,6 +156,10 @@ function App() {
       return null;
     }
   });
+
+  // Get company details from Zustand
+  const companyDetails = useAuthStore((state) => state.companyDetails);
+  const companyName = companyDetails?.com_name?.trim() || 'Social Development Fund';
   const [activeCategoryOverride, setActiveCategoryOverride] = useState(null);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
 
@@ -453,7 +457,7 @@ function App() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <img src={logo} alt="Company logo" style={{ height: 36, borderRadius: 6 }} />
                 <Chip
-                  label="Social Development Fund"
+                  label={companyName}
                   sx={{
                     height: 30,
                     px: 0.5,
@@ -466,7 +470,6 @@ function App() {
                       fontWeight: 800,
                       fontSize: '0.72rem',
                       letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
                     },
                   }}
                 />

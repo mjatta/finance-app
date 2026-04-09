@@ -628,7 +628,7 @@ export default function AccountEnquiries({ user }) {
             <CardContent sx={{ p: 0 }}>
               <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                  Member Account Details
+                  Customer Account Details
                 </Typography>
               </Box>
               <DataGrid

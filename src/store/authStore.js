@@ -5,10 +5,13 @@ export const useAuthStore = create(
   persist(
     (set) => ({
       user: null,
+      companyDetails: null,
 
       setUser: (userData) => set({ user: userData }),
 
-      clearUser: () => set({ user: null }),
+      setCompanyDetails: (details) => set({ companyDetails: details }),
+
+      clearUser: () => set({ user: null, companyDetails: null }),
     }),
     {
       name: 'microfinance-auth',
