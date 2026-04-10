@@ -20,7 +20,17 @@ export const useLoanSave = () => {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      // Try to parse as JSON first, fall back to text if it fails
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        // Response is plain text
+        const text = await response.text();
+        result = { message: text, text: text };
+      }
+      
       setLoading(false);
       return result;
     } catch (err) {

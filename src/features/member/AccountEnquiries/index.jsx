@@ -605,7 +605,7 @@ export default function AccountEnquiries({ user }) {
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   Contact
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' }, alignItems: 'flex-start' }}>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center' }}>
                   {/* Profile Picture Column */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                     <Box
@@ -626,7 +626,7 @@ export default function AccountEnquiries({ user }) {
                     </Typography>
                   </Box>
                   {/* Signature Column */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                     <Box
                       component="img"
                       src={formatProfileImage(memberDetails.MemberSignature)}

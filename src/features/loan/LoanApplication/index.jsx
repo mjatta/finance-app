@@ -435,22 +435,52 @@ export default function LoanApplication() {
       console.log('Saving loan application with payload:', payload);
       
       const result = await saveLoan(payload);
-      setStatusMessage('Loan application saved successfully!');
-      setStatusError(false);
-      console.log('Save result:', result);
+      console.log('Save result (full object):', result);
+      console.log('Save result (stringified):', JSON.stringify(result, null, 2));
+      console.log('Save result keys:', Object.keys(result || {}));
+      console.log('Save result.message:', result?.message);
+      console.log('Save result.Message:', result?.Message);
+      console.log('Save result.status:', result?.status);
+      console.log('Save result.Status:', result?.Status);
+      console.log('Save result.code:', result?.code);
+      console.log('Save result.text:', result?.text);
       
-      // Reset form after successful save
-      setTimeout(() => {
-        setFormData(initialFormData);
-        setMemberDetails(null);
-        setSearchMemberCode('');
-        setStatusMessage('');
-      }, 5000);
+      // Check if response indicates success
+      // Look in multiple possible message fields and check for success keywords
+      const messageContent = (result?.message || result?.Message || result?.msg || result?.text || '').toLowerCase();
+      const isSuccess = result && (
+        result.status === 'success' || 
+        result.Status === 'success' ||
+        result.statusCode === 200 || 
+        result.Code === 200 || 
+        messageContent.includes('successfully') ||
+        messageContent.includes('inserted') ||
+        result.data
+      );
+      
+      console.log('Is Success (based on checks):', isSuccess);
+      console.log('Message content:', messageContent);
+      
+      if (isSuccess) {
+        setStatusMessage('✓ Loan application saved successfully! Resetting form...');
+        setStatusError(false);
+        
+        // Reset form after successful save - delay for 8 seconds so user can see success message
+        setTimeout(() => {
+          setFormData(initialFormData);
+          setMemberDetails(null);
+          setSearchMemberCode('');
+          setStatusMessage('');
+        }, 8000);
+      } else {
+        setStatusMessage('Error saving loan application: Invalid response from server');
+        setStatusError(true);
+      }
     } catch (error) {
       console.error('Error saving loan application:', error);
-      setStatusMessage('Error saving loan application: ' + (error.message || 'Unknown error'));
+      setStatusMessage('❌ Error saving loan application: ' + (error.message || 'Unknown error'));
       setStatusError(true);
-      setTimeout(() => setStatusMessage(''), 5000);
+      // Do NOT reset the form on error - keep it for user to correct and retry
     } finally {
       setIsSaving(false);
     }
@@ -481,8 +511,14 @@ export default function LoanApplication() {
         },
       }}
     >
-      <Backdrop sx={{ color: '#fff', zIndex: 1301 }} open={isSaving}>
-        <CircularProgress color="inherit" />
+      <Backdrop
+        open={isSaving}
+        sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>Saving loan application...</Typography>
+        </Box>
       </Backdrop>
 
       {/* Header */}
@@ -538,7 +574,7 @@ export default function LoanApplication() {
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
                   Contact
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start' }}>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center' }}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                     <Box
                       component="img"
@@ -548,7 +584,7 @@ export default function LoanApplication() {
                     />
                     <Typography variant="body2" color="text.secondary">Profile Picture</Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                     <Box
                       component="img"
                       src={formatProfileImage(memberDetails.MemberSignature)}
