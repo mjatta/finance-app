@@ -6,12 +6,18 @@ export const useAuthStore = create(
     (set) => ({
       user: null,
       companyDetails: null,
+      loanProductDetails: null,
+      loanProducts: [],
 
       setUser: (userData) => set({ user: userData }),
 
       setCompanyDetails: (details) => set({ companyDetails: details }),
 
-      clearUser: () => set({ user: null, companyDetails: null }),
+      setLoanProducts: (products) => set({ loanProducts: products }),
+
+      setLoanProductDetails: (details) => set({ loanProductDetails: details }),
+
+      clearUser: () => set({ user: null, companyDetails: null, loanProductDetails: null, loanProducts: [] }),
     }),
     {
       name: 'microfinance-auth',

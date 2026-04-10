@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  InputAdornment,
   MenuItem,
   TextField,
   Typography,
@@ -15,13 +16,47 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { useAuthStore } from '../../../store/authStore';
+import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
-import { useLoanProducts } from './hooks/useLoanProducts';
 import { useNewLoanDetails } from './hooks/useNewLoanDetails';
-import { useLoanTopup } from './hooks/useLoanTopup';
 import { useLoanSetupDetails } from './hooks/useLoanSetupDetails';
+import { useLoanCalculate } from './hooks/useLoanCalculate';
+import { useLoanSave } from './hooks/useLoanSave';
 
 const todayIso = new Date().toISOString().split('T')[0];
+
+const initialFormData = {
+  memberCode: '',
+  memberName: '',
+  transactionType: '',
+  currentLoanBalance: '',
+  loanProduct: '',
+  principalAmount: '',
+  interestMethod: '',
+  interestRate: '',
+  yearlyFrequency: '',
+  loanDuration: '',
+  gracePeriod: '',
+  savingBalance: '',
+  economicSector: '',
+  startDate: todayIso,
+  loanLimit: '',
+  purposeOfLoan: '',
+  sourceOfFunds: '',
+  guarantorSourceOfFunds: '',
+  gracePeriodInterest: '',
+  // Calculated Items
+  paymentFrequency: '',
+  grossInterest: '',
+  firstPaymentDate: '',
+  finalPaymentDate: '',
+  periodicPayment: '',
+  totalDuration: '',
+  totalAmount: '',
+  calculatedInterestRate: '',
+  totalInterest: '',
+  totalPayment: '',
+};
 
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="130" viewBox="0 0 180 130"><rect width="180" height="130" fill="#f1f5f9"/><circle cx="90" cy="48" r="18" fill="#cbd5e1"/><rect x="52" y="76" width="76" height="30" rx="15" fill="#cbd5e1"/></svg>',
@@ -49,9 +84,9 @@ const yearlyFrequencies = [
 ];
 
 const transactionTypes = [
-  { value: 'new', label: 'New Loan Details' },
-  { value: 'topup_reschedule', label: 'Top-up or Reschedule Loans' },
-  { value: 'topup_details', label: 'Loans Top up Details' },
+  { value: 'new', label: 'New Loan' },
+  { value: 'topup_reschedule', label: 'Top-up Loan' },
+  { value: 'topup_details', label: 'Rescheduled Loan' },
 ];
 
 const economicSectors = [
@@ -68,56 +103,44 @@ const economicSectors = [
 
 export default function LoanApplication() {
   const user = useAuthStore((state) => state.user);
+  const branchId = useAuthStore((state) => state.user?.branchId);
+  const setLoanProducts = useAuthStore((state) => state.setLoanProducts);
+  const setLoanProductDetails = useAuthStore((state) => state.setLoanProductDetails);
+  const storeProducts = useAuthStore((state) => state.loanProducts);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
-  const [isLoadingMember, setIsLoadingMember] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [memberDetails, setMemberDetails] = useState(null);
-  const [loanProducts, setLoanProducts] = useState([]);
   const [searchMemberCode, setSearchMemberCode] = useState('');
-  const [transactionTypeData, setTransactionTypeData] = useState(null);
-  const [loadingTxType, setLoadingTxType] = useState(false);
 
   const { fetchMemberDetails, loading: loadingMember } = useGetMemberDetails();
-  const { fetchLoanProducts, loading: loadingProducts } = useLoanProducts();
   const { fetchNewLoanDetails } = useNewLoanDetails();
-  const { fetchLoanTopup } = useLoanTopup();
   const { fetchLoanSetupDetails } = useLoanSetupDetails();
+  const { calculateLoan } = useLoanCalculate();
+  const { saveLoan } = useLoanSave();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
 
-  const [formData, setFormData] = useState({
-    memberCode: '',
-    memberName: '',
-    transactionType: '',
-    currentLoanBalance: '',
-    loanProduct: '',
-    principalAmount: '',
-    interestMethod: '',
-    interestRate: '',
-    yearlyFrequency: '',
-    loanDuration: '',
-    gracePeriod: '',
-    savingBalance: '',
-    economicSector: '',
-    startDate: todayIso,
-    loanLimit: '',
-    purposeOfLoan: '',
-    sourceOfFunds: '',
-    guarantorSourceOfFunds: '',
-    gracePeriodInterest: '',
-  });
+  const [formData, setFormData] = useState(initialFormData);
+
 
   // Fetch loan products on mount
   useEffect(() => {
     const loadProducts = async () => {
-      const products = await fetchLoanProducts();
-      if (products) {
-        setLoanProducts(products);
+      try {
+        const response = await fetch('/api/products/types');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.status === 'success' && result.data) {
+            setLoanProducts(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch loan products:', error);
       }
     };
     loadProducts();
-  }, []);
+  }, [setLoanProducts]);
 
   // Fetch loan setup details (source of funds) on mount
   useEffect(() => {
@@ -142,10 +165,42 @@ export default function LoanApplication() {
     }
   }, [formData.transactionType]);
 
-  // When loan product changes and transaction type needs product details, fetch them
+  // When loan product changes and transaction type is "New Loan", fetch product details
   useEffect(() => {
-    if (formData.loanProduct && (formData.transactionType === 'new' || formData.transactionType === 'topup_details')) {
-      fetchLoanProductDetails(formData.loanProduct, formData.transactionType === 'new' ? 'new' : 'topup');
+    if (formData.loanProduct && formData.transactionType === 'new') {
+      (async () => {
+        try {
+          const response = await fetch(
+            `/api/loanproducts/select?prd_id=${formData.loanProduct}&loanType=new`
+          );
+          if (response.ok) {
+            const result = await response.json();
+            console.log('API Response:', result);
+            
+            if (result.status === 'success' && result.data) {
+              // Store in Zustand store
+              setLoanProductDetails(result.data);
+              
+              // Try multiple field name patterns for API response
+              const intMethod = result.data.interestMethod || result.data.int_method || result.data.intMethod || result.data.method || '';
+              const intRate = result.data.interestRate || result.data.int_rate || result.data.intRate || result.data.rate || '';
+              const loanLimitVal = result.data.maxAmount || result.data.max_amount || result.data.maxAmount || '';
+              
+              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal);
+              
+              // Apply mappings to form fields
+              setFormData((prev) => ({
+                ...prev,
+                interestMethod: intMethod || prev.interestMethod,
+                interestRate: intRate || prev.interestRate,
+                loanLimit: loanLimitVal || prev.loanLimit,
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch loan product details:', error);
+        }
+      })();
     }
   }, [formData.loanProduct, formData.transactionType]);
 
@@ -159,7 +214,6 @@ export default function LoanApplication() {
 
     setStatusMessage('');
     setStatusError(false);
-    setIsLoadingMember(true);
     setMemberDetails(null);
 
     try {
@@ -190,8 +244,6 @@ export default function LoanApplication() {
     } catch {
       setStatusMessage('Failed to fetch member details');
       setStatusError(true);
-    } finally {
-      setIsLoadingMember(false);
     }
   };
 
@@ -200,42 +252,145 @@ export default function LoanApplication() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const fetchLoanProductDetails = async (prdId, loanType = 'new') => {
-    setLoadingTxType(true);
+  // Handle principal amount input - only allow numbers and format with commas
+  const handlePrincipalAmountChange = (e) => {
+    const { value } = e.target;
+    // Use utility function to clean numeric input
+    const cleanValue = cleanNumericInput(value);
+    // Store the clean numeric value
+    setFormData((prev) => ({ ...prev, principalAmount: cleanValue }));
+  };
+
+  // Validation function for required fields before loan calculation
+  const validateRequiredFields = () => {
+    const errors = [];
+    
+    if (!formData.startDate) errors.push('Start Date is required');
+    if (!formData.principalAmount) errors.push('Principal Amount is required');
+    if (!formData.interestRate) errors.push('Interest Rate is required');
+    if (!formData.loanDuration) errors.push('Loan Duration is required');
+    if (!formData.yearlyFrequency) errors.push('Yearly Frequency is required');
+    
+    return errors;
+  };
+
+  // Handle Loan Duration onBlur - call calculation endpoint
+  const handleLoanDurationBlur = async () => {
+    const validationErrors = validateRequiredFields();
+    
+    if (validationErrors.length > 0) {
+      setStatusMessage(validationErrors.join(', '));
+      setStatusError(true);
+      return;
+    }
+
     try {
-      const data = await fetchNewLoanDetails(prdId, loanType);
-      if (data) setTransactionTypeData(data);
+      // Build payload with mapped field names
+      const payload = {
+        StartDate: new Date(formData.startDate).toISOString(),
+        Principal: parseFloat(formData.principalAmount) || 0,
+        InterestRate: parseFloat(formData.interestRate) || 0,
+        Duration: parseFloat(formData.loanDuration) || 0,
+        FrequencyValue: parseFloat(formData.yearlyFrequency) || 0,
+        PaymentsPerYear: 12, // Hard coded to 12
+      };
+
+      console.log('Calling loan calculation with payload:', payload);
+      
+      const result = await calculateLoan(payload);
+      
+      if (result && result.data) {
+        console.log('Loan calculation result:', result.data);
+        
+        // Helper function to parse string values with commas
+        const parseStringValue = (value) => {
+          if (!value) return '';
+          return String(value).replace(/,/g, '');
+        };
+        
+        // Map the returned calculated fields to formData
+        setFormData((prev) => ({
+          ...prev,
+          principalAmount: parseStringValue(result.data.principal || result.data.Principal || prev.principalAmount),
+          firstPaymentDate: result.data.startDate || '',
+          finalPaymentDate: result.data.endDate || '',
+          calculatedInterestRate: parseStringValue(result.data.interestRate || result.data.InterestRate || ''),
+          totalInterest: parseStringValue(result.data.totalInterest || result.data.TotalInterest || result.data.Total_Interest || ''),
+          totalPayment: parseStringValue(result.data.totalPayment || result.data.TotalPayment || result.data.Total_Payment || ''),
+          periodicPayment: parseStringValue(result.data.paymentPerPeriod || result.data.PaymentPerPeriod || result.data.payment_per_period || ''),
+          paymentFrequency: result.data.paymentFrequency || result.data.payment_frequency || prev.yearlyFrequency,
+          totalDuration: result.data.duration || result.data.total_duration || prev.loanDuration,
+          grossInterest: parseStringValue(result.data.totalInterest || result.data.TotalInterest || result.data.gross_interest || ''),
+        }));
+        
+        setStatusMessage('Loan calculation completed successfully');
+        setStatusError(false);
+      } else {
+        setStatusMessage('Failed to calculate loan details');
+        setStatusError(true);
+      }
+    } catch (error) {
+      console.error('Error during loan calculation:', error);
+      setStatusMessage('Error calculating loan: ' + error.message);
+      setStatusError(true);
+    }
+  };
+
+  const fetchLoanProductDetails = async (prdId, loanType = 'new') => {
+    try {
+      await fetchNewLoanDetails(prdId, loanType);
     } catch {
       setStatusMessage('Failed to fetch loan details');
       setStatusError(true);
-    } finally {
-      setLoadingTxType(false);
     }
   };
 
   const handleTransactionTypeChange = async (txType, loanProduct) => {
-    setTransactionTypeData(null);
-    setLoadingTxType(true);
     try {
       if (txType === 'new') {
+        // For "New Loan", fetch and map product details
         if (loanProduct) {
-          const data = await fetchNewLoanDetails(loanProduct, 'new');
-          if (data) setTransactionTypeData(data);
+          const response = await fetch(
+            `/api/loanproducts/select?prd_id=${loanProduct}&loanType=new`
+          );
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Transaction Type Change - API Response:', result);
+            
+            if (result.status === 'success' && result.data) {
+              // Store in Zustand store
+              setLoanProductDetails(result.data);
+              
+              // Try multiple field name patterns for API response
+              const intMethod = result.data.interestMethod || result.data.int_method || result.data.intMethod || result.data.method || '';
+              const intRate = result.data.interestRate || result.data.int_rate || result.data.intRate || result.data.rate || '';
+              const loanLimitVal = result.data.maxAmount || result.data.max_amount || result.data.maxAmount || '';
+              
+              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal);
+              
+              // Apply mappings to form fields
+              setFormData((prev) => ({
+                ...prev,
+                interestMethod: intMethod || prev.interestMethod,
+                interestRate: intRate || prev.interestRate,
+                loanLimit: loanLimitVal || prev.loanLimit,
+              }));
+            }
+          }
         }
-      } else if (txType === 'topup_reschedule') {
-        const data = await fetchLoanTopup(user?.CompId, formData.memberCode);
-        if (data) setTransactionTypeData(data);
-      } else if (txType === 'topup_details') {
-        if (loanProduct) {
-          const data = await fetchNewLoanDetails(loanProduct, 'topup');
-          if (data) setTransactionTypeData(data);
-        }
+      } else {
+        // For other transaction types, clear the mappings
+        setLoanProductDetails(null);
+        setFormData((prev) => ({
+          ...prev,
+          interestMethod: '',
+          interestRate: '',
+          loanLimit: '',
+        }));
       }
     } catch {
       setStatusMessage('Failed to fetch transaction type data');
       setStatusError(true);
-    } finally {
-      setLoadingTxType(false);
     }
   };
 
@@ -245,9 +400,60 @@ export default function LoanApplication() {
   };
 
   const handleSave = async () => {
-    setStatusMessage('Loan application saved.');
-    setStatusError(false);
-    setTimeout(() => setStatusMessage(''), 5000);
+    try {
+      setIsSaving(true);
+      
+      // Build the payload according to backend requirements
+      const payload = {
+        gnNewLoanID: '',
+        membcode: formData.memberCode,
+        lNET_SAVINGS: '',
+        gnPrdId: 1,
+        lLOAN_INTEREST: parseFloat(formData.calculatedInterestRate) || parseFloat(formData.interestRate) || 0,
+        lPRINCIPAL_AMT: parseFloat(formData.principalAmount) || 0,
+        lLDURATION_NUM: parseFloat(formData.loanDuration) || 0,
+        txtStartDate: formData.startDate,
+        txtEndDate: formData.finalPaymentDate,
+        lREPAYMENT_AMT: parseFloat(formData.totalPayment) || 0,
+        lNOFPAYMENTS: parseInt(formData.totalDuration) || 0,
+        lTOTAL_INTEREST: parseFloat(formData.totalInterest) || 0,
+        gcUserid: user?.userId || user?.id || '',
+        lBRANCH_ID: branchId || 0,
+        nleconsec: 1,
+        nlloanpurpos: 1,
+        nmemsourcefunds: formData.sourceOfFunds ? parseInt(formData.sourceOfFunds) : 1,
+        nguasourcefunds: formData.guarantorSourceOfFunds ? parseInt(formData.guarantorSourceOfFunds) : 1,
+        lnofpayperyear: parseInt(formData.yearlyFrequency) || 12,
+        lgraceperiod: parseFloat(formData.gracePeriod) || 0,
+        lgraceperiodinterest: 0,
+        gnCompid: 3,
+        glTopup: false,
+        glResched: false,
+        dPrinPay: parseFloat(formData.principalAmount) * 0.9 || 0, // 90% of principal as default
+      };
+
+      console.log('Saving loan application with payload:', payload);
+      
+      const result = await saveLoan(payload);
+      setStatusMessage('Loan application saved successfully!');
+      setStatusError(false);
+      console.log('Save result:', result);
+      
+      // Reset form after successful save
+      setTimeout(() => {
+        setFormData(initialFormData);
+        setMemberDetails(null);
+        setSearchMemberCode('');
+        setStatusMessage('');
+      }, 5000);
+    } catch (error) {
+      console.error('Error saving loan application:', error);
+      setStatusMessage('Error saving loan application: ' + (error.message || 'Unknown error'));
+      setStatusError(true);
+      setTimeout(() => setStatusMessage(''), 5000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const readOnlyFieldSx = {
@@ -284,12 +490,6 @@ export default function LoanApplication() {
         Loan Application
       </Typography>
 
-      {statusMessage && (
-        <Alert severity={statusError ? 'error' : 'success'} sx={{ mb: 2 }}>
-          {statusMessage}
-        </Alert>
-      )}
-
       <Box sx={{ display: 'grid', gap: 3, maxWidth: '80%' }}>
 
         {/* Row 1: Search + Contact */}
@@ -302,10 +502,10 @@ export default function LoanApplication() {
               </Typography>
               <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 400 }}>
                 <TextField
-                  label="Member Code"
+                  label="Customer Code"
                   value={searchMemberCode}
                   onChange={(e) => setSearchMemberCode(e.target.value)}
-                  placeholder="Enter member code"
+                  placeholder="Enter customer code"
                   size="small"
                   fullWidth
                   disabled={loadingMember}
@@ -363,275 +563,431 @@ export default function LoanApplication() {
           )}
         </Box>
 
-        {/* Loan Details Card */}
+        {/* Loan Details - 2 Column Layout */}
         {memberDetails && (
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
-                Loan Details
-              </Typography>
+          <>
+            <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+              {/* Card 1: Primary Loan Details */}
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                    Loan Details
+                  </Typography>
 
-              <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' } }}>
-                {/* Transaction Type */}
-                <TextField
-                  select
-                  label="Transaction Type"
-                  name="transactionType"
-                  value={formData.transactionType}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Transaction Type</em>
-                  </MenuItem>
-                  {transactionTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: '1fr' }}>
+                    {/* Transaction Type */}
+                    <TextField
+                      select
+                      label="Transaction Type"
+                      name="transactionType"
+                      value={formData.transactionType}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Transaction Type</em>
+                      </MenuItem>
+                      {transactionTypes.map((type) => (
+                        <MenuItem key={type.value} value={type.value}>
+                          {type.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Member Name - readonly */}
-                <TextField
-                  label="Member Name"
-                  value={formData.memberName}
-                  size="small"
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                  sx={readOnlyFieldSx}
-                />
+                    {/* Loan Product */}
+                    <TextField
+                      select
+                      label="Loan Product"
+                      name="loanProduct"
+                      value={formData.loanProduct}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Loan Product</em>
+                      </MenuItem>
+                      {storeProducts.map((product) => (
+                        <MenuItem key={product.prd_id} value={product.prd_id}>
+                          {(product.prd_name || '').trim()}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Current Loan Balance - readonly */}
-                <TextField
-                  label="Current Loan Balance"
-                  value={formData.currentLoanBalance}
-                  size="small"
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                  sx={readOnlyFieldSx}
-                />
+                    {/* Source of Funds */}
+                    <TextField
+                      select
+                      label="Source of Funds"
+                      name="sourceOfFunds"
+                      value={formData.sourceOfFunds}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Source of Funds</em>
+                      </MenuItem>
+                      {sourceFundsOptions.map((fund) => (
+                        <MenuItem key={fund.value} value={fund.value}>
+                          {fund.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Loan Product */}
-                <TextField
-                  select
-                  label="Loan Product"
-                  name="loanProduct"
-                  value={formData.loanProduct}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Loan Product</em>
-                  </MenuItem>
-                  {loanProducts.map((product) => (
-                    <MenuItem key={product.prd_id} value={product.prd_id}>
-                      {(product.prd_name || '').trim()}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    {/* Yearly Frequency */}
+                    <TextField
+                      select
+                      label="Yearly Frequency"
+                      name="yearlyFrequency"
+                      value={formData.yearlyFrequency}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                      required
+                    >
+                      <MenuItem value="">
+                        <em>Select Frequency</em>
+                      </MenuItem>
+                      {yearlyFrequencies.map((freq) => (
+                        <MenuItem key={freq.value} value={freq.value}>
+                          {freq.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Principal Amount */}
-                <TextField
-                  label="Principal Amount"
-                  name="principalAmount"
-                  value={formData.principalAmount}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  type="number"
-                />
+                    {/* Principal Amount */}
+                    <TextField
+                      label="Principal Amount"
+                      name="principalAmount"
+                      value={formatCurrency(formData.principalAmount)}
+                      onChange={handlePrincipalAmountChange}
+                      size="small"
+                      fullWidth
+                      required
+                      inputProps={{
+                        inputMode: 'numeric',
+                        pattern: '[0-9.]*',
+                        placeholder: '0',
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        ),
+                      }}
+                    />
 
-                {/* Interest Method */}
-                <TextField
-                  select
-                  label="Interest Method"
-                  name="interestMethod"
-                  value={formData.interestMethod}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Interest Method</em>
-                  </MenuItem>
-                  {interestMethods.map((method) => (
-                    <MenuItem key={method.value} value={method.value}>
-                      {method.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    {/* Loan Duration */}
+                    <TextField
+                      label="Loan Duration (Months)"
+                      name="loanDuration"
+                      value={formData.loanDuration}
+                      onChange={handleChange}
+                      onBlur={handleLoanDurationBlur}
+                      size="small"
+                      fullWidth
+                      type="number"
+                      required
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
 
-                {/* Interest Rate */}
-                <TextField
-                  label="Interest Rate (%)"
-                  name="interestRate"
-                  value={formData.interestRate}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  type="number"
-                />
+              {/* Card 2: Additional Details */}
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                    Additional Details
+                  </Typography>
 
-                {/* Yearly Frequency */}
-                <TextField
-                  select
-                  label="Yearly Frequency"
-                  name="yearlyFrequency"
-                  value={formData.yearlyFrequency}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Frequency</em>
-                  </MenuItem>
-                  {yearlyFrequencies.map((freq) => (
-                    <MenuItem key={freq.value} value={freq.value}>
-                      {freq.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+                    {/* Member Name - readonly */}
+                    <TextField
+                      label="Member Name"
+                      value={formData.memberName}
+                      size="small"
+                      fullWidth
+                      InputProps={{ readOnly: true }}
+                      sx={readOnlyFieldSx}
+                    />
 
-                {/* Loan Duration */}
-                <TextField
-                  label="Loan Duration (Months)"
-                  name="loanDuration"
-                  value={formData.loanDuration}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  type="number"
-                />
+                    {/* Current Loan Balance - readonly */}
+                    <TextField
+                      label="Current Loan Balance"
+                      value={formData.currentLoanBalance}
+                      size="small"
+                      fullWidth
+                      InputProps={{ readOnly: true }}
+                      sx={readOnlyFieldSx}
+                    />
 
-                {/* Grace Period */}
-                <TextField
-                  label="Grace Period (Months)"
-                  name="gracePeriod"
-                  value={formData.gracePeriod}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  type="number"
-                />
+                    {/* Start Date */}
+                    <DatePicker
+                      label="Start Date"
+                      value={formData.startDate ? dayjs(formData.startDate) : null}
+                      onChange={(val) => handleDateChange('startDate', val)}
+                      slotProps={{
+                        textField: {
+                          size: 'small',
+                          fullWidth: true,
+                          required: true,
+                        },
+                      }}
+                    />
 
-                {/* Saving Balance - readonly */}
-                <TextField
-                  label="Saving Balance"
-                  value={formData.savingBalance}
-                  size="small"
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                  sx={readOnlyFieldSx}
-                />
+                    {/* Interest Rate */}
+                    <TextField
+                      label="Interest Rate (%)"
+                      name="interestRate"
+                      value={formData.interestRate}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                      type="number"
+                      required
+                    />
 
-                {/* Economic Sector */}
-                <TextField
-                  select
-                  label="Economic Sector"
-                  name="economicSector"
-                  value={formData.economicSector}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Sector</em>
-                  </MenuItem>
-                  {economicSectors.map((sector) => (
-                    <MenuItem key={sector.value} value={sector.value}>
-                      {sector.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    {/* Loan Limit - readonly */}
+                    <TextField
+                      label="Loan Limit"
+                      value={formData.loanLimit}
+                      size="small"
+                      fullWidth
+                      InputProps={{ readOnly: true }}
+                      sx={readOnlyFieldSx}
+                    />
 
-                {/* Start Date */}
-                <DatePicker
-                  label="Start Date"
-                  value={formData.startDate ? dayjs(formData.startDate) : null}
-                  onChange={(val) => handleDateChange('startDate', val)}
-                  slotProps={{
-                    textField: {
-                      size: 'small',
-                      fullWidth: true,
-                    },
-                  }}
-                />
+                    {/* Saving Balance - readonly */}
+                    <TextField
+                      label="Saving Balance"
+                      value={formData.savingBalance}
+                      size="small"
+                      fullWidth
+                      InputProps={{ readOnly: true }}
+                      sx={readOnlyFieldSx}
+                    />
 
-                {/* Loan Limit - readonly */}
-                <TextField
-                  label="Loan Limit"
-                  value={formData.loanLimit}
-                  size="small"
-                  fullWidth
-                  InputProps={{ readOnly: true }}
-                  sx={readOnlyFieldSx}
-                />
+                    {/* Interest Method */}
+                    <TextField
+                      select
+                      label="Interest Method"
+                      name="interestMethod"
+                      value={formData.interestMethod}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Interest Method</em>
+                      </MenuItem>
+                      {interestMethods.map((method) => (
+                        <MenuItem key={method.value} value={method.value}>
+                          {method.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Purpose of Loan */}
-                <TextField
-                  label="Purpose of Loan"
-                  name="purposeOfLoan"
-                  value={formData.purposeOfLoan}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                />
+                    {/* Economic Sector */}
+                    <TextField
+                      select
+                      label="Economic Sector"
+                      name="economicSector"
+                      value={formData.economicSector}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Sector</em>
+                      </MenuItem>
+                      {economicSectors.map((sector) => (
+                        <MenuItem key={sector.value} value={sector.value}>
+                          {sector.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                {/* Source of Funds */}
-                <TextField
-                  select
-                  label="Source of Funds"
-                  name="sourceOfFunds"
-                  value={formData.sourceOfFunds}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Source of Funds</em>
-                  </MenuItem>
-                  {sourceFundsOptions.map((fund) => (
-                    <MenuItem key={fund.value} value={fund.value}>
-                      {fund.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    {/* Grace Period */}
+                    <TextField
+                      label="Grace Period (Months)"
+                      name="gracePeriod"
+                      value={formData.gracePeriod}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                      type="number"
+                    />
 
-                {/* Guarantor Source of Funds */}
-                <TextField
-                  select
-                  label="Guarantor Source of Funds"
-                  name="guarantorSourceOfFunds"
-                  value={formData.guarantorSourceOfFunds}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">
-                    <em>Select Source of Funds</em>
-                  </MenuItem>
-                  {sourceFundsOptions.map((fund) => (
-                    <MenuItem key={fund.value} value={fund.value}>
-                      {fund.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    {/* Purpose of Loan */}
+                    <TextField
+                      label="Purpose of Loan"
+                      name="purposeOfLoan"
+                      value={formData.purposeOfLoan}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    />
 
-                {/* Grace Period Interest */}
-                <TextField
-                  label="Grace Period Interest (%)"
-                  name="gracePeriodInterest"
-                  value={formData.gracePeriodInterest}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  type="number"
-                />
-              </Box>
-            </CardContent>
-          </Card>
+                    {/* Guarantor Source of Funds */}
+                    <TextField
+                      select
+                      label="Guarantor Source of Funds"
+                      name="guarantorSourceOfFunds"
+                      value={formData.guarantorSourceOfFunds}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                    >
+                      <MenuItem value="">
+                        <em>Select Source of Funds</em>
+                      </MenuItem>
+                      {sourceFundsOptions.map((fund) => (
+                        <MenuItem key={fund.value} value={fund.value}>
+                          {fund.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+
+                    {/* Grace Period Interest */}
+                    <TextField
+                      label="Grace Period Interest (%)"
+                      name="gracePeriodInterest"
+                      value={formData.gracePeriodInterest}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                      type="number"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+
+            {statusMessage && (
+              <Alert severity={statusError ? 'error' : 'success'} sx={{ mb: 2 }}>
+                {statusMessage}
+              </Alert>
+            )}
+
+            {/* Card 3: Calculated Items - Full Width */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  Calculated Items
+                </Typography>
+
+                <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+                  {/* Principal - readonly */}
+                  <TextField
+                    label="Principal"
+                    value={formData.principalAmount}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* Periodic Payment - readonly */}
+                  <TextField
+                    label="Periodic Payment"
+                    value={formData.periodicPayment}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* Interest Rate (Calculated) - readonly */}
+                  <TextField
+                    label="Interest Rate (%)"
+                    value={formData.calculatedInterestRate}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* First Payment Date - readonly */}
+                  <TextField
+                    label="First Payment Date"
+                    value={formData.firstPaymentDate}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                  />
+
+                  {/* Gross Interest - readonly */}
+                  <TextField
+                    label="Gross Interest"
+                    value={formData.grossInterest}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* Final Payment Date - readonly */}
+                  <TextField
+                    label="Final Payment Date"
+                    value={formData.finalPaymentDate}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                  />
+
+                  {/* Total Interest - readonly */}
+                  <TextField
+                    label="Total Interest"
+                    value={formData.totalInterest}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* Payment Frequency - readonly */}
+                  <TextField
+                    label="Payment Frequency"
+                    value={formData.paymentFrequency}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                  />
+
+                  {/* Total Payment - readonly */}
+                  <TextField
+                    label="Total Payment"
+                    value={formData.totalPayment}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                  {/* Total Duration - readonly */}
+                  <TextField
+                    label="Total Duration (Months)"
+                    value={formData.totalDuration}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={readOnlyFieldSx}
+                    type="number"
+                  />
+
+                </Box>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Action Buttons */}
@@ -640,15 +996,17 @@ export default function LoanApplication() {
             <Button
               variant="contained"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !formData.loanDuration}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },
+                '&:disabled': { backgroundColor: '#ccc', color: '#999' },
                 fontWeight: 600,
                 paddingX: 3,
                 boxShadow: 'none',
                 textTransform: 'none',
               }}
+              title={!formData.loanDuration ? 'Please enter Loan Duration before saving' : ''}
             >
               {isSaving ? 'Saving...' : '💾 Save Application'}
             </Button>
