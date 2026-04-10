@@ -252,8 +252,8 @@ function App() {
       children: [
         { label: 'Loan Application', to: '/loan/application', icon: DescriptionRoundedIcon },
         { label: 'Loan Guarantor', to: '/loan/guarantor', icon: GroupWorkRoundedIcon },
-        { label: 'Loan Amortization', to: '/loan/amortization', icon: CalculateRoundedIcon },
         { label: 'Loan Approval', to: '/loan/approval', icon: VerifiedRoundedIcon },
+        { label: 'Loan Amortization', to: '/loan/amortization', icon: CalculateRoundedIcon },
         { label: 'Loan Activate', to: '/loan/activate', icon: TaskAltRoundedIcon },
         { label: 'Loan Disbursement', to: '/loan/disbursement', icon: OutboxRoundedIcon },
         { label: 'Loan Repayments', to: '/loan/repayments', icon: PaymentsRoundedIcon },
