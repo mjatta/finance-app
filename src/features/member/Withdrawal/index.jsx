@@ -260,6 +260,43 @@ export default function Withdrawal() {
     }
   };
 
+  const handleClear = () => {
+    setFormData({
+      transactionType: 'withdrawals',
+      memberCode: '',
+      payrollNumber: '',
+      profilePicture: '',
+      memberSignature: '',
+      phoneNumber: '',
+      postingAccount: '',
+      memberAccounts: [],
+      accountBalance: '',
+      accountNumber: '',
+      clearedBalance: '',
+      unclearedBalance: '',
+      printReceipt: false,
+      transactionDate: todayIso,
+      sendSmsFee: false,
+      feeAmount: '',
+      withdrawalAmount: '',
+      comments: '',
+      depositType: '',
+      contraAccount: '',
+      checkNumber: '',
+      checkDate: todayIso,
+      bank: '',
+      bankAccount: '',
+      cashAccount: '',
+      creditLimit: '',
+      debitLimit: '',
+      loanLimit: '',
+    });
+    setRows([]);
+    setStatusMessage('');
+    setStatusError(false);
+    setTouched({});
+  };
+
   const handleWithdrawalAmountChange = (e) => {
     const cleanValue = cleanNumericInput(e.target.value);
     setFormData((prev) => ({ ...prev, withdrawalAmount: cleanValue }));
@@ -681,6 +718,22 @@ export default function Withdrawal() {
                 disabled={isLoadingMember}
                 placeholder="e.g. PAY001"
               />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleClear}
+                  disabled={isLoadingMember}
+                  sx={{
+                    backgroundColor: '#667eea',
+                    '&:hover': { backgroundColor: '#5568d3' },
+                    fontWeight: 600,
+                    flex: 1,
+                    textTransform: 'none',
+                  }}
+                >
+                  Clear
+                </Button>
+              </Box>
             </Box>
           </CardContent>
         </Card>
