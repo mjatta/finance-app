@@ -1,6 +1,7 @@
 import { cloneElement, isValidElement, lazy, Suspense, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useUsersStore } from './store/useUsersStore';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -197,8 +198,9 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     setActiveCategoryOverride(null);
-    // Clear Zustand store + localStorage
+    // Clear Zustand stores + localStorage
     useAuthStore.getState().clearUser();
+    useUsersStore.getState().clearUsers();
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');

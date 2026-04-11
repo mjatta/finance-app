@@ -134,6 +134,26 @@ const ENDPOINT_MAP = {
     dev: '/api/Cusystem',
     prod: '/api/Cusystem',
   },
+  // Loan Approval
+  'loan-approval': {
+    dev: '/api/LoanApproval/getClientLoansForApproval',
+    prod: '/api/LoanApproval/getClientLoansForApproval',
+  },
+  // Users List
+  'users-list': {
+    dev: '/api/users/list',
+    prod: '/api/users/list',
+  },
+  // Loan Details
+  'loan-details': {
+    dev: '/api/LoansDetails/getLoanDetails',
+    prod: '/api/LoansDetails/getLoanDetails',
+  },
+  // Loan Approval - Approve Loan
+  'loan-approval-approve': {
+    dev: '/api/loanapproval/approve',
+    prod: '/api/loanapproval/approve',
+  },
 };
 
 /**

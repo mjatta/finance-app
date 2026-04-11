@@ -17,12 +17,20 @@ import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
+import { useLoanDetails } from './Hooks/useLoanDetails';
+import { useLoanApprovalSubmit } from './Hooks/useLoanApprovalSubmit';
+import { useUsersStore } from '../../../store/useUsersStore';
+import { useAuthStore } from '../../../store/authStore';
 
 const LOAN_COLUMNS = [
-  { field: 'customerCode', headerName: 'Customer Code', flex: 1, minWidth: 120, sortable: true },
-  { field: 'customerName', headerName: 'Customer Name', flex: 1.5, minWidth: 200, sortable: true },
-  { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 140, sortable: true },
-  { field: 'applicationDate', headerName: 'Application Date', flex: 1, minWidth: 140, sortable: true },
+  { field: 'customerCode', headerName: 'Customer Code', flex: 0.8, minWidth: 110, sortable: true },
+  { field: 'customerName', headerName: 'Customer Name', flex: 1.2, minWidth: 150, sortable: true },
+  { field: 'loanAmount', headerName: 'Principal Amount', flex: 0.9, minWidth: 130, sortable: true },
+  { field: 'duration', headerName: 'Duration (Months)', flex: 0.8, minWidth: 120, sortable: true },
+  { field: 'repaymentAmount', headerName: 'Repayment Amount', flex: 1, minWidth: 130, sortable: true },
+  { field: 'totalInterest', headerName: 'Total Interest', flex: 0.8, minWidth: 110, sortable: true },
+  { field: 'applicationDate', headerName: 'Application Date', flex: 0.9, minWidth: 130, sortable: true },
+  { field: 'loanStartDate', headerName: 'Loan Start Date', flex: 0.9, minWidth: 130, sortable: true },
 ];
 
 export default function LoanApproval() {
@@ -58,6 +66,10 @@ export default function LoanApproval() {
   });
 
   const { fetchLoansForApproval } = useLoanApprovalLoad();
+  const { fetchUsersList } = useUsersStore();
+  const { fetchLoanDetails, loading: detailsLoading } = useLoanDetails();
+  const { submitLoanApproval, loading: submitting } = useLoanApprovalSubmit();
+  const authUser = useAuthStore((state) => state.user);
 
   const loadLoans = useCallback(async () => {
     setLoading(true);
@@ -73,12 +85,21 @@ export default function LoanApproval() {
 
       // Transform API response to table rows
       const mappedLoans = data.map((item, index) => ({
-        id: item.loanId || index,
-        customerCode: item.customerCode || '',
-        customerName: item.customerName || '',
-        loanAmount: item.loanAmount || '0',
-        applicationDate: item.applicationDate || '',
-        // Store additional data for populating form
+        id: item.loan_id || index,
+        customerCode: item.ccustcode || '',
+        customerName: item.membername || '',
+        loanAmount: item.principal_amt || '0',
+        applicationDate: item.loan_appl_date || '',
+        // Store additional data for populating form and details
+        duration: item.lduration_num || '',
+        repaymentAmount: item.repayment_amt || '0',
+        loanStartDate: item.loanstart_date || '',
+        totalInterest: item.totinterest || '0',
+        loanInterest: item.loan_interest || '0',
+        loanAccount: item.loanacct || '',
+        loanStatus: item.loan_status || '0',
+        productId: item.prd_id || '',
+        // Legacy fields for compatibility
         savingBalance: item.savingBalance || '0',
         previousLoanBalance: item.previousLoanBalance || '0',
         loanProduct: item.loanProduct || '',
@@ -94,6 +115,9 @@ export default function LoanApproval() {
       setLoans(mappedLoans);
       setStatusMessage('');
       setStatusError(false);
+
+      // After loans load successfully, fetch users list
+      await fetchUsersList();
     } catch (error) {
       console.error('Failed to load loans:', error);
       setStatusMessage('Failed to load loan data.');
@@ -107,7 +131,7 @@ export default function LoanApproval() {
     } finally {
       setLoading(false);
     }
-  }, [fetchLoansForApproval]);
+  }, [fetchLoansForApproval, fetchUsersList]);
 
   useEffect(() => {
     loadLoans();
@@ -140,24 +164,55 @@ export default function LoanApproval() {
     } else {
       setSelectedIds([loanId]);
       if (selectedLoan) {
-        setApprovalDetails({
-          savingBalance: selectedLoan.savingBalance,
-          previousLoanBalance: selectedLoan.previousLoanBalance,
-          loanProduct: selectedLoan.loanProduct,
-          gracePeriod: selectedLoan.gracePeriod,
-          newAccountNumber: '',
-          approveAmount: '',
-          duration: '',
-          approveDate: '',
-        });
-        setAppliedLoanDetails({
-          paymentFrequency: selectedLoan.paymentFrequency,
-          grossInterest: selectedLoan.grossInterest,
-          totalAmount: selectedLoan.totalAmount,
-          economicSector: selectedLoan.economicSector,
-          periodicPayment: selectedLoan.periodicPayment,
-          totalDuration: selectedLoan.totalDuration,
-        });
+        // Fetch loan details from the new endpoint
+        (async () => {
+          const loanDetails = await fetchLoanDetails(
+            selectedLoan.customerCode,
+            selectedLoan.id
+          );
+
+          if (loanDetails) {
+            // Map API response to form fields
+            setApprovalDetails({
+              savingBalance: loanDetails.savebal || '',
+              previousLoanBalance: '',
+              loanProduct: loanDetails.LoanType || selectedLoan.loanProduct || selectedLoan.productId || '',
+              gracePeriod: loanDetails.graceperiod || '',
+              newAccountNumber: selectedLoan.loanAccount || '',
+              approveAmount: loanDetails.PrincipalAmt || selectedLoan.loanAmount,
+              duration: loanDetails.lduration_num || selectedLoan.duration || '',
+              approveDate: selectedLoan.loanStartDate || '',
+            });
+            setAppliedLoanDetails({
+              paymentFrequency: '',
+              grossInterest: loanDetails.total_interest || loanDetails.graceperiod || selectedLoan.totalInterest || '',
+              totalAmount: loanDetails.PrincipalAmt || selectedLoan.loanAmount || '',
+              economicSector: loanDetails.econsec || '',
+              periodicPayment: loanDetails.repayment_amt || selectedLoan.repaymentAmount || '',
+              totalDuration: loanDetails.nofpay || selectedLoan.duration || '',
+            });
+          } else {
+            // Fallback to existing data if fetch fails
+            setApprovalDetails({
+              savingBalance: selectedLoan.savingBalance,
+              previousLoanBalance: selectedLoan.previousLoanBalance,
+              loanProduct: selectedLoan.loanProduct || selectedLoan.productId || '',
+              gracePeriod: selectedLoan.gracePeriod,
+              newAccountNumber: selectedLoan.loanAccount || '',
+              approveAmount: selectedLoan.loanAmount,
+              duration: selectedLoan.duration || '',
+              approveDate: selectedLoan.loanStartDate || '',
+            });
+            setAppliedLoanDetails({
+              paymentFrequency: selectedLoan.paymentFrequency,
+              grossInterest: selectedLoan.totalInterest || selectedLoan.loanInterest || '',
+              totalAmount: selectedLoan.totalAmount || selectedLoan.loanAmount || '',
+              economicSector: selectedLoan.economicSector,
+              periodicPayment: selectedLoan.periodicPayment || selectedLoan.repaymentAmount || '',
+              totalDuration: selectedLoan.totalDuration || selectedLoan.duration || '',
+            });
+          }
+        })();
       }
     }
   };
@@ -172,20 +227,116 @@ export default function LoanApproval() {
     setApprovalDetails((prev) => ({ ...prev, approveAmount: cleanValue }));
   };
 
-  const handleApproveLoan = () => {
+  const handleApproveLoan = async () => {
     if (!approvalDetails.approveAmount) {
       setStatusMessage('Please enter the approval amount.');
       setStatusError(true);
       return;
     }
 
-    setStatusMessage('Loan approved successfully.');
-    setStatusError(false);
-    notifySaveSuccess({
-      page: 'Loan / Loan Approval',
-      action: 'Approve Loan',
-      message: 'Loan approved successfully.',
-    });
+    if (selectedIds.length === 0) {
+      setStatusMessage('Please select a loan first.');
+      setStatusError(true);
+      return;
+    }
+
+    try {
+      const selectedLoan = loans.find((l) => l.id === selectedIds[0]);
+      if (!selectedLoan) {
+        setStatusMessage('Selected loan not found.');
+        setStatusError(true);
+        return;
+      }
+
+      // Construct payload for approval - send numeric values for numeric fields
+      // Parse numeric values safely
+      const approveAmountNum = parseFloat(String(approvalDetails.approveAmount).replace(/,/g, '')) || 0;
+      const durationNum = parseInt(approvalDetails.duration, 10) || 0;
+      const interestRateNum = parseFloat(String(appliedLoanDetails.grossInterest).replace(/,/g, '')) || 0;
+      const compidNum = parseInt(authUser?.CompId, 10) || 30;
+      const loanTypeNum = parseInt(selectedLoan.productId, 10) || 0;
+      const loanIdNum = parseInt(selectedLoan.id || selectedLoan.loan_id || 0, 10);
+
+      const payload = {
+        loanid: loanIdNum,
+        loanAmount: approveAmountNum,
+        duration: durationNum,
+        loanAccount: approvalDetails.newAccountNumber || null,
+        loanOfficer: String(authUser?.username || 'SYSTEM'),
+        userid: String(authUser?.id || authUser?.username || 'SYSTEM'),
+        customerCode: String(selectedLoan.customerCode || ''),
+        memberType: 'C',
+        memberName: String(selectedLoan.customerName || ''),
+        compid: compidNum,
+        loanType: loanTypeNum,
+        interestRate: interestRateNum,
+        glTopUp: false,
+        glResched: false,
+      };
+
+      console.log('Submitting loan approval payload:', payload);
+      console.log('Payload types:', {
+        loanid: typeof payload.loanid,
+        loanAmount: typeof payload.loanAmount,
+        duration: typeof payload.duration,
+        customerCode: typeof payload.customerCode,
+        compid: typeof payload.compid,
+      });
+
+      // Submit the loan approval
+      const result = await submitLoanApproval(payload);
+
+      if (result.success) {
+        setStatusMessage(result.message || 'Loan approved successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Loan / Loan Approval',
+          action: 'Approve Loan',
+          message: result.message || 'Loan approved successfully.',
+        });
+
+        // Reset form after successful approval
+        setSelectedIds([]);
+        setApprovalDetails({
+          savingBalance: '',
+          previousLoanBalance: '',
+          loanProduct: '',
+          gracePeriod: '',
+          newAccountNumber: '',
+          approveAmount: '',
+          duration: '',
+          approveDate: '',
+        });
+        setAppliedLoanDetails({
+          paymentFrequency: '',
+          grossInterest: '',
+          totalAmount: '',
+          economicSector: '',
+          periodicPayment: '',
+          totalDuration: '',
+        });
+      } else {
+        setStatusMessage(result.message || 'Failed to approve loan.');
+        setStatusError(true);
+        notifySaveError({
+          page: 'Loan / Loan Approval',
+          action: 'Approve Loan',
+          message: result.message || 'Failed to approve loan.',
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Error approving loan:', error);
+      const errorMsg = error.message || 'Failed to approve loan.';
+      setStatusMessage(errorMsg);
+      setStatusError(true);
+      notifySaveError({
+        page: 'Loan / Loan Approval',
+        action: 'Approve Loan',
+        message: errorMsg,
+        error,
+      });
+    }
   };
 
   const handleRejectLoan = () => {
@@ -325,7 +476,6 @@ export default function LoanApproval() {
           </Typography>
           <Box
             sx={{
-              height: 400,
               width: '100%',
               borderRadius: 1.5,
               border: '1px solid #e0e0e0',
@@ -402,203 +552,169 @@ export default function LoanApproval() {
         {/* Details Cards */}
         <Grid size={{ xs: 12 }}>
           {/* Approval Details Card */}
-          <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                 Approval Details
               </Typography>
 
-              <Grid container spacing={2}>
+              <Grid container spacing={4}>
+                {/* Left Column - Editable Fields */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Saving Balance"
-                    value={approvalDetails.savingBalance}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Previous Loan Balance"
-                    value={approvalDetails.previousLoanBalance}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Loan Product"
-                    value={approvalDetails.loanProduct}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Grace Period"
-                    value={approvalDetails.gracePeriod}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Box sx={{ p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#666' }}>
-                      New Account Number
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-                      {approvalDetails.newAccountNumber || 'Not generated'}
-                    </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Approve Amount"
+                      name="approveAmount"
+                      value={formatCurrency(approvalDetails.approveAmount)}
+                      onChange={handleApproveAmountChange}
+                      variant="outlined"
+                      size="small"
+                      placeholder="Enter amount"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Duration"
+                      name="duration"
+                      value={approvalDetails.duration}
+                      onChange={handleApprovalDetailsChange}
+                      variant="outlined"
+                      size="small"
+                      placeholder="Enter duration"
+                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Approve Date"
+                        value={approvalDetails.approveDate ? dayjs(approvalDetails.approveDate) : null}
+                        onChange={(newValue) => {
+                          const formatted = newValue ? newValue.format('YYYY-MM-DD') : '';
+                          setApprovalDetails((prev) => ({
+                            ...prev,
+                            approveDate: formatted,
+                          }));
+                        }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            size: 'small',
+                            variant: 'outlined',
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </Box>
                 </Grid>
+
+                {/* Right Column - Display-only Fields */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Approve Amount"
-                    name="approveAmount"
-                    value={formatCurrency(approvalDetails.approveAmount)}
-                    onChange={handleApproveAmountChange}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Enter amount"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Duration"
-                    name="duration"
-                    value={approvalDetails.duration}
-                    onChange={handleApprovalDetailsChange}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Enter duration"
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Approve Date"
-                      value={approvalDetails.approveDate ? dayjs(approvalDetails.approveDate) : null}
-                      onChange={(newValue) => {
-                        const formatted = newValue ? newValue.format('YYYY-MM-DD') : '';
-                        setApprovalDetails((prev) => ({
-                          ...prev,
-                          approveDate: formatted,
-                        }));
-                      }}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: 'small',
-                          variant: 'outlined',
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Saving Balance:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {approvalDetails.savingBalance || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Previous Loan Balance:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {approvalDetails.previousLoanBalance || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Loan Product:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {approvalDetails.loanProduct || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Grace Period:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {approvalDetails.gracePeriod || 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
 
           {/* Applied Loan Details Card */}
-          <Card sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                 Applied Loan Details
               </Typography>
+              <Grid container spacing={4}>
+                {/* Left Column */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Payment Frequency:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.paymentFrequency || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Gross Interest:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.grossInterest ? `${CURRENCY_SYMBOL} ${formatCurrency(appliedLoanDetails.grossInterest)}` : 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Total Amount:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.totalAmount ? `${CURRENCY_SYMBOL} ${formatCurrency(appliedLoanDetails.totalAmount)}` : 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
 
-              <Grid container spacing={2}>
+                {/* Right Column */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Payment Frequency"
-                    value={appliedLoanDetails.paymentFrequency}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Gross Interest"
-                    value={formatCurrency(appliedLoanDetails.grossInterest)}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      readOnly: true,
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Total Amount"
-                    value={formatCurrency(appliedLoanDetails.totalAmount)}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      readOnly: true,
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Economic Sector"
-                    value={appliedLoanDetails.economicSector}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Periodic Payment"
-                    value={formatCurrency(appliedLoanDetails.periodicPayment)}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      readOnly: true,
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Total Duration"
-                    value={appliedLoanDetails.totalDuration}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{ readOnly: true }}
-                    sx={{ bgcolor: '#f5f5f5' }}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Economic Sector:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.economicSector || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Periodic Payment:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.periodicPayment ? `${CURRENCY_SYMBOL} ${formatCurrency(appliedLoanDetails.periodicPayment)}` : 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Total Duration:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {appliedLoanDetails.totalDuration || 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
             </CardContent>

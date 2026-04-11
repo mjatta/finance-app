@@ -1384,6 +1384,34 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/member\/enquiry/, '/api/member/enquiry'),
       },
+      // Proxy loan approval endpoint to avoid CORS
+      '/api/LoanApproval': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/LoanApproval/, '/api/LoanApproval'),
+      },
+      // Proxy users endpoint to avoid CORS
+      '/api/users': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/users/, '/api/users'),
+      },
+      // Proxy loan details endpoint to avoid CORS
+      '/api/LoansDetails': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/LoansDetails/, '/api/LoansDetails'),
+      },
+      // Proxy loan approval approve endpoint to avoid CORS
+      '/api/loanapproval': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/loanapproval/, '/api/loanapproval'),
+      },
     },
   },
   plugins: [

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
+import { buildApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch loans for approval on page load
 export function useLoanApprovalLoad() {
@@ -11,7 +11,12 @@ export function useLoanApprovalLoad() {
     setError(null);
 
     try {
-      const response = await fetch(getFullApiUrl('/api/LoanApproval/getClientLoansForApproval?ncompid=30'), {
+      // Build API URL using the standard pattern
+      const apiUrl = buildApiUrl('loan-approval', {
+        ncompid: '30',
+      });
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -23,24 +28,37 @@ export function useLoanApprovalLoad() {
       }
 
       const payload = await response.json();
+      console.log('Loan Approval Response:', payload);
 
-      // Expected structure: { status, data: [ { ...loanData } ] }
-      if (!payload || typeof payload !== 'object') {
-        setError('Invalid response structure');
-        return null;
+      // Handle if payload is directly an array
+      if (Array.isArray(payload)) {
+        return payload;
       }
 
-      if (payload.status !== 'success') {
-        setError(payload.message || 'Failed to fetch loans');
-        return null;
+      // Expected structure: { status, data: [ { ...loanData } ] }
+      if (payload && typeof payload === 'object') {
+        // Check for success status
+        if (payload.status === 'success' && payload.data) {
+          return payload.data;
+        }
+        
+        // If payload is empty or has no data, return empty array
+        if (payload.data) {
+          return payload.data;
+        }
+      }
+
+      if (!payload || typeof payload !== 'object') {
+        setError('Invalid response structure');
+        return [];
       }
 
       setError(null);
-      return payload.data || [];
+      return [];
     } catch (err) {
       console.error('Error fetching loans for approval:', err);
       setError(err.message || 'Failed to fetch loans for approval');
-      return null;
+      return [];
     } finally {
       setLoading(false);
     }
