@@ -106,6 +106,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/guarantor/:path*"
     },
     {
+      "source": "/api/member/enquiry:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

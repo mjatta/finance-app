@@ -57,6 +57,10 @@ const ENDPOINT_MAP = {
     dev: '/api/remote-member/details',
     prod: '/api/member/details',
   },
+  'member-enquiry': {
+    dev: '/api/member/enquiry',
+    prod: '/api/member/enquiry',
+  },
   // Client
   'client-code': {
     dev: '/api/client/get-code',

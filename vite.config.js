@@ -1211,7 +1211,6 @@ const loanDisburseApiPlugin = () => ({
   },
 })
 
-
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -1377,6 +1376,13 @@ export default defineConfig({
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
+      },
+      // Proxy member enquiry endpoint to avoid CORS
+      '/api/member/enquiry': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/member\/enquiry/, '/api/member/enquiry'),
       },
     },
   },

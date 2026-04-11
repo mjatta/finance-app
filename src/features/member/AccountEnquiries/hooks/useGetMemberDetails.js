@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
+import { buildApiUrl } from '../../../../utils/apiConfig';
 
 // Hook to fetch member details by member code
 export function useGetMemberDetails() {
@@ -15,12 +15,21 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${memberCode.trim()}`), {
+      const apiUrl = buildApiUrl('member-enquiry', {
+        ncompid: '30',
+        custCode: memberCode.trim().padStart(6, '0'),
+        memberType: 'individual',
+        acctStatus: 'A',
+      });
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
+
+      console.log(response, 'Raw response from member details API');
 
       // Handle 404 errors - member not found
       if (response.status === 404) {

@@ -83,6 +83,15 @@ export default function AccountEnquiries({ user }) {
     }
   };
 
+  const handleClear = () => {
+    setSearchMemberCode('');
+    setMemberDetails(null);
+    setError('');
+    setSelectedRows([]);
+    setSelectedAccount(null);
+    setTransactionData(null);
+  };
+
   // Effect to handle transaction fetching when a row is selected
   useEffect(() => {
     const fetchTransactionsForSelectedRow = async () => {
@@ -164,6 +173,24 @@ export default function AccountEnquiries({ user }) {
         width: 180,
         valueFormatter: (value) => value || '-',
       },
+      {
+        field: 'BookBalance',
+        headerName: 'Account Balance',
+        width: 150,
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : 'D 0.00',
+      },
+      {
+        field: 'ClearedBalance',
+        headerName: 'Cleared Balance',
+        width: 150,
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : 'D 0.00',
+      },
+      {
+        field: 'UnClearedBalance',
+        headerName: 'UnCleared Balance',
+        width: 150,
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : 'D 0.00',
+      },
     ],
     [],
   );
@@ -197,6 +224,9 @@ export default function AccountEnquiries({ user }) {
         CustomerName: customerName,
         AccountType: accountType,
         AccountNumber: accountNumber,
+        BookBalance: account.BookBalance || 0,
+        ClearedBalance: account.ClearedBalance || 0,
+        UnClearedBalance: account.UnClearedBalance || 0,
       };
     });
   }, [memberDetails]);
@@ -234,19 +264,19 @@ export default function AccountEnquiries({ user }) {
         field: 'Debit',
         headerName: 'Debit',
         width: 130,
-        valueFormatter: (value) => value ? parseFloat(value).toFixed(2) : '0.00',
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : 'D 0.00',
       },
       {
         field: 'Credit',
         headerName: 'Credit',
         width: 130,
-        valueFormatter: (value) => value ? parseFloat(value).toFixed(2) : '0.00',
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : 'D 0.00',
       },
       {
         field: 'NewBalance',
         headerName: 'New Balance',
         width: 130,
-        valueFormatter: (value) => value ? parseFloat(value).toFixed(2) : '-',
+        valueFormatter: (value) => value ? `D ${parseFloat(value).toFixed(2)}` : '-',
       },
       {
         field: 'UserId',
@@ -577,23 +607,42 @@ export default function AccountEnquiries({ user }) {
                   </Typography>
                 )}
 
-                <Button
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} /> : <SearchRoundedIcon />}
-                  onClick={handleSearch}
-                  disabled={loading || isReadOnly}
-                  sx={{
-                    alignSelf: 'flex-start',
-                    backgroundColor: '#667eea',
-                    '&:hover': { backgroundColor: '#5568d3' },
-                    fontWeight: 600,
-                    paddingX: 3,
-                    boxShadow: 'none',
-                    textTransform: 'none',
-                  }}
-                >
-                  {loading ? 'Searching...' : 'Search'}
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={loading ? <CircularProgress size={20} /> : <SearchRoundedIcon />}
+                    onClick={handleSearch}
+                    disabled={loading || isReadOnly}
+                    sx={{
+                      backgroundColor: '#667eea',
+                      '&:hover': { backgroundColor: '#5568d3' },
+                      fontWeight: 600,
+                      paddingX: 3,
+                      boxShadow: 'none',
+                      textTransform: 'none',
+                    }}
+                  >
+                    {loading ? 'Searching...' : 'Search'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={handleClear}
+                    disabled={loading || isReadOnly}
+                    sx={{
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      fontWeight: 600,
+                      paddingX: 3,
+                      textTransform: 'none',
+                      '&:hover': {
+                        borderColor: '#5568d3',
+                        backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                      },
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -610,7 +659,7 @@ export default function AccountEnquiries({ user }) {
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                     <Box
                       component="img"
-                      src={formatProfileImage(memberDetails.MemberPicture)}
+                      src={formatProfileImage(memberDetails.Picture)}
                       alt="Member profile"
                       sx={{
                         width: 180,
@@ -629,7 +678,7 @@ export default function AccountEnquiries({ user }) {
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                     <Box
                       component="img"
-                      src={formatProfileImage(memberDetails.MemberSignature)}
+                      src={formatProfileImage(memberDetails.Signature)}
                       alt="Member signature"
                       sx={{
                         width: 180,
@@ -643,6 +692,18 @@ export default function AccountEnquiries({ user }) {
                     />
                     <Typography variant="body2" color="text.secondary">
                       Member Signature
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                {/* Phone Number Section */}
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 2, gridColumn: '1 / -1' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '120px' }}>
+                      Phone:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {memberDetails.Telephone || 'N/A'}
                     </Typography>
                   </Box>
                 </Box>
