@@ -78,8 +78,20 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/:path*"
     },
     {
-      "source": "/api/:path*",
-      "destination": "https://alakuyateh-001-site10.atempurl.com/api/:path*"
+      "source": "/api/loan-setup/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-setup/:path*"
+    },
+    {
+      "source": "/api/loan/save-guarantor",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/save-guarantor"
+    },
+    {
+      "source": "/api/guarantor/load",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/guarantor/load"
+    },
+    {
+      "source": "/api/guarantor/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/guarantor/:path*"
     },
     {
       "source": "/(.*)",

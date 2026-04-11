@@ -933,6 +933,121 @@ const customerRegistrationApiPlugin = () => ({
   },
 })
 
+const guarantorLoadApiPlugin = () => ({
+  name: 'guarantor-load-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/guarantor/', async (req, res, next) => {
+      try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'GET') {
+          try {
+            // Preserve the full path and query string
+            const fullPath = req.url.startsWith('/api/guarantor') ? req.url : `/api/guarantor${req.url}`
+            const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+            console.log('Guarantor API Request:', backendUrl)
+            
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            console.log('Guarantor API Response:', backendRes.status)
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            // Backend unreachable
+            console.error('Backend error:', fetchErr)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Guarantor load plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
+const saveLoanGuarantorApiPlugin = () => ({
+  name: 'save-loan-guarantor-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/loan/save-guarantor', async (req, res, next) => {
+      try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'POST') {
+          try {
+            let body = ''
+            req.on('data', (chunk) => {
+              body += chunk.toString()
+            })
+            req.on('end', async () => {
+              try {
+                const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/loan/save-guarantor'
+                console.log('Save Guarantor API Request:', backendUrl)
+                console.log('Payload:', body)
+                
+                const backendRes = await fetch(backendUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: body,
+                })
+                const data = await backendRes.text()
+                console.log('Save Guarantor API Response:', backendRes.status)
+                res.statusCode = backendRes.status
+                res.end(data)
+              } catch (fetchErr) {
+                console.error('Backend error:', fetchErr)
+                res.statusCode = 502
+                res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+              }
+            })
+          } catch (fetchErr) {
+            console.error('Backend error:', fetchErr)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Save loan guarantor plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -1112,5 +1227,7 @@ export default defineConfig({
     productDefinitionApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
+    guarantorLoadApiPlugin(),
+    saveLoanGuarantorApiPlugin(),
   ],
 })
