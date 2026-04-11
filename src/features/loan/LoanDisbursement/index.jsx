@@ -430,7 +430,6 @@ export default function LoanDisbursement() {
           </Typography>
           <Box
             sx={{
-              height: 400,
               width: '100%',
               borderRadius: 1.5,
               border: '1px solid #e0e0e0',
@@ -506,52 +505,97 @@ export default function LoanDisbursement() {
 
         {/* Disbursement Details Card */}
         <Grid size={{ xs: 12 }}>
-          <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                 Disbursement Details
               </Typography>
 
-              <Grid container spacing={2}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Payment Option Selection */}
-                <Grid size={{ xs: 12 }}>
-                  <FormControl sx={{ mb: 3 }} component="fieldset">
-                    <FormLabel component="legend" sx={{ fontWeight: 600, color: '#2c3e50', mb: 1 }}>
-                      Payment Option
-                    </FormLabel>
-                    <RadioGroup
-                      row
-                      aria-label="payment-option"
-                      name="payment-option"
-                      value={paymentOption}
-                      onChange={handlePaymentOptionChange}
-                      sx={{ gap: 3 }}
-                    >
-                      <FormControlLabel
-                        value="cash"
-                        control={<Radio sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }} />}
-                        label="Cash"
-                        sx={{ fontWeight: 500, color: '#2c3e50' }}
-                      />
-                      <FormControlLabel
-                        value="cheque"
-                        control={<Radio sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }} />}
-                        label="Cheque"
-                        sx={{ fontWeight: 500, color: '#2c3e50' }}
-                      />
-                      <FormControlLabel
-                        value="mobileWallet"
-                        control={<Radio sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }} />}
-                        label="Mobile Wallet"
-                        sx={{ fontWeight: 500, color: '#2c3e50' }}
-                      />
-                    </RadioGroup>
-                  </FormControl>
-                </Grid>
+                <Box>
+                  <FormLabel sx={{ fontWeight: 600, color: '#2c3e50', mb: 2, display: 'block' }}>
+                    Payment Option
+                  </FormLabel>
+                  <RadioGroup
+                    aria-label="payment-option"
+                    name="payment-option"
+                    value={paymentOption}
+                    onChange={handlePaymentOptionChange}
+                    sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}
+                  >
+                    <FormControlLabel
+                      value="cash"
+                      control={<Radio sx={{ display: 'none' }} />}
+                      label="💵 Cash"
+                      sx={{
+                        flex: 1,
+                        m: 0,
+                        p: 1.5,
+                        border: '2px solid',
+                        borderColor: paymentOption === 'cash' ? '#667eea' : '#e0e0e0',
+                        borderRadius: 1.5,
+                        bgcolor: paymentOption === 'cash' ? '#f0f4ff' : '#fafafa',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontWeight: paymentOption === 'cash' ? 700 : 500,
+                        color: paymentOption === 'cash' ? '#667eea' : '#2c3e50',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          bgcolor: '#f0f4ff',
+                        },
+                      }}
+                    />
+                    <FormControlLabel
+                      value="cheque"
+                      control={<Radio sx={{ display: 'none' }} />}
+                      label="🏦 Cheque"
+                      sx={{
+                        flex: 1,
+                        m: 0,
+                        p: 1.5,
+                        border: '2px solid',
+                        borderColor: paymentOption === 'cheque' ? '#667eea' : '#e0e0e0',
+                        borderRadius: 1.5,
+                        bgcolor: paymentOption === 'cheque' ? '#f0f4ff' : '#fafafa',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontWeight: paymentOption === 'cheque' ? 700 : 500,
+                        color: paymentOption === 'cheque' ? '#667eea' : '#2c3e50',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          bgcolor: '#f0f4ff',
+                        },
+                      }}
+                    />
+                    <FormControlLabel
+                      value="mobileWallet"
+                      control={<Radio sx={{ display: 'none' }} />}
+                      label="📱 Mobile Wallet"
+                      sx={{
+                        flex: 1,
+                        m: 0,
+                        p: 1.5,
+                        border: '2px solid',
+                        borderColor: paymentOption === 'mobileWallet' ? '#667eea' : '#e0e0e0',
+                        borderRadius: 1.5,
+                        bgcolor: paymentOption === 'mobileWallet' ? '#f0f4ff' : '#fafafa',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontWeight: paymentOption === 'mobileWallet' ? 700 : 500,
+                        color: paymentOption === 'mobileWallet' ? '#667eea' : '#2c3e50',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          bgcolor: '#f0f4ff',
+                        },
+                      }}
+                    />
+                  </RadioGroup>
+                </Box>
 
-                {/* Cheque Payment Fields */}
+                {/* Cheque Payment Fields - 2 Column Layout */}
                 {paymentOption === 'cheque' && (
-                  <>
+                  <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         select
@@ -592,77 +636,79 @@ export default function LoanDisbursement() {
                         ))}
                       </TextField>
                     </Grid>
-                  </>
+                  </Grid>
                 )}
 
-                {/* Disbursement Amount Fields */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Amount"
-                    name="amount"
-                    value={formatCurrency(disbursementDetails.amount)}
-                    onChange={handleAmountChange}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Top Up Amount"
-                    name="topUpAmount"
-                    value={formatCurrency(disbursementDetails.topUpAmount)}
-                    onChange={handleTopUpAmountChange}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Accrued Interest"
-                    name="accruedInterest"
-                    value={formatCurrency(disbursementDetails.accruedInterest)}
-                    onChange={handleAccruedInterestChange}
-                    variant="outlined"
-                    size="small"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                    }}
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Transaction Date"
-                      value={disbursementDetails.transactionDate}
-                      onChange={(newDate) =>
-                        setDisbursementDetails((prev) => ({
-                          ...prev,
-                          transactionDate: newDate,
-                        }))
-                      }
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: 'small',
-                          variant: 'outlined',
-                        },
+                {/* Disbursement Amount Fields - 2 Column Layout */}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Amount"
+                      name="amount"
+                      value={formatCurrency(disbursementDetails.amount)}
+                      onChange={handleAmountChange}
+                      variant="outlined"
+                      size="small"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
                       }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     />
-                  </LocalizationProvider>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Top Up Amount"
+                      name="topUpAmount"
+                      value={formatCurrency(disbursementDetails.topUpAmount)}
+                      onChange={handleTopUpAmountChange}
+                      variant="outlined"
+                      size="small"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Accrued Interest"
+                      name="accruedInterest"
+                      value={formatCurrency(disbursementDetails.accruedInterest)}
+                      onChange={handleAccruedInterestChange}
+                      variant="outlined"
+                      size="small"
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Transaction Date"
+                        value={disbursementDetails.transactionDate}
+                        onChange={(newDate) =>
+                          setDisbursementDetails((prev) => ({
+                            ...prev,
+                            transactionDate: newDate,
+                          }))
+                        }
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            size: 'small',
+                            variant: 'outlined',
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
                 </Grid>
-              </Grid>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
