@@ -636,9 +636,14 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         </Box>
       </Backdrop>
 
-      <Typography variant="h4" gutterBottom>
-        Registration Individual or Institution
-      </Typography>
+      <Box sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white', mb: 3, p: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Registration Individual or Institution
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 400 }}>
+          Register new members to the microfinance system
+        </Typography>
+      </Box>
 
       {statusMessage && (
         <Alert
@@ -859,7 +864,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Info
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -941,7 +946,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Institution Details
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1031,7 +1036,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Personal Profile
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1144,7 +1149,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Identity And Location
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1261,7 +1266,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Chair
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1302,7 +1307,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Vice Chair
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1323,7 +1328,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Treasurer
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1364,7 +1369,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Secretary
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1384,7 +1389,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                         Account Signatories
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2 }}>
@@ -1414,7 +1419,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                         Info
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1476,7 +1481,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                         Referee's Contact Details
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1519,7 +1524,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   {additionalNextOfKins.map((nextOfKin, index) => (
                     <Card key={nextOfKin.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Next of kin Details {index + 2}
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1555,7 +1560,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Registration
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2 }}>
@@ -1633,7 +1638,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                     {mainTab === 0 && (
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Account Signatories
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2 }}>
@@ -1660,7 +1665,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Employer Details
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1688,7 +1693,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           Employment
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1772,7 +1777,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   {additionalReferences.map((reference, index) => (
                     <Card key={reference.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <CardContent>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                           References Details {index + 2}
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -1807,7 +1812,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                         Biometric
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 1.25 }}>
@@ -1880,7 +1885,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                         Signature
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 1.25 }}>
