@@ -1100,6 +1100,117 @@ const loanApprovalApiPlugin = () => ({
   },
 })
 
+const loanDisbursementApiPlugin = () => ({
+  name: 'loan-disbursement-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/loan-disbursement/', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'GET') {
+          try {
+            const fullPath = req.url.startsWith('/api/loan-disbursement') ? req.url : `/api/loan-disbursement${req.url}`
+            const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+            console.log('Loan Disbursement API Request:', backendUrl)
+            
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            console.log('Loan Disbursement API Response:', backendRes.status)
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            console.error('Backend error:', fetchErr)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Loan disbursement plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
+const loanDisburseApiPlugin = () => ({
+  name: 'loan-disburse-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/loan/disburse', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'POST') {
+          try {
+            let body = ''
+            req.on('data', chunk => {
+              body += chunk.toString()
+            })
+            
+            req.on('end', async () => {
+              try {
+                const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/loan/disburse'
+                console.log('Loan Disburse API Request:', backendUrl)
+                
+                const backendRes = await fetch(backendUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: body,
+                })
+                const data = await backendRes.text()
+                console.log('Loan Disburse API Response:', backendRes.status)
+                res.statusCode = backendRes.status
+                res.end(data)
+              } catch (fetchErr) {
+                console.error('Backend error:', fetchErr)
+                res.statusCode = 502
+                res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+              }
+            })
+          } catch (fetchErr) {
+            console.error('Backend error:', fetchErr)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Loan disburse plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -1283,5 +1394,7 @@ export default defineConfig({
     guarantorLoadApiPlugin(),
     saveLoanGuarantorApiPlugin(),
     loanApprovalApiPlugin(),
+    loanDisbursementApiPlugin(),
+    loanDisburseApiPlugin(),
   ],
 })
