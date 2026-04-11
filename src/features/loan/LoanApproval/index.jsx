@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
   Grid,
+  InputAdornment,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -14,6 +15,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
 
 const LOAN_COLUMNS = [
@@ -163,6 +165,11 @@ export default function LoanApproval() {
   const handleApprovalDetailsChange = (e) => {
     const { name, value } = e.target;
     setApprovalDetails((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleApproveAmountChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setApprovalDetails((prev) => ({ ...prev, approveAmount: cleanValue }));
   };
 
   const handleApproveLoan = () => {
@@ -461,11 +468,15 @@ export default function LoanApproval() {
                     fullWidth
                     label="Approve Amount"
                     name="approveAmount"
-                    value={approvalDetails.approveAmount}
-                    onChange={handleApprovalDetailsChange}
+                    value={formatCurrency(approvalDetails.approveAmount)}
+                    onChange={handleApproveAmountChange}
                     variant="outlined"
                     size="small"
                     placeholder="Enter amount"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -529,10 +540,13 @@ export default function LoanApproval() {
                   <TextField
                     fullWidth
                     label="Gross Interest"
-                    value={appliedLoanDetails.grossInterest}
+                    value={formatCurrency(appliedLoanDetails.grossInterest)}
                     variant="outlined"
                     size="small"
-                    InputProps={{ readOnly: true }}
+                    InputProps={{
+                      readOnly: true,
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
                     sx={{ bgcolor: '#f5f5f5' }}
                   />
                 </Grid>
@@ -540,10 +554,13 @@ export default function LoanApproval() {
                   <TextField
                     fullWidth
                     label="Total Amount"
-                    value={appliedLoanDetails.totalAmount}
+                    value={formatCurrency(appliedLoanDetails.totalAmount)}
                     variant="outlined"
                     size="small"
-                    InputProps={{ readOnly: true }}
+                    InputProps={{
+                      readOnly: true,
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
                     sx={{ bgcolor: '#f5f5f5' }}
                   />
                 </Grid>
@@ -562,10 +579,13 @@ export default function LoanApproval() {
                   <TextField
                     fullWidth
                     label="Periodic Payment"
-                    value={appliedLoanDetails.periodicPayment}
+                    value={formatCurrency(appliedLoanDetails.periodicPayment)}
                     variant="outlined"
                     size="small"
-                    InputProps={{ readOnly: true }}
+                    InputProps={{
+                      readOnly: true,
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
                     sx={{ bgcolor: '#f5f5f5' }}
                   />
                 </Grid>

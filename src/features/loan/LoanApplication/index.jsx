@@ -18,7 +18,6 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { useAuthStore } from '../../../store/authStore';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
-import { useNewLoanDetails } from './hooks/useNewLoanDetails';
 import { useLoanSetupDetails } from './hooks/useLoanSetupDetails';
 import { useLoanCalculate } from './hooks/useLoanCalculate';
 import { useLoanSave } from './hooks/useLoanSave';
@@ -114,7 +113,6 @@ export default function LoanApplication() {
   const [searchMemberCode, setSearchMemberCode] = useState('');
 
   const { fetchMemberDetails, loading: loadingMember } = useGetMemberDetails();
-  const { fetchNewLoanDetails } = useNewLoanDetails();
   const { fetchLoanSetupDetails } = useLoanSetupDetails();
   const { calculateLoan } = useLoanCalculate();
   const { saveLoan } = useLoanSave();
@@ -261,6 +259,14 @@ export default function LoanApplication() {
     setFormData((prev) => ({ ...prev, principalAmount: cleanValue }));
   };
 
+  // Handle purpose of loan input - only allow letters and spaces
+  const handlePurposeOfLoanChange = (e) => {
+    const { value } = e.target;
+    // Remove any numbers and special characters, keep only letters and spaces
+    const cleanValue = value.replace(/[^A-Za-z\s]/g, '');
+    setFormData((prev) => ({ ...prev, purposeOfLoan: cleanValue }));
+  };
+
   // Validation function for required fields before loan calculation
   const validateRequiredFields = () => {
     const errors = [];
@@ -332,15 +338,6 @@ export default function LoanApplication() {
     } catch (error) {
       console.error('Error during loan calculation:', error);
       setStatusMessage('Error calculating loan: ' + error.message);
-      setStatusError(true);
-    }
-  };
-
-  const fetchLoanProductDetails = async (prdId, loanType = 'new') => {
-    try {
-      await fetchNewLoanDetails(prdId, loanType);
-    } catch {
-      setStatusMessage('Failed to fetch loan details');
       setStatusError(true);
     }
   };
@@ -859,9 +856,10 @@ export default function LoanApplication() {
                       label="Purpose of Loan"
                       name="purposeOfLoan"
                       value={formData.purposeOfLoan}
-                      onChange={handleChange}
+                      onChange={handlePurposeOfLoanChange}
                       size="small"
                       fullWidth
+                      inputProps={{ pattern: '[A-Za-z\\s]*' }}
                     />
 
                     {/* Guarantor Source of Funds */}

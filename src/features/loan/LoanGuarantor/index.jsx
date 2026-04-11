@@ -16,6 +16,7 @@ import {
   Radio,
   FormControl,
   FormLabel,
+  InputAdornment,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -23,6 +24,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useGuarantorLoad } from './Hooks/useGuarantorLoad';
 import { useGuarantorValidate } from './Hooks/useGuarantorValidate';
 import { useSaveGuarantor } from './Hooks/useSaveGuarantor';
@@ -258,6 +260,16 @@ export default function LoanGuarantor() {
   const handleGuarantorDetailsChange = (e) => {
     const { name, value } = e.target;
     setGuarantorDetails((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAmountToGuaranteeChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setGuarantorDetails((prev) => ({ ...prev, amountToGuarantee: cleanValue }));
+  };
+
+  const handleTotalGuaranteedChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setGuarantorDetails((prev) => ({ ...prev, totalGuaranteed: cleanValue }));
   };
 
   const handleSaveGuarantor = async () => {
@@ -612,7 +624,7 @@ export default function LoanGuarantor() {
           </FormControl>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Guarantor ID"
@@ -625,7 +637,7 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Guarantor Name"
@@ -638,7 +650,7 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Saving Balance"
@@ -651,19 +663,23 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Enter amount"
                   name="amountToGuarantee"
-                  value={guarantorDetails.amountToGuarantee}
-                  onChange={handleGuarantorDetailsChange}
+                  value={formatCurrency(guarantorDetails.amountToGuarantee)}
+                  onChange={handleAmountToGuaranteeChange}
                   variant="outlined"
                   size="small"
                   placeholder="Amount to Guarantee"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                  }}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Collateral Value"
@@ -676,7 +692,7 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Loan Balance"
@@ -689,7 +705,7 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="Guarantee Date"
@@ -711,18 +727,22 @@ export default function LoanGuarantor() {
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Total Guaranteed"
                   name="totalGuaranteed"
-                  value={guarantorDetails.totalGuaranteed}
-                  onChange={handleGuarantorDetailsChange}
+                  value={formatCurrency(guarantorDetails.totalGuaranteed)}
+                  onChange={handleTotalGuaranteedChange}
                   variant="outlined"
                   size="small"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                  }}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Guarantor Required"
