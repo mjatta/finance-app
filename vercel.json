@@ -86,6 +86,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/save-guarantor"
     },
     {
+      "source": "/api/LoanApproval/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoanApproval/:path*"
+    },
+    {
       "source": "/api/guarantor/load",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/guarantor/load"
     },

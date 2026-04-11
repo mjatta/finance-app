@@ -1048,6 +1048,59 @@ const saveLoanGuarantorApiPlugin = () => ({
   },
 })
 
+const loanApprovalApiPlugin = () => ({
+  name: 'loan-approval-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/LoanApproval/', async (req, res, next) => {
+      try {
+        // Add CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'GET') {
+          try {
+            // Preserve the full path and query string
+            const fullPath = req.url.startsWith('/api/LoanApproval') ? req.url : `/api/LoanApproval${req.url}`
+            const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+            console.log('Loan Approval API Request:', backendUrl)
+            
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            console.log('Loan Approval API Response:', backendRes.status)
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            // Backend unreachable
+            console.error('Backend error:', fetchErr)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('Loan approval plugin error:', err)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -1229,5 +1282,6 @@ export default defineConfig({
     customerRegistrationApiPlugin(),
     guarantorLoadApiPlugin(),
     saveLoanGuarantorApiPlugin(),
+    loanApprovalApiPlugin(),
   ],
 })

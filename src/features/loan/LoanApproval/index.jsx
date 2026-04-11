@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -6,37 +6,46 @@ import {
   CardContent,
   TextField,
   Typography,
-  Alert,
+  Grid,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import { useGetMemberDetails } from '../../../features/member/AccountEnquiries/hooks/useGetMemberDetails';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
 
-const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="130" viewBox="0 0 180 130"><rect width="180" height="130" fill="#f1f5f9"/><circle cx="90" cy="48" r="18" fill="#cbd5e1"/><rect x="52" y="76" width="76" height="30" rx="15" fill="#cbd5e1"/></svg>',
-)}`;
-
-const formatProfileImage = (imageData) => {
-  if (!imageData) return defaultProfileImage;
-  if (imageData.startsWith('data:')) return imageData;
-  return `data:image/jpeg;base64,${imageData}`;
-};
+const LOAN_COLUMNS = [
+  { field: 'customerCode', headerName: 'Customer Code', flex: 1, minWidth: 120, sortable: true },
+  { field: 'customerName', headerName: 'Customer Name', flex: 1.5, minWidth: 200, sortable: true },
+  { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 140, sortable: true },
+  { field: 'applicationDate', headerName: 'Application Date', flex: 1, minWidth: 140, sortable: true },
+];
 
 export default function LoanApproval() {
-  const [searchCustomerCode, setSearchCustomerCode] = useState('');
-  const [memberDetails, setMemberDetails] = useState(null);
-  const [error, setError] = useState('');
-  const [selectedRows, setSelectedRows] = useState([]);
+  const [loans, setLoans] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusError, setStatusError] = useState(false);
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+  const [sortModel, setSortModel] = useState([]);
+
   const [approvalDetails, setApprovalDetails] = useState({
-    newAccountNumber: '',
     savingBalance: '',
     previousLoanBalance: '',
     loanProduct: '',
-    grossPeriod: '',
-    approvedAmount: '',
+    gracePeriod: '',
+    newAccountNumber: '',
+    approveAmount: '',
     duration: '',
     approveDate: '',
   });
+
   const [appliedLoanDetails, setAppliedLoanDetails] = useState({
     paymentFrequency: '',
     grossInterest: '',
@@ -45,536 +54,579 @@ export default function LoanApproval() {
     periodicPayment: '',
     totalDuration: '',
   });
-  const [loanApplications, setLoanApplications] = useState([]);
-  const { fetchMemberDetails, loading } = useGetMemberDetails();
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const { fetchLoansForApproval } = useLoanApprovalLoad();
 
-    if (!searchCustomerCode.trim()) {
-      setError('Please enter a customer code');
-      return;
-    }
-
-    setError('');
-    setMemberDetails(null);
-    setSelectedRows([]);
-
+  const loadLoans = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await fetchMemberDetails(searchCustomerCode.trim());
-      if (data) {
-        setMemberDetails(data);
-        setError('');
-      } else {
-        setError('Customer not found');
-        setMemberDetails(null);
+      const data = await fetchLoansForApproval();
+
+      if (!data || data.length === 0) {
+        setLoans([]);
+        setStatusMessage('No loans available for approval.');
+        setStatusError(false);
+        return;
       }
-    } catch {
-      setError('Failed to fetch customer details');
-      setMemberDetails(null);
+
+      // Transform API response to table rows
+      const mappedLoans = data.map((item, index) => ({
+        id: item.loanId || index,
+        customerCode: item.customerCode || '',
+        customerName: item.customerName || '',
+        loanAmount: item.loanAmount || '0',
+        applicationDate: item.applicationDate || '',
+        // Store additional data for populating form
+        savingBalance: item.savingBalance || '0',
+        previousLoanBalance: item.previousLoanBalance || '0',
+        loanProduct: item.loanProduct || '',
+        gracePeriod: item.gracePeriod || '',
+        paymentFrequency: item.paymentFrequency || '',
+        grossInterest: item.grossInterest || '0',
+        totalAmount: item.totalAmount || '0',
+        economicSector: item.economicSector || '',
+        periodicPayment: item.periodicPayment || '0',
+        totalDuration: item.totalDuration || '',
+      }));
+
+      setLoans(mappedLoans);
+      setStatusMessage('');
+      setStatusError(false);
+    } catch (error) {
+      console.error('Failed to load loans:', error);
+      setStatusMessage('Failed to load loan data.');
+      setStatusError(true);
+      notifySaveError({
+        page: 'Loan / Loan Approval',
+        action: 'Load Loans',
+        message: 'Failed to load loan data.',
+        error,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchLoansForApproval]);
+
+  useEffect(() => {
+    loadLoans();
+  }, [loadLoans]);
+
+  const handleRowClick = (params) => {
+    const loanId = params.id;
+    const selectedLoan = loans.find((l) => l.id === loanId);
+
+    if (selectedIds.includes(loanId)) {
+      setSelectedIds(selectedIds.filter((id) => id !== loanId));
+      setApprovalDetails({
+        savingBalance: '',
+        previousLoanBalance: '',
+        loanProduct: '',
+        gracePeriod: '',
+        newAccountNumber: '',
+        approveAmount: '',
+        duration: '',
+        approveDate: '',
+      });
+      setAppliedLoanDetails({
+        paymentFrequency: '',
+        grossInterest: '',
+        totalAmount: '',
+        economicSector: '',
+        periodicPayment: '',
+        totalDuration: '',
+      });
+    } else {
+      setSelectedIds([loanId]);
+      if (selectedLoan) {
+        setApprovalDetails({
+          savingBalance: selectedLoan.savingBalance,
+          previousLoanBalance: selectedLoan.previousLoanBalance,
+          loanProduct: selectedLoan.loanProduct,
+          gracePeriod: selectedLoan.gracePeriod,
+          newAccountNumber: '',
+          approveAmount: '',
+          duration: '',
+          approveDate: '',
+        });
+        setAppliedLoanDetails({
+          paymentFrequency: selectedLoan.paymentFrequency,
+          grossInterest: selectedLoan.grossInterest,
+          totalAmount: selectedLoan.totalAmount,
+          economicSector: selectedLoan.economicSector,
+          periodicPayment: selectedLoan.periodicPayment,
+          totalDuration: selectedLoan.totalDuration,
+        });
+      }
     }
   };
-
-  const handleRowClick = useCallback((params) => {
-    const loanId = params.id;
-    if (selectedRows.includes(loanId)) {
-      setSelectedRows([]);
-    } else {
-      setSelectedRows([loanId]);
-    }
-  }, [selectedRows]);
 
   const handleApprovalDetailsChange = (e) => {
     const { name, value } = e.target;
     setApprovalDetails((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAppliedLoanDetailsChange = (e) => {
-    const { name, value } = e.target;
-    setAppliedLoanDetails((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleApproveLoan = async () => {
-    if (selectedRows.length === 0) {
-      setError('Please select a loan application');
+  const handleApproveLoan = () => {
+    if (!approvalDetails.approveAmount) {
+      setStatusMessage('Please enter the approval amount.');
+      setStatusError(true);
       return;
     }
-    console.log('Approve loan:', selectedRows[0]);
-    // TODO: Implement API call to approve loan
+
+    setStatusMessage('Loan approved successfully.');
+    setStatusError(false);
+    notifySaveSuccess({
+      page: 'Loan / Loan Approval',
+      action: 'Approve Loan',
+      message: 'Loan approved successfully.',
+    });
   };
 
-  const handleRejectLoan = async () => {
-    if (selectedRows.length === 0) {
-      setError('Please select a loan application');
+  const handleRejectLoan = () => {
+    if (selectedIds.length === 0) {
+      setStatusMessage('Please select a loan first.');
+      setStatusError(true);
       return;
     }
-    console.log('Reject loan:', selectedRows[0]);
-    // TODO: Implement API call to reject loan
+
+    setStatusMessage('Loan rejected.');
+    setStatusError(false);
+    notifySaveSuccess({
+      page: 'Loan / Loan Approval',
+      action: 'Reject Loan',
+      message: 'Loan rejected.',
+    });
   };
 
-  const handleLoanAmortization = async () => {
-    if (selectedRows.length === 0) {
-      setError('Please select a loan application');
+  const handleLoanAmortization = () => {
+    if (selectedIds.length === 0) {
+      setStatusMessage('Please select a loan first.');
+      setStatusError(true);
       return;
     }
-    console.log('View amortization for loan:', selectedRows[0]);
-    // TODO: Implement navigation to amortization page
+
+    setStatusMessage('Loan amortization generated.');
+    setStatusError(false);
   };
 
-  const handleGenerateReport = async () => {
-    if (selectedRows.length === 0) {
-      setError('Please select a loan application');
-      return;
-    }
-    console.log('Generate report for loan:', selectedRows[0]);
-    // TODO: Implement API call to generate report
-  };
-
-  // Columns for loan applications table
-  const columns = useMemo(() => [
-    {
-      field: 'CustomerCode',
-      headerName: 'Customer Code',
-      flex: 1,
-      minWidth: 150,
-      valueFormatter: (value) => value || '-',
-    },
-    {
-      field: 'CustomerName',
-      headerName: 'Customer Name',
-      flex: 1,
-      minWidth: 200,
-      valueFormatter: (value) => value || '-',
-    },
-    {
-      field: 'LoanAmount',
-      headerName: 'Loan Amount',
-      flex: 1,
-      minWidth: 150,
-      valueFormatter: (value) => value || '-',
-    },
-    {
-      field: 'ApplicationDate',
-      headerName: 'Application Date',
-      flex: 1,
-      minWidth: 150,
-      valueFormatter: (value) => value || '-',
-    },
-    {
-      field: 'NewLoanAccountNumber',
-      headerName: 'New Loan Account Number',
-      flex: 1,
-      minWidth: 200,
-      valueFormatter: (value) => value || '-',
-    },
-  ], []);
-
-  // Mock rows - placeholder data
-  const rows = useMemo(() => {
-    if (!memberDetails) return [];
-    return [];
-  }, [memberDetails]);
+  const loanCount = loans.length;
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#2c3e50', mb: 3 }}>
-        Loan Approval
-      </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' } }}>
-        {/* Search Card */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
-              Search Customer
-            </Typography>
-            <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 300 }}>
-              <TextField
-                label="Customer Code"
-                value={searchCustomerCode}
-                onChange={(e) => setSearchCustomerCode(e.target.value)}
-                placeholder="Enter customer code"
-                size="small"
-                fullWidth
-                disabled={loading}
-              />
-              <Button
-                variant="contained"
-                type="submit"
-                startIcon={<SearchRoundedIcon />}
-                fullWidth
-                disabled={loading}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                }}
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Contact Card - Profile Picture & Signature */}
-        {memberDetails && (
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-                Contact
-              </Typography>
-              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center' }}>
-                {/* Profile Picture Column */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <Box
-                    component="img"
-                    src={formatProfileImage(memberDetails.MemberPicture)}
-                    alt="Customer profile"
-                    sx={{
-                      width: 180,
-                      height: 130,
-                      borderRadius: 1.5,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      objectFit: 'cover',
-                    }}
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    Customer profile picture
-                  </Typography>
-                </Box>
-                {/* Signature Column */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    component="img"
-                    src={formatProfileImage(memberDetails.MemberSignature)}
-                    alt="Customer signature"
-                    sx={{
-                      width: 180,
-                      height: 130,
-                      borderRadius: 1.5,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      objectFit: 'contain',
-                      backgroundColor: '#fff',
-                    }}
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    Customer Signature
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
+      {/* Header Section */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          color: 'white',
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+          Loan Approval
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.95 }}>
+          Review and manage loan applications for approval
+        </Typography>
       </Box>
 
-      {/* Loan Applications Table - Full Width */}
-      {memberDetails && (
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', mt: 3 }}>
-          <CardContent sx={{ p: 0 }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                Loan Applications
-              </Typography>
-            </Box>
+      {/* Statistics Section */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            bgcolor: '#e3f2fd',
+            borderRadius: 1.5,
+            border: '1px solid #bbdefb',
+          }}
+        >
+          <Typography variant="caption" sx={{ color: '#1565c0', fontWeight: 600 }}>
+            Total Loans
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1565c0' }}>
+            {loanCount}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            p: 2,
+            bgcolor: '#f3e5f5',
+            borderRadius: 1.5,
+            border: '1px solid #e1bee7',
+          }}
+        >
+          <Typography variant="caption" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
+            Selected
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#6a1b9a' }}>
+            {selectedIds.length}
+          </Typography>
+        </Box>
+      </Box>
+
+      {statusMessage && (
+        <Box
+          sx={{
+            mb: 2,
+            p: 2.5,
+            borderRadius: 1.5,
+            bgcolor: statusError ? '#ffebee' : '#f1f8e9',
+            borderLeft: `4px solid ${statusError ? '#c62828' : '#558b2f'}`,
+            border: `1px solid ${statusError ? '#ef5350' : '#9ccc65'}`,
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              color: statusError ? '#c62828' : '#558b2f',
+              fontWeight: 500,
+            }}
+          >
+            {statusError ? '❌' : '✅'} {statusMessage}
+          </Typography>
+        </Box>
+      )}
+
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={loadLoans}
+          disabled={loading}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+          }}
+        >
+          {loading ? 'Loading...' : '↻ Refresh'}
+        </Button>
+      </Box>
+
+      {/* Main Grid Layout */}
+      <Grid container spacing={3}>
+        {/* Loans DataGrid */}
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+            Loans for Approval
+          </Typography>
+          <Box
+            sx={{
+              height: 400,
+              width: '100%',
+              borderRadius: 1.5,
+              border: '1px solid #e0e0e0',
+              overflow: 'hidden',
+              mb: 3,
+            }}
+          >
             <DataGrid
-              rows={rows}
-              columns={columns}
-              density="compact"
-              pageSizeOptions={[10, 25, 50]}
+              rows={loans}
+              columns={LOAN_COLUMNS}
+              loading={loading}
+              pageSizeOptions={[5, 10, 25]}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              sortModel={sortModel}
+              onSortModelChange={setSortModel}
               onRowClick={handleRowClick}
               getRowClassName={(params) => {
-                if (selectedRows.includes(params.id)) {
+                if (selectedIds.includes(params.id)) {
                   return 'selected-row';
                 }
                 return '';
               }}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-              }}
               sx={{
-                '& .MuiDataGrid-root': {
-                  border: 'none',
-                  borderRadius: 0,
-                },
-                '& .MuiDataGrid-cell': {
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
+                border: 'none',
+                '& .MuiDataGrid-columnHeaderTitle': {
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  color: '#ffffff',
                 },
                 '& .MuiDataGrid-columnHeader': {
-                  backgroundColor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontWeight: 700,
-                  borderBottom: 'none',
+                  backgroundColor: '#2c3e50',
+                  borderBottom: '2px solid #1a252f',
+                },
+                '& .MuiDataGrid-footerContainer': {
+                  backgroundColor: '#f5f5f5',
+                  borderTop: '1px solid #e0e0e0',
+                  fontWeight: 500,
+                },
+                '& .MuiTablePagination-root': {
+                  color: '#2c3e50',
+                  fontWeight: 500,
                 },
                 '& .MuiDataGrid-row': {
                   cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                   '&.selected-row': {
-                    backgroundColor: '#bbdefb',
-                    fontWeight: 500,
+                    backgroundColor: '#1976d2 !important',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    '& .MuiDataGrid-cell': {
+                      color: '#ffffff',
+                      borderBottomColor: '#1565c0',
+                    },
+                    '&:hover': {
+                      backgroundColor: '#1565c0 !important',
+                    },
                   },
                   '&:nth-of-type(odd)': {
-                    backgroundColor: '#f8f9fa',
+                    backgroundColor: '#fafafa',
+                  },
+                  '&:nth-of-type(even)': {
+                    backgroundColor: '#ffffff',
                   },
                   '&:hover': {
-                    backgroundColor: '#e9ecef',
+                    backgroundColor: '#f0f0f0 !important',
                   },
                 },
               }}
             />
-          </CardContent>
-        </Card>
-      )}
+          </Box>
+        </Grid>
 
-      {/* Approval Details Card */}
-      {memberDetails && (
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 3 }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
-              Approval Details
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
-              <TextField
-                label="New Loan Account Number"
-                name="newAccountNumber"
-                value={approvalDetails.newAccountNumber}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter new loan account number"
-              />
-              <TextField
-                label="Saving Balance"
-                name="savingBalance"
-                value={approvalDetails.savingBalance}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter saving balance"
-              />
-              <TextField
-                label="Previous Loan Balance"
-                name="previousLoanBalance"
-                value={approvalDetails.previousLoanBalance}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter previous loan balance"
-              />
-              <TextField
-                label="Loan Product"
-                name="loanProduct"
-                value={approvalDetails.loanProduct}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter loan product"
-              />
-              <TextField
-                label="Gross Period"
-                name="grossPeriod"
-                value={approvalDetails.grossPeriod}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter gross period"
-              />
-              <TextField
-                label="Approved Amount"
-                name="approvedAmount"
-                value={approvalDetails.approvedAmount}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter approved amount"
-              />
-              <TextField
-                label="Duration"
-                name="duration"
-                value={approvalDetails.duration}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                placeholder="Enter duration"
-              />
-              <TextField
-                label="Approve Date"
-                name="approveDate"
-                type="date"
-                value={approvalDetails.approveDate}
-                onChange={handleApprovalDetailsChange}
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+        {/* Details Cards */}
+        <Grid size={{ xs: 12 }}>
+          {/* Approval Details Card */}
+          <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+                Approval Details
+              </Typography>
 
-      {/* Applied Loan Details Card */}
-      {memberDetails && (
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 3 }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
-              Applied Loan Details
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
-              <TextField
-                label="Payment Frequency"
-                name="paymentFrequency"
-                value={appliedLoanDetails.paymentFrequency}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-              <TextField
-                label="Gross Interest"
-                name="grossInterest"
-                value={appliedLoanDetails.grossInterest}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-              <TextField
-                label="Total Amount"
-                name="totalAmount"
-                value={appliedLoanDetails.totalAmount}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-              <TextField
-                label="Economic Sector"
-                name="economicSector"
-                value={appliedLoanDetails.economicSector}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-              <TextField
-                label="Periodic Payment"
-                name="periodicPayment"
-                value={appliedLoanDetails.periodicPayment}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-              <TextField
-                label="Total Duration"
-                name="totalDuration"
-                value={appliedLoanDetails.totalDuration}
-                onChange={handleAppliedLoanDetailsChange}
-                size="small"
-                InputProps={{ readOnly: true }}
-                disabled
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    backgroundColor: '#f5f5f5',
-                    color: '#666',
-                  },
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Saving Balance"
+                    value={approvalDetails.savingBalance}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Previous Loan Balance"
+                    value={approvalDetails.previousLoanBalance}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Loan Product"
+                    value={approvalDetails.loanProduct}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Grace Period"
+                    value={approvalDetails.gracePeriod}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Box sx={{ p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#666' }}>
+                      New Account Number
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
+                      {approvalDetails.newAccountNumber || 'Not generated'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Approve Amount"
+                    name="approveAmount"
+                    value={approvalDetails.approveAmount}
+                    onChange={handleApprovalDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Enter amount"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Duration"
+                    name="duration"
+                    value={approvalDetails.duration}
+                    onChange={handleApprovalDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Enter duration"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="Approve Date"
+                      value={approvalDetails.approveDate ? dayjs(approvalDetails.approveDate) : null}
+                      onChange={(newValue) => {
+                        const formatted = newValue ? newValue.format('YYYY-MM-DD') : '';
+                        setApprovalDetails((prev) => ({
+                          ...prev,
+                          approveDate: formatted,
+                        }));
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                          variant: 'outlined',
+                        },
+                      }}
+                    />
+                  </LocalizationProvider>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Applied Loan Details Card */}
+          <Card sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+                Applied Loan Details
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Payment Frequency"
+                    value={appliedLoanDetails.paymentFrequency}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Gross Interest"
+                    value={appliedLoanDetails.grossInterest}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Total Amount"
+                    value={appliedLoanDetails.totalAmount}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Economic Sector"
+                    value={appliedLoanDetails.economicSector}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Periodic Payment"
+                    value={appliedLoanDetails.periodicPayment}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Total Duration"
+                    value={appliedLoanDetails.totalDuration}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Action Buttons */}
-      {memberDetails && (
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 3 }}>
-          <Button
-            variant="contained"
-            onClick={handleApproveLoan}
-            sx={{
-              backgroundColor: '#4caf50',
-              '&:hover': { backgroundColor: '#45a049' },
-              fontWeight: 600,
-              paddingX: 3,
-              boxShadow: 'none',
-              textTransform: 'none',
-            }}
-          >
-            ✓ Approve Loan
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleRejectLoan}
-            sx={{
-              backgroundColor: '#f44336',
-              '&:hover': { backgroundColor: '#da190b' },
-              fontWeight: 600,
-              paddingX: 3,
-              boxShadow: 'none',
-              textTransform: 'none',
-            }}
-          >
-            ✕ Reject Loan
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleLoanAmortization}
-            sx={{
-              backgroundColor: '#2196f3',
-              '&:hover': { backgroundColor: '#0b7dda' },
-              fontWeight: 600,
-              paddingX: 3,
-              boxShadow: 'none',
-              textTransform: 'none',
-            }}
-          >
-            📊 Loan Amortization
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleGenerateReport}
-            sx={{
-              backgroundColor: '#ff9800',
-              '&:hover': { backgroundColor: '#e68900' },
-              fontWeight: 600,
-              paddingX: 3,
-              boxShadow: 'none',
-              textTransform: 'none',
-            }}
-          >
-            📄 Generate Report
-          </Button>
-        </Box>
-      )}
+      <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleApproveLoan}
+          disabled={selectedIds.length === 0 || loading}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+            boxShadow: 2,
+          }}
+        >
+          ✓ Approve Loan
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={handleRejectLoan}
+          disabled={selectedIds.length === 0 || loading}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+            boxShadow: 2,
+          }}
+        >
+          ✗ Reject Loan
+        </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleLoanAmortization}
+          disabled={selectedIds.length === 0 || loading}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+          }}
+        >
+          📊 Loan Amortization
+        </Button>
+      </Box>
     </Box>
   );
 }
