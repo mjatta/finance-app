@@ -530,7 +530,7 @@ export default function LoanApplication() {
           {/* Search Card */}
           <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                 Search Member
               </Typography>
               <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 400 }}>
@@ -568,10 +568,10 @@ export default function LoanApplication() {
           {memberDetails && (
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Contact
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center' }}>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center', mb: 2 }}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                     <Box
                       component="img"
@@ -591,6 +591,16 @@ export default function LoanApplication() {
                     <Typography variant="body2" color="text.secondary">Member Signature</Typography>
                   </Box>
                 </Box>
+                <Box sx={{ borderTop: '1px solid', borderColor: '#e0e0e0', pt: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Phone:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {memberDetails.Phone || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -603,7 +613,7 @@ export default function LoanApplication() {
               {/* Card 1: Primary Loan Details */}
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                     Loan Details
                   </Typography>
 
@@ -729,7 +739,7 @@ export default function LoanApplication() {
               {/* Card 2: Additional Details */}
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                     Additional Details
                   </Typography>
 
@@ -906,117 +916,110 @@ export default function LoanApplication() {
             {/* Card 3: Calculated Items - Full Width */}
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Calculated Items
                 </Typography>
 
-                <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
-                  {/* Principal - readonly */}
-                  <TextField
-                    label="Principal"
-                    value={formData.principalAmount}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                  {/* Principal */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Principal:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.principalAmount || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Periodic Payment - readonly */}
-                  <TextField
-                    label="Periodic Payment"
-                    value={formData.periodicPayment}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Periodic Payment */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Periodic Payment:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.periodicPayment || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Interest Rate (Calculated) - readonly */}
-                  <TextField
-                    label="Interest Rate (%)"
-                    value={formData.calculatedInterestRate}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Interest Rate (Calculated) */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Interest Rate (%):
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.calculatedInterestRate || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* First Payment Date - readonly */}
-                  <TextField
-                    label="First Payment Date"
-                    value={formData.firstPaymentDate}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                  />
+                  {/* First Payment Date */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      First Payment Date:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.firstPaymentDate || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Gross Interest - readonly */}
-                  <TextField
-                    label="Gross Interest"
-                    value={formData.grossInterest}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Gross Interest */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Gross Interest:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.grossInterest || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Final Payment Date - readonly */}
-                  <TextField
-                    label="Final Payment Date"
-                    value={formData.finalPaymentDate}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                  />
+                  {/* Final Payment Date */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Final Payment Date:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.finalPaymentDate || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Total Interest - readonly */}
-                  <TextField
-                    label="Total Interest"
-                    value={formData.totalInterest}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Total Interest */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Total Interest:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.totalInterest || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Payment Frequency - readonly */}
-                  <TextField
-                    label="Payment Frequency"
-                    value={formData.paymentFrequency}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                  />
+                  {/* Payment Frequency */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Payment Frequency:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.paymentFrequency || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Total Payment - readonly */}
-                  <TextField
-                    label="Total Payment"
-                    value={formData.totalPayment}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Total Payment */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Total Payment:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.totalPayment || 'N/A'}
+                    </Typography>
+                  </Box>
 
-                  {/* Total Duration - readonly */}
-                  <TextField
-                    label="Total Duration (Months)"
-                    value={formData.totalDuration}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    sx={readOnlyFieldSx}
-                    type="number"
-                  />
+                  {/* Total Duration */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Total Duration (Months):
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.totalDuration || 'N/A'}
+                    </Typography>
+                  </Box>
 
                 </Box>
               </CardContent>
