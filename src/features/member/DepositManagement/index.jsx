@@ -9,7 +9,9 @@ import {
   Checkbox,
   CircularProgress,
   FormControlLabel,
+  InputAdornment,
   MenuItem,
+  Skeleton,
   TextField,
   Typography,
 } from '@mui/material';
@@ -17,6 +19,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
@@ -65,6 +68,7 @@ export default function DepositManagement() {
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
 
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
@@ -220,6 +224,16 @@ export default function DepositManagement() {
     }
   };
 
+  const handleDepositAmountChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setFormData((prev) => ({ ...prev, depositAmount: cleanValue }));
+  };
+
+  const handleDepositFeeAmountChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setFormData((prev) => ({ ...prev, feeAmount: cleanValue }));
+  };
+
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -304,6 +318,7 @@ export default function DepositManagement() {
   // Fetch account details when posting account changes
   useEffect(() => {
     if (formData.postingAccount) {
+      setLoadingAccountDetails(true);
       fetchAccountDetails(formData.postingAccount).then((result) => {
         if (result.success && result.data) {
           setFormData((prev) => ({
@@ -315,6 +330,9 @@ export default function DepositManagement() {
             controlAccount: result.data.controlAccount,
           }));
         }
+        setLoadingAccountDetails(false);
+      }).catch(() => {
+        setLoadingAccountDetails(false);
       });
     }
   }, [formData.postingAccount, fetchAccountDetails]);
@@ -629,9 +647,22 @@ export default function DepositManagement() {
         </Box>
       </Backdrop>
 
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
-        Deposit
-      </Typography>
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          color: 'white',
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Deposit
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Process member deposits and manage transactions
+        </Typography>
+      </Box>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -667,61 +698,61 @@ export default function DepositManagement() {
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
               Contact
             </Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'auto 1fr' }, alignItems: 'flex-start' }}>
-              {/* Image Column */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                <Box
-                  component="img"
-                  src={formData.profilePicture || defaultProfileImage}
-                  alt="Member profile"
-                  sx={{
-                    width: 180,
-                    height: 130,
-                    borderRadius: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    objectFit: 'cover',
-                  }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  Member profile picture
-                </Typography>
-                <TextField
-                  label="Phone Number"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  size="small"
-                  sx={{
-                    maxWidth: '280px',
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      backgroundColor: '#e8e8e8',
-                      color: '#666',
-                      fontWeight: 600,
-                    },
-                  }}
-                />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Images Row */}
+              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, justifyItems: 'center' }}>
+                {/* Profile Picture */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    component="img"
+                    src={formData.profilePicture || defaultProfileImage}
+                    alt="Member profile"
+                    sx={{
+                      width: 160,
+                      height: 120,
+                      borderRadius: 1.5,
+                      border: '2px solid',
+                      borderColor: 'primary.light',
+                      objectFit: 'cover',
+                      boxShadow: 1,
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Member Profile
+                  </Typography>
+                </Box>
+                {/* Member Signature */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    component="img"
+                    src={formData.memberSignature || defaultProfileImage}
+                    alt="Member signature"
+                    sx={{
+                      width: 160,
+                      height: 120,
+                      borderRadius: 1.5,
+                      border: '2px solid',
+                      borderColor: 'primary.light',
+                      objectFit: 'contain',
+                      backgroundColor: '#f5f5f5',
+                      boxShadow: 1,
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Member Signature
+                  </Typography>
+                </Box>
               </Box>
-              {/* Contact Info Column */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box
-                  component="img"
-                  src={formData.memberSignature || defaultProfileImage}
-                  alt="Member signature"
-                  sx={{
-                    width: 180,
-                    height: 130,
-                    borderRadius: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    objectFit: 'contain',
-                    backgroundColor: '#fff',
-                  }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  Member Signature
-                </Typography>
+              {/* Phone Number Section */}
+              <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '120px' }}>
+                    Phone Number:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                    {formData.phoneNumber || 'N/A'}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           </CardContent>
@@ -755,7 +786,7 @@ export default function DepositManagement() {
             {/* Transaction Details Card */}
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Transaction Details
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 2 }}>
@@ -786,6 +817,8 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
+                    displayEmpty
+                    renderValue={(value) => value || 'Select Posting Account'}
                     sx={{
                       '& .MuiFormLabel-root.Mui-required::after': {
                         color: '#fff',
@@ -793,7 +826,7 @@ export default function DepositManagement() {
                       },
                     }}
                   >
-                    <MenuItem value="">Select posting account</MenuItem>
+                    <MenuItem value="">Select Posting Account</MenuItem>
                     {formData.memberAccounts.map((account) => (
                       <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
                         {account.AccountName}
@@ -819,86 +852,53 @@ export default function DepositManagement() {
             {/* Account Details Card */}
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Account Details
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <TextField
-                    label="Account Number"
-                    name="accountNumber"
-                    value={formData.accountNumber}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      maxWidth: '280px',
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                      '& .MuiInputAdornment-positionEnd': {
-                        display: 'none',
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Account Balance"
-                    name="accountBalance"
-                    value={formData.accountBalance !== '' ? parseFloat(formData.accountBalance).toFixed(2) : ''}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      maxWidth: '280px',
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                      '& .MuiInputAdornment-positionEnd': {
-                        display: 'none',
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Cleared Balance"
-                    name="clearedBalance"
-                    value={formData.clearedBalance !== '' ? parseFloat(formData.clearedBalance).toFixed(2) : ''}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      maxWidth: '280px',
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                      '& .MuiInputAdornment-positionEnd': {
-                        display: 'none',
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Uncleared Balance"
-                    name="unclearedBalance"
-                    value={formData.unclearedBalance !== '' ? parseFloat(formData.unclearedBalance).toFixed(2) : ''}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      maxWidth: '280px',
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                      '& .MuiInputAdornment-positionEnd': {
-                        display: 'none',
-                      },
-                    }}
-                  />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {loadingAccountDetails ? (
+                    <>
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                    </>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Account Number:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.accountNumber || 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Account Balance:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.accountBalance !== '' ? parseFloat(formData.accountBalance).toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Cleared Balance:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.clearedBalance !== '' ? parseFloat(formData.clearedBalance).toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Uncleared Balance:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.unclearedBalance !== '' ? parseFloat(formData.unclearedBalance).toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -906,7 +906,7 @@ export default function DepositManagement() {
             {/* Deposit Details Card */}
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Deposit Details
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 2 }}>
@@ -919,8 +919,10 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
+                    displayEmpty
+                    renderValue={(value) => value || 'Select Deposit Type'}
                   >
-                    <MenuItem value="">Select Type</MenuItem>
+                    <MenuItem value="">Select Deposit Type</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
                     <MenuItem value="cheque">Cheque</MenuItem>
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
@@ -928,14 +930,18 @@ export default function DepositManagement() {
                   <TextField
                     label="Deposit Amount"
                     name="depositAmount"
-                    value={formData.depositAmount}
-                    onChange={handleChange}
+                    value={formatCurrency(formData.depositAmount)}
+                    onChange={handleDepositAmountChange}
                     onBlur={() => handleBlur('depositAmount')}
                     error={isFieldInvalid('depositAmount')}
                     helperText={isFieldInvalid('depositAmount') ? 'Deposit Amount is required' : ''}
                     size="small"
                     fullWidth
                     required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     sx={{
                       '& .MuiFormLabel-root.Mui-required::after': {
                         color: '#fff',
@@ -952,13 +958,26 @@ export default function DepositManagement() {
                     minRows={4}
                     fullWidth
                   />
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pt: 1 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
                     <FormControlLabel
                       control={<Checkbox name="sendSmsFee" checked={formData.sendSmsFee} onChange={handleChange} />}
                       label="Send SMS fee"
                       sx={{ '& .MuiTypography-root': { fontSize: '0.95rem' }, m: 0 }}
                     />
-                    <TextField label="Fee Amount" name="feeAmount" value={formData.feeAmount} onChange={handleChange} size="small" sx={{ width: '120px' }} />
+                    {formData.sendSmsFee && (
+                      <TextField
+                        label="Fee Amount"
+                        name="feeAmount"
+                        value={formatCurrency(formData.feeAmount)}
+                        onChange={handleDepositFeeAmountChange}
+                        size="small"
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                        sx={{ width: '200px' }}
+                      />
+                    )}
                   </Box>
                 </Box>
               </CardContent>
@@ -968,70 +987,42 @@ export default function DepositManagement() {
             {formData.depositType === 'cash' && (
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Cash Details
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <TextField
-                    label="Cash Account"
-                    name="cashAccount"
-                    value={formData.cashAccount}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Credit Limit"
-                    name="creditLimit"
-                    value={formData.creditLimit}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Debit Limit"
-                    name="debitLimit"
-                    value={formData.debitLimit}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                  <TextField
-                    label="Loan Limit"
-                    name="loanLimit"
-                    value={formData.loanLimit}
-                    disabled
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Cash Account:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.cashAccount || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Credit Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.creditLimit || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Debit Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.debitLimit || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Loan Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.loanLimit || 'N/A'}
+                    </Typography>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -1041,7 +1032,7 @@ export default function DepositManagement() {
             {formData.depositType === 'cheque' && (
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Check Details
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 2 }}>
