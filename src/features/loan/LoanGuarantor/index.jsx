@@ -31,12 +31,53 @@ import { useGuarantorValidate } from './Hooks/useGuarantorValidate';
 import { useSaveGuarantor } from './Hooks/useSaveGuarantor';
 
 const GUARANTOR_COLUMNS = [
-  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 1, minWidth: 120, sortable: true },
-  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 200, sortable: true },
-  { field: 'savingBalance', headerName: 'Saving Balance', flex: 1, minWidth: 140, sortable: true },
-  { field: 'collateralValue', headerName: 'Collateral Value', flex: 1, minWidth: 140, sortable: true },
-  { field: 'loanBalance', headerName: 'Loan Balance', flex: 1, minWidth: 140, sortable: true },
-  { field: 'guarantorRequired', headerName: 'Guarantor Required', flex: 1, minWidth: 140, sortable: true },
+  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true },
+  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 180, sortable: true },
+  { 
+    field: 'loanAmount', 
+    headerName: 'Loan Amount', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'right',
+    headerAlign: 'right',
+  },
+  { 
+    field: 'lduration_num', 
+    headerName: 'Duration (Months)', 
+    flex: 0.9, 
+    minWidth: 120, 
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+  },
+  { 
+    field: 'loanStart', 
+    headerName: 'Loan Start Date', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+  },
+  { 
+    field: 'loan_interest', 
+    headerName: 'Interest Rate', 
+    flex: 0.9, 
+    minWidth: 120, 
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+  },
+  { 
+    field: 'repaymentAmount', 
+    headerName: 'Repayment Amount', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'right',
+    headerAlign: 'right',
+  },
 ];
 
 const GUARANTEE_COLUMNS = [
@@ -101,19 +142,25 @@ export default function LoanGuarantor() {
         return;
       }
 
-      const mappedGuarantors = clientList.map((item, index) => ({
-        id: item.loan_id || index,
-        guarantorId: item.ccustcode?.toString() || '',
-        guarantorName: item.membername || '',
-        savingBalance: item.principal_amt?.toString() || '0',
-        collateralValue: (item.principal_amt * 1.2)?.toString() || '0', // 20% collateral value
-        loanBalance: item.principal_amt?.toString() || '0',
-        guarantorRequired: 'Yes',
-        loanAmount: item.principal_amt || 0,
-        repaymentAmount: item.repayment_amt || 0,
-        numberOfPayments: item.nofpayments || 0,
-        loanInterest: item.loan_interest || 0,
-      }));
+      const mappedGuarantors = clientList.map((item, index) => {
+        const loanStartDate = item.loanstart_date 
+          ? dayjs(item.loanstart_date).format('DD MMM YYYY')
+          : '';
+
+        return {
+          id: `${item.loan_id}-${index}`,
+          guarantorId: item.ccustcode?.toString() || '',
+          guarantorName: item.membername || '',
+          loanAmount: formatCurrency(item.principal_amt || 0),
+          lduration_num: item.lduration_num || 0,
+          loanStart: loanStartDate,
+          loan_interest: `${item.loan_interest || 0}%`,
+          repaymentAmount: formatCurrency(item.repayment_amt || 0),
+          nofpayments: item.nofpayments || 0,
+          rawPrincipalAmt: item.principal_amt || 0,
+          rawRepaymentAmt: item.repayment_amt || 0,
+        };
+      });
 
       setGuarantors(mappedGuarantors);
       setStatusMessage('');
