@@ -154,6 +154,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Cusystem/:path*"
     },
     {
+      "source": "/api/loans/LoanApplication",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/LoanApplication"
+    },
+    {
       "source": "/api/user-setup/password-change",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
     },

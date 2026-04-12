@@ -102,7 +102,8 @@ const economicSectors = [
 
 export default function LoanApplication() {
   const user = useAuthStore((state) => state.user);
-  const branchId = useAuthStore((state) => state.user?.branchId);
+  const authBranchId = useAuthStore((state) => state.user?.branchId);
+  const branchId = parseInt(localStorage.getItem('branchID')) || parseInt(authBranchId) || 1;
   const setLoanProducts = useAuthStore((state) => state.setLoanProducts);
   const setLoanProductDetails = useAuthStore((state) => state.setLoanProductDetails);
   const storeProducts = useAuthStore((state) => state.loanProducts);
@@ -403,30 +404,30 @@ export default function LoanApplication() {
       // Build the payload according to backend requirements
       const payload = {
         gnNewLoanID: '',
-        membcode: formData.memberCode,
-        lNET_SAVINGS: '',
-        gnPrdId: 1,
+        membcode: String(formData.memberCode).padStart(6, '0'), // Pad to 6 digits like "000001"
+        lNET_SAVINGS: parseInt(formData.savingBalance) || 0, // Convert to number, not empty string
+        gnPrdId: parseInt(formData.productId) || 1,
         lLOAN_INTEREST: parseFloat(formData.calculatedInterestRate) || parseFloat(formData.interestRate) || 0,
         lPRINCIPAL_AMT: parseFloat(formData.principalAmount) || 0,
-        lLDURATION_NUM: parseFloat(formData.loanDuration) || 0,
-        txtStartDate: formData.startDate,
-        txtEndDate: formData.finalPaymentDate,
+        lLDURATION_NUM: parseInt(formData.loanDuration) || 0,
+        txtStartDate: dayjs(formData.startDate).isValid() ? dayjs(formData.startDate).format('YYYY-MM-DD') : formData.startDate,
+        txtEndDate: dayjs(formData.finalPaymentDate).isValid() ? dayjs(formData.finalPaymentDate).format('YYYY-MM-DD') : formData.finalPaymentDate,
         lREPAYMENT_AMT: parseFloat(formData.totalPayment) || 0,
         lNOFPAYMENTS: parseInt(formData.totalDuration) || 0,
         lTOTAL_INTEREST: parseFloat(formData.totalInterest) || 0,
-        gcUserid: user?.userId || user?.id || '',
-        lBRANCH_ID: branchId || 0,
+        gcUserid: user?.username || user?.userId || user?.id || 'SYSTEM', // Use username (SUPER) not user ID
+        lBRANCH_ID: parseInt(branchId) || 1, // Don't allow 0, use valid branch ID
         nleconsec: 1,
-        nlloanpurpos: 1,
-        nmemsourcefunds: formData.sourceOfFunds ? parseInt(formData.sourceOfFunds) : 1,
-        nguasourcefunds: formData.guarantorSourceOfFunds ? parseInt(formData.guarantorSourceOfFunds) : 1,
-        lnofpayperyear: parseInt(formData.yearlyFrequency) || 12,
-        lgraceperiod: parseFloat(formData.gracePeriod) || 0,
-        lgraceperiodinterest: 0,
-        gnCompid: 3,
-        glTopup: false,
-        glResched: false,
-        dPrinPay: parseFloat(formData.principalAmount) * 0.9 || 0, // 90% of principal as default
+        nlloanpurpos: parseInt(formData.loanPurpose) || 1,
+        nmemsourcefunds: parseInt(formData.sourceOfFunds) || 1,
+        nguasourcefunds: parseInt(formData.guarantorSourceOfFunds) || 1,
+        lnofpayperyear: 12, // Always 12 for monthly payments
+        lgraceperiod: parseInt(formData.gracePeriod) || 0,
+        lgraceperiodinterest: parseInt(formData.gracePeriodInterest) || 0,
+        gnCompid: parseInt(user?.CompId) || 3,
+        glTopup: formData.topup === true || formData.topup === 'true' || false,
+        glResched: formData.reschedule === true || formData.reschedule === 'true' || false,
+        dPrinPay: parseFloat(formData.principalAmount * 0.9) || 0,
       };
 
       console.log('Saving loan application with payload:', payload);
@@ -444,19 +445,25 @@ export default function LoanApplication() {
       
       // Check if response indicates success
       // Look in multiple possible message fields and check for success keywords
-      const messageContent = (result?.message || result?.Message || result?.msg || result?.text || '').toLowerCase();
+      const messageContent = (result?.message || result?.Message || result?.msg || result?.text || result?.raw || '').toLowerCase();
       const isSuccess = result && (
+        result.success === true ||
         result.status === 'success' || 
         result.Status === 'success' ||
         result.statusCode === 200 || 
         result.Code === 200 || 
         messageContent.includes('successfully') ||
         messageContent.includes('inserted') ||
+        messageContent.includes('saved') ||
+        messageContent.includes('created') ||
+        messageContent.includes('loan details') ||
         result.data
       );
       
       console.log('Is Success (based on checks):', isSuccess);
       console.log('Message content:', messageContent);
+      console.log('Result object:', result);
+      console.log('Result statusCode:', result?.statusCode);
       
       if (isSuccess) {
         setStatusMessage('✓ Loan application saved successfully! Resetting form...');

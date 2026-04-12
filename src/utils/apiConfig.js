@@ -154,6 +154,11 @@ const ENDPOINT_MAP = {
     dev: '/api/loanapproval/approve',
     prod: '/api/loanapproval/approve',
   },
+  // Loan Application - Save
+  'loan-application-save': {
+    dev: '/api/loans/LoanApplication',
+    prod: '/api/loans/LoanApplication',
+  },
 };
 
 /**

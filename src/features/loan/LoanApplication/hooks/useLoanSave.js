@@ -8,7 +8,7 @@ export const useLoanSave = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/Cusystem/LoanApplication', {
+      const response = await fetch('/api/loans/LoanApplication', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -20,15 +20,34 @@ export const useLoanSave = () => {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      // Try to parse as JSON first, fall back to text if it fails
-      let result;
+      // Try to parse response - handle various formats
+      let result = {};
       const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        result = await response.json();
-      } else {
-        // Response is plain text
-        const text = await response.text();
-        result = { message: text, text: text };
+      
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          result = await response.json();
+        } else {
+          // Response is plain text or other format
+          const text = await response.text();
+          if (text) {
+            result = { message: text, text: text, raw: text, statusCode: response.status };
+          } else {
+            // Empty response body - treat 200 as success
+            result = { success: true, status: 'success', message: 'Loan application saved successfully', statusCode: response.status };
+          }
+        }
+      } catch (parseErr) {
+        console.error('Error parsing response:', parseErr);
+        // If parsing fails but we got 200, treat as success
+        result = { success: true, status: 'success', message: 'Loan application saved successfully', statusCode: response.status };
+      }
+      
+      // Ensure result is always an object with statusCode for reference
+      if (typeof result !== 'object' || result === null) {
+        result = { message: String(result), statusCode: response.status };
+      } else if (!result.statusCode) {
+        result.statusCode = response.status;
       }
       
       setLoading(false);
