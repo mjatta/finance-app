@@ -99,6 +99,7 @@ export default function LoanDisbursement() {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [selectedBank, setSelectedBank] = useState('');
   const [selectedBankAccount, setSelectedBankAccount] = useState('');
+  const [selectedBankAccountNumber, setSelectedBankAccountNumber] = useState('');
   const [loadingBanks, setLoadingBanks] = useState(false);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
@@ -107,6 +108,7 @@ export default function LoanDisbursement() {
     amount: '',
     topUpAmount: '',
     accruedInterest: '',
+    chequeNumber: '',
   });
 
   const { fetchLoanDisbursementData } = useLoanDisbursementLoad();
@@ -208,6 +210,7 @@ export default function LoanDisbursement() {
     setPaymentOption(paymentType);
     setSelectedBank('');
     setSelectedBankAccount('');
+    setSelectedBankAccountNumber('');
     setBankAccounts([]);
 
     // If cheque is selected, fetch banks
@@ -237,6 +240,7 @@ export default function LoanDisbursement() {
     const bankId = e.target.value;
     setSelectedBank(bankId);
     setSelectedBankAccount('');
+    setSelectedBankAccountNumber('');
     setBankAccounts([]);
 
     if (!bankId) return;
@@ -329,33 +333,28 @@ export default function LoanDisbursement() {
 
       // Get user info from auth store
       const user = useAuthStore.getState().user;
-      const compId = parseInt(user?.CompId) || 30;
-      const userId = user?.username || 'SYSTEM';
-      
-      // Get CashAccount from auth store (set during login)
-      const cashAccount = user?.CashAccount || localStorage.getItem('cashAccount') || 'CASH001';
+      const branchId = parseInt(user?.BranchId) || 11;
+      const cUserID = user?.username || 'SYSTEM';
+      const cashAccount = user?.CashAccount || localStorage.getItem('cashAccount') || '';
 
       const payload = {
         LoanID: selectedLoan.loan_id,
         AccountNumber: String(selectedLoan.loanacct || selectedLoan.loan_id || ''),
-        ContraAccount: paymentOption === 'cash' ? cashAccount : selectedBankAccount || '',
-        CashAccount: paymentOption === 'cash' ? cashAccount : '',
-        LoanProduct: 5,
+        ContraAccount: paymentOption === 'cash' ? cashAccount : (selectedBankAccountNumber || ''),
+        ControlAcct: String(selectedLoan.ControlAcct || '13100110101'),
+        ChequeNo: disbursementDetails.chequeNumber || '',
+        LoanProduct: 1,
         PaymentOption: paymentOptionMap[paymentOption] || 1,
         Amount: parseFloat(disbursementDetails.amount) || 0,
         TopUpAmount: parseFloat(disbursementDetails.topUpAmount) || 0,
         IsTopUp: parseFloat(disbursementDetails.topUpAmount) > 0,
         AccruedInterest: parseFloat(disbursementDetails.accruedInterest) || 0,
-        TransactionDate: disbursementDetails.transactionDate.format('YYYY-MM-DD'),
-        dvaludate: disbursementDetails.transactionDate.format('YYYY-MM-DD'),
-        CompId: compId,
-        UserId: userId,
+        TransactionDate: disbursementDetails.transactionDate.format('YYYY-MM-DDTHH:mm:ss'),
+        cUserID: cUserID,
+        lcurrcode: 1,
+        lbranchid: branchId,
+        llcBank: selectedBank || 1,
       };
-
-      console.log('Final payload:', payload);
-      console.log('AccountNumber value:', payload.AccountNumber);
-      console.log('CashAccount value:', payload.CashAccount);
-      console.log('ContraAccount value:', payload.ContraAccount);
 
       await saveDisbursement(payload);
 
@@ -377,6 +376,8 @@ export default function LoanDisbursement() {
         amount: '',
         topUpAmount: '',
         accruedInterest: '',
+        chequeNumber: '',
+        chequeNumber: '',
       });
     } catch (error) {
       console.error('Failed to save disbursement:', error);
@@ -694,7 +695,13 @@ export default function LoanDisbursement() {
                         fullWidth
                         label="Bank Account"
                         value={selectedBankAccount}
-                        onChange={(e) => setSelectedBankAccount(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedBankAccount(e.target.value);
+                          const selectedAccount = bankAccounts.find(acc => acc.id === e.target.value);
+                          if (selectedAccount) {
+                            setSelectedBankAccountNumber(selectedAccount.accno || selectedAccount.id);
+                          }
+                        }}
                         size="small"
                         disabled={loadingAccounts || !selectedBank}
                       >
@@ -702,11 +709,22 @@ export default function LoanDisbursement() {
                           <em>Select Account</em>
                         </MenuItem>
                         {bankAccounts.map((account) => (
-                          <MenuItem key={account.id || account.name} value={account.name || account.id}>
+                          <MenuItem key={account.id || account.name} value={account.id}>
                             {account.name || account.id}
                           </MenuItem>
                         ))}
                       </TextField>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Cheque Number"
+                        name="chequeNumber"
+                        value={disbursementDetails.chequeNumber}
+                        onChange={handleDisbursementDetailsChange}
+                        variant="outlined"
+                        size="small"
+                      />
                     </Grid>
                   </Grid>
                 )}

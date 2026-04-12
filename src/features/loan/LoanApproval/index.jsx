@@ -351,7 +351,6 @@ export default function LoanApproval() {
         RejectReasonId: parseInt(rejectDetails.rejectReasonId, 10),
       };
 
-      console.log('Rejecting loan with payload:', payload);
       const result = await saveRejectedLoan(payload);
 
       if (result) {
@@ -968,8 +967,8 @@ export default function LoanApproval() {
             >
               <MenuItem value="">Select a reason...</MenuItem>
               {rejectReasons.map((reason) => (
-                <MenuItem key={reason.id || reason.ID} value={reason.id || reason.ID}>
-                  {reason.reason || reason.Reason || reason.name || reason.Name}
+                <MenuItem key={reason.rej_id || reason.id || reason.ID} value={reason.rej_id || reason.id || reason.ID}>
+                  {reason.rej_name || reason.reason || reason.Reason || reason.name || reason.Name}
                 </MenuItem>
               ))}
             </TextField>

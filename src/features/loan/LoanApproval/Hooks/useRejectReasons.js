@@ -11,7 +11,6 @@ export function useRejectReasons() {
     setError(null);
     try {
       const apiUrl = buildApiUrl('loan-reject-reasons', {});
-      console.log('Fetching rejection reasons from:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -25,7 +24,6 @@ export function useRejectReasons() {
       }
 
       const data = await response.json();
-      console.log('Rejection reasons response:', data);
 
       // Handle array response
       if (Array.isArray(data)) {
@@ -48,7 +46,6 @@ export function useRejectReasons() {
       setReasons([]);
       return [];
     } catch (err) {
-      console.error('Error fetching rejection reasons:', err);
       setError(err.message || 'Failed to fetch rejection reasons');
       return [];
     } finally {

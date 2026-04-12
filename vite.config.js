@@ -1176,7 +1176,6 @@ const loanDisburseApiPlugin = () => ({
             req.on('end', async () => {
               try {
                 const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/loan/disburse'
-                console.log('Loan Disburse API Request:', backendUrl)
                 
                 const backendRes = await fetch(backendUrl, {
                   method: 'POST',
@@ -1184,7 +1183,6 @@ const loanDisburseApiPlugin = () => ({
                   body: body,
                 })
                 const data = await backendRes.text()
-                console.log('Loan Disburse API Response:', backendRes.status)
                 res.statusCode = backendRes.status
                 res.end(data)
               } catch (fetchErr) {

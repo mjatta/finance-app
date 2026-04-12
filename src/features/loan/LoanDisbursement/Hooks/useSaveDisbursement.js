@@ -19,11 +19,20 @@ export const useSaveDisbursement = () => {
         }
       );
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        let errorMessage = `API error: ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.Message || errorData.message || errorMessage;
+        } catch {
+          // Could not parse error response
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const data = responseText ? JSON.parse(responseText) : {};
       return data;
     } catch (err) {
       const errorMsg = err.message || 'Failed to save disbursement';
