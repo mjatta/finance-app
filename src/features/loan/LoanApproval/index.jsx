@@ -8,6 +8,11 @@ import {
   Typography,
   Grid,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -19,6 +24,8 @@ import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../uti
 import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
 import { useLoanDetails } from './Hooks/useLoanDetails';
 import { useLoanApprovalSubmit } from './Hooks/useLoanApprovalSubmit';
+import { useRejectReasons } from './Hooks/useRejectReasons';
+import { useSaveRejectedLoan } from './Hooks/useSaveRejectedLoan';
 import { useUsersStore } from '../../../store/useUsersStore';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -69,7 +76,16 @@ export default function LoanApproval() {
   const { fetchUsersList } = useUsersStore();
   const { fetchLoanDetails } = useLoanDetails();
   const { submitLoanApproval } = useLoanApprovalSubmit();
+  const { reasons: rejectReasons, fetchRejectReasons } = useRejectReasons();
+  const { saveRejectedLoan } = useSaveRejectedLoan();
   const authUser = useAuthStore((state) => state.user);
+
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectDetails, setRejectDetails] = useState({
+    loanId: '',
+    rejectReasonId: '',
+  });
+  const [selectedLoanForReject, setSelectedLoanForReject] = useState(null);
 
   const loadLoans = useCallback(async () => {
     setLoading(true);
@@ -136,6 +152,13 @@ export default function LoanApproval() {
   useEffect(() => {
     loadLoans();
   }, [loadLoans]);
+
+  // Fetch rejection reasons when reject dialog opens
+  useEffect(() => {
+    if (rejectDialogOpen && rejectReasons.length === 0) {
+      fetchRejectReasons();
+    }
+  }, [rejectDialogOpen, rejectReasons.length, fetchRejectReasons]);
 
   const handleRowClick = (params) => {
     const loanId = params.id;
@@ -225,6 +248,85 @@ export default function LoanApproval() {
   const handleApproveAmountChange = (e) => {
     const cleanValue = cleanNumericInput(e.target.value);
     setApprovalDetails((prev) => ({ ...prev, approveAmount: cleanValue }));
+  };
+
+  const handleOpenRejectDialog = () => {
+    if (selectedIds.length === 0) {
+      setStatusMessage('Please select a loan first.');
+      setStatusError(true);
+      return;
+    }
+
+    const selectedLoan = loans.find((l) => l.id === selectedIds[0]);
+    if (!selectedLoan) {
+      setStatusMessage('Selected loan not found.');
+      setStatusError(true);
+      return;
+    }
+
+    setSelectedLoanForReject(selectedLoan);
+    setRejectDetails({ loanId: selectedLoan.id, rejectReasonId: '' });
+    setRejectDialogOpen(true);
+  };
+
+  const handleCloseRejectDialog = () => {
+    setRejectDialogOpen(false);
+    setSelectedLoanForReject(null);
+    setRejectDetails({ loanId: '', rejectReasonId: '' });
+  };
+
+  const handleRejectDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setRejectDetails((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRejectLoan = async () => {
+    if (!rejectDetails.rejectReasonId) {
+      setStatusMessage('Please select a rejection reason.');
+      setStatusError(true);
+      return;
+    }
+
+    try {
+      const payload = {
+        LoanId: parseInt(rejectDetails.loanId, 10),
+        RejectReasonId: parseInt(rejectDetails.rejectReasonId, 10),
+      };
+
+      console.log('Rejecting loan with payload:', payload);
+      const result = await saveRejectedLoan(payload);
+
+      if (result) {
+        setStatusMessage('Loan rejected successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Loan / Loan Approval',
+          action: 'Reject Loan',
+          message: 'Loan rejected successfully.',
+        });
+
+        handleCloseRejectDialog();
+        await loadLoans(); // Reload the loans list
+      } else {
+        setStatusMessage('Failed to reject loan.');
+        setStatusError(true);
+        notifySaveError({
+          page: 'Loan / Loan Approval',
+          action: 'Reject Loan',
+          message: 'Failed to reject loan.',
+        });
+      }
+    } catch (err) {
+      console.error('Error rejecting loan:', err);
+      setStatusMessage('Error rejecting loan: ' + (err.message || 'Unknown error'));
+      setStatusError(true);
+      notifySaveError({
+        page: 'Loan / Loan Approval',
+        action: 'Reject Loan',
+        message: err.message || 'Error rejecting loan.',
+        error: err,
+      });
+    }
   };
 
   const handleApproveLoan = async () => {
@@ -351,22 +453,6 @@ export default function LoanApproval() {
         error,
       });
     }
-  };
-
-  const handleRejectLoan = () => {
-    if (selectedIds.length === 0) {
-      setStatusMessage('Please select a loan first.');
-      setStatusError(true);
-      return;
-    }
-
-    setStatusMessage('Loan rejected.');
-    setStatusError(false);
-    notifySaveSuccess({
-      page: 'Loan / Loan Approval',
-      action: 'Reject Loan',
-      message: 'Loan rejected.',
-    });
   };
 
   const handleLoanAmortization = () => {
@@ -754,7 +840,7 @@ export default function LoanApproval() {
         <Button
           variant="contained"
           color="error"
-          onClick={handleRejectLoan}
+          onClick={handleOpenRejectDialog}
           disabled={selectedIds.length === 0 || loading}
           sx={{
             fontWeight: 600,
@@ -777,6 +863,74 @@ export default function LoanApproval() {
           📊 Loan Amortization
         </Button>
       </Box>
+
+      {/* Reject Loan Dialog */}
+      <Dialog open={rejectDialogOpen} onClose={handleCloseRejectDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, background: '#f5f5f5' }}>Reject Loan</DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Customer Code - Read Only */}
+            <TextField
+              label="Customer Code"
+              value={selectedLoanForReject?.customerCode || selectedLoanForReject?.ccustcode || ''}
+              InputProps={{ readOnly: true }}
+              variant="outlined"
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+
+            {/* Loan Amount - Read Only */}
+            <TextField
+              label="Loan Amount"
+              value={formatCurrency(selectedLoanForReject?.loanAmount || 0)}
+              InputProps={{ readOnly: true }}
+              variant="outlined"
+              fullWidth
+            />
+
+            {/* Loan Product - Read Only */}
+            <TextField
+              label="Loan Product"
+              value={selectedLoanForReject?.loanProduct || 'N/A'}
+              InputProps={{ readOnly: true }}
+              variant="outlined"
+              fullWidth
+            />
+
+            {/* Rejection Reason - Dropdown */}
+            <TextField
+              select
+              label="Rejection Reason"
+              name="rejectReasonId"
+              value={rejectDetails.rejectReasonId}
+              onChange={handleRejectDetailsChange}
+              variant="outlined"
+              fullWidth
+              required
+            >
+              <MenuItem value="">Select a reason...</MenuItem>
+              {rejectReasons.map((reason) => (
+                <MenuItem key={reason.id || reason.ID} value={reason.id || reason.ID}>
+                  {reason.reason || reason.Reason || reason.name || reason.Name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={handleCloseRejectDialog} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRejectLoan}
+            variant="contained"
+            color="error"
+            disabled={!rejectDetails.rejectReasonId}
+          >
+            Reject Loan
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

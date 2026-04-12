@@ -122,6 +122,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanapproval/:path*"
     },
     {
+      "source": "/api/loanReject/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanReject/:path*"
+    },
+    {
       "source": "/api/member/create",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/create"
     },

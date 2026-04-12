@@ -159,6 +159,16 @@ const ENDPOINT_MAP = {
     dev: '/api/loans/LoanApplication',
     prod: '/api/loans/LoanApplication',
   },
+  // Loan Reject - Get Reasons
+  'loan-reject-reasons': {
+    dev: '/api/loanReject/reject-reasons',
+    prod: '/api/loanReject/reject-reasons',
+  },
+  // Loan Reject - Save
+  'loan-reject-save': {
+    dev: '/api/loanReject/reject',
+    prod: '/api/loanReject/reject',
+  },
 };
 
 /**

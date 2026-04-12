@@ -25,6 +25,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { useAuthStore } from '../../../store/authStore';
 import { useGuarantorLoad } from './Hooks/useGuarantorLoad';
 import { useGuarantorValidate } from './Hooks/useGuarantorValidate';
 import { useSaveGuarantor } from './Hooks/useSaveGuarantor';
@@ -68,6 +69,7 @@ export default function LoanGuarantor() {
     amountToGuarantee: '',
     guarantorName: '',
     collateralValue: '',
+    collateralDesc: '',
     loanBalance: '',
     guaranteeDate: '',
     totalGuaranteed: '',
@@ -148,6 +150,7 @@ export default function LoanGuarantor() {
         amountToGuarantee: '',
         guarantorName: '',
         collateralValue: '',
+        collateralDesc: '',
         loanBalance: '',
         guaranteeDate: '',
         totalGuaranteed: '',
@@ -273,56 +276,85 @@ export default function LoanGuarantor() {
   };
 
   const handleSaveGuarantor = async () => {
+    console.log('=== handleSaveGuarantor CALLED ===');
+    console.log('guarantorType:', guarantorType);
+    console.log('selectedIds:', selectedIds);
+    console.log('guarantorDetails.guarantorId:', guarantorDetails.guarantorId);
+    console.log('guarantorDetails.amountToGuarantee:', guarantorDetails.amountToGuarantee);
+    console.log('guarantors array length:', guarantors.length);
+
     // Validate required fields
     if (!guarantorType) {
+      console.log('❌ Validation failed: No guarantor type selected');
       setStatusMessage('Please select a guarantor type (Member Guarantors or Collateral).');
       setStatusError(true);
       return;
     }
 
     if (!guarantorDetails.guarantorId) {
+      console.log('❌ Validation failed: No guarantor ID');
       setStatusMessage('Please select a guarantor first.');
       setStatusError(true);
       return;
     }
 
     if (!guarantorDetails.amountToGuarantee) {
+      console.log('❌ Validation failed: No amount to guarantee:', guarantorDetails.amountToGuarantee);
       setStatusMessage('Please enter the amount to guarantee.');
       setStatusError(true);
       return;
     }
 
     // Get the selected guarantor from the grid
-    const selectedGuarantor = guarantors.find((g) => g.id === selectedIds[0]);
+    console.log('Looking for guarantor with id:', selectedIds[0]);
+    const selectedGuarantor = guarantors.find((g) => {
+      console.log(`Checking guarantor id=${g.id} against selectedId=${selectedIds[0]}`);
+      return g.id === selectedIds[0];
+    });
+    console.log('✓ selectedGuarantor found:', selectedGuarantor);
+    
     if (!selectedGuarantor) {
+      console.log('❌ Validation failed: Could not find selected guarantor');
+      console.log('Available guarantors:', guarantors);
       setStatusMessage('Error: Could not find selected guarantor.');
       setStatusError(true);
       return;
     }
 
-    // TODO: Get compId and userId from store - for now using placeholder values
-    // You may need to integrate with your state management (Redux, Context, etc.)
-    const compId = 30; // Replace with store value
-    const userId = 'Akh'; // Replace with store value
+    // Get auth and system values from localStorage
+    const user = useAuthStore.getState().user;
+    const compId = parseInt(user?.CompId) || 30;
+    const userId = user?.username || 'SYSTEM';
+    const workStation = localStorage.getItem('workstation') || 'DESKTOP01';
+    const winUser = localStorage.getItem('winUser') || user?.username || 'AdminUser';
 
-    // Build the save payload
+    // Helper function to pad member codes to 6 digits
+    const padMemberCode = (code) => String(code || '').padStart(6, '0');
+
+    // Build the save payload matching backend expectations
     const savePayload = {
-      MemberCode: selectedGuarantor.guarantorId || '',
-      LoanID: selectedGuarantor.loanAmount || 0,
-      GuarantorCode: selectedGuarantor.guarantorId || '',
+      MemberCode: padMemberCode(selectedGuarantor.guarantorId),
+      LoanID: parseInt(selectedGuarantor.id) || 0,
+      GuarantorCode: padMemberCode(selectedGuarantor.guarantorId),
       GuarantorAmount: parseFloat(guarantorDetails.amountToGuarantee) || 0,
-      CollateralValue: parseFloat(guarantorDetails.collateralValue) || 0,
-      CollateralDesc: '', // Blank for now as per requirement
-      LoanAmount: parseFloat(guarantorDetails.loanBalance) || 0,
-      CurrentGuaranteed: 0, // Blank for now as per requirement
+      CollateralValue: parseFloat(guarantorDetails.collateralValue) || parseFloat(selectedGuarantor.collateralValue) || 0,
+      CollateralDesc: guarantorDetails.collateralDesc || '',
+      LoanAmount: parseFloat(selectedGuarantor.loanAmount) || 0,
+      CurrentGuaranteed: parseFloat(guarantorDetails.totalGuaranteed) || 0,
       CompId: compId,
       UserId: userId,
-      WorkStation: '', // Blank for now as per requirement
-      WinUser: '', // Blank for now as per requirement
+      WorkStation: workStation,
+      WinUser: winUser,
     };
 
     try {
+      console.log('=== About to call saveGuarantor ===');
+      console.log('savePayload:', savePayload);
+      console.log('saveGuarantor function available:', !!saveGuarantor);
+      
       const result = await saveGuarantor(savePayload);
+      console.log('=== saveGuarantor returned ===');
+      console.log('result:', result);
 
       if (result) {
         setStatusMessage('Guarantor saved successfully.');
@@ -351,6 +383,7 @@ export default function LoanGuarantor() {
           amountToGuarantee: '',
           guarantorName: '',
           collateralValue: '',
+          collateralDesc: '',
           loanBalance: '',
           guaranteeDate: '',
           totalGuaranteed: '',

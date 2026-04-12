@@ -22,6 +22,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { useAuthStore } from '../../../store/authStore';
 import { useLoanDisbursementLoad } from './Hooks/useLoanDisbursementLoad';
 import { useSaveDisbursement } from './Hooks/useSaveDisbursement';
 import { useGetBanks } from './Hooks/useGetBanks';
@@ -97,6 +98,7 @@ export default function LoanDisbursement() {
         totinterest: item.totinterest || '0',
         loantype: item.loantype || '',
         loan_id: item.loan_id || '',
+        loanacct: item.loanacct || item.loan_id || '',
         ctel: item.ctel || '',
       }));
 
@@ -258,8 +260,17 @@ export default function LoanDisbursement() {
     }
 
     try {
+      console.log('=== Disbursement Save Started ===');
+      console.log('selectedIds:', selectedIds);
+      console.log('clients:', clients);
+      
       const selectedLoan = clients.find((c) => c.id === selectedIds[0]);
+      console.log('selectedLoan found:', selectedLoan);
+      
       if (!selectedLoan) {
+        console.log('ERROR: Selected loan not found');
+        console.log('Looking for id:', selectedIds[0]);
+        console.log('Available ids:', clients.map(c => c.id));
         setStatusMessage('Selected loan not found.');
         setStatusError(true);
         return;
@@ -271,11 +282,19 @@ export default function LoanDisbursement() {
         mobileWallet: 3,
       };
 
+      // Get user info from auth store
+      const user = useAuthStore.getState().user;
+      const compId = parseInt(user?.CompId) || 30;
+      const userId = user?.username || 'SYSTEM';
+      
+      // Get CashAccount from auth store (set during login)
+      const cashAccount = user?.CashAccount || localStorage.getItem('cashAccount') || 'CASH001';
+
       const payload = {
         LoanID: selectedLoan.loan_id,
-        AccountNumber: '',
-        ContraAccount: paymentOption === 'cash' ? 'CASH001' : selectedBankAccount || '',
-        CashAccount: paymentOption === 'cash' ? 'CASH001' : '',
+        AccountNumber: String(selectedLoan.loanacct || selectedLoan.loan_id || ''),
+        ContraAccount: paymentOption === 'cash' ? cashAccount : selectedBankAccount || '',
+        CashAccount: paymentOption === 'cash' ? cashAccount : '',
         LoanProduct: 5,
         PaymentOption: paymentOptionMap[paymentOption] || 1,
         Amount: parseFloat(disbursementDetails.amount) || 0,
@@ -283,7 +302,15 @@ export default function LoanDisbursement() {
         IsTopUp: parseFloat(disbursementDetails.topUpAmount) > 0,
         AccruedInterest: parseFloat(disbursementDetails.accruedInterest) || 0,
         TransactionDate: disbursementDetails.transactionDate.format('YYYY-MM-DD'),
+        dvaludate: disbursementDetails.transactionDate.format('YYYY-MM-DD'),
+        CompId: compId,
+        UserId: userId,
       };
+
+      console.log('Final payload:', payload);
+      console.log('AccountNumber value:', payload.AccountNumber);
+      console.log('CashAccount value:', payload.CashAccount);
+      console.log('ContraAccount value:', payload.ContraAccount);
 
       await saveDisbursement(payload);
 

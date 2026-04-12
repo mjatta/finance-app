@@ -1412,6 +1412,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/loanapproval/, '/api/loanapproval'),
       },
+      // Proxy loan reject endpoint to avoid CORS
+      '/api/loanReject': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/loanReject/, '/api/loanReject'),
+      },
     },
   },
   plugins: [
