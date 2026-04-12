@@ -515,7 +515,6 @@ export default function LoanGuarantor() {
       </Typography>
       <Box
         sx={{
-          height: 400,
           width: '100%',
           borderRadius: 1.5,
           border: '1px solid #e0e0e0',
@@ -589,39 +588,71 @@ export default function LoanGuarantor() {
       </Box>
 
       {/* Guarantor Details Card */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, pb: 2, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
             Guarantor Details
           </Typography>
 
-          {/* Radio Button Group for Guarantor Type Selection */}
-          <FormControl sx={{ mb: 3 }} component="fieldset">
-            <FormLabel component="legend" sx={{ fontWeight: 600, color: '#2c3e50', mb: 1 }}>
-              Select Guarantor Type
-            </FormLabel>
-            <RadioGroup
-              row
-              aria-label="guarantor-type"
-              name="guarantor-type"
-              value={guarantorType}
-              onChange={handleGuarantorTypeChange}
-              sx={{ gap: 3 }}
-            >
-              <FormControlLabel
-                value="memberGuarantors"
-                control={<Radio sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }} />}
-                label="Member Guarantors"
-                sx={{ fontWeight: 500, color: '#2c3e50' }}
-              />
-              <FormControlLabel
-                value="collateral"
-                control={<Radio sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }} />}
-                label="Collateral"
-                sx={{ fontWeight: 500, color: '#2c3e50' }}
-              />
-            </RadioGroup>
-          </FormControl>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Radio Button Group for Guarantor Type Selection */}
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', mb: 2, display: 'block', fontSize: '1.05rem' }}>
+                Select Guarantor Type
+              </Typography>
+              <RadioGroup
+                aria-label="guarantor-type"
+                name="guarantor-type"
+                value={guarantorType}
+                onChange={handleGuarantorTypeChange}
+                sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}
+              >
+                <FormControlLabel
+                  value="memberGuarantors"
+                  control={<Radio sx={{ display: 'none' }} />}
+                  label="👥 Member Guarantors"
+                  sx={{
+                    flex: 1,
+                    m: 0,
+                    p: 1.5,
+                    border: '2px solid',
+                    borderColor: guarantorType === 'memberGuarantors' ? '#667eea' : '#e0e0e0',
+                    borderRadius: 1.5,
+                    bgcolor: guarantorType === 'memberGuarantors' ? '#f0f4ff' : '#fafafa',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: guarantorType === 'memberGuarantors' ? 700 : 500,
+                    color: guarantorType === 'memberGuarantors' ? '#667eea' : '#2c3e50',
+                    '&:hover': {
+                      borderColor: '#667eea',
+                      bgcolor: '#f0f4ff',
+                    },
+                  }}
+                />
+                <FormControlLabel
+                  value="collateral"
+                  control={<Radio sx={{ display: 'none' }} />}
+                  label="💎 Collateral"
+                  sx={{
+                    flex: 1,
+                    m: 0,
+                    p: 1.5,
+                    border: '2px solid',
+                    borderColor: guarantorType === 'collateral' ? '#667eea' : '#e0e0e0',
+                    borderRadius: 1.5,
+                    bgcolor: guarantorType === 'collateral' ? '#f0f4ff' : '#fafafa',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: guarantorType === 'collateral' ? 700 : 500,
+                    color: guarantorType === 'collateral' ? '#667eea' : '#2c3e50',
+                    '&:hover': {
+                      borderColor: '#667eea',
+                      bgcolor: '#f0f4ff',
+                    },
+                  }}
+                />
+              </RadioGroup>
+            </Box>
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -756,6 +787,7 @@ export default function LoanGuarantor() {
                 />
               </Grid>
             </Grid>
+          </Box>
           </CardContent>
         </Card>
 
