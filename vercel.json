@@ -106,8 +106,8 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/guarantor/:path*"
     },
     {
-      "source": "/api/member/enquiry:path*",
-      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry:path*"
+      "source": "/api/member/enquiry/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry/:path*"
     },
     {
       "source": "/api/users/:path*",
@@ -120,6 +120,74 @@
     {
       "source": "/api/loanapproval/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanapproval/:path*"
+    },
+    {
+      "source": "/api/member/create",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/create"
+    },
+    {
+      "source": "/api/client/get-code",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/client/get-code"
+    },
+    {
+      "source": "/api/client/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/client/:path*"
+    },
+    {
+      "source": "/api/corporategroupmember/create",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/corporategroupmember/create"
+    },
+    {
+      "source": "/api/corporategroupmember/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/corporategroupmember/:path*"
+    },
+    {
+      "source": "/api/deposits/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/deposits/:path*"
+    },
+    {
+      "source": "/api/Deposits/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Deposits/:path*"
+    },
+    {
+      "source": "/api/Cusystem/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Cusystem/:path*"
+    },
+    {
+      "source": "/api/user-setup/password-change",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
+    },
+    {
+      "source": "/api/user-setup/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/:path*"
+    },
+    {
+      "source": "/api/security-settings/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/security-settings/:path*"
+    },
+    {
+      "source": "/api/product-definition/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/product-definition/:path*"
+    },
+    {
+      "source": "/api/periodic-processing/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/periodic-processing/:path*"
+    },
+    {
+      "source": "/api/banks/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/banks/:path*"
+    },
+    {
+      "source": "/api/transaction/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/transaction/:path*"
+    },
+    {
+      "source": "/api/dashboard/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/dashboard/:path*"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/auth/login"
     },
     {
       "source": "/(.*)",
