@@ -25,7 +25,16 @@ export function useLoanApprovalSubmit() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        let errorDetails = '';
+        try {
+          const errorBody = await response.json();
+          errorDetails = JSON.stringify(errorBody, null, 2);
+          console.error('Backend error response:', errorBody);
+        } catch {
+          errorDetails = await response.text();
+          console.error('Backend error (text):', errorDetails);
+        }
+        throw new Error(`HTTP Error: ${response.status} ${response.statusText}\n${errorDetails}`);
       }
 
       const result = await response.json();

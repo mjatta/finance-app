@@ -67,8 +67,8 @@ export default function LoanApproval() {
 
   const { fetchLoansForApproval } = useLoanApprovalLoad();
   const { fetchUsersList } = useUsersStore();
-  const { fetchLoanDetails, loading: detailsLoading } = useLoanDetails();
-  const { submitLoanApproval, loading: submitting } = useLoanApprovalSubmit();
+  const { fetchLoanDetails } = useLoanDetails();
+  const { submitLoanApproval } = useLoanApprovalSubmit();
   const authUser = useAuthStore((state) => state.user);
 
   const loadLoans = useCallback(async () => {
@@ -249,24 +249,35 @@ export default function LoanApproval() {
       }
 
       // Construct payload for approval - send numeric values for numeric fields
+      // Helper function to safely truncate strings to database column limits
+      const truncate = (value, maxLength) => {
+        if (!value) return '';
+        const str = String(value).trim();
+        if (str.length > maxLength) {
+          console.warn(`Truncating "${str}" from ${str.length} to ${maxLength} chars`);
+          return str.substring(0, maxLength);
+        }
+        return str;
+      };
+
       // Parse numeric values safely
       const approveAmountNum = parseFloat(String(approvalDetails.approveAmount).replace(/,/g, '')) || 0;
       const durationNum = parseInt(approvalDetails.duration, 10) || 0;
       const interestRateNum = parseFloat(String(appliedLoanDetails.grossInterest).replace(/,/g, '')) || 0;
       const compidNum = parseInt(authUser?.CompId, 10) || 30;
-      const loanTypeNum = parseInt(selectedLoan.productId, 10) || 0;
+      const loanTypeNum = parseInt(selectedLoan.productId || selectedLoan.prd_id, 10) || 0;
       const loanIdNum = parseInt(selectedLoan.id || selectedLoan.loan_id || 0, 10);
 
       const payload = {
         loanid: loanIdNum,
         loanAmount: approveAmountNum,
         duration: durationNum,
-        loanAccount: approvalDetails.newAccountNumber || null,
-        loanOfficer: String(authUser?.username || 'SYSTEM'),
-        userid: String(authUser?.id || authUser?.username || 'SYSTEM'),
-        customerCode: String(selectedLoan.customerCode || ''),
-        memberType: 'C',
-        memberName: String(selectedLoan.customerName || ''),
+        loanAccount: truncate(selectedLoan.loanacct || selectedLoan.loanAccount || '', 50),
+        loanOfficer: truncate(authUser?.username || 'SYSTEM', 20),
+        userid: truncate(authUser?.username || 'SYSTEM', 20),  // Use username instead of id (usually shorter)
+        customerCode: truncate(selectedLoan.customerCode || selectedLoan.ccustcode || '', 20),
+        memberType: truncate('C', 5),
+        memberName: truncate(selectedLoan.customerName || selectedLoan.membername || '', 50),
         compid: compidNum,
         loanType: loanTypeNum,
         interestRate: interestRateNum,
@@ -315,6 +326,9 @@ export default function LoanApproval() {
           periodicPayment: '',
           totalDuration: '',
         });
+
+        // Refresh the Loans for Approval data grid
+        await loadLoans();
       } else {
         setStatusMessage(result.message || 'Failed to approve loan.');
         setStatusError(true);
