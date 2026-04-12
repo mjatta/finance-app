@@ -31,10 +31,55 @@ import { useGetBankAccounts } from './Hooks/useGetBankAccounts';
 const CLIENT_COLUMNS = [
   { field: 'ccustcode', headerName: 'Customer Code', flex: 1, minWidth: 120, sortable: true },
   { field: 'membername', headerName: 'Customer Name', flex: 1.5, minWidth: 200, sortable: true },
-  { field: 'principal_amt', headerName: 'Principal Amount', flex: 1, minWidth: 140, sortable: true },
-  { field: 'loan_interest', headerName: 'Interest', flex: 1, minWidth: 100, sortable: true },
-  { field: 'loan_appl_date', headerName: 'Application Date', flex: 1, minWidth: 140, sortable: true },
-  { field: 'loanstart_date', headerName: 'Start Date', flex: 1, minWidth: 140, sortable: true },
+  {
+    field: 'principal_amt',
+    headerName: 'Principal Amount',
+    flex: 1,
+    minWidth: 140,
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params) => {
+      if (!params.value) return 'D 0';
+      const amount = parseFloat(params.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `D ${amount}`;
+    },
+  },
+  {
+    field: 'loan_interest',
+    headerName: 'Interest',
+    flex: 1,
+    minWidth: 100,
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params) => {
+      if (!params.value) return '0%';
+      return `${params.value}%`;
+    },
+  },
+  {
+    field: 'loan_appl_date',
+    headerName: 'Application Date',
+    flex: 1,
+    minWidth: 140,
+    sortable: true,
+    renderCell: (params) => {
+      if (!params.value) return '';
+      return dayjs(params.value).format('DD MMM YYYY');
+    },
+  },
+  {
+    field: 'loanstart_date',
+    headerName: 'Start Date',
+    flex: 1,
+    minWidth: 140,
+    sortable: true,
+    renderCell: (params) => {
+      if (!params.value) return '';
+      return dayjs(params.value).format('DD MMM YYYY');
+    },
+  },
 ];
 
 export default function LoanDisbursement() {
@@ -453,7 +498,7 @@ export default function LoanDisbursement() {
         {/* Clients DataGrid */}
         <Grid size={{ xs: 12 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-            Clients for Disbursement
+            Customer for Disbursement
           </Typography>
           <Box
             sx={{

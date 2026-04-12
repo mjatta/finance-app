@@ -32,12 +32,70 @@ import { useAuthStore } from '../../../store/authStore';
 const LOAN_COLUMNS = [
   { field: 'customerCode', headerName: 'Customer Code', flex: 0.8, minWidth: 110, sortable: true },
   { field: 'customerName', headerName: 'Customer Name', flex: 1.2, minWidth: 150, sortable: true },
-  { field: 'loanAmount', headerName: 'Principal Amount', flex: 0.9, minWidth: 130, sortable: true },
-  { field: 'duration', headerName: 'Duration (Months)', flex: 0.8, minWidth: 120, sortable: true },
-  { field: 'repaymentAmount', headerName: 'Repayment Amount', flex: 1, minWidth: 130, sortable: true },
-  { field: 'totalInterest', headerName: 'Total Interest', flex: 0.8, minWidth: 110, sortable: true },
-  { field: 'applicationDate', headerName: 'Application Date', flex: 0.9, minWidth: 130, sortable: true },
-  { field: 'loanStartDate', headerName: 'Loan Start Date', flex: 0.9, minWidth: 130, sortable: true },
+  {
+    field: 'loanAmount',
+    headerName: 'Principal Amount',
+    flex: 0.9,
+    minWidth: 130,
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params) => {
+      if (!params.value) return 'D 0';
+      const amount = parseFloat(params.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `D ${amount}`;
+    },
+  },
+  { field: 'duration', headerName: 'Duration (Months)', flex: 0.8, minWidth: 120, sortable: true, align: 'center', headerAlign: 'center' },
+  {
+    field: 'repaymentAmount',
+    headerName: 'Repayment Amount',
+    flex: 1,
+    minWidth: 130,
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params) => {
+      if (!params.value) return 'D 0';
+      const amount = parseFloat(params.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `D ${amount}`;
+    },
+  },
+  {
+    field: 'totalInterest',
+    headerName: 'Total Interest',
+    flex: 0.8,
+    minWidth: 110,
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params) => {
+      if (!params.value) return '0%';
+      return `${params.value}%`;
+    },
+  },
+  {
+    field: 'applicationDate',
+    headerName: 'Application Date',
+    flex: 0.9,
+    minWidth: 130,
+    sortable: true,
+    renderCell: (params) => {
+      if (!params.value) return '';
+      return dayjs(params.value).format('DD MMM YYYY');
+    },
+  },
+  {
+    field: 'loanStartDate',
+    headerName: 'Loan Start Date',
+    flex: 0.9,
+    minWidth: 130,
+    sortable: true,
+    renderCell: (params) => {
+      if (!params.value) return '';
+      return dayjs(params.value).format('DD MMM YYYY');
+    },
+  },
 ];
 
 export default function LoanApproval() {
