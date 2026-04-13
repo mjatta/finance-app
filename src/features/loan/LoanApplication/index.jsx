@@ -181,9 +181,21 @@ export default function LoanApplication() {
               setLoanProductDetails(result.data);
               
               // Try multiple field name patterns for API response
-              const intMethod = result.data.interestMethod || result.data.int_method || result.data.intMethod || result.data.method || '';
+              let intMethod = result.data.interestMethod || result.data.int_method || result.data.intMethod || result.data.method || '';
               const intRate = result.data.interestRate || result.data.int_rate || result.data.intRate || result.data.rate || '';
               const loanLimitVal = result.data.maxAmount || result.data.max_amount || result.data.maxAmount || '';
+              
+              // Map interest method label from API to internal value format
+              // API returns labels like "Reducing Balance", we need to map to "reducing"
+              const interestMethodMap = {
+                'Reducing Balance': 'reducing',
+                'Flat Rate': 'flat',
+                'Compound Interest': 'compound',
+                'reducing': 'reducing',
+                'flat': 'flat',
+                'compound': 'compound',
+              };
+              intMethod = interestMethodMap[intMethod] || intMethod;
               
               console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal);
               
@@ -824,8 +836,10 @@ export default function LoanApplication() {
                       name="interestMethod"
                       value={formData.interestMethod}
                       onChange={handleChange}
+                      disabled={!!formData.loanProduct}
                       size="small"
                       fullWidth
+                      sx={formData.loanProduct ? readOnlyFieldSx : {}}
                     >
                       <MenuItem value="">
                         <em>Select Interest Method</em>
