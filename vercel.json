@@ -42,6 +42,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
     },
     {
+      "source": "/api/lookups/creditunion/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/creditunion/:path*"
+    },
+    {
       "source": "/api/remote-member-details/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/getmemberdetails/:path*"
     },
