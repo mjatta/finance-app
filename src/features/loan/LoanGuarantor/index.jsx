@@ -17,18 +17,21 @@ import {
   FormControl,
   FormLabel,
   InputAdornment,
+  Checkbox,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import SaveIcon from '@mui/icons-material/Save';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { useAuthStore } from '../../../store/authStore';
 import { useGuarantorLoad } from './Hooks/useGuarantorLoad';
 import { useGuarantorValidate } from './Hooks/useGuarantorValidate';
 import { useSaveGuarantor } from './Hooks/useSaveGuarantor';
+import { useGuaranteeHistory } from './Hooks/useGuaranteeHistory';
 
 const GUARANTOR_COLUMNS = [
   { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true },
@@ -80,35 +83,28 @@ const GUARANTOR_COLUMNS = [
   },
 ];
 
-const GUARANTEE_COLUMNS = [
-  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true },
-  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 180, sortable: true },
+const GUARANTEE_HISTORY_COLUMNS = [
+  { field: 'grantorcode', headerName: 'Grantor Code', flex: 0.8, minWidth: 100, sortable: true },
+  { field: 'grantor', headerName: 'Grantor', flex: 1.5, minWidth: 180, sortable: true },
   { 
-    field: 'loanAmount', 
+    field: 'loanamt', 
     headerName: 'Loan Amount', 
     flex: 1, 
     minWidth: 140, 
     sortable: true,
     align: 'right',
     headerAlign: 'right',
+    renderCell: (params) => formatCurrency(params.value || 0),
   },
   { 
-    field: 'amountGuarantor', 
-    headerName: 'Amount Guarantor', 
+    field: 'guaramt', 
+    headerName: 'Amount Guaranteed', 
     flex: 1, 
     minWidth: 140, 
     sortable: true,
     align: 'right',
     headerAlign: 'right',
-  },
-  { 
-    field: 'guaranteeDate', 
-    headerName: 'Guarantee Date', 
-    flex: 1, 
-    minWidth: 140, 
-    sortable: true,
-    align: 'center',
-    headerAlign: 'center',
+    renderCell: (params) => formatCurrency(params.value || 0),
   },
 ];
 
@@ -124,7 +120,12 @@ export default function LoanGuarantor() {
   });
   const [sortModel, setSortModel] = useState([]);
   
-  const [guaranteeRows, setGuaranteeRows] = useState([]);
+  const [guaranteeHistoryData, setGuaranteeHistoryData] = useState(null);
+  const [guaranteeHistoryRows, setGuaranteeHistoryRows] = useState([]);
+  const [totalGuaranteed, setTotalGuaranteed] = useState(0);
+  const [remainingAmount, setRemainingAmount] = useState(0);
+  const [selectedLoanId, setSelectedLoanId] = useState(null);
+  
   const [guarantorDetailsOpen, setGuarantorDetailsOpen] = useState(false);
   const [guarantorType, setGuarantorType] = useState(''); // '' (empty), 'memberGuarantors' or 'collateral'
   
@@ -133,17 +134,18 @@ export default function LoanGuarantor() {
     savingBalance: '',
     amountToGuarantee: '',
     guarantorName: '',
+    collateralName: '',
     collateralValue: '',
     collateralDesc: '',
     loanBalance: '',
     guaranteeDate: '',
-    totalGuaranteed: '',
-    guarantorRequired: '',
+    guarantorRequired: false,
   });
 
   const { fetchGuarantors } = useGuarantorLoad();
   const { validateGuarantor, loading: validateLoading, error: validateError } = useGuarantorValidate();
   const { saveGuarantor, loading: saveLoading, error: saveError } = useSaveGuarantor();
+  const { fetchGuaranteeHistory, loading: historyLoading, error: historyError } = useGuaranteeHistory();
 
   const loadGuarantors = useCallback(async () => {
     setLoading(true);
@@ -209,6 +211,45 @@ export default function LoanGuarantor() {
     loadGuarantors();
   }, [loadGuarantors]);
 
+  const loadGuaranteeHistory = useCallback(async (loanId) => {
+    if (!loanId) {
+      console.log('No loan ID provided');
+      return;
+    }
+    
+    try {
+      const data = await fetchGuaranteeHistory(loanId);
+      if (data) {
+        console.log('✓ Guarantee history loaded:', data);
+        setGuaranteeHistoryData(data);
+        setTotalGuaranteed(data.TotalGuaranteed || 0);
+        setRemainingAmount(data.RemainingAmount || 0);
+        
+        // Map the Data array to grid rows
+        if (data.Data && Array.isArray(data.Data)) {
+          const mappedRows = data.Data.map((item, index) => ({
+            id: `${item.gid}-${index}`,
+            grantorcode: item.grantorcode || '',
+            grantor: item.grantor || '',
+            loanamt: item.loanamt || 0,
+            guaramt: item.guaramt || 0,
+          }));
+          setGuaranteeHistoryRows(mappedRows);
+        } else {
+          setGuaranteeHistoryRows([]);
+        }
+      } else {
+        setGuaranteeHistoryData(null);
+        setGuaranteeHistoryRows([]);
+        setTotalGuaranteed(0);
+        setRemainingAmount(0);
+      }
+    } catch (error) {
+      console.error('Error loading guarantee history:', error);
+      setGuaranteeHistoryRows([]);
+    }
+  }, [fetchGuaranteeHistory]);
+
   const handleRowClick = (params) => {
     const guarantorId = params.id;
     const selectedGuarantor = guarantors.find((g) => g.id === guarantorId);
@@ -220,16 +261,27 @@ export default function LoanGuarantor() {
         savingBalance: '',
         amountToGuarantee: '',
         guarantorName: '',
+        collateralName: '',
         collateralValue: '',
         collateralDesc: '',
         loanBalance: '',
         guaranteeDate: '',
-        totalGuaranteed: '',
-        guarantorRequired: '',
+        guarantorRequired: false,
       });
+      setSelectedLoanId(null);
+      setGuaranteeHistoryRows([]);
+      setTotalGuaranteed(0);
+      setRemainingAmount(0);
     } else {
       setSelectedIds([guarantorId]);
       if (selectedGuarantor) {
+        // Extract loanId from the id (format: loan_id-index)
+        const loanId = parseInt(guarantorId.toString().split('-')[0]);
+        setSelectedLoanId(loanId);
+        
+        // Load guarantee history for this loan
+        loadGuaranteeHistory(loanId);
+        
         // If member guarantors is selected, call validation endpoint with mode=4
         if (guarantorType === 'memberGuarantors') {
           performGuarantorValidation(selectedGuarantor.guarantorId, 4);
@@ -255,16 +307,16 @@ export default function LoanGuarantor() {
             savingBalance: data.balance || '',
             guarantorName: data.fullName || '',
             loanBalance: data.guarantorAmount || '',
-            guarantorRequired: 'Yes',
+            guarantorRequired: true,
           }));
         } else if (mode === 3) {
           // Collateral mode: map balance to savingBalance and guarantorAmount to loanBalance
           setGuarantorDetails((prev) => ({
             ...prev,
             savingBalance: data.balance || '', // balance maps to Saving Balance
-            guarantorName: '', // Not provided in collateral mode
+            collateralName: '', // Clear for collateral mode
             loanBalance: data.guarantorAmount || '', // guarantorAmount maps to Loan Balance
-            guarantorRequired: data.canGuarantee ? 'Yes' : 'No', // canGuarantee maps to Guarantor Required
+            guarantorRequired: data.canGuarantee ? true : false, // canGuarantee maps to Guarantor Required
           }));
         }
         setStatusMessage('Guarantor validated successfully.');
@@ -280,31 +332,7 @@ export default function LoanGuarantor() {
     }
   };
 
-  const handleAddGuarantee = () => {
-    if (!guarantorDetails.guarantorId) {
-      setStatusMessage('Please select a guarantor first.');
-      setStatusError(true);
-      return;
-    }
 
-    const newGuarantee = {
-      id: new Date().getTime(),
-      guarantorId: guarantorDetails.guarantorId,
-      guarantorName: guarantorDetails.guarantorName,
-      loanAmount: guarantorDetails.loanBalance || '',
-      amountGuarantor: guarantorDetails.amountToGuarantee || '',
-      guaranteeDate: guarantorDetails.guaranteeDate || '',
-    };
-
-    setGuaranteeRows([...guaranteeRows, newGuarantee]);
-    setStatusMessage('Guarantee added successfully.');
-    setStatusError(false);
-    notifySaveSuccess({
-      page: 'Loan / Loan Guarantor',
-      action: 'Add Guarantee',
-      message: 'Guarantee added successfully.',
-    });
-  };
 
   const handleGuarantorTypeChange = (e) => {
     const newType = e.target.value;
@@ -342,10 +370,7 @@ export default function LoanGuarantor() {
     setGuarantorDetails((prev) => ({ ...prev, amountToGuarantee: cleanValue }));
   };
 
-  const handleTotalGuaranteedChange = (e) => {
-    const cleanValue = cleanNumericInput(e.target.value);
-    setGuarantorDetails((prev) => ({ ...prev, totalGuaranteed: cleanValue }));
-  };
+
 
   const handleSaveGuarantor = async () => {
     console.log('=== handleSaveGuarantor CALLED ===');
@@ -433,28 +458,9 @@ export default function LoanGuarantor() {
         // Reload guarantors list from endpoint
         await loadGuarantors();
 
-        // Map guarantor history to guarantee rows
-        if (result && result.guarantorHistory && result.guarantorHistory.guarantors && Array.isArray(result.guarantorHistory.guarantors)) {
-          console.log('✓ Mapping guarantee rows from result');
-          console.log('Guarantors array length:', result.guarantorHistory.guarantors.length);
-          const mappedGuarantees = result.guarantorHistory.guarantors.map((item, index) => {
-            const guarantorData = {
-              id: `${item.gid}-${index}`,
-              guarantorId: String(item.grantorcode || ''),
-              guarantorName: String(item.grantor || ''),
-              loanAmount: formatCurrency(parseFloat(item.loanamt) || 0),
-              amountGuarantor: formatCurrency(parseFloat(item.guaramt) || 0),
-              guaranteeDate: item.guardate ? dayjs(item.guardate).format('DD MMM YYYY') : '',
-            };
-            return guarantorData;
-          });
-          console.log('Mapped guarantees:', mappedGuarantees.length, 'rows');
-          setGuaranteeRows(mappedGuarantees);
-        } else {
-          console.log('⚠ result:', result);
-          console.log('⚠ result.guarantorHistory:', result?.guarantorHistory);
-          console.log('⚠ result.guarantorHistory.guarantors:', result?.guarantorHistory?.guarantors);
-          console.log('⚠ Is array?', Array.isArray(result?.guarantorHistory?.guarantors));
+        // Reload guarantee history for the selected loan
+        if (selectedLoanId) {
+          await loadGuaranteeHistory(selectedLoanId);
         }
 
         // Reset form
@@ -463,12 +469,12 @@ export default function LoanGuarantor() {
           savingBalance: '',
           amountToGuarantee: '',
           guarantorName: '',
+          collateralName: '',
           collateralValue: '',
           collateralDesc: '',
           loanBalance: '',
           guaranteeDate: '',
-          totalGuaranteed: '',
-          guarantorRequired: '',
+          guarantorRequired: false,
         });
         setSelectedIds([]);
       } else {
@@ -493,7 +499,7 @@ export default function LoanGuarantor() {
     }
   };
 
-  const guarantorCount = guarantors.length;
+
 
   return (
     <Box p={3}>
@@ -524,68 +530,12 @@ export default function LoanGuarantor() {
           mb: 3,
         }}
       >
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: '#e3f2fd',
-            borderRadius: 1.5,
-            border: '1px solid #bbdefb',
-          }}
-        >
-          <Typography variant="caption" sx={{ color: '#1565c0', fontWeight: 600 }}>
-            Total Guarantors
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1565c0' }}>
-            {guarantorCount}
-          </Typography>
-        </Box>
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: '#f3e5f5',
-            borderRadius: 1.5,
-            border: '1px solid #e1bee7',
-          }}
-        >
-          <Typography variant="caption" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
-            Guarantees Documented
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#6a1b9a' }}>
-            {guaranteeRows.length}
-          </Typography>
-        </Box>
       </Box>
 
-      {/* Instructions */}
-      <Box
-        sx={{
-          mb: 3,
-          p: 2,
-          bgcolor: '#e8f5e9',
-          borderRadius: 1.5,
-          border: '1px solid #c8e6c9',
-        }}
-      >
-        <Typography variant="body2" sx={{ color: '#2e7d32' }}>
-          💡 <strong>Tip:</strong> Click on any row to select a guarantor. Fill in the guarantee details form and click "Add Guarantee" to add a new guarantee.
-        </Typography>
-      </Box>
+
 
       {/* Action Buttons */}
       <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <Button
-          variant="contained"
-          color="success"
-          onClick={handleAddGuarantee}
-          disabled={selectedIds.length === 0 || loading}
-          sx={{
-            fontWeight: 600,
-            paddingX: 3,
-            boxShadow: 2,
-          }}
-        >
-          ✓ Add Guarantee
-        </Button>
         <Button
           variant="outlined"
           color="primary"
@@ -704,13 +654,42 @@ export default function LoanGuarantor() {
       {/* Guarantor Details Card */}
       <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, pb: 2, borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#2c3e50' }}>
+          <Box sx={{ mb: 3, pb: 2, borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#2c3e50', mb: 2 }}>
               Guarantor Details
             </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50', fontSize: '1rem' }}>
-              Guarantee Required: <span style={{ color: '#667eea', fontWeight: 700 }}>{selectedIds.length > 0 && guarantors.find((g) => g.id === selectedIds[0]) ? formatCurrency(guarantors.find((g) => g.id === selectedIds[0]).rawPrincipalAmt || 0) : 'D 0.00'}</span>
-            </Typography>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+              {/* Guarantee Required Block */}
+              <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #bbdefb' }}>
+                <Typography variant="caption" sx={{ color: '#1565c0', fontWeight: 600 }}>
+                  Guarantee Required
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1565c0', mt: 0.5 }}>
+                  {selectedIds.length > 0 && guarantors.find((g) => g.id === selectedIds[0]) ? formatCurrency(guarantors.find((g) => g.id === selectedIds[0]).rawPrincipalAmt || 0) : 'D 0.00'}
+                </Typography>
+              </Box>
+              
+              {/* Total Guaranteed Block */}
+              <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 1, border: '1px solid #e1bee7' }}>
+                <Typography variant="caption" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
+                  Total Guaranteed
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#6a1b9a', mt: 0.5 }}>
+                  {formatCurrency(totalGuaranteed || 0)}
+                </Typography>
+              </Box>
+              
+              {/* Remaining Amount Block */}
+              <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 1, border: '1px solid #ffe0b2' }}>
+                <Typography variant="caption" sx={{ color: '#e65100', fontWeight: 600 }}>
+                  Remaining Amount
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: remainingAmount >= 0 ? '#e65100' : '#d32f2f', mt: 0.5 }}>
+                  {formatCurrency(remainingAmount || 0)}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -769,19 +748,38 @@ export default function LoanGuarantor() {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Guarantor Name"
-                  name="guarantorName"
-                  value={guarantorDetails.guarantorName}
-                  onChange={handleGuarantorDetailsChange}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  sx={{ bgcolor: '#f5f5f5' }}
-                />
-              </Grid>
+              {/* Guarantor Name - Show only for Member Guarantors */}
+              {guarantorType === 'memberGuarantors' && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Guarantor Name"
+                    name="guarantorName"
+                    value={guarantorDetails.guarantorName}
+                    onChange={handleGuarantorDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ bgcolor: '#f5f5f5' }}
+                  />
+                </Grid>
+              )}
+              
+              {/* Collateral Name - Show only for Collateral */}
+              {guarantorType === 'collateral' && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Collateral Name"
+                    name="collateralName"
+                    value={guarantorDetails.collateralName}
+                    onChange={handleGuarantorDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Enter Collateral Name"
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
@@ -811,32 +809,25 @@ export default function LoanGuarantor() {
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Collateral Value"
-                  name="collateralValue"
-                  value={guarantorDetails.collateralValue}
-                  onChange={handleGuarantorDetailsChange}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  sx={{ bgcolor: '#f5f5f5' }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Loan Balance"
-                  name="loanBalance"
-                  value={guarantorDetails.loanBalance}
-                  onChange={handleGuarantorDetailsChange}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  sx={{ bgcolor: '#f5f5f5' }}
-                />
-              </Grid>
+              
+              {/* Collateral Value - Show only for Collateral, editable */}
+              {guarantorType === 'collateral' && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Collateral Value"
+                    name="collateralValue"
+                    value={guarantorDetails.collateralValue}
+                    onChange={handleGuarantorDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -862,24 +853,9 @@ export default function LoanGuarantor() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
-                  label="Total Guaranteed"
-                  name="totalGuaranteed"
-                  value={formatCurrency(guarantorDetails.totalGuaranteed)}
-                  onChange={handleTotalGuaranteedChange}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                  }}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Guarantor Required"
-                  name="guarantorRequired"
-                  value={guarantorDetails.guarantorRequired}
+                  label="Loan Balance"
+                  name="loanBalance"
+                  value={guarantorDetails.loanBalance}
                   onChange={handleGuarantorDetailsChange}
                   variant="outlined"
                   size="small"
@@ -887,12 +863,31 @@ export default function LoanGuarantor() {
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={guarantorDetails.guarantorRequired === true || guarantorDetails.guarantorRequired === 'Yes'}
+                      onChange={(e) => {
+                        setGuarantorDetails((prev) => ({
+                          ...prev,
+                          guarantorRequired: e.target.checked,
+                        }));
+                      }}
+                      name="guarantorRequired"
+                    />
+                  }
+                  label="Guarantor Required"
+                  sx={{ display: 'flex', alignItems: 'center' }}
+                />
+              </Grid>
             </Grid>
           </Box>
           </CardContent>
         </Card>
 
-      {/* Save Button Below Guarantor Details Card */}
+      {/* Save Button */}
       <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
         <Button
           variant="contained"
@@ -904,19 +899,21 @@ export default function LoanGuarantor() {
             paddingX: 3,
             boxShadow: 2,
           }}
+          startIcon={<SaveIcon />}
         >
-          {saveLoading ? 'Saving...' : '💾 Save'}
+          {saveLoading ? 'Saving...' : 'Save Guarantor'}
         </Button>
       </Box>
 
-      {/* Guarantee Table */}
-      <>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-          Guarantors
-        </Typography>
+      {/* Guarantee History DataGrid */}
+      {guaranteeHistoryRows.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+            Guarantee History
+          </Typography>
           <Box
             sx={{
-              height: 300,
+              height: 350,
               width: '100%',
               borderRadius: 1.5,
               border: '1px solid #e0e0e0',
@@ -924,8 +921,8 @@ export default function LoanGuarantor() {
             }}
           >
             <DataGrid
-              rows={guaranteeRows}
-              columns={GUARANTEE_COLUMNS}
+              rows={guaranteeHistoryRows}
+              columns={GUARANTEE_HISTORY_COLUMNS}
               pageSizeOptions={[5, 10, 25]}
               paginationModel={{ pageSize: 10, page: 0 }}
               onPaginationModelChange={(newModel) => {}}
@@ -959,7 +956,10 @@ export default function LoanGuarantor() {
               }}
             />
           </Box>
-        </>
+        </Box>
+      )}
+
+
     </Box>
   );
 }
