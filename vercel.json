@@ -206,6 +206,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/auth/login"
     },
     {
+      "source": "/api/account/details/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
