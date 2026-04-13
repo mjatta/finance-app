@@ -81,11 +81,35 @@ const GUARANTOR_COLUMNS = [
 ];
 
 const GUARANTEE_COLUMNS = [
-  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 1, minWidth: 120, sortable: true },
-  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 200, sortable: true },
-  { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 140, sortable: true },
-  { field: 'amountGuarantor', headerName: 'Amount Guarantor', flex: 1, minWidth: 140, sortable: true },
-  { field: 'guaranteeDate', headerName: 'Guarantee Date', flex: 1, minWidth: 140, sortable: true },
+  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true },
+  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 180, sortable: true },
+  { 
+    field: 'loanAmount', 
+    headerName: 'Loan Amount', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'right',
+    headerAlign: 'right',
+  },
+  { 
+    field: 'amountGuarantor', 
+    headerName: 'Amount Guarantor', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'right',
+    headerAlign: 'right',
+  },
+  { 
+    field: 'guaranteeDate', 
+    headerName: 'Guarantee Date', 
+    flex: 1, 
+    minWidth: 140, 
+    sortable: true,
+    align: 'center',
+    headerAlign: 'center',
+  },
 ];
 
 export default function LoanGuarantor() {
@@ -225,31 +249,23 @@ export default function LoanGuarantor() {
       
       if (data && data.status !== 'error') {
         if (mode === 4) {
-          // Member Guarantors mode: map fullName, balance, guarantorAmount
-          setGuarantorDetails({
-            guarantorId: data.guarantorCode || '',
-            savingBalance: '',
-            amountToGuarantee: '',
+          // Member Guarantors mode: map fullName, balance to savingBalance, guarantorAmount to loanBalance
+          setGuarantorDetails((prev) => ({
+            ...prev,
+            savingBalance: data.balance || '',
             guarantorName: data.fullName || '',
-            collateralValue: '',
-            loanBalance: data.balance || '',
-            guaranteeDate: '',
-            totalGuaranteed: '',
+            loanBalance: data.guarantorAmount || '',
             guarantorRequired: 'Yes',
-          });
+          }));
         } else if (mode === 3) {
-          // Collateral mode: map only balance and canGuarantee
-          setGuarantorDetails({
-            guarantorId: data.guarantorCode || '',
+          // Collateral mode: map balance to savingBalance and guarantorAmount to loanBalance
+          setGuarantorDetails((prev) => ({
+            ...prev,
             savingBalance: data.balance || '', // balance maps to Saving Balance
-            amountToGuarantee: '',
             guarantorName: '', // Not provided in collateral mode
-            collateralValue: '',
-            loanBalance: data.balance || '', // balance also used for Loan Balance
-            guaranteeDate: '',
-            totalGuaranteed: '',
+            loanBalance: data.guarantorAmount || '', // guarantorAmount maps to Loan Balance
             guarantorRequired: data.canGuarantee ? 'Yes' : 'No', // canGuarantee maps to Guarantor Required
-          });
+          }));
         }
         setStatusMessage('Guarantor validated successfully.');
         setStatusError(false);
@@ -310,6 +326,15 @@ export default function LoanGuarantor() {
   const handleGuarantorDetailsChange = (e) => {
     const { name, value } = e.target;
     setGuarantorDetails((prev) => ({ ...prev, [name]: value }));
+    
+    // If guarantor ID is changed and a type is selected, trigger validation
+    if (name === 'guarantorId' && value && guarantorType) {
+      if (guarantorType === 'memberGuarantors') {
+        performGuarantorValidation(value, 4);
+      } else if (guarantorType === 'collateral') {
+        performGuarantorValidation(value, 3);
+      }
+    }
   };
 
   const handleAmountToGuaranteeChange = (e) => {
@@ -381,13 +406,12 @@ export default function LoanGuarantor() {
     // Build the save payload matching backend expectations
     const savePayload = {
       MemberCode: padMemberCode(selectedGuarantor.guarantorId),
-      LoanID: parseInt(selectedGuarantor.id) || 0,
-      GuarantorCode: padMemberCode(selectedGuarantor.guarantorId),
+      LoanID: parseInt(selectedGuarantor.id.toString().split('-')[0]) || 0,
+      GuarantorCode: padMemberCode(guarantorDetails.guarantorId),
       GuarantorAmount: parseFloat(guarantorDetails.amountToGuarantee) || 0,
-      CollateralValue: parseFloat(guarantorDetails.collateralValue) || parseFloat(selectedGuarantor.collateralValue) || 0,
+      CollateralValue: parseFloat(guarantorDetails.collateralValue) || 0,
       CollateralDesc: guarantorDetails.collateralDesc || '',
-      LoanAmount: parseFloat(selectedGuarantor.loanAmount) || 0,
-      CurrentGuaranteed: parseFloat(guarantorDetails.totalGuaranteed) || 0,
+      LoanAmount: parseFloat(selectedGuarantor.rawPrincipalAmt) || 0,
       CompId: compId,
       UserId: userId,
       WorkStation: workStation,
@@ -395,13 +419,7 @@ export default function LoanGuarantor() {
     };
 
     try {
-      console.log('=== About to call saveGuarantor ===');
-      console.log('savePayload:', savePayload);
-      console.log('saveGuarantor function available:', !!saveGuarantor);
-      
       const result = await saveGuarantor(savePayload);
-      console.log('=== saveGuarantor returned ===');
-      console.log('result:', result);
 
       if (result) {
         setStatusMessage('Guarantor saved successfully.');
@@ -412,16 +430,32 @@ export default function LoanGuarantor() {
           message: 'Guarantor saved successfully.',
         });
 
-        // Add to guarantee table
-        const newGuarantee = {
-          id: new Date().getTime(),
-          guarantorId: guarantorDetails.guarantorId,
-          guarantorName: guarantorDetails.guarantorName,
-          loanAmount: guarantorDetails.loanBalance || '',
-          amountGuarantor: guarantorDetails.amountToGuarantee || '',
-          guaranteeDate: guarantorDetails.guaranteeDate || '',
-        };
-        setGuaranteeRows([...guaranteeRows, newGuarantee]);
+        // Reload guarantors list from endpoint
+        await loadGuarantors();
+
+        // Map guarantor history to guarantee rows
+        if (result && result.guarantorHistory && result.guarantorHistory.guarantors && Array.isArray(result.guarantorHistory.guarantors)) {
+          console.log('✓ Mapping guarantee rows from result');
+          console.log('Guarantors array length:', result.guarantorHistory.guarantors.length);
+          const mappedGuarantees = result.guarantorHistory.guarantors.map((item, index) => {
+            const guarantorData = {
+              id: `${item.gid}-${index}`,
+              guarantorId: String(item.grantorcode || ''),
+              guarantorName: String(item.grantor || ''),
+              loanAmount: formatCurrency(parseFloat(item.loanamt) || 0),
+              amountGuarantor: formatCurrency(parseFloat(item.guaramt) || 0),
+              guaranteeDate: item.guardate ? dayjs(item.guardate).format('DD MMM YYYY') : '',
+            };
+            return guarantorData;
+          });
+          console.log('Mapped guarantees:', mappedGuarantees.length, 'rows');
+          setGuaranteeRows(mappedGuarantees);
+        } else {
+          console.log('⚠ result:', result);
+          console.log('⚠ result.guarantorHistory:', result?.guarantorHistory);
+          console.log('⚠ result.guarantorHistory.guarantors:', result?.guarantorHistory?.guarantors);
+          console.log('⚠ Is array?', Array.isArray(result?.guarantorHistory?.guarantors));
+        }
 
         // Reset form
         setGuarantorDetails({
@@ -591,7 +625,7 @@ export default function LoanGuarantor() {
 
       {/* Guarantors DataGrid */}
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 3, color: '#2c3e50' }}>
-        Guarantors
+        Customer
       </Typography>
       <Box
         sx={{
@@ -670,11 +704,34 @@ export default function LoanGuarantor() {
       {/* Guarantor Details Card */}
       <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, pb: 2, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-            Guarantor Details
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, pb: 2, borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#2c3e50' }}>
+              Guarantor Details
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50', fontSize: '1rem' }}>
+              Guarantee Required: <span style={{ color: '#667eea', fontWeight: 700 }}>{selectedIds.length > 0 && guarantors.find((g) => g.id === selectedIds[0]) ? formatCurrency(guarantors.find((g) => g.id === selectedIds[0]).rawPrincipalAmt || 0) : 'D 0.00'}</span>
+            </Typography>
+          </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Guarantor ID Field */}
+            <Box>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Guarantor ID"
+                    name="guarantorId"
+                    value={guarantorDetails.guarantorId}
+                    onChange={handleGuarantorDetailsChange}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Enter Guarantor ID"
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
             {/* Radio Button Group for Guarantor Type Selection */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', mb: 2, display: 'block', fontSize: '1.05rem' }}>
@@ -684,70 +741,34 @@ export default function LoanGuarantor() {
                 aria-label="guarantor-type"
                 name="guarantor-type"
                 value={guarantorType}
-                onChange={handleGuarantorTypeChange}
-                sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  setGuarantorType(newType);
+                  // Validate if guarantor ID is entered
+                  if (guarantorDetails.guarantorId) {
+                    if (newType === 'memberGuarantors') {
+                      performGuarantorValidation(guarantorDetails.guarantorId, 4);
+                    } else if (newType === 'collateral') {
+                      performGuarantorValidation(guarantorDetails.guarantorId, 3);
+                    }
+                  }
+                }}
+                sx={{ display: 'flex', gap: 2, flexDirection: 'row' }}
               >
                 <FormControlLabel
                   value="memberGuarantors"
-                  control={<Radio sx={{ display: 'none' }} />}
-                  label="👥 Member Guarantors"
-                  sx={{
-                    flex: 1,
-                    m: 0,
-                    p: 1.5,
-                    border: '2px solid',
-                    borderColor: guarantorType === 'memberGuarantors' ? '#667eea' : '#e0e0e0',
-                    borderRadius: 1.5,
-                    bgcolor: guarantorType === 'memberGuarantors' ? '#f0f4ff' : '#fafafa',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    fontWeight: guarantorType === 'memberGuarantors' ? 700 : 500,
-                    color: guarantorType === 'memberGuarantors' ? '#667eea' : '#2c3e50',
-                    '&:hover': {
-                      borderColor: '#667eea',
-                      bgcolor: '#f0f4ff',
-                    },
-                  }}
+                  control={<Radio />}
+                  label="Member Guarantors"
                 />
                 <FormControlLabel
                   value="collateral"
-                  control={<Radio sx={{ display: 'none' }} />}
-                  label="💎 Collateral"
-                  sx={{
-                    flex: 1,
-                    m: 0,
-                    p: 1.5,
-                    border: '2px solid',
-                    borderColor: guarantorType === 'collateral' ? '#667eea' : '#e0e0e0',
-                    borderRadius: 1.5,
-                    bgcolor: guarantorType === 'collateral' ? '#f0f4ff' : '#fafafa',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    fontWeight: guarantorType === 'collateral' ? 700 : 500,
-                    color: guarantorType === 'collateral' ? '#667eea' : '#2c3e50',
-                    '&:hover': {
-                      borderColor: '#667eea',
-                      bgcolor: '#f0f4ff',
-                    },
-                  }}
+                  control={<Radio />}
+                  label="Collateral"
                 />
               </RadioGroup>
             </Box>
 
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Guarantor ID"
-                  name="guarantorId"
-                  value={guarantorDetails.guarantorId}
-                  onChange={handleGuarantorDetailsChange}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  sx={{ bgcolor: '#f5f5f5' }}
-                />
-              </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
@@ -891,7 +912,7 @@ export default function LoanGuarantor() {
       {/* Guarantee Table */}
       <>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-          Guarantee
+          Guarantors
         </Typography>
           <Box
             sx={{

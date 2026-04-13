@@ -305,7 +305,7 @@ export default function Login({ onLogin }) {
               Welcome back
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.7 }}>
-              Enter your credentials to continue to the Social Development Fund management workspace.
+              Enter your credentials to continue to the Microfinance Management workspace.
             </Typography>
 
             <TextField
@@ -417,7 +417,7 @@ export default function Login({ onLogin }) {
             </Button>
 
             <Typography sx={{ textAlign: 'center', color: 'text.secondary', fontSize: '0.9rem', pt: 0.5 }}>
-              Secure sign-in for authorized Social Development Fund staff.
+              Secure sign-in for authorized users.
             </Typography>
           </Stack>
         </Box>

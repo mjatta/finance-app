@@ -29,7 +29,8 @@ export function useSaveGuarantor() {
 
       const result = await response.json();
 
-      if (result.status !== 'success') {
+      // Accept both 'success' and 'warning' statuses as successful responses (HTTP 200)
+      if (result.status !== 'success' && result.status !== 'warning') {
         setError(result.message || 'Save failed');
         return null;
       }
