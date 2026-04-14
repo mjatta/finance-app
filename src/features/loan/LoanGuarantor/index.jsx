@@ -18,6 +18,8 @@ import {
   FormLabel,
   InputAdornment,
   Checkbox,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -502,7 +504,32 @@ export default function LoanGuarantor() {
 
 
   return (
-    <Box p={3}>
+    <Box p={3} sx={{ position: 'relative' }}>
+      {/* Loading Spinner */}
+      <Backdrop
+        open={saveLoading}
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.7)',
+          borderRadius: 1,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>
+            Saving guarantor...
+          </Typography>
+        </Box>
+      </Backdrop>
+
       {/* Header Section */}
       <Box
         sx={{
@@ -899,7 +926,7 @@ export default function LoanGuarantor() {
             paddingX: 3,
             boxShadow: 2,
           }}
-          startIcon={<SaveIcon />}
+          startIcon={saveLoading ? <CircularProgress size={18} /> : <SaveIcon />}
         >
           {saveLoading ? 'Saving...' : 'Save Guarantor'}
         </Button>

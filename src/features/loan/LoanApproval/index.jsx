@@ -13,6 +13,8 @@ import {
   DialogContent,
   DialogActions,
   MenuItem,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -101,6 +103,7 @@ const LOAN_COLUMNS = [
 export default function LoanApproval() {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
@@ -345,6 +348,10 @@ export default function LoanApproval() {
       return;
     }
 
+    setIsSaving(true);
+    setStatusMessage('');
+    setStatusError(false);
+
     try {
       const payload = {
         LoanId: parseInt(rejectDetails.loanId, 10),
@@ -383,6 +390,8 @@ export default function LoanApproval() {
         message: err.message || 'Error rejecting loan.',
         error: err,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -398,6 +407,10 @@ export default function LoanApproval() {
       setStatusError(true);
       return;
     }
+
+    setIsSaving(true);
+    setStatusMessage('');
+    setStatusError(false);
 
     try {
       const selectedLoan = loans.find((l) => l.id === selectedIds[0]);
@@ -509,6 +522,8 @@ export default function LoanApproval() {
         message: errorMsg,
         error,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -526,7 +541,32 @@ export default function LoanApproval() {
   const loanCount = loans.length;
 
   return (
-    <Box p={3}>
+    <Box p={3} sx={{ position: 'relative' }}>
+      {/* Loading Spinner */}
+      <Backdrop
+        open={isSaving}
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.7)',
+          borderRadius: 1,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>
+            Processing approval...
+          </Typography>
+        </Box>
+      </Backdrop>
+
       {/* Header Section */}
       <Box
         sx={{
@@ -885,20 +925,21 @@ export default function LoanApproval() {
           variant="contained"
           color="success"
           onClick={handleApproveLoan}
-          disabled={selectedIds.length === 0 || loading}
+          disabled={selectedIds.length === 0 || loading || isSaving}
+          startIcon={isSaving ? <CircularProgress size={18} /> : undefined}
           sx={{
             fontWeight: 600,
             paddingX: 3,
             boxShadow: 2,
           }}
         >
-          ✓ Approve Loan
+          {isSaving ? 'Processing...' : '✓ Approve Loan'}
         </Button>
         <Button
           variant="contained"
           color="error"
           onClick={handleOpenRejectDialog}
-          disabled={selectedIds.length === 0 || loading}
+          disabled={selectedIds.length === 0 || loading || isSaving}
           sx={{
             fontWeight: 600,
             paddingX: 3,

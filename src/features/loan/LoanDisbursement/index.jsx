@@ -14,6 +14,8 @@ import {
   FormLabel,
   MenuItem,
   InputAdornment,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -85,6 +87,7 @@ const CLIENT_COLUMNS = [
 export default function LoanDisbursement() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
@@ -308,6 +311,10 @@ export default function LoanDisbursement() {
       return;
     }
 
+    setIsSaving(true);
+    setStatusMessage('');
+    setStatusError(false);
+
     try {
       console.log('=== Disbursement Save Started ===');
       console.log('selectedIds:', selectedIds);
@@ -377,8 +384,13 @@ export default function LoanDisbursement() {
         topUpAmount: '',
         accruedInterest: '',
         chequeNumber: '',
-        chequeNumber: '',
       });
+
+      // Auto dismiss success message and reload grid after 2 seconds
+      setTimeout(() => {
+        setStatusMessage('');
+        loadDisbursementData();
+      }, 2000);
     } catch (error) {
       console.error('Failed to save disbursement:', error);
       setStatusMessage('Failed to save disbursement.');
@@ -389,6 +401,8 @@ export default function LoanDisbursement() {
         message: 'Failed to save disbursement.',
         error,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -396,7 +410,32 @@ export default function LoanDisbursement() {
   const selectedCount = selectedIds.length;
 
   return (
-    <Box p={3}>
+    <Box p={3} sx={{ position: 'relative' }}>
+      {/* Loading Spinner */}
+      <Backdrop
+        open={isSaving}
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.7)',
+          borderRadius: 1,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>
+            Saving disbursement...
+          </Typography>
+        </Box>
+      </Backdrop>
+
       {/* Header Section */}
       <Box
         sx={{
@@ -809,6 +848,8 @@ export default function LoanDisbursement() {
             <Button
               variant="contained"
               onClick={handleSaveDisbursement}
+              disabled={isSaving}
+              startIcon={isSaving ? <CircularProgress size={18} /> : undefined}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },
@@ -819,7 +860,7 @@ export default function LoanDisbursement() {
                 textTransform: 'none',
               }}
             >
-              💾 Save Disbursement
+              {isSaving ? 'Saving...' : '💾 Save Disbursement'}
             </Button>
           </Box>
         </Grid>
