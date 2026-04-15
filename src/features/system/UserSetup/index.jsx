@@ -78,6 +78,7 @@ const featurePageMap = {
   accounting: [
     { path: '/accounting/cash-manager', label: 'Cash Manager' },
     { path: '/accounting/journals', label: 'Journals' },
+    { path: '/accounting/verification', label: 'Verification' },
     { path: '/accounting/transaction-update', label: 'Transaction Update' },
     { path: '/accounting/transaction-reversal-adjustment', label: 'Transaction Reversal / Adjustment' },
     { path: '/accounting/account-enquiry', label: 'Account Enquiry' },

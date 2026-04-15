@@ -83,6 +83,7 @@ const InterestCalculation = lazy(() => import('./features/accounting/PeriodicPro
 const PeriodDues = lazy(() => import('./features/accounting/PeriodicProcessing/PeriodDues'));
 const CashManager = lazy(() => import('./features/accounting/CashManager'));
 const Journals = lazy(() => import('./features/accounting/Journals'));
+const Verification = lazy(() => import('./features/accounting/Verification'));
 const TransactionUpdate = lazy(() => import('./features/accounting/TransactionUpdate'));
 const TransactionReversalAdjustment = lazy(() => import('./features/accounting/TransactionReversalAdjustment'));
 const AccountEnquiry = lazy(() => import('./features/accounting/AccountEnquiry'));
@@ -270,8 +271,9 @@ function App() {
       key: 'accounting',
       label: 'Financial Accounting',
       children: [
-        { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
         { label: 'Journals', to: '/accounting/journals', icon: BookRoundedIcon },
+        { label: 'Verification', to: '/accounting/verification', icon: VerifiedRoundedIcon },
+        { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
         { label: 'Transaction Update', to: '/accounting/transaction-update', icon: SyncAltRoundedIcon },
         { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
         { label: 'Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
@@ -699,6 +701,10 @@ function App() {
                     <Route
                       path="/accounting/journals"
                       element={renderWithAccess('accounting', <Journals />)}
+                    />
+                    <Route
+                      path="/accounting/verification"
+                      element={renderWithAccess('accounting', <Verification />)}
                     />
                     <Route
                       path="/accounting/transaction-update"
