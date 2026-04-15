@@ -174,6 +174,15 @@ const ENDPOINT_MAP = {
     dev: '/api/loan-reasons',
     prod: '/api/lookups/loanreason',
   },
+  // Unverified Journals
+  'unverified-journals': {
+    dev: '/api/unverified-journals/unverified',
+    prod: '/api/UnverifiedJournal/unverified',
+  },
+  'unverified-journals-verify': {
+    dev: '/api/unverified-journals/verify',
+    prod: '/api/UnverifiedJournal/verify',
+  },
 };
 
 /**

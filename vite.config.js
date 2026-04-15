@@ -1476,6 +1476,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/loan-reasons/, '/api/lookups/loanreason'),
       },
+      // Proxy unverified journals endpoint to avoid CORS
+      '/api/unverified-journals': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/unverified-journals/, '/api/UnverifiedJournal'),
+      },
     },
   },
   plugins: [
