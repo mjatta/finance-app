@@ -169,6 +169,11 @@ const ENDPOINT_MAP = {
     dev: '/api/loanReject/reject',
     prod: '/api/loanReject/reject',
   },
+  // Loan Reasons - Loan Purpose Lookup
+  'loan-reasons': {
+    dev: '/api/loan-reasons',
+    prod: '/api/lookups/loanreason',
+  },
 };
 
 /**

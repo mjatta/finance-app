@@ -21,6 +21,7 @@ import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useLoanSetupDetails } from './hooks/useLoanSetupDetails';
 import { useLoanCalculate } from './hooks/useLoanCalculate';
 import { useLoanSave } from './hooks/useLoanSave';
+import { useLoanReasons } from '../../../hooks/useLoanReasons';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -40,7 +41,7 @@ const initialFormData = {
   economicSector: '',
   startDate: todayIso,
   loanLimit: '',
-  purposeOfLoan: '',
+  loanPurpose: '',
   sourceOfFunds: '',
   guarantorSourceOfFunds: '',
   gracePeriodInterest: '',
@@ -117,6 +118,7 @@ export default function LoanApplication() {
   const { fetchLoanSetupDetails } = useLoanSetupDetails();
   const { calculateLoan } = useLoanCalculate();
   const { saveLoan } = useLoanSave();
+  const { loanReasons, fetchLoanReasons } = useLoanReasons();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
 
@@ -155,6 +157,11 @@ export default function LoanApplication() {
       }
     };
     loadSetupDetails();
+  }, []);
+
+  // Fetch loan reasons on mount
+  useEffect(() => {
+    fetchLoanReasons();
   }, []);
 
   // When transaction type changes, fetch relevant data
@@ -272,12 +279,10 @@ export default function LoanApplication() {
     setFormData((prev) => ({ ...prev, principalAmount: cleanValue }));
   };
 
-  // Handle purpose of loan input - only allow letters and spaces
-  const handlePurposeOfLoanChange = (e) => {
+  // Handle loan purpose selection
+  const handleLoanPurposeChange = (e) => {
     const { value } = e.target;
-    // Remove any numbers and special characters, keep only letters and spaces
-    const cleanValue = value.replace(/[^A-Za-z\s]/g, '');
-    setFormData((prev) => ({ ...prev, purposeOfLoan: cleanValue }));
+    setFormData((prev) => ({ ...prev, loanPurpose: value }));
   };
 
   // Validation function for required fields before loan calculation
@@ -783,30 +788,38 @@ export default function LoanApplication() {
                       sx={readOnlyFieldSx}
                     />
 
-                    {/* Start Date */}
-                    <DatePicker
-                      label="Start Date"
-                      value={formData.startDate ? dayjs(formData.startDate) : null}
-                      onChange={(val) => handleDateChange('startDate', val)}
-                      slotProps={{
-                        textField: {
-                          size: 'small',
-                          fullWidth: true,
-                          required: true,
-                        },
-                      }}
-                    />
+                    {/* Interest Method */}
+                    <TextField
+                      select
+                      label="Interest Method"
+                      name="interestMethod"
+                      value={formData.interestMethod}
+                      onChange={handleChange}
+                      disabled={!!formData.loanProduct}
+                      size="small"
+                      fullWidth
+                      sx={formData.loanProduct ? readOnlyFieldSx : {}}
+                    >
+                      <MenuItem value="">
+                        <em>Select Interest Method</em>
+                      </MenuItem>
+                      {interestMethods.map((method) => (
+                        <MenuItem key={method.value} value={method.value}>
+                          {method.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                    {/* Interest Rate */}
+                    {/* Interest Rate - readonly and greyed out */}
                     <TextField
                       label="Interest Rate (%)"
                       name="interestRate"
                       value={formData.interestRate}
-                      onChange={handleChange}
                       size="small"
                       fullWidth
                       type="number"
-                      required
+                      InputProps={{ readOnly: true }}
+                      sx={readOnlyFieldSx}
                     />
 
                     {/* Loan Limit - readonly */}
@@ -829,27 +842,19 @@ export default function LoanApplication() {
                       sx={readOnlyFieldSx}
                     />
 
-                    {/* Interest Method */}
-                    <TextField
-                      select
-                      label="Interest Method"
-                      name="interestMethod"
-                      value={formData.interestMethod}
-                      onChange={handleChange}
-                      disabled={!!formData.loanProduct}
-                      size="small"
-                      fullWidth
-                      sx={formData.loanProduct ? readOnlyFieldSx : {}}
-                    >
-                      <MenuItem value="">
-                        <em>Select Interest Method</em>
-                      </MenuItem>
-                      {interestMethods.map((method) => (
-                        <MenuItem key={method.value} value={method.value}>
-                          {method.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    {/* Start Date */}
+                    <DatePicker
+                      label="Start Date"
+                      value={formData.startDate ? dayjs(formData.startDate) : null}
+                      onChange={(val) => handleDateChange('startDate', val)}
+                      slotProps={{
+                        textField: {
+                          size: 'small',
+                          fullWidth: true,
+                          required: true,
+                        },
+                      }}
+                    />
 
                     {/* Economic Sector */}
                     <TextField
@@ -884,14 +889,23 @@ export default function LoanApplication() {
 
                     {/* Purpose of Loan */}
                     <TextField
+                      select
                       label="Purpose of Loan"
-                      name="purposeOfLoan"
-                      value={formData.purposeOfLoan}
-                      onChange={handlePurposeOfLoanChange}
+                      name="loanPurpose"
+                      value={formData.loanPurpose}
+                      onChange={handleLoanPurposeChange}
                       size="small"
                       fullWidth
-                      inputProps={{ pattern: '[A-Za-z\\s]*' }}
-                    />
+                    >
+                      <MenuItem value="">
+                        <em>Select Purpose</em>
+                      </MenuItem>
+                      {loanReasons.map((reason) => (
+                        <MenuItem key={reason.id} value={reason.id}>
+                          {reason.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
                     {/* Guarantor Source of Funds */}
                     <TextField

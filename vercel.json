@@ -210,6 +210,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:path*"
     },
     {
+      "source": "/api/lookups/loanreason",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/loanreason"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
