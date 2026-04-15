@@ -788,17 +788,16 @@ export default function LoanApplication() {
                       sx={readOnlyFieldSx}
                     />
 
-                    {/* Interest Method */}
+                    {/* Interest Method - readonly */}
                     <TextField
                       select
                       label="Interest Method"
                       name="interestMethod"
                       value={formData.interestMethod}
-                      onChange={handleChange}
-                      disabled={!!formData.loanProduct}
+                      disabled
                       size="small"
                       fullWidth
-                      sx={formData.loanProduct ? readOnlyFieldSx : {}}
+                      sx={readOnlyFieldSx}
                     >
                       <MenuItem value="">
                         <em>Select Interest Method</em>
