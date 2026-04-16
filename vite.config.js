@@ -1483,6 +1483,11 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/unverified-journals/, '/api/UnverifiedJournal'),
       },
+      '/api/verification': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [

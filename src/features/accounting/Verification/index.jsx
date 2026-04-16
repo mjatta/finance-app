@@ -28,18 +28,21 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useUnverifiedJournals } from '../../../hooks/useUnverifiedJournals';
+import { useConfirmVouchers } from '../../../hooks/useConfirmVouchers';
 import { useAuthStore } from '../../../store/authStore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 const VERIFICATION_COLUMNS = [
-  { field: 'cuserid', headerName: 'User ID', flex: 0.75, minWidth: 100, sortable: true },
-  { field: 'cacctnumb', headerName: 'Posting Account', flex: 0.9, minWidth: 120, sortable: true },
+  { field: 'cuserid', headerName: 'User ID', flex: 0.75, minWidth: 100, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'cacctnumb', headerName: 'Posting Account', flex: 0.9, minWidth: 120, sortable: true, align: 'center', headerAlign: 'center' },
   {
     field: 'dpostdate',
     headerName: 'Posting Date',
     flex: 0.9,
     minWidth: 120,
     sortable: true,
+    align: 'center',
+    headerAlign: 'center',
     renderCell: (params) => {
       if (!params.value) return '';
       return dayjs(params.value).format('DD MMM YYYY');
@@ -51,6 +54,8 @@ const VERIFICATION_COLUMNS = [
     flex: 0.9,
     minWidth: 120,
     sortable: true,
+    align: 'center',
+    headerAlign: 'center',
     renderCell: (params) => {
       if (!params.value) return '';
       return dayjs(params.value).format('DD MMM YYYY HH:mm');
@@ -62,11 +67,12 @@ const VERIFICATION_COLUMNS = [
     flex: 0.85,
     minWidth: 110,
     sortable: true,
-    align: 'right',
-    headerAlign: 'right',
+    align: 'center',
+    headerAlign: 'center',
     renderCell: (params) => {
-      const amount = parseFloat(params.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return amount;
+      const value = parseFloat(params.value || 0);
+      const amount = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return value !== 0 ? `D -${amount}` : `D ${amount}`;
     },
   },
   {
@@ -75,16 +81,16 @@ const VERIFICATION_COLUMNS = [
     flex: 0.85,
     minWidth: 110,
     sortable: true,
-    align: 'right',
-    headerAlign: 'right',
+    align: 'center',
+    headerAlign: 'center',
     renderCell: (params) => {
       const amount = parseFloat(params.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return amount;
+      return `D ${amount}`;
     },
   },
-  { field: 'ctrandesc', headerName: 'Transaction Comment', flex: 1.1, minWidth: 140, sortable: true },
-  { field: 'jvno', headerName: 'JV No', flex: 0.8, minWidth: 110, sortable: true },
-  { field: 'Cchqno', headerName: 'Cheque No / Reference', flex: 1, minWidth: 140, sortable: true },
+  { field: 'ctrandesc', headerName: 'Transaction Comment', flex: 1.1, minWidth: 140, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'jvno', headerName: 'JV No', flex: 0.8, minWidth: 110, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'Cchqno', headerName: 'Cheque No / Reference', flex: 1, minWidth: 140, sortable: true, align: 'center', headerAlign: 'center' },
 ];
 
 const TRANSACTION_TYPES = [
@@ -95,15 +101,9 @@ const TRANSACTION_TYPES = [
   { value: 'Batch Process', label: 'Batch Process' },
 ];
 
-// Filter styles for sorting/filtering
-const filterChipSx = {
-  margin: '4px',
-  height: '32px',
-  fontSize: '0.875rem',
-};
-
 export default function Verification() {
-  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedJVNumbers, setSelectedJVNumbers] = useState([]);
   const [gridKey, setGridKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
@@ -118,8 +118,9 @@ export default function Verification() {
   const [sortModel, setSortModel] = useState([]);
 
   const authUser = useAuthStore((state) => state.user);
-  const { journals, loading, error, totalDebit, totalCredit, fetchUnverifiedJournals, saveVerification } =
+  const { journals, loading, error, fetchUnverifiedJournals } =
     useUnverifiedJournals();
+  const { confirmVouchers } = useConfirmVouchers();
 
   const [verificationDetails, setVerificationDetails] = useState({
     verificationCode: '',
@@ -155,30 +156,30 @@ export default function Verification() {
    * Handle saving verification for selected rows
    */
   const handleSaveVerification = useCallback(async () => {
-    if (selectedRows.size === 0) {
+    if (selectedIds.length === 0) {
       notifySaveError('Please select at least one journal to verify');
-      return;
-    }
-
-    if (!verificationDetails.verificationCode.trim()) {
-      notifySaveError('Verification code is required');
       return;
     }
 
     setIsSaving(true);
 
     try {
-      await saveVerification([...selectedRows], {
-        ...verificationDetails,
-        verifiedBy: authUser?.userId || 'Unknown',
-        verificationTime: new Date().toISOString(),
-      });
+      const payload = {
+        companyId: authUser?.CompId || 30,
+        branchId: parseInt(authUser?.BranchId) || 16,
+        userId: authUser?.username || 'SYSTEM',
+        workStation: 'SERVER01',
+        windowsUser: authUser?.name || authUser?.username || 'Unknown',
+        vouchers: selectedJVNumbers,
+      };
+      await confirmVouchers(payload);
 
-      notifySaveSuccess(`Successfully verified ${selectedRows.size} journal(s)`);
-      setStatusMessage(`Successfully verified ${selectedRows.size} journal(s)`);
+      notifySaveSuccess(`Successfully verified ${selectedIds.length} journal(s)`);
+      setStatusMessage(`Successfully verified ${selectedIds.length} journal(s)`);
       setStatusError(false);
       setVerificationDialogOpen(false);
-      setSelectedRows(new Set());
+      setSelectedIds([]);
+      setSelectedJVNumbers([]);
       setGridKey((k) => k + 1);
       setVerificationDetails({
         verificationCode: '',
@@ -196,13 +197,14 @@ export default function Verification() {
     } finally {
       setIsSaving(false);
     }
-  }, [selectedRows, verificationDetails, authUser?.userId, saveVerification, fetchUnverifiedJournals]);
+  }, [selectedIds, selectedJVNumbers, authUser, confirmVouchers, fetchUnverifiedJournals]);
 
   /**
    * Handle clearing selection and form
    */
   const handleClear = useCallback(() => {
-    setSelectedRows(new Set());
+    setSelectedIds([]);
+    setSelectedJVNumbers([]);
     setGridKey((k) => k + 1);
     setVerificationDetails({
       verificationCode: '',
@@ -330,20 +332,35 @@ export default function Verification() {
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
             onSortModelChange={setSortModel}
-            checkboxSelection
+            checkboxSelection={false}
             disableRowSelectionOnClick
-            onRowSelectionModelChange={(newSelection) => {
-              setSelectedRows(newSelection);
+            onRowClick={(params) => {
+              const rowId = params.id;
+              const journal = filteredJournals.find((j) => j.id === rowId);
+              if (selectedIds.includes(rowId)) {
+                setSelectedIds(selectedIds.filter((id) => id !== rowId));
+                setSelectedJVNumbers(selectedJVNumbers.filter((jv) => jv !== String(journal?.jvno)));
+              } else {
+                setSelectedIds([...selectedIds, rowId]);
+                if (journal?.jvno) {
+                  setSelectedJVNumbers([...selectedJVNumbers, String(journal.jvno)]);
+                }
+              }
+            }}
+            getRowClassName={(params) => {
+              if (selectedIds.includes(params.id)) return 'selected-row';
+              return '';
             }}
             sx={{
               border: 'none',
               '& .MuiDataGrid-columnHeaderTitle': {
                 fontWeight: 700,
                 fontSize: '0.95rem',
+                color: '#ffffff',
               },
               '& .MuiDataGrid-columnHeader': {
-                backgroundColor: '#f5f5f5',
-                borderBottom: '2px solid #e0e0e0',
+                backgroundColor: '#2c3e50',
+                borderBottom: '2px solid #1a252f',
               },
               '& .MuiDataGrid-footerContainer': {
                 backgroundColor: '#f5f5f5',
@@ -355,6 +372,7 @@ export default function Verification() {
                 fontWeight: 500,
               },
               '& .MuiDataGrid-row': {
+                cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:nth-of-type(odd)': {
                   backgroundColor: '#fafafa',
@@ -365,10 +383,16 @@ export default function Verification() {
                 '&:hover': {
                   backgroundColor: '#f0f0f0 !important',
                 },
-                '&.Mui-selected': {
-                  backgroundColor: '#f3e5f5 !important',
+                '&.selected-row': {
+                  backgroundColor: '#1976d2 !important',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  '& .MuiDataGrid-cell': {
+                    color: '#ffffff',
+                    borderBottomColor: '#1565c0',
+                  },
                   '&:hover': {
-                    backgroundColor: '#ede7f6 !important',
+                    backgroundColor: '#1565c0 !important',
                   },
                 },
               },
@@ -437,7 +461,7 @@ export default function Verification() {
       </Card>
 
       {/* Summary Section */}
-      {selectedRows.size > 0 && (
+      {selectedIds.length > 0 && (
         <Paper
           sx={{
             p: 2,
@@ -453,7 +477,7 @@ export default function Verification() {
           <Grid container spacing={1}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2">
-                <strong>Selected Journals:</strong> {selectedRows.size}
+                <strong>Selected Journals:</strong> {selectedIds.length}
               </Typography>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -465,7 +489,7 @@ export default function Verification() {
               <Typography variant="body2">
                 <strong>Selected Debit Total:</strong> D{' '}
                 {journals
-                  .filter((j) => selectedRows.has(j.id))
+                  .filter((j) => selectedIds.includes(j.id))
                   .reduce((sum, j) => sum + (parseFloat(j.ndebit) || 0), 0)
                   .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -474,7 +498,7 @@ export default function Verification() {
               <Typography variant="body2">
                 <strong>Selected Credit Total:</strong> D{' '}
                 {journals
-                  .filter((j) => selectedRows.has(j.id))
+                  .filter((j) => selectedIds.includes(j.id))
                   .reduce((sum, j) => sum + (parseFloat(j.ncredit) || 0), 0)
                   .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -484,25 +508,33 @@ export default function Verification() {
       )}
 
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
         <Button
           variant="outlined"
+          color="primary"
           startIcon={<ClearIcon />}
           onClick={handleClear}
-          disabled={selectedRows.size === 0 && !verificationDetails.verificationCode}
+          disabled={selectedIds.length === 0 && !verificationDetails.verificationCode}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+          }}
         >
           Clear
         </Button>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<CheckCircleIcon />}
           onClick={() => setVerificationDialogOpen(true)}
-          disabled={selectedRows.size === 0}
+          disabled={selectedIds.length === 0}
           sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            fontWeight: 600,
+            paddingX: 3,
+            boxShadow: 2,
           }}
         >
-          Verify Selected ({selectedRows.size})
+          Verify Selected ({selectedIds.length})
         </Button>
       </Box>
 
@@ -511,12 +543,21 @@ export default function Verification() {
         <DialogTitle>Confirm Verification</DialogTitle>
         <DialogContent>
           <Box sx={{ py: 2 }}>
-            <Typography variant="body2" sx={{ mb: 1.5 }}>
-              You are about to verify <strong>{selectedRows.size}</strong> journal transaction(s).
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              You are about to verify <strong>{selectedIds.length}</strong> journal transaction(s).
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Verification Code:</strong> {verificationDetails.verificationCode || 'Not provided'}
-            </Typography>
+            {selectedJVNumbers.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  <strong>JV Number(s):</strong>
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {selectedJVNumbers.map((jv, idx) => (
+                    <Chip key={idx} label={jv} variant="outlined" />
+                  ))}
+                </Box>
+              </Box>
+            )}
             {verificationDetails.referencNumber && (
               <Typography variant="body2" sx={{ mb: 1 }}>
                 <strong>Reference Number:</strong> {verificationDetails.referencNumber}

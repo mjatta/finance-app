@@ -183,6 +183,11 @@ const ENDPOINT_MAP = {
     dev: '/api/unverified-journals/verify',
     prod: '/api/UnverifiedJournal/verify',
   },
+  // Verification - Confirm Vouchers
+  'confirm-vouchers': {
+    dev: '/api/verification/confirm-vouchers',
+    prod: '/api/verification/confirm-vouchers',
+  },
 };
 
 /**
