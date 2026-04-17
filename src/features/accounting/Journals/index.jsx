@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   FormControl,
   FormControlLabel,
@@ -23,12 +24,19 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../../../store/authStore';
+import { useInternalJournalAccounts } from '../../../hooks/useInternalJournalAccounts';
 
 const initialFormData = {
   postingType: 'double-entry', // double-entry or batch-posting
   jvNumber: '',
+  accountToDebit: '',
+  batchTransactionDetails: '',
+  accountToCredit: '',
+  batchEntryDate: dayjs().format('YYYY-MM-DD'),
   batchNumber: '',
   batchDate: dayjs().format('YYYY-MM-DD'),
   batchAmount: '',
@@ -56,10 +64,11 @@ const initialGridData = [];
 
 export default function Journals() {
   const user = useAuthStore((state) => state.user);
-  const userName = localStorage.getItem('userName') || user?.username || user?.name || 'System User';
-  const systemDate = dayjs().format('YYYY-MM-DD');
+  const { accounts: journalAccounts, loading: accountsLoading } = useInternalJournalAccounts();
 
   const [formData, setFormData] = useState(initialFormData);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [additionalBatchEntries, setAdditionalBatchEntries] = useState([]);
   const [gridData, setGridData] = useState(initialGridData);
   const [totalDebit, setTotalDebit] = useState(0);
   const [totalCredit, setTotalCredit] = useState(0);
@@ -94,8 +103,31 @@ export default function Journals() {
     }));
   };
 
-  const handleAddRow = () => {
-    const newRow = {
+  const handleAddBatchEntry = () => {
+    setAdditionalBatchEntries((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        accountToDebit: '',
+        batchTransactionDetails: '',
+        accountToCredit: '',
+        batchEntryDate: dayjs().format('YYYY-MM-DD'),
+        uploadedFile: null,
+      },
+    ]);
+  };
+
+  const handleAdditionalBatchEntryChange = (id, field, value) => {
+    setAdditionalBatchEntries((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, [field]: value } : entry))
+    );
+  };
+
+  const handleRemoveBatchEntry = (id) => {
+    setAdditionalBatchEntries((prev) => prev.filter((entry) => entry.id !== id));
+  };
+
+  const handleAddRow = () => {    const newRow = {
       id: gridData.length + 1,
       uploadDocument: '',
       date: dayjs().format('YYYY-MM-DD'),
@@ -308,35 +340,220 @@ export default function Journals() {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header Section */}
-      <Card sx={{ mb: 3, backgroundColor: '#f5f5f5', borderRadius: 2 }}>
+      {/* Header */}
+      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={4}>
-              <Typography variant="body2" color="textSecondary">
-                User Name
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {userName}
-              </Typography>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
+            Journals
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>
+            Manage and post journal entries
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {/* Batch Posting Card */}
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, p: 2, pb: 0 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+            Batch Posting
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Chip
+              label={`Total Debit: D ${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              sx={{ backgroundColor: '#e3f2fd', color: '#1565c0', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+            />
+            <Chip
+              label={`Total Credit: D ${totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+            />
+            <Button variant="outlined" size="small" onClick={handleAddBatchEntry}>
+              Add More Batch Posting
+            </Button>
+          </Box>
+        </Box>
+        <CardContent>
+          {/* Entry 1 (primary) */}
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                select
+                label="Account to Debit"
+                name="accountToDebit"
+                value={formData.accountToDebit}
+                onChange={handleChange}
+                fullWidth
+                size="small"
+                disabled={accountsLoading}
+              >
+                <MenuItem value="">Select Account</MenuItem>
+                {journalAccounts.map((acc, idx) => (
+                  <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
+                    {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Typography variant="body2" color="textSecondary">
-                System Date
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {systemDate}
-              </Typography>
+              <TextField
+                label="Transaction Details"
+                name="batchTransactionDetails"
+                value={formData.batchTransactionDetails}
+                onChange={handleChange}
+                fullWidth
+                size="small"
+                placeholder="Enter transaction details"
+              />
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <Typography variant="body2" color="textSecondary">
-                JV Number
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {formData.jvNumber}
-              </Typography>
+            <Grid item xs={12}>
+              <TextField
+                select
+                label="Account to Credit"
+                name="accountToCredit"
+                value={formData.accountToCredit}
+                onChange={handleChange}
+                fullWidth
+                size="small"
+                disabled={accountsLoading}
+              >
+                <MenuItem value="">Select Account</MenuItem>
+                {journalAccounts.map((acc, idx) => (
+                  <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
+                    {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label="Date"
+                name="batchEntryDate"
+                value={formData.batchEntryDate}
+                onChange={(e) => handleDateChange('batchEntryDate', e.target.value)}
+                fullWidth
+                size="small"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+                fullWidth
+                sx={{ height: 40, textTransform: 'none', justifyContent: 'flex-start' }}
+              >
+                {uploadedFile ? uploadedFile.name : 'Upload Document'}
+                <input
+                  type="file"
+                  hidden
+                  onChange={(e) => setUploadedFile(e.target.files[0] || null)}
+                />
+              </Button>
             </Grid>
           </Grid>
+
+          {/* Additional batch entries */}
+          {additionalBatchEntries.map((entry, index) => (
+            <Box
+              key={entry.id}
+              sx={{
+                mt: 3,
+                pt: 3,
+                borderTop: '2px dashed #e0e0e0',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                  Batch Posting {index + 2}
+                </Typography>
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => handleRemoveBatchEntry(entry.id)}
+                >
+                  Remove
+                </Button>
+              </Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    label="Account to Debit"
+                    value={entry.accountToDebit}
+                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'accountToDebit', e.target.value)}
+                    fullWidth
+                    size="small"
+                    disabled={accountsLoading}
+                  >
+                    <MenuItem value="">Select Account</MenuItem>
+                    {journalAccounts.map((acc, idx) => (
+                      <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
+                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Transaction Details"
+                    value={entry.batchTransactionDetails}
+                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'batchTransactionDetails', e.target.value)}
+                    fullWidth
+                    size="small"
+                    placeholder="Enter transaction details"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    label="Account to Credit"
+                    value={entry.accountToCredit}
+                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'accountToCredit', e.target.value)}
+                    fullWidth
+                    size="small"
+                    disabled={accountsLoading}
+                  >
+                    <MenuItem value="">Select Account</MenuItem>
+                    {journalAccounts.map((acc, idx) => (
+                      <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
+                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Date"
+                    value={entry.batchEntryDate}
+                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'batchEntryDate', e.target.value)}
+                    fullWidth
+                    size="small"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    fullWidth
+                    sx={{ height: 40, textTransform: 'none', justifyContent: 'flex-start' }}
+                  >
+                    {entry.uploadedFile ? entry.uploadedFile.name : 'Upload Document'}
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'uploadedFile', e.target.files[0] || null)}
+                    />
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+          ))}
         </CardContent>
       </Card>
 

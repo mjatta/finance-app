@@ -222,6 +222,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/verification/:path*"
     },
     {
+      "source": "/api/Internaljournalaccounts/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Internaljournalaccounts/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1488,6 +1488,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/Internaljournalaccounts': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [

@@ -89,7 +89,7 @@ const VERIFICATION_COLUMNS = [
     },
   },
   { field: 'ctrandesc', headerName: 'Transaction Comment', flex: 1.1, minWidth: 140, sortable: true, align: 'center', headerAlign: 'center' },
-  { field: 'jvno', headerName: 'JV No', flex: 0.8, minWidth: 110, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'cvoucherno', headerName: 'Voucher Number', flex: 0.8, minWidth: 110, sortable: true, align: 'center', headerAlign: 'center' },
   { field: 'Cchqno', headerName: 'Cheque No / Reference', flex: 1, minWidth: 140, sortable: true, align: 'center', headerAlign: 'center' },
 ];
 
@@ -339,11 +339,11 @@ export default function Verification() {
               const journal = filteredJournals.find((j) => j.id === rowId);
               if (selectedIds.includes(rowId)) {
                 setSelectedIds(selectedIds.filter((id) => id !== rowId));
-                setSelectedJVNumbers(selectedJVNumbers.filter((jv) => jv !== String(journal?.jvno)));
+                setSelectedJVNumbers(selectedJVNumbers.filter((jv) => jv !== String(journal?.cvoucherno)));
               } else {
                 setSelectedIds([...selectedIds, rowId]);
-                if (journal?.jvno) {
-                  setSelectedJVNumbers([...selectedJVNumbers, String(journal.jvno)]);
+                if (journal?.cvoucherno) {
+                  setSelectedJVNumbers([...selectedJVNumbers, String(journal.cvoucherno)]);
                 }
               }
             }}
@@ -460,53 +460,6 @@ export default function Verification() {
         </CardContent>
       </Card>
 
-      {/* Summary Section */}
-      {selectedIds.length > 0 && (
-        <Paper
-          sx={{
-            p: 2,
-            mb: 2,
-            backgroundColor: '#f5f5f5',
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Selection Summary
-          </Typography>
-          <Grid container spacing={1}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2">
-                <strong>Selected Journals:</strong> {selectedIds.length}
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2">
-                <strong>Verified By:</strong> {authUser?.userId || 'Unknown'}
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2">
-                <strong>Selected Debit Total:</strong> D{' '}
-                {journals
-                  .filter((j) => selectedIds.includes(j.id))
-                  .reduce((sum, j) => sum + (parseFloat(j.ndebit) || 0), 0)
-                  .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2">
-                <strong>Selected Credit Total:</strong> D{' '}
-                {journals
-                  .filter((j) => selectedIds.includes(j.id))
-                  .reduce((sum, j) => sum + (parseFloat(j.ncredit) || 0), 0)
-                  .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
-      )}
-
       {/* Action Buttons */}
       <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
         <Button
@@ -549,7 +502,7 @@ export default function Verification() {
             {selectedJVNumbers.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                  <strong>JV Number(s):</strong>
+                  <strong>Voucher Number(s):</strong>
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                   {selectedJVNumbers.map((jv, idx) => (
