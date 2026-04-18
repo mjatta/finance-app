@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+
 import {
   Alert,
   Backdrop,
@@ -40,36 +41,9 @@ const formatProfileImage = (imageData) => {
   return `data:image/jpeg;base64,${imageData}`;
 };
 
-const makeDepositRow = (account, index) => ({
-  id: `${account.accountNumber}-${index}`,
-  selected: index === 0,
-  accountType: account.accountType,
-  accountNumber: account.accountNumber,
-  paymentMade: '',
-  principle: '',
-  interest: '',
-  beginBalance: account.accountBalance,
-  endBalance: account.accountBalance,
-  outstandingBalance: account.accountBalance,
-  order: '',
-});
+
 
 export default function DepositManagement() {
-  const user = useAuthStore((state) => state.user);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusError, setStatusError] = useState(false);
-  const [isLoadingMember, setIsLoadingMember] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const { fetchMemberDetails } = useGetMemberDetails();
-  const { fetchAccountDetails } = useGetAccountDetails();
-  const { fetchBanks } = useGetBanks();
-  const { fetchBankAccounts } = useGetBankAccounts();
-  const { saveDepositTransaction } = useDepositTransaction();
-
-  const [banks, setBanks] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
-  const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
-
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
     memberCode: '',
@@ -102,7 +76,45 @@ export default function DepositManagement() {
     loanLimit: '',
   });
 
-  const [rows, setRows] = useState([]);
+  // Limit check logic (must be after formData)
+  const [limitError, setLimitError] = useState('');
+  const depositAmountNum = useMemo(() => {
+    const amt = parseFloat(formData.depositAmount);
+    return isNaN(amt) ? 0 : amt;
+  }, [formData.depositAmount]);
+  useEffect(() => {
+    // Only check limits for cash deposits (where limits are relevant)
+    if (formData.depositType === 'cash') {
+      const debitLimit = parseFloat(formData.debitLimit);
+      const creditLimit = parseFloat(formData.creditLimit);
+      if (!isNaN(debitLimit) && depositAmountNum > debitLimit) {
+        setLimitError(`You are not allowed to deposit more than D ${Number(debitLimit).toLocaleString()}.`);
+        return;
+      }
+      if (!isNaN(creditLimit) && depositAmountNum > creditLimit) {
+        setLimitError(`You are not allowed to deposit more than D ${Number(creditLimit).toLocaleString()}.`);
+        return;
+      }
+    }
+    setLimitError('');
+  }, [formData.depositType, formData.debitLimit, formData.creditLimit, depositAmountNum]);
+  const user = useAuthStore((state) => state.user);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusError, setStatusError] = useState(false);
+  const [isLoadingMember, setIsLoadingMember] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { fetchMemberDetails } = useGetMemberDetails();
+  const { fetchAccountDetails } = useGetAccountDetails();
+  const { fetchBanks } = useGetBanks();
+  const { fetchBankAccounts } = useGetBankAccounts();
+  const { saveDepositTransaction } = useDepositTransaction();
+
+  const [banks, setBanks] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
+
+
+  // Removed unused rows state
   const [touched, setTouched] = useState({});
   const [lastTransactionData, setLastTransactionData] = useState(null);
   const shouldAutoPrint = useRef(false);
@@ -120,9 +132,6 @@ export default function DepositManagement() {
   };
 
   const applyMemberData = (member) => {
-    const nextRows = member.accounts.map((account, index) => makeDepositRow(account, index));
-
-    setRows(nextRows);
     setFormData((prev) => ({
       ...prev,
       memberCode: member.memberCode,
@@ -176,7 +185,7 @@ export default function DepositManagement() {
           };
         }
       } else {
-        // Payroll number search only from backend - no fallback\n        setRows([]);
+        // Payroll number search only from backend - no fallback
         setFormData((prev) => ({
           ...prev,
           profilePicture: '',
@@ -195,7 +204,7 @@ export default function DepositManagement() {
       }
 
       if (!member) {
-        setRows([]);
+        // setRows removed
         setFormData((prev) => ({
           ...prev,
           profilePicture: '',
@@ -255,7 +264,7 @@ export default function DepositManagement() {
       debitLimit: '',
       loanLimit: '',
     });
-    setRows([]);
+    // setRows removed
     setStatusMessage('');
     setStatusError(false);
     setTouched({});
@@ -480,7 +489,7 @@ export default function DepositManagement() {
           debitLimit: '',
           loanLimit: '',
         });
-        setRows([]);
+        // setRows removed
         setTouched({});
         setBankAccounts([]);
         setBanks([]);
@@ -503,15 +512,8 @@ export default function DepositManagement() {
     }
   };
 
-  // Auto-print receipt after save when checkbox is checked
-  useEffect(() => {
-    if (lastTransactionData && shouldAutoPrint.current) {
-      shouldAutoPrint.current = false;
-      handlePrintReceipt();
-    }
-  }, [lastTransactionData]);
 
-  const handlePrintReceipt = () => {
+  const handlePrintReceipt = React.useCallback(() => {
     if (!lastTransactionData) {
       setStatusMessage('Please save a deposit first before printing a receipt.');
       setStatusError(true);
@@ -603,11 +605,11 @@ export default function DepositManagement() {
             <span class="value"></span>
           </div>
           <div class="row">
-            <span class="label">Client Code:</span>
+            <span class="label">Customer Code:</span>
             <span class="value">${(receipt.ClientCode || '-').replace(/</g, '&lt;')}</span>
           </div>
           <div class="row">
-            <span class="label">Client Name:</span>
+            <span class="label">Customer Name:</span>
             <span class="value">${(receipt.ClientName || '-').replace(/</g, '&lt;')}</span>
           </div>
 
@@ -637,7 +639,7 @@ export default function DepositManagement() {
             <div class="sig-label">Cashier Signature</div>
 
             <div class="sig-line"></div>
-            <div class="sig-label">Member Signature</div>
+            <div class="sig-label">Customer Signature</div>
           </div>
 
           <div class="payment-by">Payment By: _________________</div>
@@ -652,7 +654,15 @@ export default function DepositManagement() {
 
     receiptWindow.document.close();
     receiptWindow.focus();
-  };
+  }, [lastTransactionData, user]);
+
+  // Auto-print receipt after save when checkbox is checked
+  useEffect(() => {
+    if (lastTransactionData && shouldAutoPrint.current) {
+      shouldAutoPrint.current = false;
+      handlePrintReceipt();
+    }
+  }, [lastTransactionData, handlePrintReceipt]);
 
   return (
     <Box
@@ -812,6 +822,7 @@ export default function DepositManagement() {
         </Card>
       </Box>
 
+
       {statusMessage && (
         <Alert
           severity={statusError ? 'error' : 'success'}
@@ -870,8 +881,7 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
-                    displayEmpty
-                    renderValue={(value) => value || 'Select Posting Account'}
+                    // displayEmpty and renderValue removed
                     sx={{
                       '& .MuiFormLabel-root.Mui-required::after': {
                         color: '#fff',
@@ -972,8 +982,7 @@ export default function DepositManagement() {
                     size="small"
                     fullWidth
                     required
-                    displayEmpty
-                    renderValue={(value) => value || 'Select Deposit Type'}
+                    // displayEmpty and renderValue removed
                   >
                     <MenuItem value="">Select Deposit Type</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
@@ -986,8 +995,8 @@ export default function DepositManagement() {
                     value={formatCurrency(formData.depositAmount)}
                     onChange={handleDepositAmountChange}
                     onBlur={() => handleBlur('depositAmount')}
-                    error={isFieldInvalid('depositAmount')}
-                    helperText={isFieldInvalid('depositAmount') ? 'Deposit Amount is required' : ''}
+                    error={Boolean(limitError) || isFieldInvalid('depositAmount')}
+                    helperText={limitError ? limitError : (isFieldInvalid('depositAmount') ? 'Deposit Amount is required' : '')}
                     size="small"
                     fullWidth
                     required
@@ -996,12 +1005,25 @@ export default function DepositManagement() {
                     }}
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     sx={{
+                      '& .MuiOutlinedInput-root': {
+                        ...(Boolean(limitError) && {
+                          '& fieldset': {
+                            borderColor: '#d32f2f',
+                            borderWidth: 2,
+                          },
+                        }),
+                      },
                       '& .MuiFormLabel-root.Mui-required::after': {
                         color: '#fff',
                         fontWeight: 'bold',
                       },
                     }}
                   />
+                  {limitError && (
+                    <Alert severity="error" sx={{ mt: 1, mb: 0.5 }}>
+                      {limitError}
+                    </Alert>
+                  )}
                   <TextField
                     label="Comments"
                     name="comments"
@@ -1178,7 +1200,7 @@ export default function DepositManagement() {
             <Button
               variant="contained"
               onClick={handleSaveDeposit}
-              disabled={isSaving}
+              disabled={isSaving || !!limitError}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },

@@ -17,6 +17,7 @@ import {
   InputAdornment,
   CircularProgress,
   Backdrop,
+  Alert,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -118,6 +119,41 @@ export default function LoanDisbursement() {
     accruedInterest: '',
     chequeNumber: '',
   });
+
+  // Loan limit error logic
+  // Get user limits from localStorage or user object
+  let debitLimit = 0;
+  let creditLimit = 0;
+  // Prefer store user if present and has limits
+  if (user && (user.DebitLimit || user.CreditLimit)) {
+    debitLimit = Number(user.DebitLimit) || 0;
+    creditLimit = Number(user.CreditLimit) || 0;
+  } else {
+    try {
+      let userLimits = JSON.parse(localStorage.getItem('user'));
+      if (userLimits && userLimits.user) {
+        userLimits = userLimits.user;
+      }
+      debitLimit = Number(userLimits?.DebitLimit) || 0;
+      creditLimit = Number(userLimits?.CreditLimit) || 0;
+    } catch {
+      debitLimit = 0;
+      creditLimit = 0;
+    }
+  }
+  // Debug: Log limits and amount
+  console.log('DEBUG: debitLimit', debitLimit, 'creditLimit', creditLimit, 'amount', disbursementDetails.amount, 'user:', user);
+
+  // Compute limitError for loan disbursement, only if amount is present
+  let limitError = '';
+  const amountNum = Number(disbursementDetails.amount);
+  if (disbursementDetails.amount !== '' && !isNaN(amountNum)) {
+    if (debitLimit > 0 && amountNum > debitLimit) {
+      limitError = `You are not allowed to disburse more than D ${debitLimit.toLocaleString()}.`;
+    }
+  }
+  // Debug: Log limitError
+  console.log('DEBUG: limitError', limitError, 'isAmountBlocked', Boolean(limitError));
 
   const { fetchLoanDisbursementData } = useLoanDisbursementLoad();
   const { saveDisbursement } = useSaveDisbursement();
@@ -291,7 +327,15 @@ export default function LoanDisbursement() {
     setDisbursementDetails((prev) => ({ ...prev, accruedInterest: cleanValue }));
   };
 
+  // Helper: should Amount field be disabled?
+  const isAmountBlocked = disbursementDetails.amount !== '' && Boolean(limitError);
+
   const handleSaveDisbursement = async () => {
+    if (limitError) {
+      setStatusMessage(limitError);
+      setStatusError(true);
+      return;
+    }
     if (selectedIds.length === 0) {
       setStatusMessage('Please select a client.');
       setStatusError(true);
@@ -422,15 +466,9 @@ export default function LoanDisbursement() {
     }
   };
 
-  // Auto-print receipt after save when checkbox is checked
-  useEffect(() => {
-    if (lastTransactionData && shouldAutoPrint.current) {
-      shouldAutoPrint.current = false;
-      handlePrintReceipt();
-    }
-  }, [lastTransactionData]);
 
-  const handlePrintReceipt = () => {
+  // Move handlePrintReceipt above useEffect to avoid initialization error
+  const handlePrintReceipt = useCallback(() => {
     if (!lastTransactionData) {
       setStatusMessage('Please save a disbursement first before printing a receipt.');
       setStatusError(true);
@@ -518,11 +556,11 @@ export default function LoanDisbursement() {
             <span class="value">${(receipt.ReceiptNumber || '-').replace(/</g, '&lt;')}</span>
           </div>
           <div class="row">
-            <span class="label">Client Code:</span>
+            <span class="label">Customer Code:</span>
             <span class="value">${(receipt.ClientCode || '-').replace(/</g, '&lt;')}</span>
           </div>
           <div class="row">
-            <span class="label">Client Name:</span>
+            <span class="label">Customer Name:</span>
             <span class="value">${(receipt.ClientName || '-').replace(/</g, '&lt;')}</span>
           </div>
 
@@ -552,7 +590,7 @@ export default function LoanDisbursement() {
             <div class="sig-label">Cashier Signature</div>
 
             <div class="sig-line"></div>
-            <div class="sig-label">Member Signature</div>
+            <div class="sig-label">Customer Signature</div>
           </div>
 
           <div class="payment-by">Payment By: _________________</div>
@@ -567,13 +605,27 @@ export default function LoanDisbursement() {
 
     receiptWindow.document.close();
     receiptWindow.focus();
-  };
+  }, [lastTransactionData, setStatusMessage, setStatusError, user]);
+
+  // Auto-print receipt after save when checkbox is checked
+  useEffect(() => {
+    if (lastTransactionData && shouldAutoPrint.current) {
+      shouldAutoPrint.current = false;
+      handlePrintReceipt();
+    }
+  }, [lastTransactionData, handlePrintReceipt]);
 
   const clientCount = clients.length;
   const selectedCount = selectedIds.length;
 
   return (
     <Box p={3} sx={{ position: 'relative' }}>
+      {/* Loan limit error alert */}
+      {disbursementDetails.amount !== '' && limitError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {limitError}
+        </Alert>
+      )}
       {/* Loading Spinner */}
       <Backdrop
         open={isSaving}
@@ -946,6 +998,9 @@ export default function LoanDisbursement() {
                         startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
                       }}
                       inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                      error={isAmountBlocked}
+                      helperText={isAmountBlocked ? limitError : ''}
+                      disabled={isAmountBlocked}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -1022,7 +1077,7 @@ export default function LoanDisbursement() {
             <Button
               variant="contained"
               onClick={handleSaveDisbursement}
-              disabled={isSaving}
+              disabled={isSaving || isAmountBlocked}
               startIcon={isSaving ? <CircularProgress size={18} /> : undefined}
               sx={{
                 backgroundColor: '#667eea',
