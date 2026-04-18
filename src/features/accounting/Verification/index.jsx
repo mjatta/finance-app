@@ -72,7 +72,7 @@ const VERIFICATION_COLUMNS = [
     renderCell: (params) => {
       const value = parseFloat(params.value || 0);
       const amount = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return value !== 0 ? `D -${amount}` : `D ${amount}`;
+      return `D ${amount}`;
     },
   },
   {
@@ -164,14 +164,24 @@ export default function Verification() {
     setIsSaving(true);
 
     try {
+      // Always compute unique voucher numbers from selectedIds and filteredJournals
+      const uniqueVouchers = Array.from(
+        new Set(
+          filteredJournals
+            .filter((j) => selectedIds.map(String).includes(String(j.id)))
+            .map((j) => String(j.cvoucherno))
+        )
+      );
+      console.log('Saving verification:', { selectedIds, uniqueVouchers });
       const payload = {
         companyId: authUser?.CompId || 30,
         branchId: parseInt(authUser?.BranchId) || 16,
         userId: authUser?.username || 'SYSTEM',
         workStation: 'SERVER01',
         windowsUser: authUser?.name || authUser?.username || 'Unknown',
-        vouchers: selectedJVNumbers,
+        vouchers: uniqueVouchers,
       };
+      console.log('Payload to be sent:', payload);
       await confirmVouchers(payload);
 
       notifySaveSuccess(`Successfully verified ${selectedIds.length} journal(s)`);
@@ -332,23 +342,85 @@ export default function Verification() {
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
             onSortModelChange={setSortModel}
-            checkboxSelection={false}
-            disableRowSelectionOnClick
-            onRowClick={(params) => {
-              const rowId = params.id;
-              const journal = filteredJournals.find((j) => j.id === rowId);
-              if (selectedIds.includes(rowId)) {
-                setSelectedIds(selectedIds.filter((id) => id !== rowId));
-                setSelectedJVNumbers(selectedJVNumbers.filter((jv) => jv !== String(journal?.cvoucherno)));
-              } else {
-                setSelectedIds([...selectedIds, rowId]);
-                if (journal?.cvoucherno) {
-                  setSelectedJVNumbers([...selectedJVNumbers, String(journal.cvoucherno)]);
+            checkboxSelection
+            selectionModel={selectedIds}
+            onRowSelectionModelChange={(selection) => {
+              let arr = Array.isArray(selection) ? selection : [selection];
+              arr = arr.map(String);
+              const prevIds = selectedIds.map(String);
+              let changedId = null;
+              let action = null;
+              if (arr.length > prevIds.length) {
+                changedId = arr.find((id) => !prevIds.includes(id));
+                action = 'select';
+              } else if (arr.length < prevIds.length) {
+                changedId = prevIds.find((id) => !arr.includes(id));
+                action = 'deselect';
+              }
+              if (changedId) {
+                const changedRow = filteredJournals.find((j) => String(j.id) === String(changedId));
+                if (changedRow && changedRow.cvoucherno) {
+                  const sameVoucherIds = filteredJournals
+                    .filter((j) => String(j.cvoucherno) === String(changedRow.cvoucherno))
+                    .map((j) => String(j.id));
+                  if (action === 'select') {
+                    arr = Array.from(new Set([...arr, ...sameVoucherIds]));
+                  } else if (action === 'deselect') {
+                    arr = arr.filter((id) => !sameVoucherIds.includes(id));
+                  }
+                  // Force DataGrid to update selection model immediately
+                  setSelectedIds(arr);
+                  const selectedVouchers = Array.from(
+                    new Set(
+                      filteredJournals
+                        .filter((j) => arr.includes(String(j.id)))
+                        .map((j) => String(j.cvoucherno))
+                    )
+                  );
+                  setSelectedJVNumbers(selectedVouchers);
+                  return;
                 }
               }
+              // Fallback: update as normal
+              setSelectedIds(arr);
+              const selectedVouchers = Array.from(
+                new Set(
+                  filteredJournals
+                    .filter((j) => arr.includes(String(j.id)))
+                    .map((j) => String(j.cvoucherno))
+                )
+              );
+              setSelectedJVNumbers(selectedVouchers);
+            }}
+            onRowClick={(params) => {
+              const rowId = String(params.id);
+              const row = filteredJournals.find((j) => String(j.id) === rowId);
+              if (!row) return;
+              const sameVoucherIds = filteredJournals
+                .filter((j) => String(j.cvoucherno) === String(row.cvoucherno))
+                .map((j) => String(j.id));
+              let arr = Array.isArray(selectedIds) ? selectedIds.map(String) : [String(selectedIds)];
+              const allSelected = sameVoucherIds.every((id) => arr.includes(id));
+              if (allSelected) {
+                // Deselect all
+                arr = arr.filter((id) => !sameVoucherIds.includes(id));
+              } else {
+                // Select all
+                arr = Array.from(new Set([...arr, ...sameVoucherIds]));
+              }
+              setSelectedIds(arr);
+              const selectedVouchers = Array.from(
+                new Set(
+                  filteredJournals
+                    .filter((j) => arr.includes(String(j.id)))
+                    .map((j) => String(j.cvoucherno))
+                )
+              );
+              setSelectedJVNumbers(selectedVouchers);
             }}
             getRowClassName={(params) => {
-              if (selectedIds.includes(params.id)) return 'selected-row';
+              const arr = Array.isArray(selectedIds) ? selectedIds : [selectedIds];
+              if (arr.includes(params.id)) return 'selected-row';
               return '';
             }}
             sx={{
@@ -383,7 +455,7 @@ export default function Verification() {
                 '&:hover': {
                   backgroundColor: '#f0f0f0 !important',
                 },
-                '&.selected-row': {
+                '&.selected-row, &.Mui-selected': {
                   backgroundColor: '#1976d2 !important',
                   color: '#ffffff',
                   fontWeight: 600,
@@ -410,55 +482,6 @@ export default function Verification() {
         </Box>
       </Card>
 
-      {/* Verification Details Section */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Verification Details
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Verification Code"
-                value={verificationDetails.verificationCode}
-                onChange={(e) =>
-                  setVerificationDetails({ ...verificationDetails, verificationCode: e.target.value })
-                }
-                placeholder="Enter verification code"
-                size="small"
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Reference Number"
-                value={verificationDetails.referencNumber}
-                onChange={(e) =>
-                  setVerificationDetails({ ...verificationDetails, referencNumber: e.target.value })
-                }
-                placeholder="Enter reference number"
-                size="small"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Verification Notes"
-                value={verificationDetails.verificationNotes}
-                onChange={(e) =>
-                  setVerificationDetails({ ...verificationDetails, verificationNotes: e.target.value })
-                }
-                placeholder="Add any notes or comments"
-                multiline
-                rows={3}
-                size="small"
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
@@ -502,11 +525,11 @@ export default function Verification() {
             {selectedJVNumbers.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                  <strong>Voucher Number(s):</strong>
+                  <strong>Unique Voucher Number(s) to be sent:</strong>
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                   {selectedJVNumbers.map((jv, idx) => (
-                    <Chip key={idx} label={jv} variant="outlined" />
+                    <Chip key={idx} label={jv} variant="outlined" color="primary" />
                   ))}
                 </Box>
               </Box>
