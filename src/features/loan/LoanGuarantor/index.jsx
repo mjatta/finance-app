@@ -440,8 +440,8 @@ export default function LoanGuarantor() {
       CollateralValue: parseFloat(guarantorDetails.collateralValue) || 0,
       CollateralDesc: guarantorDetails.collateralDesc || '',
       LoanAmount: parseFloat(selectedGuarantor.rawPrincipalAmt) || 0,
-      // Set to the guaramt value of the last row in guaranteeHistoryRows (last Amount Guaranteed)
-      CurrentGuaranteed: guaranteeHistoryRows.length > 0 ? guaranteeHistoryRows[guaranteeHistoryRows.length - 1].guaramt : 0,
+      // Set to the sum of all guaramt values in guaranteeHistoryRows (all payments)
+      CurrentGuaranteed: guaranteeHistoryRows.reduce((sum, row) => sum + (parseFloat(row.guaramt) || 0), 0),
       CompId: compId,
       UserId: userId,
       WorkStation: workStation,
