@@ -187,6 +187,7 @@ export default function LoanGuarantor() {
           nofpayments: item.nofpayments || 0,
           rawPrincipalAmt: item.principal_amt || 0,
           rawRepaymentAmt: item.repayment_amt || 0,
+          guaramt: item.guaramt || 0,
         };
       });
 
@@ -439,6 +440,8 @@ export default function LoanGuarantor() {
       CollateralValue: parseFloat(guarantorDetails.collateralValue) || 0,
       CollateralDesc: guarantorDetails.collateralDesc || '',
       LoanAmount: parseFloat(selectedGuarantor.rawPrincipalAmt) || 0,
+      // Set to the guaramt value of the last row in guaranteeHistoryRows (last Amount Guaranteed)
+      CurrentGuaranteed: guaranteeHistoryRows.length > 0 ? guaranteeHistoryRows[guaranteeHistoryRows.length - 1].guaramt : 0,
       CompId: compId,
       UserId: userId,
       WorkStation: workStation,
