@@ -375,7 +375,7 @@ export default function Journals() {
         <CardContent>
           {/* Entry 1 (primary) */}
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid>
               <TextField
                 select
                 label="Account to Debit"
@@ -394,7 +394,7 @@ export default function Journals() {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 label="Transaction Details"
                 name="batchTransactionDetails"
@@ -405,7 +405,7 @@ export default function Journals() {
                 placeholder="Enter transaction details"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid>
               <TextField
                 select
                 label="Account to Credit"
@@ -424,7 +424,7 @@ export default function Journals() {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid>
               <TextField
                 label="Date"
                 name="batchEntryDate"
@@ -436,7 +436,7 @@ export default function Journals() {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid>
               <Button
                 component="label"
                 variant="outlined"
@@ -478,7 +478,7 @@ export default function Journals() {
                 </Button>
               </Box>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid>
                   <TextField
                     select
                     label="Account to Debit"
@@ -496,7 +496,7 @@ export default function Journals() {
                     ))}
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid>
                   <TextField
                     label="Transaction Details"
                     value={entry.batchTransactionDetails}
@@ -506,7 +506,7 @@ export default function Journals() {
                     placeholder="Enter transaction details"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid>
                   <TextField
                     select
                     label="Account to Credit"
@@ -524,7 +524,7 @@ export default function Journals() {
                     ))}
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid>
                   <TextField
                     label="Date"
                     value={entry.batchEntryDate}
@@ -535,7 +535,7 @@ export default function Journals() {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid>
                   <Button
                     component="label"
                     variant="outlined"
@@ -558,32 +558,7 @@ export default function Journals() {
       </Card>
 
       {/* Posting Type Radio Buttons */}
-      <Card sx={{ mb: 3, borderRadius: 2 }}>
-        <CardContent>
-          <FormControl component="fieldset">
-            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 2 }}>
-              Posting Type
-            </FormLabel>
-            <RadioGroup
-              row
-              name="postingType"
-              value={formData.postingType}
-              onChange={handleChange}
-            >
-              <FormControlLabel
-                value="double-entry"
-                control={<Radio />}
-                label="Double Entry Posting"
-              />
-              <FormControlLabel
-                value="batch-posting"
-                control={<Radio />}
-                label="Batch Posting"
-              />
-            </RadioGroup>
-          </FormControl>
-        </CardContent>
-      </Card>
+      {/* Posting Type card removed as requested */}
 
       {/* Batch Header Details */}
       <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -593,7 +568,7 @@ export default function Journals() {
           </Typography>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Batch Number"
                 name="batchNumber"
@@ -604,7 +579,7 @@ export default function Journals() {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Batch Date"
                 name="batchDate"
@@ -616,7 +591,7 @@ export default function Journals() {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Batch Amount"
                 name="batchAmount"
@@ -627,7 +602,7 @@ export default function Journals() {
                 type="number"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 select
                 label="Debit/Credit"
@@ -641,7 +616,7 @@ export default function Journals() {
                 <MenuItem value="credit">Credit</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Main Account"
                 name="mainAccount"
@@ -651,7 +626,7 @@ export default function Journals() {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Transaction Comments"
                 name="transactionComments"
@@ -667,244 +642,13 @@ export default function Journals() {
         </CardContent>
       </Card>
 
-      {/* Data Grid */}
-      <Card sx={{ mb: 3, borderRadius: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Journal Entries
-            </Typography>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleAddRow}
-              sx={{ textTransform: 'capitalize' }}
-            >
-              Add Row
-            </Button>
-          </Box>
-
-          <Box sx={{ height: 400, width: '100%' }}>
-            <DataGrid
-              rows={gridData}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 25]}
-              checkboxSelection
-              disableSelectionOnClick
-              experimentalFeatures={{ newEditingApi: true }}
-            />
-          </Box>
-
-          {/* Totals */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr' }, gap: 2, mt: 3 }}>
-            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Debit
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                {totalDebit.toFixed(2)}
-              </Typography>
-            </Box>
-            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2" color="textSecondary">
-                Total Credit
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                {totalCredit.toFixed(2)}
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
+      {/* Journal Entries card removed as requested */}
 
       {/* Check Details */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-            Check Details
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Bank Name"
-                name="bankName"
-                value={formData.bankName}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Bank Branch"
-                name="bankBranch"
-                value={formData.bankBranch}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Cheque Number"
-                name="chequeNumber"
-                value={formData.chequeNumber}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Cheque Date"
-                name="chequeDate"
-                value={formData.chequeDate}
-                onChange={(e) => handleDateChange('chequeDate', e.target.value)}
-                fullWidth
-                size="small"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Amount"
-                name="chequeAmount"
-                value={formData.chequeAmount}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                type="number"
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      {/* Check Details card removed as requested */}
 
       {/* Account Details - Two Columns */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Column 1 */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                Account Details 1
-              </Typography>
-
-              <Box sx={{ display: 'grid', gap: 2 }}>
-                <TextField
-                  label="Account Number"
-                  name="accountNumber1"
-                  value={formData.accountNumber1}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="Amount Description"
-                  name="amountDescription1"
-                  value={formData.amountDescription1}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  multiline
-                  rows={3}
-                  placeholder="Enter comments/description"
-                />
-                <TextField
-                  label="Budget Amount"
-                  name="budgetAmount1"
-                  value={formData.budgetAmount1}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-                <TextField
-                  label="Variance"
-                  name="variance1"
-                  value={formData.variance1}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-                <TextField
-                  label="Total Expense"
-                  name="totalExpense1"
-                  value={formData.totalExpense1}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Column 2 */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                Account Details 2
-              </Typography>
-
-              <Box sx={{ display: 'grid', gap: 2 }}>
-                <TextField
-                  label="Account Number"
-                  name="accountNumber2"
-                  value={formData.accountNumber2}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="Amount Description"
-                  name="amountDescription2"
-                  value={formData.amountDescription2}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  multiline
-                  rows={3}
-                  placeholder="Enter comments/description"
-                />
-                <TextField
-                  label="Budget Amount"
-                  name="budgetAmount2"
-                  value={formData.budgetAmount2}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-                <TextField
-                  label="Variance"
-                  name="variance2"
-                  value={formData.variance2}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-                <TextField
-                  label="Total Expense"
-                  name="totalExpense2"
-                  value={formData.totalExpense2}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  type="number"
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Account Details 1, 2, and Check Details cards removed as requested */}
 
       {/* Status Message */}
       {statusMessage && (
