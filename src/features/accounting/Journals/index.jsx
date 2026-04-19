@@ -29,19 +29,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../../../store/authStore';
 import { useInternalJournalAccounts } from '../../../hooks/useInternalJournalAccounts';
+import { useGetBanks, useGetBankAccounts, useGetCashDetails, useSaveJournalTransaction } from './hooks/useJournalApi';
 
 const initialFormData = {
-  postingType: 'double-entry', // double-entry or batch-posting
-  jvNumber: '',
-  accountToDebit: '',
-  batchTransactionDetails: '',
-  accountToCredit: '',
-  batchEntryDate: dayjs().format('YYYY-MM-DD'),
-  batchNumber: '',
-  batchDate: dayjs().format('YYYY-MM-DD'),
-  batchAmount: '',
-  debitCredit: 'debit',
-  mainAccount: '',
   transactionComments: '',
   bankName: '',
   bankBranch: '',
@@ -65,8 +55,15 @@ const initialGridData = [];
 export default function Journals() {
   const user = useAuthStore((state) => state.user);
   const { accounts: journalAccounts, loading: accountsLoading } = useInternalJournalAccounts();
+  const { fetchBanks } = useGetBanks();
+  const { fetchBankAccounts } = useGetBankAccounts();
+  const { fetchCashDetails } = useGetCashDetails();
+  const { saveJournalTransaction } = useSaveJournalTransaction();
 
   const [formData, setFormData] = useState(initialFormData);
+  const [banks, setBanks] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [cashDetails, setCashDetails] = useState({});
   const [uploadedFile, setUploadedFile] = useState(null);
   const [additionalBatchEntries, setAdditionalBatchEntries] = useState([]);
   const [gridData, setGridData] = useState(initialGridData);
@@ -76,6 +73,23 @@ export default function Journals() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  // For dynamic Account Debit and Credit fields
+  const [accountDebits, setAccountDebits] = useState([{ value: '' }]);
+  const [accountCredits, setAccountCredits] = useState([{ value: '' }]);
+  // Handlers for dynamic Account Debit fields
+  const handleAccountDebitChange = (idx, value) => {
+    setAccountDebits((prev) => prev.map((item, i) => i === idx ? { value } : item));
+  };
+  const handleAddAccountDebit = () => {
+    setAccountDebits((prev) => prev.length < 4 ? [...prev, { value: '' }] : prev);
+  };
+  // Handlers for dynamic Account Credit fields
+  const handleAccountCreditChange = (idx, value) => {
+    setAccountCredits((prev) => prev.map((item, i) => i === idx ? { value } : item));
+  };
+  const handleAddAccountCredit = () => {
+    setAccountCredits((prev) => prev.length < 4 ? [...prev, { value: '' }] : prev);
+  };
 
   // Generate JV Number on mount
   useEffect(() => {
@@ -92,8 +106,56 @@ export default function Journals() {
   }, [gridData]);
 
   const handleChange = (e) => {
+
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Transaction Type logic for Transaction Details card
+    if (name === 'transactionType') {
+      if (value === 'cash') {
+        setFormData((prev) => ({
+          ...prev,
+          cashAccount: user?.CashAccount || '',
+          creditLimit: user?.CreditLimit != null ? String(user.CreditLimit) : '',
+          debitLimit: user?.DebitLimit != null ? String(user.DebitLimit) : '',
+          loanLimit: user?.LoanLimit != null ? String(user.LoanLimit) : '',
+        }));
+      } else if (value === 'cheque') {
+        // Fetch banks immediately when Cheque is selected
+        fetchBanks().then((result) => {
+          if (result.success && result.data) setBanks(result.data);
+        });
+        setFormData((prev) => ({
+          ...prev,
+          bank: '',
+          bankAccount: '',
+          contraAccount: '',
+        }));
+        setBankAccounts([]);
+      }
+    }
+
+    // Bank logic for Check Details (fetch bank accounts and reset account fields)
+    if (name === 'bank') {
+      setFormData((prev) => ({
+        ...prev,
+        bank: value,
+        bankAccount: '',
+        contraAccount: '',
+      }));
+      fetchBankAccounts(value).then((result) => {
+        if (result.success && result.data) setBankAccounts(result.data);
+      });
+    }
+
+    // Bank Account logic for Check Details (set contra account to selected bank account)
+    if (name === 'bankAccount') {
+      setFormData((prev) => ({
+        ...prev,
+        bankAccount: value,
+        contraAccount: value,
+      }));
+    }
   };
 
   const handleDateChange = (fieldName, date) => {
@@ -352,49 +414,32 @@ export default function Journals() {
         </CardContent>
       </Card>
 
-      {/* Batch Posting Card */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, p: 2, pb: 0 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-            Batch Posting
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Chip
-              label={`Total Debit: D ${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sx={{ backgroundColor: '#e3f2fd', color: '#1565c0', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
-            />
-            <Chip
-              label={`Total Credit: D ${totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
-            />
-            <Button variant="outlined" size="small" onClick={handleAddBatchEntry}>
-              Add More Batch Posting
-            </Button>
-          </Box>
+      {/* Batch Information Section */}
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+          Batch Information
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Chip
+            label={`Total Debit: D ${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            sx={{ backgroundColor: '#e3f2fd', color: '#1565c0', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+          />
+          <Chip
+            label={`Total Credit: D ${totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+          />
         </Box>
-        <CardContent>
-          {/* Entry 1 (primary) */}
-          <Grid container spacing={2}>
-            <Grid>
-              <TextField
-                select
-                label="Account to Debit"
-                name="accountToDebit"
-                value={formData.accountToDebit}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                disabled={accountsLoading}
-              >
-                <MenuItem value="">Select Account</MenuItem>
-                {journalAccounts.map((acc, idx) => (
-                  <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
-                    {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid>
+      </Box>
+
+      {/* Two Card Layout for Batch Posting */}
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+        {/* Transaction Details Card */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+              Transaction Details
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 2 }}>
               <TextField
                 label="Transaction Details"
                 name="batchTransactionDetails"
@@ -404,27 +449,6 @@ export default function Journals() {
                 size="small"
                 placeholder="Enter transaction details"
               />
-            </Grid>
-            <Grid>
-              <TextField
-                select
-                label="Account to Credit"
-                name="accountToCredit"
-                value={formData.accountToCredit}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                disabled={accountsLoading}
-              >
-                <MenuItem value="">Select Account</MenuItem>
-                {journalAccounts.map((acc, idx) => (
-                  <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
-                    {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid>
               <TextField
                 label="Date"
                 name="batchEntryDate"
@@ -435,8 +459,6 @@ export default function Journals() {
                 type="date"
                 InputLabelProps={{ shrink: true }}
               />
-            </Grid>
-            <Grid>
               <Button
                 component="label"
                 variant="outlined"
@@ -451,117 +473,77 @@ export default function Journals() {
                   onChange={(e) => setUploadedFile(e.target.files[0] || null)}
                 />
               </Button>
-            </Grid>
-          </Grid>
-
-          {/* Additional batch entries */}
-          {additionalBatchEntries.map((entry, index) => (
-            <Box
-              key={entry.id}
-              sx={{
-                mt: 3,
-                pt: 3,
-                borderTop: '2px dashed #e0e0e0',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                  Batch Posting {index + 2}
-                </Typography>
-                <Button
-                  size="small"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => handleRemoveBatchEntry(entry.id)}
-                >
-                  Remove
-                </Button>
-              </Box>
-              <Grid container spacing={2}>
-                <Grid>
-                  <TextField
-                    select
-                    label="Account to Debit"
-                    value={entry.accountToDebit}
-                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'accountToDebit', e.target.value)}
-                    fullWidth
-                    size="small"
-                    disabled={accountsLoading}
-                  >
-                    <MenuItem value="">Select Account</MenuItem>
-                    {journalAccounts.map((acc, idx) => (
-                      <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
-                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid>
-                  <TextField
-                    label="Transaction Details"
-                    value={entry.batchTransactionDetails}
-                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'batchTransactionDetails', e.target.value)}
-                    fullWidth
-                    size="small"
-                    placeholder="Enter transaction details"
-                  />
-                </Grid>
-                <Grid>
-                  <TextField
-                    select
-                    label="Account to Credit"
-                    value={entry.accountToCredit}
-                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'accountToCredit', e.target.value)}
-                    fullWidth
-                    size="small"
-                    disabled={accountsLoading}
-                  >
-                    <MenuItem value="">Select Account</MenuItem>
-                    {journalAccounts.map((acc, idx) => (
-                      <MenuItem key={acc.Acctcode || acc.id || idx} value={acc.Acctcode || acc.id || ''}>
-                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid>
-                  <TextField
-                    label="Date"
-                    value={entry.batchEntryDate}
-                    onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'batchEntryDate', e.target.value)}
-                    fullWidth
-                    size="small"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid>
-                  <Button
-                    component="label"
-                    variant="outlined"
-                    startIcon={<CloudUploadIcon />}
-                    fullWidth
-                    sx={{ height: 40, textTransform: 'none', justifyContent: 'flex-start' }}
-                  >
-                    {entry.uploadedFile ? entry.uploadedFile.name : 'Upload Document'}
-                    <input
-                      type="file"
-                      hidden
-                      onChange={(e) => handleAdditionalBatchEntryChange(entry.id, 'uploadedFile', e.target.files[0] || null)}
-                    />
-                  </Button>
-                </Grid>
-              </Grid>
             </Box>
-          ))}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Account Details Card */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+              Account Details
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'flex-start' }}>
+              {accountDebits.map((item, idx) => (
+                <Box key={`account-debit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  <TextField
+                    select
+                    label={idx === 0 ? 'Account to Debit' : `Account to Debit ${idx + 1}`}
+                    value={item.value}
+                    onChange={e => handleAccountDebitChange(idx, e.target.value)}
+                    fullWidth
+                    size="small"
+                    disabled={accountsLoading}
+                  >
+                    <MenuItem value="">Select Account</MenuItem>
+                    {journalAccounts.map((acc, j) => (
+                      <MenuItem key={acc.Acctcode || acc.id || j} value={acc.Acctcode || acc.id || ''}>
+                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  {idx === accountDebits.length - 1 && accountDebits.length < 4 && (
+                    <Button onClick={handleAddAccountDebit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
+                      <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
+                    </Button>
+                  )}
+                </Box>
+              ))}
+              {accountCredits.map((item, idx) => (
+                <Box key={`account-credit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  <TextField
+                    select
+                    label={idx === 0 ? 'Account to Credit' : `Account to Credit ${idx + 1}`}
+                    value={item.value}
+                    onChange={e => handleAccountCreditChange(idx, e.target.value)}
+                    fullWidth
+                    size="small"
+                    disabled={accountsLoading}
+                  >
+                    <MenuItem value="">Select Account</MenuItem>
+                    {journalAccounts.map((acc, j) => (
+                      <MenuItem key={acc.Acctcode || acc.id || j} value={acc.Acctcode || acc.id || ''}>
+                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  {idx === accountCredits.length - 1 && accountCredits.length < 4 && (
+                    <Button onClick={handleAddAccountCredit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
+                      <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
+                    </Button>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Posting Type Radio Buttons */}
       {/* Posting Type card removed as requested */}
 
       {/* Batch Header Details */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Card sx={{ mb: 3, mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
             Batch Header Details
@@ -641,6 +623,164 @@ export default function Journals() {
           </Grid>
         </CardContent>
       </Card>
+
+      {/* Transaction Details Card */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                Transaction Details
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <TextField
+                  select
+                  label="Transaction Type"
+                  name="transactionType"
+                  value={formData.transactionType || ''}
+                  onChange={handleChange}
+                  size="small"
+                  fullWidth
+                  required
+                >
+                  <MenuItem value="">Select Transaction Type</MenuItem>
+                  <MenuItem value="cash">Cash</MenuItem>
+                  <MenuItem value="cheque">Cheque</MenuItem>
+                </TextField>
+                <TextField
+                  label="Amount"
+                  name="transactionAmount"
+                  value={formData.transactionAmount || ''}
+                  onChange={handleChange}
+                  size="small"
+                  fullWidth
+                  required
+                  type="number"
+                />
+                <TextField
+                  label="Comments"
+                  name="transactionComments2"
+                  value={formData.transactionComments2 || ''}
+                  onChange={handleChange}
+                  multiline
+                  minRows={3}
+                  fullWidth
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          {formData.transactionType === 'cash' && (
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Cash Details
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Cash Account:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.cashAccount || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Credit Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.creditLimit || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Debit Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.debitLimit || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                      Loan Limit:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                      {formData.loanLimit || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+          {formData.transactionType === 'cheque' && (
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Check Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <TextField
+                    label="Check Number"
+                    name="checkNumber"
+                    value={formData.checkNumber || ''}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    label="Check Date"
+                    name="checkDate"
+                    value={formData.checkDate || ''}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    select
+                    label="Bank"
+                    name="bank"
+                    value={formData.bank || ''}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select bank</MenuItem>
+                    {banks.map((bank) => (
+                      <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Bank Account"
+                    name="bankAccount"
+                    value={formData.bankAccount || ''}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select account</MenuItem>
+                    {bankAccounts.map((account) => (
+                      <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    label="Contra Account"
+                    name="contraAccount"
+                    value={formData.contraAccount || ''}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        </Grid>
+      </Grid>
 
       {/* Journal Entries card removed as requested */}
 
