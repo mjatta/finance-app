@@ -767,79 +767,69 @@ export default function LoanApplication() {
                     Additional Details
                   </Typography>
 
-                  <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
-                    {/* Member Name - readonly */}
-                    <TextField
-                      label="Member Name"
-                      value={formData.memberName}
-                      size="small"
-                      fullWidth
-                      InputProps={{ readOnly: true }}
-                      sx={readOnlyFieldSx}
-                    />
 
-                    {/* Current Loan Balance - readonly */}
-                    <TextField
-                      label="Current Loan Balance"
-                      value={formData.currentLoanBalance}
-                      size="small"
-                      fullWidth
-                      InputProps={{ readOnly: true }}
-                      sx={readOnlyFieldSx}
-                    />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Customer Name (was Member Name) */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Customer Name:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {formData.memberName || 'N/A'}
+                      </Typography>
+                    </Box>
 
-                    {/* Interest Method - readonly */}
-                    <TextField
-                      select
-                      label="Interest Method"
-                      name="interestMethod"
-                      value={formData.interestMethod}
-                      disabled
-                      size="small"
-                      fullWidth
-                      sx={readOnlyFieldSx}
-                    >
-                      <MenuItem value="">
-                        <em>Select Interest Method</em>
-                      </MenuItem>
-                      {interestMethods.map((method) => (
-                        <MenuItem key={method.value} value={method.value}>
-                          {method.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    {/* Current Loan Amount - only show if Top-up Loan */}
+                    {formData.transactionType === 'topup_reschedule' && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Current Loan Amount:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.currentLoanBalance !== '' ? formData.currentLoanBalance : 'N/A'}
+                        </Typography>
+                      </Box>
+                    )}
 
-                    {/* Interest Rate - readonly and greyed out */}
-                    <TextField
-                      label="Interest Rate (%)"
-                      name="interestRate"
-                      value={formData.interestRate}
-                      size="small"
-                      fullWidth
-                      type="number"
-                      InputProps={{ readOnly: true }}
-                      sx={readOnlyFieldSx}
-                    />
+                    {/* Interest Method as text */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Interest Method:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {formData.interestMethod || 'N/A'}
+                      </Typography>
+                    </Box>
 
-                    {/* Loan Limit - readonly */}
-                    <TextField
-                      label="Loan Limit"
-                      value={formData.loanLimit}
-                      size="small"
-                      fullWidth
-                      InputProps={{ readOnly: true }}
-                      sx={readOnlyFieldSx}
-                    />
+                    {/* Interest Rate as text */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Interest Rate:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {formData.interestRate || 'N/A'}
+                      </Typography>
+                    </Box>
 
-                    {/* Saving Balance - readonly */}
-                    <TextField
-                      label="Saving Balance"
-                      value={formData.savingBalance}
-                      size="small"
-                      fullWidth
-                      InputProps={{ readOnly: true }}
-                      sx={readOnlyFieldSx}
-                    />
+                    {/* Saving Balance as text */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Saving Balance:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {formData.savingBalance || 'N/A'}
+                      </Typography>
+                    </Box>
+
+                    {/* Loan Limit as text */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Loan Limit:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {formData.loanLimit || 'N/A'}
+                      </Typography>
+                    </Box>
 
                     {/* Start Date */}
                     <DatePicker
