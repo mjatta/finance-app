@@ -1,3 +1,12 @@
+  server: {
+    proxy: {
+      '/api/journal/postjournal': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs/promises'

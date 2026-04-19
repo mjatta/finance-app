@@ -7,19 +7,13 @@ import {
   Chip,
   CircularProgress,
   FormControl,
-  FormControlLabel,
-  FormLabel,
-  Grid,
-  MenuItem,
-  Radio,
   RadioGroup,
   TextField,
   Typography,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  // Dialog imports removed (no longer used)
+  MenuItem,
+  Grid,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import SaveIcon from '@mui/icons-material/Save';
@@ -27,9 +21,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
-import { useAuthStore } from '../../../store/authStore';
-import { useInternalJournalAccounts } from '../../../hooks/useInternalJournalAccounts';
-import { useGetBanks, useGetBankAccounts, useGetCashDetails, useSaveJournalTransaction } from './hooks/useJournalApi';
+import { useSaveJournal } from './hooks/useSaveJournal';
 
 const initialFormData = {
   transactionComments: '',
@@ -52,26 +44,18 @@ const initialFormData = {
 
 const initialGridData = [];
 
-export default function Journals() {
-  const user = useAuthStore((state) => state.user);
-  const { accounts: journalAccounts, loading: accountsLoading } = useInternalJournalAccounts();
-  const { fetchBanks } = useGetBanks();
-  const { fetchBankAccounts } = useGetBankAccounts();
-  const { fetchCashDetails } = useGetCashDetails();
-  const { saveJournalTransaction } = useSaveJournalTransaction();
+export default function SaveJournals() {
+  const { saveJournal, isSaving, statusMessage, statusError } = useSaveJournal();
 
   const [formData, setFormData] = useState(initialFormData);
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
-  const [cashDetails, setCashDetails] = useState({});
+  // Removed unused cashDetails state
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [additionalBatchEntries, setAdditionalBatchEntries] = useState([]);
+  // Removed unused additionalBatchEntries state
   const [gridData, setGridData] = useState(initialGridData);
   const [totalDebit, setTotalDebit] = useState(0);
   const [totalCredit, setTotalCredit] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusError, setStatusError] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   // For dynamic Account Debit and Credit fields
   const [accountDebits, setAccountDebits] = useState([{ value: '' }]);
@@ -165,29 +149,7 @@ export default function Journals() {
     }));
   };
 
-  const handleAddBatchEntry = () => {
-    setAdditionalBatchEntries((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        accountToDebit: '',
-        batchTransactionDetails: '',
-        accountToCredit: '',
-        batchEntryDate: dayjs().format('YYYY-MM-DD'),
-        uploadedFile: null,
-      },
-    ]);
-  };
-
-  const handleAdditionalBatchEntryChange = (id, field, value) => {
-    setAdditionalBatchEntries((prev) =>
-      prev.map((entry) => (entry.id === id ? { ...entry, [field]: value } : entry))
-    );
-  };
-
-  const handleRemoveBatchEntry = (id) => {
-    setAdditionalBatchEntries((prev) => prev.filter((entry) => entry.id !== id));
-  };
+  // Removed unused batch entry handlers
 
   const handleAddRow = () => {    const newRow = {
       id: gridData.length + 1,
@@ -212,60 +174,8 @@ export default function Journals() {
     );
   };
 
-  const handleSaveDetails = async () => {
-    try {
-      setIsSaving(true);
-      // Validate required fields
-      if (!formData.batchNumber) {
-        setStatusMessage('Batch Number is required');
-        setStatusError(true);
-        return;
-      }
-
-      // Prepare payload
-      const payload = {
-        jvNumber: formData.jvNumber,
-        postingType: formData.postingType,
-        batchNumber: formData.batchNumber,
-        batchDate: formData.batchDate,
-        batchAmount: parseFloat(formData.batchAmount) || 0,
-        debitCredit: formData.debitCredit,
-        mainAccount: formData.mainAccount,
-        transactionComments: formData.transactionComments,
-        bankName: formData.bankName,
-        bankBranch: formData.bankBranch,
-        chequeNumber: formData.chequeNumber,
-        chequeDate: formData.chequeDate,
-        chequeAmount: parseFloat(formData.chequeAmount) || 0,
-        totalDebit,
-        totalCredit,
-        gridData: gridData,
-        accountDetails1: {
-          accountNumber: formData.accountNumber1,
-          amountDescription: formData.amountDescription1,
-          budgetAmount: parseFloat(formData.budgetAmount1) || 0,
-          variance: parseFloat(formData.variance1) || 0,
-          totalExpense: parseFloat(formData.totalExpense1) || 0,
-        },
-        accountDetails2: {
-          accountNumber: formData.accountNumber2,
-          amountDescription: formData.amountDescription2,
-          budgetAmount: parseFloat(formData.budgetAmount2) || 0,
-          variance: parseFloat(formData.variance2) || 0,
-          totalExpense: parseFloat(formData.totalExpense2) || 0,
-        },
-      };
-
-      console.log('Journal Details Payload:', payload);
-      setStatusMessage('Journal details saved successfully (preview mode)');
-      setStatusError(false);
-      setIsSaving(false);
-    } catch (error) {
-      console.error('Error saving journal details:', error);
-      setStatusMessage('Error saving journal details: ' + error.message);
-      setStatusError(true);
-      setIsSaving(false);
-    }
+  const handleSaveDetails = () => {
+    saveJournal(gridData);
   };
 
   const handleUpdateJournal = () => {
@@ -483,58 +393,82 @@ export default function Journals() {
             <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
               Account Details
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'flex-start' }}>
-              {accountDebits.map((item, idx) => (
-                <Box key={`account-debit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                  <TextField
-                    select
-                    label={idx === 0 ? 'Account to Debit' : `Account to Debit ${idx + 1}`}
-                    value={item.value}
-                    onChange={e => handleAccountDebitChange(idx, e.target.value)}
-                    fullWidth
-                    size="small"
-                    disabled={accountsLoading}
-                  >
-                    <MenuItem value="">Select Account</MenuItem>
-                    {journalAccounts.map((acc, j) => (
-                      <MenuItem key={acc.Acctcode || acc.id || j} value={acc.Acctcode || acc.id || ''}>
-                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  {idx === accountDebits.length - 1 && accountDebits.length < 4 && (
-                    <Button onClick={handleAddAccountDebit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
-                      <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
-                    </Button>
-                  )}
+            {/* Static account options for Account Debit and Credit dropdowns */}
+            {(() => {
+              const accountOptions = [
+                { cacctnumb: "10000123101", displayName: "10000123101 Building Cost Banjulinding" },
+                { cacctnumb: "10000123301", displayName: "10000123301 Building Cost Bundung Head Office" },
+                { cacctnumb: "10000600001", displayName: "10000600001 Fixed Assets" },
+                { cacctnumb: "10000600101", displayName: "10000600101 Land Cost @ Bijilo" },
+                { cacctnumb: "10000600201", displayName: "10000600201 Building Cost" },
+                { cacctnumb: "10000600301", displayName: "10000600301 Equipment Cost" },
+                { cacctnumb: "10000600401", displayName: "10000600401 Furniture Cost" },
+                { cacctnumb: "10000600501", displayName: "10000600501 M/ Vehicle And Motor Cycles Cost" },
+                { cacctnumb: "10000600601", displayName: "10000600601 Credit Union Software" },
+                { cacctnumb: "10000600701", displayName: "10000600701 Computer Cost" },
+                { cacctnumb: "10000730101", displayName: "10000730101 Divideneds Paid On Shares" },
+                { cacctnumb: "10100610001", displayName: "10100610001 Accumulated Depreciation" },
+                { cacctnumb: "10100610101", displayName: "10100610101 Acc. Depre. Building" },
+                { cacctnumb: "10100610201", displayName: "10100610201 Acc. Depre. Equipment" },
+                { cacctnumb: "10100610301", displayName: "10100610301 Acc. Depre. Furniture" },
+                { cacctnumb: "10100610401", displayName: "10100610401 Acc. Depre. Motor Vehicles /Cycles" },
+                { cacctnumb: "10100610501", displayName: "10100610501 Acc. Depre. Software" },
+                { cacctnumb: "10100610601", displayName: "10100610601 Acc. Depre. Computer" },
+                // ... (add the rest of the payload here as needed)
+              ];
+              return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'flex-start' }}>
+                  {accountDebits.map((item, idx) => (
+                    <Box key={`account-debit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                      <TextField
+                        select
+                        label={idx === 0 ? 'Account to Debit' : `Account to Debit ${idx + 1}`}
+                        value={item.value}
+                        onChange={e => handleAccountDebitChange(idx, e.target.value)}
+                        fullWidth
+                        size="small"
+                      >
+                        <MenuItem value="">Select Account</MenuItem>
+                        {accountOptions.map((acc) => (
+                          <MenuItem key={acc.cacctnumb} value={acc.cacctnumb}>
+                            {acc.displayName}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      {idx === accountDebits.length - 1 && accountDebits.length < 4 && (
+                        <Button onClick={handleAddAccountDebit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
+                          <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
+                        </Button>
+                      )}
+                    </Box>
+                  ))}
+                  {accountCredits.map((item, idx) => (
+                    <Box key={`account-credit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                      <TextField
+                        select
+                        label={idx === 0 ? 'Account to Credit' : `Account to Credit ${idx + 1}`}
+                        value={item.value}
+                        onChange={e => handleAccountCreditChange(idx, e.target.value)}
+                        fullWidth
+                        size="small"
+                      >
+                        <MenuItem value="">Select Account</MenuItem>
+                        {accountOptions.map((acc) => (
+                          <MenuItem key={acc.cacctnumb} value={acc.cacctnumb}>
+                            {acc.displayName}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      {idx === accountCredits.length - 1 && accountCredits.length < 4 && (
+                        <Button onClick={handleAddAccountCredit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
+                          <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
+                        </Button>
+                      )}
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-              {accountCredits.map((item, idx) => (
-                <Box key={`account-credit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                  <TextField
-                    select
-                    label={idx === 0 ? 'Account to Credit' : `Account to Credit ${idx + 1}`}
-                    value={item.value}
-                    onChange={e => handleAccountCreditChange(idx, e.target.value)}
-                    fullWidth
-                    size="small"
-                    disabled={accountsLoading}
-                  >
-                    <MenuItem value="">Select Account</MenuItem>
-                    {journalAccounts.map((acc, j) => (
-                      <MenuItem key={acc.Acctcode || acc.id || j} value={acc.Acctcode || acc.id || ''}>
-                        {acc.AcctName || acc.accountName || acc.name || acc.Acctcode}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  {idx === accountCredits.length - 1 && accountCredits.length < 4 && (
-                    <Button onClick={handleAddAccountCredit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
-                      <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
-                    </Button>
-                  )}
-                </Box>
-              ))}
-            </Box>
+              );
+            })()}
           </CardContent>
         </Card>
       </Box>
@@ -549,7 +483,7 @@ export default function Journals() {
             Batch Header Details
           </Typography>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} columns={6}>
             <Grid>
               <TextField
                 label="Batch Number"
@@ -589,7 +523,7 @@ export default function Journals() {
                 select
                 label="Debit/Credit"
                 name="debitCredit"
-                value={formData.debitCredit}
+                value={formData.debitCredit || ''}
                 onChange={handleChange}
                 fullWidth
                 size="small"
@@ -625,8 +559,8 @@ export default function Journals() {
       </Card>
 
       {/* Transaction Details Card */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
+      <Grid container spacing={2} sx={{ mb: 3 }} columns={2}>
+        <Grid>
           <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
@@ -657,6 +591,17 @@ export default function Journals() {
                   required
                   type="number"
                 />
+                {/* Date Picker for Transaction Details */}
+                <TextField
+                  label="Transaction Date"
+                  name="transactionDate"
+                  value={formData.transactionDate || ''}
+                  onChange={e => handleDateChange('transactionDate', e.target.value)}
+                  size="small"
+                  fullWidth
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                />
                 <TextField
                   label="Comments"
                   name="transactionComments2"
@@ -670,7 +615,7 @@ export default function Journals() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid>
           {formData.transactionType === 'cash' && (
             <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
@@ -809,37 +754,9 @@ export default function Journals() {
         >
           {isSaving ? 'Saving...' : 'Save Details'}
         </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<EditIcon />}
-          onClick={handleUpdateJournal}
-          disabled={isSaving}
-          sx={{ fontWeight: 600 }}
-        >
-          Update Journal
-        </Button>
       </Box>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Confirm Update</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to update this journal entry? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleConfirmUpdate}
-            variant="contained"
-            disabled={isSaving}
-          >
-            {isSaving ? <CircularProgress size={20} /> : 'Confirm'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Confirmation Dialog removed */}
     </Box>
   );
 }
