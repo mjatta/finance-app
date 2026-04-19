@@ -1,10 +1,63 @@
+  // Journal Post API Plugin (dev server middleware)
+// Journal Post API Plugin (dev server middleware, with local fallback)
+const journalPostApiPlugin = () => ({
+  name: 'journal-post-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/journal/postjournal', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward POST to backend, fallback to local file
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/journal/postjournal', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (fetchErr) {
+            // Backend unreachable — fall back to local storage
+            const filePath = path.resolve(process.cwd(), 'src/data/journals.json')
+            let rows = []
+            try {
+              const raw = await fs.readFile(filePath, 'utf8')
+              const parsed = JSON.parse(raw)
+              rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.rows) ? parsed.rows : [])
+            } catch (err) {
+              if (err.code !== 'ENOENT') throw err
+            }
+            rows.push(body)
+            await fs.writeFile(filePath, JSON.stringify({ rows }, null, 2), 'utf8')
+            res.statusCode = 201
+            res.end(JSON.stringify({ rows }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process journal post.' }))
+      }
+    })
+  },
+})
   server: {
     proxy: {
-      '/api/journal/postjournal': {
-        target: 'https://alakuyateh-001-site10.atempurl.com',
-        changeOrigin: true,
-        secure: false,
-      },
+      // ...existing proxies, but REMOVE /api/journal/postjournal to avoid conflict with middleware
     },
   },
 import { defineConfig } from 'vite'
@@ -1357,6 +1410,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/corporategroupmember/, '/api/corporategroupmember'),
       },
+      // Proxy for journal posting endpoint to avoid CORS/SSL issues
+      '/api/journal/postjournal': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/journal\/postjournal/, '/api/journal/postjournal'),
+      },
       // Proxy for member create endpoint to avoid CORS
       '/api/member/create': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
@@ -1521,5 +1581,6 @@ export default defineConfig({
     loanApprovalApiPlugin(),
     loanDisbursementApiPlugin(),
     loanDisburseApiPlugin(),
+    journalPostApiPlugin(),
   ],
 })

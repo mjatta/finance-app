@@ -169,7 +169,7 @@ export default function SaveJournals() {
   // Removed unused handleDeleteRow and handleGridChange
 
   const handleSaveDetails = () => {
-    saveJournal(gridData);
+    saveJournal(formData, accountDebits, accountCredits);
   };
 
   // Removed unused handleUpdateJournal
@@ -227,16 +227,18 @@ export default function SaveJournals() {
                 size="small"
                 placeholder="Enter transaction details"
               />
-              <TextField
-                label="Date"
-                name="batchEntryDate"
-                value={formData.batchEntryDate}
-                onChange={(e) => handleDateChange('batchEntryDate', e.target.value)}
-                fullWidth
-                size="small"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-              />
+                <TextField
+                  label="Transaction Date"
+                  name="batchEntryDate"
+                  value={formData.batchEntryDate || dayjs().format('YYYY-MM-DD')}
+                  onChange={() => {}}
+                  fullWidth
+                  size="small"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{ readOnly: true }}
+                  sx={{ backgroundColor: '#f5f5f5', pointerEvents: 'none' }}
+                />
               <TextField
                 label="Debit Amount"
                 name="transactionDebitAmount"
@@ -389,35 +391,17 @@ export default function SaveJournals() {
                   <MenuItem value="cheque">Cheque</MenuItem>
                 </TextField>
                 <TextField
-                  label="Amount"
-                  name="transactionAmount"
-                  value={formData.transactionAmount || ''}
+                  label="Book Balance"
+                  name="bookBalance"
+                  value={formData.bookBalance || ''}
                   onChange={handleChange}
                   size="small"
                   fullWidth
                   required
                   type="number"
                 />
-                {/* Date Picker for Transaction Details */}
-                <TextField
-                  label="Transaction Date"
-                  name="transactionDate"
-                  value={formData.transactionDate || ''}
-                  onChange={e => handleDateChange('transactionDate', e.target.value)}
-                  size="small"
-                  fullWidth
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  label="Comments"
-                  name="transactionComments2"
-                  value={formData.transactionComments2 || ''}
-                  onChange={handleChange}
-                  multiline
-                  minRows={3}
-                  fullWidth
-                />
+                {/* Date field removed as requested */}
+                {/* Comments field removed as requested */}
               </Box>
             </CardContent>
           </Card>

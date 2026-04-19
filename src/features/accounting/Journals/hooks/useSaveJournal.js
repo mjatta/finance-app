@@ -5,27 +5,41 @@ export function useSaveJournal() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
 
-  const saveJournal = async (gridData) => {
+  const saveJournal = async (formData, accountDebits = [], accountCredits = []) => {
     setIsSaving(true);
     try {
+      // Get user info from zustand-persisted localStorage (key: 'microfinance-auth')
+      let user = null;
+      try {
+        const persisted = localStorage.getItem('microfinance-auth');
+        if (persisted) {
+          const parsed = JSON.parse(persisted);
+          user = parsed?.state?.user || null;
+        }
+      } catch {
+        // Ignore JSON parse/localStorage errors
+      }
+      const today = new Date().toISOString().split('T')[0];
       const payload = {
         OrderType: 1,
-        UserId: 'ala',
-        CompId: 30,
         CurrCode: 1,
-        BranchId: 16,
-        Entries: gridData.map(row => ({
-          TransDate: row.date || '',
-          Description: row.transactionComments || '',
-          DebitAccount: row.accountDebit || '',
-          CreditAccount: row.accountCredit || '',
-          Debit: parseFloat(row.debitAmount) || 0,
-          Credit: parseFloat(row.creditAmount) || 0,
-          BookBalance: row.bookBalance || 0,
-          InvFile: row.uploadDocument || ''
-        }))
+        UserId: user?.UserId || user?.userId || user?.username || '',
+        BranchId: user?.BranchId || user?.branchId || '',
+        CompId: user?.CompId || user?.compId || '',
+        Entries: [
+          {
+            TransDate: formData.batchEntryDate || today,
+            Description: formData.batchTransactionDetails || '',
+            DebitAccount: accountDebits[0]?.value || '',
+            CreditAccount: accountCredits[0]?.value || '',
+            Debit: parseFloat(formData.transactionDebitAmount) || 0,
+            Credit: parseFloat(formData.transactionCreditAmount) || 0,
+            BookBalance: parseFloat(formData.bookBalance) || 0,
+            InvFile: formData.uploadDocument || ''
+          }
+        ]
       };
-      const response = await fetch('https://alakuyateh-001-site10.atempurl.com/api/journal/postjournal', {
+      const response = await fetch('/api/journal/postjournal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
