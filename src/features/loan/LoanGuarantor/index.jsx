@@ -124,13 +124,26 @@ export default function LoanGuarantor() {
   
   const [guaranteeHistoryData, setGuaranteeHistoryData] = useState(null);
   const [guaranteeHistoryRows, setGuaranteeHistoryRows] = useState([]);
+  // Total Guaranteed is the sum of all guaramt in guaranteeHistoryRows (CurrentGuaranteed)
   const [totalGuaranteed, setTotalGuaranteed] = useState(0);
+  // Remaining Amount is Guarantee Required - CurrentGuaranteed
   const [remainingAmount, setRemainingAmount] = useState(0);
+
+  // Guarantee Required: principal amount of selected loan
+  const guaranteeRequired = selectedIds.length > 0 && guarantors.find((g) => g.id === selectedIds[0])
+    ? parseFloat(guarantors.find((g) => g.id === selectedIds[0]).rawPrincipalAmt || 0)
+    : 0;
+
+  // Always recalculate remainingAmount when guaranteeRequired or totalGuaranteed changes
+  useEffect(() => {
+    setRemainingAmount(guaranteeRequired - totalGuaranteed);
+  }, [guaranteeRequired, totalGuaranteed]);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
   
   const [guarantorDetailsOpen, setGuarantorDetailsOpen] = useState(false);
   const [guarantorType, setGuarantorType] = useState(''); // '' (empty), 'memberGuarantors' or 'collateral'
   
+  const todayIso = dayjs().format('YYYY-MM-DD');
   const [guarantorDetails, setGuarantorDetails] = useState({
     guarantorId: '',
     savingBalance: '',
@@ -140,9 +153,14 @@ export default function LoanGuarantor() {
     collateralValue: '',
     collateralDesc: '',
     loanBalance: '',
-    guaranteeDate: '',
+    guaranteeDate: todayIso,
     guarantorRequired: false,
   });
+
+  // Always keep guaranteeDate as today
+  useEffect(() => {
+    setGuarantorDetails((prev) => ({ ...prev, guaranteeDate: todayIso }));
+  }, [todayIso]);
 
   const { fetchGuarantors } = useGuarantorLoad();
   const { validateGuarantor, loading: validateLoading, error: validateError } = useGuarantorValidate();
@@ -225,8 +243,11 @@ export default function LoanGuarantor() {
       if (data) {
         console.log('✓ Guarantee history loaded:', data);
         setGuaranteeHistoryData(data);
-        setTotalGuaranteed(data.TotalGuaranteed || 0);
-        setRemainingAmount(data.RemainingAmount || 0);
+        // Calculate CurrentGuaranteed (sum of guaramt in guaranteeHistoryRows)
+        const currentGuaranteed = (data.Data && Array.isArray(data.Data))
+          ? data.Data.reduce((sum, row) => sum + (parseFloat(row.guaramt) || 0), 0)
+          : 0;
+        setTotalGuaranteed(currentGuaranteed);
         
         // Map the Data array to grid rows
         if (data.Data && Array.isArray(data.Data)) {
@@ -826,6 +847,20 @@ export default function LoanGuarantor() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
+                  label="Loan Balance"
+                  name="loanBalance"
+                  value={guarantorDetails.loanBalance}
+                  onChange={handleGuarantorDetailsChange}
+                  variant="outlined"
+                  size="small"
+                  InputProps={{ readOnly: true }}
+                  sx={{ bgcolor: '#f5f5f5' }}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
                   label="Enter amount"
                   name="amountToGuarantee"
                   value={formatCurrency(guarantorDetails.amountToGuarantee)}
@@ -839,7 +874,7 @@ export default function LoanGuarantor() {
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                 />
               </Grid>
-              
+
               {/* Collateral Value - Show only for Collateral, editable */}
               {guarantorType === 'collateral' && (
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -862,19 +897,16 @@ export default function LoanGuarantor() {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="Guarantee Date"
-                    value={guarantorDetails.guaranteeDate ? dayjs(guarantorDetails.guaranteeDate) : null}
-                    onChange={(newValue) => {
-                      const formatted = newValue ? newValue.format('YYYY-MM-DD') : '';
-                      setGuarantorDetails((prev) => ({
-                        ...prev,
-                        guaranteeDate: formatted,
-                      }));
-                    }}
+                    value={dayjs(todayIso)}
+                    readOnly
+                    disabled
                     slotProps={{
                       textField: {
                         fullWidth: true,
                         size: 'small',
                         variant: 'outlined',
+                        InputProps: { readOnly: true },
+                        sx: { backgroundColor: '#f5f5f5' },
                       },
                     }}
                   />
