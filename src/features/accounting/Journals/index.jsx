@@ -48,13 +48,13 @@ const initialFormData = {
 const initialGridData = [];
 
 export default function SaveJournals() {
-  // Retrieve user from localStorage (key: 'user')
+  // Retrieve user from zustand-persisted localStorage (key: 'microfinance-auth' > state.user)
   let user = null;
   try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      user = JSON.parse(userStr);
-      // console.log('Loaded user from localStorage:', user);
+    const persisted = localStorage.getItem('microfinance-auth');
+    if (persisted) {
+      const parsed = JSON.parse(persisted);
+      user = parsed?.state?.user || null;
     }
   } catch {
     user = null;
