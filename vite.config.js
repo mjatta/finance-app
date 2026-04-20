@@ -1,5 +1,5 @@
   // Journal Post API Plugin (dev server middleware)
-// Journal Post API Plugin (dev server middleware, with local fallback)
+// Journal Post API Plugin (dev server middleware, backend only)
 const journalPostApiPlugin = () => ({
   name: 'journal-post-api-plugin',
   configureServer(server) {
@@ -16,7 +16,7 @@ const journalPostApiPlugin = () => ({
           return
         }
 
-        // Forward POST to backend, fallback to local file
+        // Forward POST to backend only
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
           try {
@@ -29,20 +29,8 @@ const journalPostApiPlugin = () => ({
             res.statusCode = backendRes.status
             res.end(data)
           } catch (fetchErr) {
-            // Backend unreachable — fall back to local storage
-            const filePath = path.resolve(process.cwd(), 'src/data/journals.json')
-            let rows = []
-            try {
-              const raw = await fs.readFile(filePath, 'utf8')
-              const parsed = JSON.parse(raw)
-              rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.rows) ? parsed.rows : [])
-            } catch (err) {
-              if (err.code !== 'ENOENT') throw err
-            }
-            rows.push(body)
-            await fs.writeFile(filePath, JSON.stringify({ rows }, null, 2), 'utf8')
-            res.statusCode = 201
-            res.end(JSON.stringify({ rows }))
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
           }
           return
         }
