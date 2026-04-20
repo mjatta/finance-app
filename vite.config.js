@@ -1,3 +1,47 @@
+// Remote Member Validate API Plugin (dev server middleware, backend only)
+const remoteMemberValidateApiPlugin = () => ({
+  name: 'remote-member-validate-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/remote-member-validate', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend
+        if (req.method === 'GET') {
+          // Forward query string as-is
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/members/validate${req.url.replace('/api/remote-member-validate', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process remote member validate.' }))
+      }
+    })
+  },
+})
 
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -1032,6 +1076,51 @@ const guarantorLoadApiPlugin = () => ({
   },
 })
 
+// Remote Member Details API Plugin (dev server middleware, backend only)
+const remoteMemberDetailsApiPlugin = () => ({
+  name: 'remote-member-details-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/remote-member-details', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend
+        if (req.method === 'GET') {
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/getmemberdetails${req.url.replace('/api/remote-member-details', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process remote member details.' }))
+      }
+    })
+  },
+})
+
+
 const saveLoanGuarantorApiPlugin = () => ({
   name: 'save-loan-guarantor-api-plugin',
   configureServer(server) {
@@ -1311,6 +1400,27 @@ const loanDisburseApiPlugin = () => ({
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
+  plugins: [
+    react(),
+    journalPostApiPlugin(),
+    memberActivatePlugin(),
+    depositsApiPlugin(),
+    withdrawalsApiPlugin(),
+    loanRepaymentsApiPlugin(),
+    userSetupApiPlugin(),
+    securitySettingsApiPlugin(),
+    productDefinitionApiPlugin(),
+    periodicProcessingApiPlugin(),
+    customerRegistrationApiPlugin(),
+    guarantorLoadApiPlugin(),
+    saveLoanGuarantorApiPlugin(),
+    guaranteeHistoryApiPlugin(),
+    loanApprovalApiPlugin(),
+    loanDisbursementApiPlugin(),
+    loanDisburseApiPlugin(),
+    remoteMemberDetailsApiPlugin(),
+    remoteMemberValidateApiPlugin(),
+  ],
   server: {
     proxy: {
       // Proxy for lookups (branches, etc.) to avoid CORS
@@ -1549,23 +1659,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    react(),
-    memberActivatePlugin(),
-    depositsApiPlugin(),
-    withdrawalsApiPlugin(),
-    loanRepaymentsApiPlugin(),
-    userSetupApiPlugin(),
-    securitySettingsApiPlugin(),
-    productDefinitionApiPlugin(),
-    periodicProcessingApiPlugin(),
-    customerRegistrationApiPlugin(),
-    guarantorLoadApiPlugin(),
-    saveLoanGuarantorApiPlugin(),
-    guaranteeHistoryApiPlugin(),
-    loanApprovalApiPlugin(),
-    loanDisbursementApiPlugin(),
-    loanDisburseApiPlugin(),
-    journalPostApiPlugin(),
-  ],
+// (duplicate plugins array removed)
 })

@@ -17,6 +17,11 @@ const API_BASE_URL = '';
  * Prod endpoints use the actual backend paths
  */
 const ENDPOINT_MAP = {
+    // Remote Member Validate
+    'remote-member-validate': {
+      dev: '/api/remote-member-validate',
+      prod: '/api/members/validate',
+    },
   // Cities, Branches, Countries - lookups
   cities: {
     dev: '/api/cities',

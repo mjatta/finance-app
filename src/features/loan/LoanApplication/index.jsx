@@ -235,24 +235,25 @@ export default function LoanApplication() {
     setMemberDetails(null);
 
     try {
-      const data = await fetchMemberDetails(searchMemberCode.trim());
+      const payload = await fetchMemberDetails(searchMemberCode.trim());
+      const data = payload && payload.data ? payload.data : null;
       if (data) {
         setMemberDetails(data);
 
-        // Parse member name from first account's AccountName
-        let memberName = '';
-        if (data.Accounts && data.Accounts.length > 0) {
-          const accountName = data.Accounts[0].AccountName || '';
-          const parts = accountName.split('<<');
-          memberName = parts[0].trim();
-        }
+        // Map fields from API response
+        const memberName = data.fullName || data.MemberName || '';
+        const savingsBalance = data.savingsBalance || data.SavingBalance || '';
+        const memberPic = data.memberPic || data.MemberPicture || '';
+        const memberSign = data.memberSign || data.MemberSignature || '';
 
         setFormData((prev) => ({
           ...prev,
           memberCode: searchMemberCode.trim(),
-          memberName: memberName || data.MemberName || '',
+          memberName,
+          savingBalance: savingsBalance,
+          memberPic,
+          memberSign,
           currentLoanBalance: data.LoanBalance || '',
-          savingBalance: data.SavingBalance || '',
           loanLimit: data.LoanLimit || '',
         }));
       } else {
@@ -599,7 +600,7 @@ export default function LoanApplication() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                     <Box
                       component="img"
-                      src={formatProfileImage(memberDetails.MemberPicture)}
+                      src={formatProfileImage(formData.memberPic)}
                       alt="Member profile"
                       sx={{ width: 180, height: 130, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', objectFit: 'cover' }}
                     />
@@ -608,7 +609,7 @@ export default function LoanApplication() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                     <Box
                       component="img"
-                      src={formatProfileImage(memberDetails.MemberSignature)}
+                      src={formatProfileImage(formData.memberSign)}
                       alt="Member signature"
                       sx={{ width: 180, height: 130, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', objectFit: 'contain', backgroundColor: '#fff' }}
                     />

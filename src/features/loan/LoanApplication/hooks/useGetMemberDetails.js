@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getFullApiUrl } from '../../../../utils/apiConfig';
+import { buildApiUrl } from '../../../../utils/apiConfig';
 
 export function useGetMemberDetails() {
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const url = getFullApiUrl(`/api/members/validate?membcode=${encodeURIComponent(memberCode.trim())}`);
+      const url = buildApiUrl('remote-member-validate', { membcode: memberCode.trim() });
       const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
