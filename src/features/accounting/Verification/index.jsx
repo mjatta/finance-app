@@ -108,7 +108,6 @@ export default function Verification() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
   const [selectedTransactionType, setSelectedTransactionType] = useState('all');
   const [filteredJournals, setFilteredJournals] = useState([]);
   const [paginationModel, setPaginationModel] = useState({
@@ -122,11 +121,6 @@ export default function Verification() {
     useUnverifiedJournals();
   const { confirmVouchers } = useConfirmVouchers();
 
-  const [verificationDetails, setVerificationDetails] = useState({
-    verificationCode: '',
-    referencNumber: '',
-    verificationNotes: '',
-  });
 
   // Fetch journals on component mount
   useEffect(() => {
@@ -164,22 +158,18 @@ export default function Verification() {
     setIsSaving(true);
 
     try {
-      // Always compute unique voucher numbers from selectedIds and filteredJournals
-      const uniqueVouchers = Array.from(
-        new Set(
-          filteredJournals
-            .filter((j) => selectedIds.map(String).includes(String(j.id)))
-            .map((j) => String(j.cvoucherno))
-        )
-      );
-      console.log('Saving verification:', { selectedIds, uniqueVouchers });
+      // Get voucher numbers from selected rows (preserve duplicates and order)
+      const vouchers = filteredJournals
+        .filter((j) => selectedIds.map(String).includes(String(j.id)))
+        .map((j) => String(j.cvoucherno));
+      console.log('Saving verification:', { selectedIds, vouchers });
       const payload = {
         companyId: authUser?.CompId || 30,
         branchId: parseInt(authUser?.BranchId) || 16,
         userId: authUser?.username || 'SYSTEM',
         workStation: 'SERVER01',
         windowsUser: authUser?.name || authUser?.username || 'Unknown',
-        vouchers: uniqueVouchers,
+        vouchers,
       };
       console.log('Payload to be sent:', payload);
       await confirmVouchers(payload);
@@ -187,15 +177,9 @@ export default function Verification() {
       notifySaveSuccess(`Successfully verified ${selectedIds.length} journal(s)`);
       setStatusMessage(`Successfully verified ${selectedIds.length} journal(s)`);
       setStatusError(false);
-      setVerificationDialogOpen(false);
       setSelectedIds([]);
       setSelectedJVNumbers([]);
       setGridKey((k) => k + 1);
-      setVerificationDetails({
-        verificationCode: '',
-        referencNumber: '',
-        verificationNotes: '',
-      });
 
       // Refresh the data
       fetchUnverifiedJournals();
@@ -209,21 +193,6 @@ export default function Verification() {
     }
   }, [selectedIds, selectedJVNumbers, authUser, confirmVouchers, fetchUnverifiedJournals]);
 
-  /**
-   * Handle clearing selection and form
-   */
-  const handleClear = useCallback(() => {
-    setSelectedIds([]);
-    setSelectedJVNumbers([]);
-    setGridKey((k) => k + 1);
-    setVerificationDetails({
-      verificationCode: '',
-      referencNumber: '',
-      verificationNotes: '',
-    });
-    setStatusMessage('');
-    setStatusError(false);
-  }, []);
 
   // Calculate filtered totals
   const filteredTotalDebit = filteredJournals.reduce((sum, j) => sum + (parseFloat(j.ndebit) || 0), 0);
@@ -343,80 +312,31 @@ export default function Verification() {
             sortModel={sortModel}
             onSortModelChange={setSortModel}
             checkboxSelection
+            getRowId={(row) => row.cvoucherno}
             selectionModel={selectedIds}
             onRowSelectionModelChange={(selection) => {
               let arr = Array.isArray(selection) ? selection : [selection];
               arr = arr.map(String);
-              const prevIds = selectedIds.map(String);
-              let changedId = null;
-              let action = null;
-              if (arr.length > prevIds.length) {
-                changedId = arr.find((id) => !prevIds.includes(id));
-                action = 'select';
-              } else if (arr.length < prevIds.length) {
-                changedId = prevIds.find((id) => !arr.includes(id));
-                action = 'deselect';
-              }
-              if (changedId) {
-                const changedRow = filteredJournals.find((j) => String(j.id) === String(changedId));
-                if (changedRow && changedRow.cvoucherno) {
-                  const sameVoucherIds = filteredJournals
-                    .filter((j) => String(j.cvoucherno) === String(changedRow.cvoucherno))
-                    .map((j) => String(j.id));
-                  if (action === 'select') {
-                    arr = Array.from(new Set([...arr, ...sameVoucherIds]));
-                  } else if (action === 'deselect') {
-                    arr = arr.filter((id) => !sameVoucherIds.includes(id));
-                  }
-                  // Force DataGrid to update selection model immediately
-                  setSelectedIds(arr);
-                  const selectedVouchers = Array.from(
-                    new Set(
-                      filteredJournals
-                        .filter((j) => arr.includes(String(j.id)))
-                        .map((j) => String(j.cvoucherno))
-                    )
-                  );
-                  setSelectedJVNumbers(selectedVouchers);
-                  return;
-                }
-              }
-              // Fallback: update as normal
               setSelectedIds(arr);
-              const selectedVouchers = Array.from(
-                new Set(
-                  filteredJournals
-                    .filter((j) => arr.includes(String(j.id)))
-                    .map((j) => String(j.cvoucherno))
-                )
-              );
-              setSelectedJVNumbers(selectedVouchers);
+              setSelectedJVNumbers(arr);
             }}
             onRowClick={(params) => {
-              const rowId = String(params.id);
-              const row = filteredJournals.find((j) => String(j.id) === rowId);
-              if (!row) return;
-              const sameVoucherIds = filteredJournals
-                .filter((j) => String(j.cvoucherno) === String(row.cvoucherno))
-                .map((j) => String(j.id));
+              const rowVoucher = String(params.id);
+              // Select/deselect all rows with this voucher number
+              const sameVoucherRows = filteredJournals
+                .filter((j) => String(j.cvoucherno) === rowVoucher)
+                .map((j) => String(j.cvoucherno));
               let arr = Array.isArray(selectedIds) ? selectedIds.map(String) : [String(selectedIds)];
-              const allSelected = sameVoucherIds.every((id) => arr.includes(id));
+              const allSelected = sameVoucherRows.every((id) => arr.includes(id));
               if (allSelected) {
                 // Deselect all
-                arr = arr.filter((id) => !sameVoucherIds.includes(id));
+                arr = arr.filter((id) => !sameVoucherRows.includes(id));
               } else {
                 // Select all
-                arr = Array.from(new Set([...arr, ...sameVoucherIds]));
+                arr = Array.from(new Set([...arr, ...sameVoucherRows]));
               }
               setSelectedIds(arr);
-              const selectedVouchers = Array.from(
-                new Set(
-                  filteredJournals
-                    .filter((j) => arr.includes(String(j.id)))
-                    .map((j) => String(j.cvoucherno))
-                )
-              );
-              setSelectedJVNumbers(selectedVouchers);
+              setSelectedJVNumbers(arr);
             }}
             getRowClassName={(params) => {
               const arr = Array.isArray(selectedIds) ? selectedIds : [selectedIds];
@@ -428,23 +348,9 @@ export default function Verification() {
               '& .MuiDataGrid-columnHeaderTitle': {
                 fontWeight: 700,
                 fontSize: '0.95rem',
-                color: '#ffffff',
-              },
-              '& .MuiDataGrid-columnHeader': {
-                backgroundColor: '#2c3e50',
-                borderBottom: '2px solid #1a252f',
-              },
-              '& .MuiDataGrid-footerContainer': {
-                backgroundColor: '#f5f5f5',
-                borderTop: '1px solid #e0e0e0',
-                fontWeight: 500,
-              },
-              '& .MuiTablePagination-root': {
                 color: '#2c3e50',
-                fontWeight: 500,
               },
               '& .MuiDataGrid-row': {
-                cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:nth-of-type(odd)': {
                   backgroundColor: '#fafafa',
@@ -483,26 +389,12 @@ export default function Verification() {
       </Card>
 
 
-      {/* Action Buttons */}
       <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<ClearIcon />}
-          onClick={handleClear}
-          disabled={selectedIds.length === 0 && !verificationDetails.verificationCode}
-          sx={{
-            fontWeight: 600,
-            paddingX: 3,
-          }}
-        >
-          Clear
-        </Button>
         <Button
           variant="contained"
           color="primary"
-          startIcon={<CheckCircleIcon />}
-          onClick={() => setVerificationDialogOpen(true)}
+          startIcon={<SaveIcon />}
+          onClick={handleSaveVerification}
           disabled={selectedIds.length === 0}
           sx={{
             fontWeight: 600,
@@ -510,47 +402,11 @@ export default function Verification() {
             boxShadow: 2,
           }}
         >
-          Verify Selected ({selectedIds.length})
+          Save Verification
         </Button>
       </Box>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={verificationDialogOpen} onClose={() => setVerificationDialogOpen(false)}>
-        <DialogTitle>Confirm Verification</DialogTitle>
-        <DialogContent>
-          <Box sx={{ py: 2 }}>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              You are about to verify <strong>{selectedIds.length}</strong> journal transaction(s).
-            </Typography>
-            {selectedJVNumbers.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                  <strong>Unique Voucher Number(s) to be sent:</strong>
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {selectedJVNumbers.map((jv, idx) => (
-                    <Chip key={idx} label={jv} variant="outlined" color="primary" />
-                  ))}
-                </Box>
-              </Box>
-            )}
-            {verificationDetails.referencNumber && (
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                <strong>Reference Number:</strong> {verificationDetails.referencNumber}
-              </Typography>
-            )}
-            <Typography variant="body2" sx={{ color: 'error.main', mt: 2 }}>
-              This action cannot be undone. Please ensure all details are correct.
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setVerificationDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveVerification} disabled={isSaving}>
-            {isSaving ? <CircularProgress size={24} /> : 'Confirm Verification'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Confirmation Dialog removed: verification is now one-click with confirmation prompt */}
     </Box>
   );
 }
