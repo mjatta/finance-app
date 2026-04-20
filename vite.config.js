@@ -1,4 +1,11 @@
-  // Journal Post API Plugin (dev server middleware)
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import process from 'node:process'
+import { Buffer } from 'node:buffer'
+
 // Journal Post API Plugin (dev server middleware, backend only)
 const journalPostApiPlugin = () => ({
   name: 'journal-post-api-plugin',
@@ -28,9 +35,9 @@ const journalPostApiPlugin = () => ({
             const data = await backendRes.text()
             res.statusCode = backendRes.status
             res.end(data)
-          } catch (fetchErr) {
+          } catch (err) {
             res.statusCode = 502
-            res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
           }
           return
         }
@@ -43,17 +50,7 @@ const journalPostApiPlugin = () => ({
     })
   },
 })
-  server: {
-    proxy: {
-      // ...existing proxies, but REMOVE /api/journal/postjournal to avoid conflict with middleware
-    },
-  },
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import fs from 'node:fs/promises'
-import path from 'node:path'
-import process from 'node:process'
-import { Buffer } from 'node:buffer'
+
 
 // The atempurl.com host redirects HTTP to HTTPS but uses a certificate whose
 // common-name doesn't match.  Disabling TLS verification here is safe because
@@ -338,7 +335,7 @@ const depositsApiPlugin = () => ({
             const data = await backendRes.text()
             res.statusCode = backendRes.status
             res.end(data)
-          } catch (fetchErr) {
+          } catch (err) {
             // Backend unreachable — fall back to local storage
             if (!body || typeof body !== 'object') {
               res.statusCode = 400
@@ -400,7 +397,7 @@ const withdrawalsApiPlugin = () => ({
             const data = await backendRes.text()
             res.statusCode = backendRes.status
             res.end(data)
-          } catch (fetchErr) {
+          } catch (err) {
             // Backend unreachable — fall back to local storage
             if (!body || typeof body !== 'object') {
               res.statusCode = 400

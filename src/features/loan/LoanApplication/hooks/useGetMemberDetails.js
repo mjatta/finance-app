@@ -14,7 +14,8 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${memberCode.trim()}`), {
+      const url = getFullApiUrl(`/api/members/validate?membcode=${encodeURIComponent(memberCode.trim())}`);
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
