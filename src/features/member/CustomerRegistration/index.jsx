@@ -98,6 +98,37 @@ const detailTabGroupSx = {
 };
 
 export default function CustomerRegistration(props) {
+    // Group Member state and handlers
+    const [groupMembers, setGroupMembers] = useState([
+      {
+        id: Date.now() + Math.random(),
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        phoneNumber: '',
+      },
+    ]);
+
+    const handleAddGroupMemberCard = () => {
+      setGroupMembers(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          firstName: '',
+          middleName: '',
+          lastName: '',
+          phoneNumber: '',
+        },
+      ]);
+    };
+
+    const handleGroupMemberChange = (id, field, value) => {
+      setGroupMembers(prev =>
+        prev.map(member =>
+          member.id === id ? { ...member, [field]: value } : member
+        )
+      );
+    };
   const { registerInstitution } = useRegisterInstitution();
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
@@ -857,6 +888,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 <Tab label={mainTab === 1 ? 'Reference' : 'Employment Detail'} />
                 <Tab label="Contribution" />
                 <Tab label="Biometric" />
+                {mainTab === 1 && <Tab label="Group Member" />}
               </Tabs>
 
               {detailTab === 0 && (
@@ -1808,8 +1840,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 </Box>
               )}
 
-              {detailTab === 4 && (
+
+              {((mainTab === 1 && detailTab === 4) || (mainTab !== 1 && detailTab === 4)) && (
                 <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                  {/* Biometric Tab Content */}
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
@@ -1865,24 +1899,25 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               bgcolor: 'action.hover',
                             }}
                           >
-                          {photoPreviewUrl ? (
-                            <Box
-                              component="img"
-                              src={photoPreviewUrl}
-                              alt="Selected photo preview"
-                              sx={{ width: '100%', height: 180, objectFit: 'contain', objectPosition: 'center', borderRadius: 1, bgcolor: 'background.paper' }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Selected picture preview will appear here.
-                            </Typography>
-                          )}
+                            {photoPreviewUrl ? (
+                              <Box
+                                component="img"
+                                src={photoPreviewUrl}
+                                alt="Selected photo preview"
+                                sx={{ width: '100%', height: 180, objectFit: 'contain', objectPosition: 'center', borderRadius: 1, bgcolor: 'background.paper' }}
+                              />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Selected picture preview will appear here.
+                              </Typography>
+                            )}
                           </Box>
                         </Box>
                       </Box>
                     </CardContent>
                   </Card>
 
+                  {/* Signature Card */}
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
@@ -1938,18 +1973,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               bgcolor: 'action.hover',
                             }}
                           >
-                          {signaturePreviewUrl ? (
-                            <Box
-                              component="img"
-                              src={signaturePreviewUrl}
-                              alt="Selected signature preview"
-                              sx={{ width: '100%', height: 180, objectFit: 'contain', bgcolor: 'background.paper', borderRadius: 1 }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Selected signature preview will appear here.
-                            </Typography>
-                          )}
+                            {signaturePreviewUrl ? (
+                              <Box
+                                component="img"
+                                src={signaturePreviewUrl}
+                                alt="Selected signature preview"
+                                sx={{ width: '100%', height: 180, objectFit: 'contain', bgcolor: 'background.paper', borderRadius: 1 }}
+                              />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Selected signature preview will appear here.
+                              </Typography>
+                            )}
                           </Box>
                         </Box>
                       </Box>
@@ -1957,6 +1992,59 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   </Card>
                 </Box>
               )}
+
+              {/* Group Member tab content for Institution (last tab) */}
+              {mainTab === 1 && detailTab === 5 && (
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Group Member Details
+                    </Typography>
+                    <Button variant="outlined" size="small" onClick={handleAddGroupMemberCard}>
+                      Add more Group Member
+                    </Button>
+                  </Box>
+                  {groupMembers && groupMembers.length > 0 ? (
+                    groupMembers.map((member, index) => (
+                      <Card key={member.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                        <CardContent>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                            Group Member {index + 1}
+                          </Typography>
+                          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                            <TextField
+                              required
+                              label="First Name"
+                              value={member.firstName}
+                              onChange={e => handleGroupMemberChange(member.id, 'firstName', e.target.value)}
+                            />
+                            <TextField
+                              label="Middle Name"
+                              value={member.middleName}
+                              onChange={e => handleGroupMemberChange(member.id, 'middleName', e.target.value)}
+                            />
+                            <TextField
+                              required
+                              label="Last Name"
+                              value={member.lastName}
+                              onChange={e => handleGroupMemberChange(member.id, 'lastName', e.target.value)}
+                            />
+                            <TextField
+                              required
+                              label="Phone Number"
+                              value={member.phoneNumber}
+                              onChange={e => handleGroupMemberChange(member.id, 'phoneNumber', e.target.value)}
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No group members added yet.</Typography>
+                  )}
+                </Box>
+              )}
+
 
               {detailTab !== 0 && detailTab !== 1 && detailTab !== 2 && detailTab !== 3 && detailTab !== 4 && (
                 <Typography variant="body2" color="text.secondary">
