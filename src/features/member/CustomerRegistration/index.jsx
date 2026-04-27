@@ -523,6 +523,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           setFormData((prev) => ({ ...prev, companyId: response.companyId }));
         }
         setStatusMessage('Institution registration saved successfully.');
+        setTimeout(() => {
+          setStatusMessage((msg) => (msg === 'Institution registration saved successfully.' ? '' : msg));
+        }, 5000);
         notifySaveSuccess({
           page: 'Customer Administration / Registration',
           action: 'Save Institution Registration',
