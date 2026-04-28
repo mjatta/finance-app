@@ -273,10 +273,10 @@ function App() {
       children: [
         { label: 'Journals', to: '/accounting/journals', icon: BookRoundedIcon },
         { label: 'Verification', to: '/accounting/verification', icon: VerifiedRoundedIcon },
+        { label: 'GL Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
         { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
         { label: 'Transaction Update', to: '/accounting/transaction-update', icon: SyncAltRoundedIcon },
         { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
-        { label: 'Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
         { label: 'General Ledger', to: '/accounting/general-ledger', icon: AccountBalanceRoundedIcon },
         { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
       ],
