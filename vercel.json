@@ -1,6 +1,4 @@
-
-
-  {
+{
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": "vite",
@@ -239,6 +237,10 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/api/LoanRepayment/getLoanRepaymentAccount",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount"
     }
   ]
 }

@@ -1,774 +1,679 @@
-import React, { useEffect, useMemo, useState } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
   Card,
   CardContent,
-  Chip,
-  Collapse,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Paper,
-  TextField,
   Typography,
+  TextField,
+  Button,
+  MenuItem,
+  Alert,
+  Backdrop,
+  CircularProgress,
+  Skeleton,
+  Checkbox,
+  FormControlLabel,
+  InputAdornment,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import logo from '../../../assets/company-logo.jpg';
-import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-import { getFullApiUrl } from '../../../utils/apiConfig';
-import { DataGrid } from '@mui/x-data-grid';
-import {
-  faCalendarDays,
-  faCoins,
-  faCommentDots,
-  faHashtag,
-  faIdBadge,
-  faMoneyCheckDollar,
-  faPhone,
-} from '@fortawesome/free-solid-svg-icons';
+import { useGetLoanRepaymentAccount } from './hooks/useGetLoanRepaymentAccount';
+import { useGetMemberDetails } from '../../member/DepositManagement/hooks/useGetMemberDetails';
+import { useGetAccountDetails } from '../../member/DepositManagement/hooks/useGetAccountDetails';
+import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
+import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetBankAccounts';
+import { useAuthStore } from '../../../store/authStore';
+import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 
-export default function Repayments({ user }) {
-  const initialForm = {
+// Placeholder for profile/signature images
+const defaultProfileImage = '/src/assets/company-logo.jpg';
+
+export default function Repayments() {
+  // State
+  const todayIso = dayjs().format('YYYY-MM-DD');
+  const [formData, setFormData] = useState({
     memberCode: '',
-    loanAccountNumber: '',
-    repaymentDate: '',
-    paymentType: 'cash',
-    amountPaid: '',
-    principalPaid: '',
-    interestPaid: '',
-    penaltyPaid: '',
-    outstandingBalance: '',
-    refNo: '',
+    profilePicture: '',
+    memberSignature: '',
     phoneNumber: '',
+    postingAccount: '',
+    memberAccounts: [],
+    transactionDate: todayIso,
+    repaymentAmount: '',
     comments: '',
-  };
-
-  const headerKeys = [
-    'memberCode',
-    'loanAccountNumber',
-    'repaymentDate',
-    'paymentType',
-    'amountPaid',
-    'principalPaid',
-    'interestPaid',
-    'penaltyPaid',
-    'outstandingBalance',
-  ];
-
-  const headerLabels = {
-    memberCode: 'Customer Code',
-    loanAccountNumber: 'Loan Account No',
-    repaymentDate: 'Repayment Date',
-    paymentType: 'Payment Type',
-    amountPaid: 'Amount Paid',
-    principalPaid: 'Principal Paid',
-    interestPaid: 'Interest Paid',
-    penaltyPaid: 'Penalty Paid',
-    outstandingBalance: 'Outstanding Balance',
-  };
-
-  const [formData, setFormData] = useState(initialForm);
-  const [rows, setRows] = useState([]);
-  const [openRows, setOpenRows] = useState({});
-  const [selectedRowIdx, setSelectedRowIdx] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [isLoadingRows, setIsLoadingRows] = useState(true);
-  const [isSavingRow, setIsSavingRow] = useState(false);
-  const [storageError, setStorageError] = useState('');
-
-  const isReadOnlyRole = Boolean(user?.access?.readOnly);
-  const repaymentsApiUrl = getFullApiUrl('/api/loan-repayments');
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadRepayments = async () => {
-      setIsLoadingRows(true);
-      setStorageError('');
-
+    // Loan details
+    loanAmount: undefined,
+    interest: undefined,
+    repayment: undefined,
+    duration: undefined,
+    startDate: undefined,
+    // Repayment type details
+    repaymentType: '',
+    checkNumber: '',
+    checkDate: '',
+    bank: '',
+    bankAccount: '',
+    contraAccount: '',
+    cashAccount: '',
+    creditLimit: '',
+    debitLimit: '',
+    loanLimit: '',
+  });
+      // Bank and account state for dropdowns
+      const [banks, setBanks] = useState([]);
+      const [bankAccounts, setBankAccounts] = useState([]);
+      const user = useAuthStore((state) => state.user);
+      const { fetchBanks } = useGetBanks();
+      const { fetchBankAccounts } = useGetBankAccounts();
+      // Handle Repayment Type change
+      const handleRepaymentTypeChange = async (e) => {
+        const value = e.target.value;
+        setFormData((prev) => ({
+          ...prev,
+          repaymentType: value,
+          // Reset details on type change
+          checkNumber: '',
+          checkDate: '',
+          bank: '',
+          bankAccount: '',
+          contraAccount: '',
+          cashAccount: '',
+          creditLimit: '',
+          debitLimit: '',
+          loanLimit: '',
+        }));
+        if (value === 'cheque' || value === 'bank') {
+          const result = await fetchBanks();
+          if (result && result.success && result.data) setBanks(result.data);
+          else setBanks([]);
+          setBankAccounts([]);
+        } else if (value === 'cash' && user) {
+          setFormData((prev) => ({
+            ...prev,
+            cashAccount: user.CashAccount || '',
+            contraAccount: user.CashAccount || '',
+            debitLimit: user.DebitLimit != null ? String(user.DebitLimit) : '',
+            creditLimit: user.CreditLimit != null ? String(user.CreditLimit) : '',
+            loanLimit: user.LoanLimit != null ? String(user.LoanLimit) : '',
+          }));
+          setBanks([]);
+          setBankAccounts([]);
+        } else {
+          setBanks([]);
+          setBankAccounts([]);
+        }
+      };
+      // Handle bank change
+      const handleBankChange = async (e) => {
+        const value = e.target.value;
+        setFormData((prev) => ({ ...prev, bank: value, bankAccount: '', contraAccount: '' }));
+        if (value) {
+          const result = await fetchBankAccounts(value);
+          if (result && result.success && result.data) setBankAccounts(result.data);
+          else setBankAccounts([]);
+        } else {
+          setBankAccounts([]);
+        }
+      };
+      // Handle bank account change
+      const handleBankAccountChange = (e) => {
+        const value = e.target.value;
+        setFormData((prev) => ({ ...prev, bankAccount: value, contraAccount: value }));
+      };
+    // Fetch loan details from new endpoint
+    const fetchLoanDetails = useCallback(async (accountNumber, tranDate) => {
+      setLoadingAccountDetails(true);
       try {
-        const response = await fetch(repaymentsApiUrl);
-        if (!response.ok) {
-          throw new Error('Failed to load loan repayments.');
-        }
-
-        const payload = await response.json();
-        if (!isMounted) {
-          return;
-        }
-        setRows(Array.isArray(payload?.rows) ? payload.rows : []);
-      } catch {
-        if (isMounted) {
-          setStorageError('Unable to load saved loan repayments.');
-        }
+        const url = `http://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount?accountNumber=${encodeURIComponent(accountNumber)}&ncompid=30&tranDate=${tranDate}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Failed to fetch loan details');
+        const data = await resp.json();
+        setFormData((prev) => ({
+          ...prev,
+          loanAmount: data.LoanAmount,
+          interest: data.Interest,
+          repayment: data.Repayment,
+          duration: data.Duration,
+          startDate: data.StartDate,
+        }));
       } finally {
-        if (isMounted) {
-          setIsLoadingRows(false);
-        }
+        setLoadingAccountDetails(false);
       }
-    };
+    }, []);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusError, setStatusError] = useState(false);
+  const [isLoadingMember, setIsLoadingMember] = useState(false);
+  const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
+  const [touched, setTouched] = useState({});
 
-    loadRepayments();
+  // Hooks
+  const { fetchLoanRepaymentAccount } = useGetLoanRepaymentAccount();
+  const { fetchMemberDetails } = useGetMemberDetails();
+  useGetAccountDetails(); // Only call for side effects if any
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const formatLabel = (key) =>
-    key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (c) => c.toUpperCase());
-
-  const getAdornment = (icon) => (
-    <InputAdornment position="start">
-      <FontAwesomeIcon icon={icon} />
-    </InputAdornment>
-  );
-
-  const formatNumberValue = (value) => {
-    const raw = String(value ?? '').replace(/,/g, '');
-    const cleaned = raw.replace(/[^\d.]/g, '');
-    if (!cleaned) {
-      return '';
-    }
-
-    const [integerPart = '', ...decimalParts] = cleaned.split('.');
-    const normalizedInteger = integerPart.replace(/^0+(\d)/, '$1');
-    const withCommas = normalizedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const decimalPart = decimalParts.join('').slice(0, 2);
-
-    return decimalPart ? `${withCommas}.${decimalPart}` : withCommas;
-  };
-
-  const parseAmount = (value) => Number(String(value ?? '').replace(/,/g, '')) || 0;
-
-  const formatAmount = (value) =>
-    new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
-
-  const summaryValues = useMemo(() => {
-    const hasTypedData = Object.values(formData).some((value) => String(value ?? '').trim() !== '');
-    const source = hasTypedData ? formData : rows[rows.length - 1] || {};
-
-    const loanBalance = parseAmount(source.outstandingBalance);
-    const amountPaid = parseAmount(source.amountPaid);
-    const principalPaid = parseAmount(source.principalPaid);
-    const interestPaid = parseAmount(source.interestPaid);
-    const penaltyPaid = parseAmount(source.penaltyPaid);
-
-    const calculatedInterest = Math.max(amountPaid - principalPaid - penaltyPaid, 0);
-    const accruedInterest = interestPaid + penaltyPaid;
-
-    return {
-      loanBalance,
-      calculatedInterest,
-      accruedInterest,
-    };
-  }, [formData, rows]);
-
-  const validate = (data) => {
-    const nextErrors = {};
-    if (!data.memberCode.trim()) {
-      nextErrors.memberCode = 'Customer Code is required';
-    }
-    if (!data.loanAccountNumber.trim()) {
-      nextErrors.loanAccountNumber = 'Loan Account Number is required';
-    }
-    if (!data.repaymentDate.trim()) {
-      nextErrors.repaymentDate = 'Repayment Date is required';
-    }
-
-    const numericFields = ['amountPaid', 'principalPaid', 'interestPaid', 'penaltyPaid', 'outstandingBalance'];
-    numericFields.forEach((field) => {
-      const numericValue = Number(String(data[field] || '').replace(/,/g, ''));
-      if (!String(data[field] || '').trim()) {
-        nextErrors[field] = `${formatLabel(field)} is required`;
-      } else if (Number.isNaN(numericValue) || numericValue < 0) {
-        nextErrors[field] = `Enter a valid ${formatLabel(field).toLowerCase()}`;
-      }
-    });
-
-    if (data.phoneNumber) {
-      const digits = String(data.phoneNumber).replace(/\D/g, '');
-      if (digits.length < 7 || digits.length > 15) {
-        nextErrors.phoneNumber = 'Enter a valid phone number';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const numericFields = ['amountPaid', 'principalPaid', 'interestPaid', 'penaltyPaid', 'outstandingBalance'];
-    const nextValue = numericFields.includes(name) ? formatNumberValue(value) : value;
-    setFormData((prev) => ({ ...prev, [name]: nextValue }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isReadOnlyRole) {
-      return;
-    }
-
-    const nextErrors = validate(formData);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setIsSavingRow(true);
-    setStorageError('');
-
+  // Search member by code
+  const searchMember = useCallback(async () => {
+    if (!formData.memberCode) return;
+    setIsLoadingMember(true);
+    setStatusMessage('');
+    setStatusError(false);
     try {
-      const response = await fetch(repaymentsApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ row: formData }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save repayment row.');
+      const member = await fetchMemberDetails(formData.memberCode);
+      if (!member) {
+        setFormData((prev) => ({
+          ...prev,
+          profilePicture: '',
+          memberSignature: '',
+          phoneNumber: '',
+          memberAccounts: [],
+          accountBalance: '',
+          accountNumber: '',
+          clearedBalance: '',
+          unclearedBalance: '',
+        }));
+        setStatusMessage('Member not found for provided code.');
+        setStatusError(true);
+        return;
       }
-
-      const payload = await response.json();
-      setRows(Array.isArray(payload?.rows) ? payload.rows : []);
-      setFormData(initialForm);
-      setErrors({});
-      setOpenRows({});
-      setSelectedRowIdx(null);
-      notifySaveSuccess({
-        page: 'Loan Management / Loan Repayments',
-        action: 'Save Loan Repayment',
-        message: 'Loan repayment saved successfully.',
-      });
-    } catch (error) {
-      setStorageError('Unable to save loan repayment record.');
-      notifySaveError({
-        page: 'Loan Management / Loan Repayments',
-        action: 'Save Loan Repayment',
-        message: 'Unable to save loan repayment record.',
-        error,
-      });
+      // Map payload fields
+      setFormData((prev) => ({
+        ...prev,
+        profilePicture: member.MemberPicture ? `data:image/jpeg;base64,${member.MemberPicture}` : '',
+        memberSignature: member.MemberSignature ? `data:image/jpeg;base64,${member.MemberSignature}` : '',
+        phoneNumber: member.Phone || '',
+        memberAccounts: Array.isArray(member.Accounts) ? member.Accounts : [],
+      }));
+      setStatusMessage('Member accounts and contact details loaded successfully.');
+      setStatusError(false);
+    } catch {
+      setStatusMessage('Failed to load member details.');
+      setStatusError(true);
     } finally {
-      setIsSavingRow(false);
+      setIsLoadingMember(false);
     }
+  }, [formData.memberCode, fetchMemberDetails]);
+
+  // Clear form
+  const handleClear = () => {
+    setFormData({
+      memberCode: '',
+      profilePicture: '',
+      memberSignature: '',
+      phoneNumber: '',
+      postingAccount: '',
+      memberAccounts: [],
+      accountBalance: '',
+      accountNumber: '',
+      clearedBalance: '',
+      unclearedBalance: '',
+      transactionDate: todayIso,
+      repaymentAmount: '',
+      comments: '',
+    });
+    setStatusMessage('');
+    setStatusError(false);
+    setTouched({});
   };
 
-  const handlePrintGrid = () => {
-    if (rows.length === 0) {
-      return;
-    }
-
-    const printWindow = window.open('', '_blank', 'width=1200,height=800');
-    if (!printWindow) {
-      return;
-    }
-
-    const escapeHtml = (value) =>
-      String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-
-    const headHtml = headerKeys
-      .map((key) => `<th>${headerLabels[key] || key}</th>`)
-      .join('');
-
-    const bodyHtml = rows
-      .map((row, index) => {
-        const rowCells = headerKeys
-          .map((key) => `<td>${escapeHtml(row[key] ?? '-')}</td>`)
-          .join('');
-
-        const detailsHtml = Object.entries(row)
-          .filter(([key]) => !headerKeys.includes(key))
-          .map(([key, value]) => `
-            <div class="detail-item">
-              <span class="detail-label">${escapeHtml(formatLabel(key))}:</span>
-              <span class="detail-value">${escapeHtml(value ?? '-')}</span>
-            </div>
-          `)
-          .join('');
-
-        return `
-          <tr class="main-row">${rowCells}</tr>
-          <tr class="detail-row">
-            <td colspan="${headerKeys.length}" class="detail-cell">
-              <div class="detail-wrap">
-                <div class="detail-title">Additional Details - Entry #${index + 1}</div>
-                <div class="detail-grid">${detailsHtml}</div>
-              </div>
-            </td>
-          </tr>
-        `;
-      })
-      .join('');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Loan Repayments</title>
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              font-family: Inter, Segoe UI, Arial, sans-serif;
-              margin: 0;
-              padding: 24px;
-              color: #102a43;
-              background: #ffffff;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .report-shell {
-              border: 1px solid #d9e2ec;
-              border-radius: 12px;
-              overflow: visible;
-            }
-            .print-header {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              border-bottom: 1px solid #dbe7f3;
-              padding: 14px 18px;
-              background: linear-gradient(90deg, #f7fbff 0%, #eef5ff 100%);
-            }
-            .brand-wrap { display: flex; align-items: center; gap: 12px; }
-            .brand-logo {
-              width: 56px;
-              height: 56px;
-              object-fit: cover;
-              border-radius: 8px;
-              border: 1px solid #dbe7f3;
-            }
-            .brand-name { font-size: 20px; font-weight: 800; color: #102a43; }
-            .report-title { font-size: 18px; font-weight: 800; color: #0f4c81; }
-            .meta-row {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 10px 18px;
-              background: #f8fbff;
-              border-bottom: 1px solid #e4edf5;
-              font-size: 12px;
-              color: #486581;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              table-layout: fixed;
-            }
-            th, td {
-              border: 1px solid #d9e2ec;
-              padding: 6px 6px;
-              text-align: left;
-              font-size: 11px;
-              line-height: 1.25;
-              white-space: normal;
-              word-break: break-word;
-            }
-            th {
-              background: #1f4f82;
-              color: #ffffff;
-              font-weight: 700;
-              letter-spacing: 0.2px;
-            }
-            .main-row td {
-              background: #ffffff;
-            }
-            .main-row:nth-of-type(4n+1) td {
-              background: #fbfdff;
-            }
-            .detail-cell {
-              background: #f7fbff;
-              border-top: none;
-            }
-            .detail-wrap {
-              padding: 10px 4px;
-              break-inside: avoid;
-            }
-            .detail-title {
-              font-weight: 700;
-              margin-bottom: 10px;
-              color: #0f4c81;
-              font-size: 12px;
-              text-transform: uppercase;
-              letter-spacing: 0.3px;
-            }
-            .detail-grid {
-              display: grid;
-              grid-template-columns: repeat(3, minmax(180px, 1fr));
-              gap: 8px 12px;
-            }
-            .detail-item {
-              font-size: 12px;
-              background: #ffffff;
-              border: 1px solid #d9e2ec;
-              border-radius: 6px;
-              padding: 6px 8px;
-            }
-            .detail-label { font-weight: 700; color: #334e68; }
-            .detail-value { color: #102a43; }
-            @page {
-              size: A4 landscape;
-              margin: 10mm;
-            }
-            @media print {
-              body { padding: 0; }
-              .report-shell { border: none; border-radius: 0; }
-              .detail-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="report-shell">
-            <div class="print-header">
-              <div class="brand-wrap">
-                <img class="brand-logo" src="${logo}" alt="Company logo" />
-                <div class="brand-name">Microfinance Management</div>
-              </div>
-              <div class="report-title">Loan Repayments</div>
-            </div>
-            <div class="meta-row">
-              <span>Generated: ${new Date().toLocaleString()}</span>
-              <span>Total Records: ${rows.length}</span>
-            </div>
-            <table>
-              <thead>
-                <tr>${headHtml}</tr>
-              </thead>
-              <tbody>
-                ${bodyHtml}
-              </tbody>
-            </table>
-          </div>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+  // Handle input changes
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle numeric input for repayment amount
+  const handleRepaymentAmountChange = (e) => {
+    const cleanValue = cleanNumericInput(e.target.value);
+    setFormData((prev) => ({ ...prev, repaymentAmount: cleanValue }));
+  };
+
+  // Handle date change
+  const handleDateChange = (value) => {
+    setFormData((prev) => ({ ...prev, transactionDate: value ? value.format('YYYY-MM-DD') : '' }));
+  };
+
+  // Fetch account details when posting account changes
+  useEffect(() => {
+    if (formData.postingAccount) {
+      setLoadingAccountDetails(true);
+      fetchLoanRepaymentAccount(formData.postingAccount, formData.transactionDate).then((result) => {
+        if (result) {
+          setFormData((prev) => ({
+            ...prev,
+            accountNumber: result.accountNumber || '',
+            accountBalance: result.accountBalance || '',
+            clearedBalance: result.clearedBalance || '',
+            unclearedBalance: result.unclearedBalance || '',
+          }));
+        }
+        setLoadingAccountDetails(false);
+      }).catch(() => {
+        setLoadingAccountDetails(false);
+      });
+    }
+  }, [formData.postingAccount, formData.transactionDate, fetchLoanRepaymentAccount]);
+
+  // Field validation
+  const isFieldInvalid = (field) => {
+    return touched[field] && !formData[field];
+  };
+
+  // Main render
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Loan Repayments
-      </Typography>
-
-      {isReadOnlyRole && (
-        <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontWeight: 700 }}>
-          Read-only access: you can view repayment history, but cannot add new loan repayments.
-        </Typography>
-      )}
-
-      {storageError && (
-        <Typography variant="body2" color="error" sx={{ mb: 2, fontWeight: 600 }}>
-          {storageError}
-        </Typography>
-      )}
-
-      <Box
-        sx={{
-          mb: 2,
-          display: 'grid',
-          gap: 1.5,
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(3, minmax(0, 1fr))',
-          },
-        }}
-      >
-        <Card sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-              Loan Balance
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 0.5, fontWeight: 800, color: 'primary.main' }}>
-              {formatAmount(summaryValues.loanBalance)}
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-              Calculated Interest
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 0.5, fontWeight: 800, color: 'primary.main' }}>
-              {formatAmount(summaryValues.calculatedInterest)}
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-              Accrued Interest
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 0.5, fontWeight: 800, color: 'primary.main' }}>
-              {formatAmount(summaryValues.accruedInterest)}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
-
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box
-        component="fieldset"
-        disabled={isReadOnlyRole}
-        sx={{ border: 'none', p: 0, m: 0, opacity: isReadOnlyRole ? 0.55 : 1, pointerEvents: isReadOnlyRole ? 'none' : 'auto' }}
-      >
-        <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4 }}>
-          <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
-                Repayment Entry
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <TextField
-                  label="Customer Code"
-                  name="memberCode"
-                  value={formData.memberCode}
-                  onChange={handleChange}
-                  error={Boolean(errors.memberCode)}
-                  helperText={errors.memberCode}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faIdBadge) }}
-                />
-                <TextField
-                  label="Loan Account Number"
-                  name="loanAccountNumber"
-                  value={formData.loanAccountNumber}
-                  onChange={handleChange}
-                  error={Boolean(errors.loanAccountNumber)}
-                  helperText={errors.loanAccountNumber}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faHashtag) }}
-                />
-                <DatePicker
-                  label="Repayment Date"
-                  value={formData.repaymentDate ? dayjs(formData.repaymentDate) : null}
-                  onChange={(newValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      repaymentDate: newValue ? newValue.format('YYYY-MM-DD') : '',
-                    }));
-                  }}
-                  slotProps={{
-                    textField: {
-                      error: Boolean(errors.repaymentDate),
-                      helperText: errors.repaymentDate,
-                      sx: { flex: '1 1 220px', minWidth: 220 },
-                      InputProps: { startAdornment: getAdornment(faCalendarDays) },
-                    },
-                  }}
-                />
-                <TextField
-                  select
-                  label="Payment Type"
-                  name="paymentType"
-                  value={formData.paymentType}
-                  onChange={handleChange}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faMoneyCheckDollar) }}
-                >
-                  <MenuItem value="cash">Cash</MenuItem>
-                  <MenuItem value="cheque">Cheque</MenuItem>
-                  <MenuItem value="mobile">Mobile Wallet</MenuItem>
-                  <MenuItem value="bank">Bank Transfer</MenuItem>
-                </TextField>
-                <TextField
-                  label="Amount Paid"
-                  name="amountPaid"
-                  value={formData.amountPaid}
-                  onChange={handleChange}
-                  error={Boolean(errors.amountPaid)}
-                  helperText={errors.amountPaid}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faCoins) }}
-                />
-                <TextField
-                  label="Principal Paid"
-                  name="principalPaid"
-                  value={formData.principalPaid}
-                  onChange={handleChange}
-                  error={Boolean(errors.principalPaid)}
-                  helperText={errors.principalPaid}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faCoins) }}
-                />
-                <TextField
-                  label="Interest Paid"
-                  name="interestPaid"
-                  value={formData.interestPaid}
-                  onChange={handleChange}
-                  error={Boolean(errors.interestPaid)}
-                  helperText={errors.interestPaid}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faCoins) }}
-                />
-                <TextField
-                  label="Penalty Paid"
-                  name="penaltyPaid"
-                  value={formData.penaltyPaid}
-                  onChange={handleChange}
-                  error={Boolean(errors.penaltyPaid)}
-                  helperText={errors.penaltyPaid}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faCoins) }}
-                />
-                <TextField
-                  label="Outstanding Balance"
-                  name="outstandingBalance"
-                  value={formData.outstandingBalance}
-                  onChange={handleChange}
-                  error={Boolean(errors.outstandingBalance)}
-                  helperText={errors.outstandingBalance}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faCoins) }}
-                />
-                <TextField
-                  label="Reference Number"
-                  name="refNo"
-                  value={formData.refNo}
-                  onChange={handleChange}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faHashtag) }}
-                />
-                <TextField
-                  label="Phone Number"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  error={Boolean(errors.phoneNumber)}
-                  helperText={errors.phoneNumber}
-                  sx={{ flex: '1 1 220px', minWidth: 220 }}
-                  InputProps={{ startAdornment: getAdornment(faPhone) }}
-                />
-                <TextField
-                  label="Comments"
-                  name="comments"
-                  value={formData.comments}
-                  onChange={handleChange}
-                  multiline
-                  rows={2}
-                  sx={{ flex: '1 1 100%', minWidth: 320 }}
-                  InputProps={{ startAdornment: getAdornment(faCommentDots) }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Button variant="contained" color="primary" type="submit" disabled={isSavingRow}>
-            {isSavingRow ? 'Saving...' : 'Add Repayment'}
-          </Button>
+    <Box component="fieldset" p={3} sx={{ border: 'none', p: 3, m: 0, position: 'relative' }}>
+      <Backdrop open={isLoadingMember} sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>Loading member...</Typography>
         </Box>
-      </Box>
-      </LocalizationProvider>
+      </Backdrop>
 
-      {isLoadingRows && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-          Loading saved loan repayments...
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Loan Repayments
         </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Process member loan repayments and manage transactions
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+              Search
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              <TextField
+                label="Customer Code"
+                name="memberCode"
+                value={formData.memberCode}
+                onChange={handleChange}
+                onBlur={() => searchMember('memberCode')}
+                disabled={isLoadingMember}
+                placeholder="Member Code"
+              />
+              <TextField
+                label="Payroll Number"
+                name="payrollNumber"
+                value={formData.payrollNumber || ''}
+                onChange={handleChange}
+                onBlur={() => searchMember('payrollNumber')}
+                disabled={isLoadingMember}
+                placeholder="e.g. PAY001"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleClear}
+                  disabled={isLoadingMember}
+                  sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, flex: 1, textTransform: 'none' }}
+                >
+                  Clear
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+              Contact
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, justifyItems: 'center' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    component="img"
+                    src={formData.profilePicture || defaultProfileImage}
+                    alt="Member profile"
+                    sx={{ width: 160, height: 120, borderRadius: 1.5, border: '2px solid', borderColor: 'primary.light', objectFit: 'cover', boxShadow: 1 }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Member Profile
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    component="img"
+                    src={formData.memberSignature || defaultProfileImage}
+                    alt="Member signature"
+                    sx={{ width: 160, height: 120, borderRadius: 1.5, border: '2px solid', borderColor: 'primary.light', objectFit: 'contain', backgroundColor: '#f5f5f5', boxShadow: 1 }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Member Signature
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '120px' }}>
+                    Phone Number:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                    {formData.phoneNumber || 'N/A'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {statusMessage && (
+        <Alert
+          severity={statusError ? 'error' : 'success'}
+          sx={{ mt: 2, '& .MuiAlert-message': { fontSize: '1.1rem', fontWeight: statusError ? 600 : 700 } }}
+          onClose={() => setStatusMessage('')}
+        >
+          {statusMessage}
+        </Alert>
       )}
 
-      {rows.length > 0 && (
-        <Paper elevation={0} sx={{ width: '100%', borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'grey.50',
-            }}
-          >
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              Saved Repayment Records
-            </Typography>
-            <Button variant="outlined" size="small" onClick={handlePrintGrid}>
-              Print
-            </Button>
+      <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#2c3e50' }}>
+            Repayment Information
+          </Typography>
+
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+            {/* Transaction Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Transaction Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+                  <TextField
+                    select
+                    label="Posting Account"
+                    name="postingAccount"
+                    value={formData.postingAccount}
+                    onChange={handleChange}
+                    onBlur={e => {
+                      const value = e.target.value;
+                      if (value) fetchLoanDetails(value, formData.transactionDate);
+                    }}
+                    error={isFieldInvalid('postingAccount')}
+                    helperText={isFieldInvalid('postingAccount') ? 'Posting Account is required' : ''}
+                    size="small"
+                    fullWidth
+                    required
+                  >
+                    <MenuItem value="">Select Posting Account</MenuItem>
+                    {formData.memberAccounts.map((account) => (
+                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
+                        {account.AccountName}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    label="Transaction Date"
+                    name="transactionDate"
+                    type="date"
+                    value={formData.transactionDate}
+                    onChange={(e) => handleDateChange(dayjs(e.target.value))}
+                    size="small"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Loan Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Loan Details
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {loadingAccountDetails ? (
+                    <>
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                    </>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Loan Amount:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.loanAmount !== undefined ? formatCurrency(formData.loanAmount) : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Interest:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.interest !== undefined ? `${formData.interest}%` : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Repayment:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.repayment !== undefined ? formatCurrency(formData.repayment) : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Duration:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.duration !== undefined ? formData.duration : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Start Date:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.startDate || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Repayment Details Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Repayment Details
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 2 }}>
+
+                  <Box>
+                    <TextField
+                      select
+                      label="Repayment Type"
+                      name="repaymentType"
+                      value={formData.repaymentType}
+                      onChange={handleRepaymentTypeChange}
+                      size="small"
+                      fullWidth
+                      required
+                    >
+                      <MenuItem value="">Select Repayment Type</MenuItem>
+                      <MenuItem value="cash">Cash</MenuItem>
+                      <MenuItem value="cheque">Cheque</MenuItem>
+                      <MenuItem value="bank">Bank</MenuItem>
+                      <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
+                    </TextField>
+                  </Box>
+                  {/* Details Card on the right */}
+                  <Box>
+                    {formData.repaymentType === 'cash' && (
+                      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                        <CardContent>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                            Cash Details
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <TextField
+                              label="Cash Account"
+                              name="cashAccount"
+                              value={formData.cashAccount}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                            />
+                            <TextField
+                              label="Credit Limit"
+                              name="creditLimit"
+                              value={formData.creditLimit}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                            />
+                            <TextField
+                              label="Debit Limit"
+                              name="debitLimit"
+                              value={formData.debitLimit}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                            />
+                            <TextField
+                              label="Loan Limit"
+                              name="loanLimit"
+                              value={formData.loanLimit}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {(formData.repaymentType === 'cheque' || formData.repaymentType === 'bank') && (
+                      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                        <CardContent>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                            {formData.repaymentType === 'cheque' ? 'Check Details' : 'Bank Details'}
+                          </Typography>
+                          <Box sx={{ display: 'grid', gap: 2 }}>
+                            {formData.repaymentType === 'cheque' && (
+                              <>
+                                <TextField
+                                  label="Check Number"
+                                  name="checkNumber"
+                                  value={formData.checkNumber}
+                                  onChange={handleChange}
+                                  size="small"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Check Date"
+                                  name="checkDate"
+                                  type="date"
+                                  value={formData.checkDate}
+                                  onChange={handleChange}
+                                  size="small"
+                                  fullWidth
+                                  InputLabelProps={{ shrink: true }}
+                                />
+                              </>
+                            )}
+                            <TextField
+                              select
+                              label="Bank"
+                              name="bank"
+                              value={formData.bank}
+                              onChange={handleBankChange}
+                              size="small"
+                              fullWidth
+                            >
+                              <MenuItem value="">Select bank</MenuItem>
+                              {banks.map((bank) => (
+                                <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
+                              ))}
+                            </TextField>
+                            <TextField
+                              select
+                              label="Bank Account"
+                              name="bankAccount"
+                              value={formData.bankAccount}
+                              onChange={handleBankAccountChange}
+                              size="small"
+                              fullWidth
+                              disabled={!formData.bank}
+                            >
+                              <MenuItem value="">Select account</MenuItem>
+                              {bankAccounts.map((account) => (
+                                <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
+                              ))}
+                            </TextField>
+                            <TextField
+                              label="Contra Account"
+                              name="contraAccount"
+                              value={formData.contraAccount}
+                              disabled
+                              size="small"
+                              fullWidth
+                              sx={{
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  backgroundColor: '#f5f5f5',
+                                  color: '#666',
+                                  fontWeight: 600,
+                                },
+                              }}
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </Box>
+
+                  <TextField
+                    label="Repayment Amount"
+                    name="repaymentAmount"
+                    value={formatCurrency(formData.repaymentAmount)}
+                    onChange={handleRepaymentAmountChange}
+                    size="small"
+                    fullWidth
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    }}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                  />
+                  <TextField
+                    label="Comments"
+                    name="comments"
+                    value={formData.comments}
+                    onChange={handleChange}
+                    multiline
+                    minRows={4}
+                    fullWidth
+                  />
+                </Box>
+              </CardContent>
+            </Card>
           </Box>
 
-          <div style={{ height: 420, width: '100%' }}>
-            <DataGrid
-              rows={rows.map((row, idx) => ({ id: idx, ...row }))}
-              columns={[
-                ...headerKeys.map((key) => ({
-                  field: key,
-                  headerName: headerLabels[key] || key,
-                  flex: 1,
-                  minWidth: 120,
-                })),
-              ]}
-              pageSizeOptions={[10, 25, 50]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-              density="compact"
-              onRowClick={(params) => setSelectedRowIdx(params.row.id === selectedRowIdx ? null : params.row.id)}
-              getRowClassName={(params) => params.row.id === selectedRowIdx ? 'selected-repayment' : ''}
-              sx={{
-                cursor: 'pointer',
-                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
-                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
-                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
-                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
-                '& .selected-repayment': { backgroundColor: '#cfe2ff !important' },
-              }}
-            />
-          </div>
-
-          <Collapse in={selectedRowIdx !== null} timeout="auto" unmountOnExit>
-            {selectedRowIdx !== null && rows[selectedRowIdx] && (
-              <Box sx={{ m: 1.5, p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Repayment Details
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <Chip size="small" label={`Entry #${selectedRowIdx + 1}`} variant="outlined" />
-                    <IconButton size="small" onClick={() => setSelectedRowIdx(null)} aria-label="close details">
-                      <ExpandMoreIcon sx={{ transform: 'rotate(180deg)' }} />
-                    </IconButton>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1 }}>
-                  {Object.entries(rows[selectedRowIdx]).map(([k, v]) => (
-                    <Box key={k} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                        {formatLabel(k)}
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
-                        {String(v || '-')}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-          </Collapse>
-        </Paper>
-      )}
+          {/* Action Buttons */}
+          <Box sx={{ mt: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              disabled
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, paddingX: 3, boxShadow: 'none', textTransform: 'none' }}
+            >
+              💾 Save Repayment
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 }

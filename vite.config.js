@@ -1,48 +1,3 @@
-// Remote Member Validate API Plugin (dev server middleware, backend only)
-const remoteMemberValidateApiPlugin = () => ({
-  name: 'remote-member-validate-api-plugin',
-  configureServer(server) {
-    server.middlewares.use('/api/remote-member-validate', async (req, res, next) => {
-      try {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        res.setHeader('Content-Type', 'application/json')
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
-          return
-        }
-
-        // Forward GET to backend
-        if (req.method === 'GET') {
-          // Forward query string as-is
-          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/members/validate${req.url.replace('/api/remote-member-validate', '')}`
-          try {
-            const backendRes = await fetch(backendUrl, {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-            })
-            const data = await backendRes.text()
-            res.statusCode = backendRes.status
-            res.end(data)
-          } catch (err) {
-            res.statusCode = 502
-            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
-          }
-          return
-        }
-
-        next()
-      } catch {
-        res.statusCode = 500
-        res.end(JSON.stringify({ message: 'Failed to process remote member validate.' }))
-      }
-    })
-  },
-})
-
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs/promises'
@@ -406,6 +361,93 @@ const depositsApiPlugin = () => ({
       } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process deposits data.' }))
+      }
+    })
+  },
+})
+
+const loanRepaymentAccountApiPlugin = () => ({
+  name: 'loan-repayment-account-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/LoanRepayment/getLoanRepaymentAccount', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend
+        if (req.method === 'GET') {
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount${req.url.replace('/api/LoanRepayment/getLoanRepaymentAccount', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process loan repayment account data.' }))
+      }
+    })
+  },
+})
+
+const remoteMemberValidateApiPlugin = () => ({
+  name: 'remote-member-validate-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/remote-member-validate', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend
+        if (req.method === 'GET') {
+          // Forward query string as-is
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/members/validate${req.url.replace('/api/remote-member-validate', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process remote member validate.' }))
       }
     })
   },
@@ -1120,7 +1162,6 @@ const remoteMemberDetailsApiPlugin = () => ({
   },
 })
 
-
 const saveLoanGuarantorApiPlugin = () => ({
   name: 'save-loan-guarantor-api-plugin',
   configureServer(server) {
@@ -1420,6 +1461,7 @@ export default defineConfig({
     loanDisburseApiPlugin(),
     remoteMemberDetailsApiPlugin(),
     remoteMemberValidateApiPlugin(),
+    loanRepaymentAccountApiPlugin(),
   ],
   server: {
     proxy: {
@@ -1657,6 +1699,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+        // Proxy loan repayment account endpoint to avoid CORS
+        '/api/LoanRepayment/getLoanRepaymentAccount': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/LoanRepayment\/getLoanRepaymentAccount/, '/api/LoanRepayment/getLoanRepaymentAccount'),
+        },
     },
   },
 // (duplicate plugins array removed)
