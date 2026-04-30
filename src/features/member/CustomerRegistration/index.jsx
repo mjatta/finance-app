@@ -510,12 +510,22 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       }
     } else {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
+      const companyId = useAuthStore.getState().user?.CompId;
       const institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
-        compId: useAuthStore.getState().user?.CompId,
+        compId: companyId,
         branchId: useAuthStore.getState().user?.BranchId,
       });
       institutionPayload.MemberPicture = pictureBase64;
       institutionPayload.MemberSignature = signatureBase64;
+      // Add GroupMembers array to payload
+      institutionPayload.GroupMembers = groupMembers.map(member => ({
+        MemFname: member.firstName,
+        MemLname: member.lastName,
+        PhoneNumber: member.phoneNumber,
+        dob: member.dateOfBirth,
+        CreationDate: dayjs().format('YYYY-MM-DD'),
+        compid: companyId,
+      }));
       try {
         const response = await registerInstitution(institutionPayload);
         // If backend returns companyId, set it in formData
@@ -1317,6 +1327,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           <TextField label="TIN" name="chairTIN" value={formData.chairTIN} onChange={handleChange} />
                           <TextField
                             required
+                            label="Date of Birth"
+                            name="chairDOB"
+                            type="date"
+                            value={formData.chairDOB || ''}
+                            onChange={handleChange}
+                            InputLabelProps={{ shrink: true }}
+                          />
+                          <TextField
+                            required
                             label="Mobile Phone"
                             name="chairMobilePhone"
                             value={formData.chairMobilePhone}
@@ -2021,10 +2040,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               value={member.firstName}
                               onChange={e => handleGroupMemberChange(member.id, 'firstName', e.target.value)}
                             />
-                            <TextField
-                              label="Middle Name"
-                              value={member.middleName}
-                              onChange={e => handleGroupMemberChange(member.id, 'middleName', e.target.value)}
+                            <DatePicker
+                              required
+                              label="Date of Birth"
+                              value={member.dateOfBirth ? dayjs(member.dateOfBirth) : null}
+                              onChange={value => handleGroupMemberChange(member.id, 'dateOfBirth', value ? value.format('YYYY-MM-DD') : '')}
+                              disableFuture
+                              slotProps={{ textField: { required: true } }}
                             />
                             <TextField
                               required
@@ -2049,11 +2071,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
               )}
 
 
-              {detailTab !== 0 && detailTab !== 1 && detailTab !== 2 && detailTab !== 3 && detailTab !== 4 && (
-                <Typography variant="body2" color="text.secondary">
-                  This tab is ready.
-                </Typography>
-              )}
+              {/* Removed fallback message for unimplemented tabs */}
             </CardContent>
           </Card>
 
