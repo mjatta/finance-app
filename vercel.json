@@ -251,8 +251,8 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },
     {
-      "source": "/api/unverifield/:path*",
-      "destination": "https://alakuyateh-001-site10.atempurl.com/api/unverifield/:path*"
+      "source": "/api/unverified/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/unverified/:path*"
     }
   ]
 }
