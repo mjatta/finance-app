@@ -490,6 +490,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
+        setGroupMembers([
+          {
+            id: Date.now() + Math.random(),
+            firstName: '',
+            lastName: '',
+            phoneNumber: '',
+            dateOfBirth: '',
+          },
+        ]);
         photoFileRef.current = null;
         signatureFileRef.current = null;
         setPhotoPreviewUrl('');
@@ -1325,14 +1334,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
                           />
                           <TextField label="TIN" name="chairTIN" value={formData.chairTIN} onChange={handleChange} />
-                          <TextField
+                          <DatePicker
                             required
                             label="Date of Birth"
-                            name="chairDOB"
-                            type="date"
-                            value={formData.chairDOB || ''}
-                            onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
+                            value={formData.chairDOB ? dayjs(formData.chairDOB) : null}
+                            onChange={value => handleChange({ target: { name: 'chairDOB', value: value ? value.format('YYYY-MM-DD') : '' } })}
+                            disableFuture
+                            slotProps={{ textField: { name: 'chairDOB', required: true } }}
                           />
                           <TextField
                             required
