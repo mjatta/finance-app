@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import { useGetGLTransactions } from './hooks/useGetGLTransactions';
+import { glTransactionsTableColumns } from './hooks/glTransactionsTableColumns';
 
 export default function AccountEnquiry() {
   const [accountNumber, setAccountNumber] = useState('');
@@ -19,58 +21,35 @@ export default function AccountEnquiry() {
   const [searched, setSearched] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const { transactions, loading: transactionsLoading, error: transactionsError, fetchGLTransactions } = useGetGLTransactions();
 
-  // Placeholder columns for GL account data
-  const columns = [
-    { field: 'accountNumber', headerName: 'Account Number', width: 180 },
-    { field: 'accountName', headerName: 'Account Name', flex: 1, minWidth: 200 },
-    { field: 'accountType', headerName: 'Account Type', width: 150 },
-    { field: 'balance', headerName: 'Balance', width: 150, valueFormatter: (v) => v?.value ? `D ${parseFloat(v.value).toFixed(2)}` : 'D 0.00' },
-    { field: 'status', headerName: 'Status', width: 120 },
-  ];
-
-  // Filtered results by date (placeholder logic)
+  // Filtered results by date
   const filteredResults = useMemo(() => {
-    if (!fromDate && !toDate) return results;
-    // If results had a date field, filter here. Placeholder for now.
-    // Example: return results.filter(r => ...)
-    return results;
-  }, [results, fromDate, toDate]);
+    if (!fromDate && !toDate) return transactions;
+    return transactions.filter(row => {
+      const postDate = row.PostDate ? new Date(row.PostDate) : null;
+      if (!postDate) return false;
+      const from = fromDate ? new Date(fromDate) : null;
+      const to = toDate ? new Date(toDate) : null;
+      if (from && postDate < from) return false;
+      if (to && postDate > to) return false;
+      return true;
+    });
+  }, [transactions, fromDate, toDate]);
 
-  // Placeholder search handler
   const handleSearch = async (e) => {
     e.preventDefault();
-    setError('');
     setSearched(true);
-    setResults([]);
-    if (!accountNumber.trim()) {
-      setError('Please enter an account number');
-      return;
-    }
-    setLoading(true);
-    // TODO: Replace with API call
-    setTimeout(() => {
-      setResults([
-        {
-          id: 1,
-          accountNumber: accountNumber.trim(),
-          accountName: 'Sample GL Account',
-          accountType: 'GL',
-          balance: 100000.0,
-          status: 'Active',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    if (!accountNumber.trim()) return;
+    await fetchGLTransactions(accountNumber.trim());
   };
 
   const handleClear = () => {
     setAccountNumber('');
-    setResults([]);
-    setError('');
     setSearched(false);
     setFromDate('');
     setToDate('');
+    fetchGLTransactions(''); // clear results
   };
 
   const handleClearFilter = () => {
@@ -150,7 +129,7 @@ export default function AccountEnquiry() {
           <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
-                GL Account Results
+                GL Transactions
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                 <TextField
@@ -179,10 +158,10 @@ export default function AccountEnquiry() {
                   Clear Filter
                 </Button>
               </Box>
-              <div style={{ height: 320, width: '100%' }}>
+              <div style={{ height: 400, width: '100%' }}>
                 <DataGrid
-                  rows={filteredResults}
-                  columns={columns}
+                  rows={filteredResults.map((row, idx) => ({ id: idx + 1, ...row }))}
+                  columns={glTransactionsTableColumns}
                   loading={loading}
                   density="compact"
                   pageSizeOptions={[10, 25, 50]}
@@ -198,15 +177,6 @@ export default function AccountEnquiry() {
                       backgroundColor: 'primary.main',
                       color: 'primary.contrastText',
                       fontWeight: 700,
-                      borderBottom: 'none',
-                    },
-                    '& .MuiDataGrid-row': {
-                      '&:nth-of-type(odd)': {
-                        backgroundColor: '#f8f9fa',
-                      },
-                      '&:hover': {
-                        backgroundColor: '#e9ecef',
-                      },
                     },
                   }}
                 />

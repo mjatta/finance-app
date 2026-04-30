@@ -38,6 +38,7 @@ export default function Repayments() {
     phoneNumber: '',
     postingAccount: '',
     memberAccounts: [],
+    loanAccounts: [],
     transactionDate: todayIso,
     repaymentAmount: '',
     comments: '',
@@ -166,6 +167,7 @@ export default function Repayments() {
           memberSignature: '',
           phoneNumber: '',
           memberAccounts: [],
+          loanAccounts: [],
           accountBalance: '',
           accountNumber: '',
           clearedBalance: '',
@@ -182,6 +184,7 @@ export default function Repayments() {
         memberSignature: member.MemberSignature ? `data:image/jpeg;base64,${member.MemberSignature}` : '',
         phoneNumber: member.Phone || '',
         memberAccounts: Array.isArray(member.Accounts) ? member.Accounts : [],
+        loanAccounts: Array.isArray(member.LoanAccounts) ? member.LoanAccounts : [],
       }));
       setStatusMessage('Member accounts and contact details loaded successfully.');
       setStatusError(false);
@@ -384,7 +387,7 @@ export default function Repayments() {
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Transaction Details
                 </Typography>
-                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <TextField
                     select
                     label="Posting Account"
@@ -402,7 +405,7 @@ export default function Repayments() {
                     required
                   >
                     <MenuItem value="">Select Posting Account</MenuItem>
-                    {formData.memberAccounts.map((account) => (
+                    {(formData.loanAccounts || []).map((account) => (
                       <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
                         {account.AccountName}
                       </MenuItem>
@@ -492,149 +495,22 @@ export default function Repayments() {
                   Repayment Details
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 2 }}>
-
-                  <Box>
-                    <TextField
-                      select
-                      label="Repayment Type"
-                      name="repaymentType"
-                      value={formData.repaymentType}
-                      onChange={handleRepaymentTypeChange}
-                      size="small"
-                      fullWidth
-                      required
-                    >
-                      <MenuItem value="">Select Repayment Type</MenuItem>
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="bank">Bank</MenuItem>
-                      <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
-                    </TextField>
-                  </Box>
-                  {/* Details Card on the right */}
-                  <Box>
-                    {formData.repaymentType === 'cash' && (
-                      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                        <CardContent>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                            Cash Details
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                              label="Cash Account"
-                              name="cashAccount"
-                              value={formData.cashAccount}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                            />
-                            <TextField
-                              label="Credit Limit"
-                              name="creditLimit"
-                              value={formData.creditLimit}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                            />
-                            <TextField
-                              label="Debit Limit"
-                              name="debitLimit"
-                              value={formData.debitLimit}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                            />
-                            <TextField
-                              label="Loan Limit"
-                              name="loanLimit"
-                              value={formData.loanLimit}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                            />
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    )}
-                    {(formData.repaymentType === 'cheque' || formData.repaymentType === 'bank') && (
-                      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                        <CardContent>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                            {formData.repaymentType === 'cheque' ? 'Check Details' : 'Bank Details'}
-                          </Typography>
-                          <Box sx={{ display: 'grid', gap: 2 }}>
-                            {formData.repaymentType === 'cheque' && (
-                              <>
-                                <TextField
-                                  label="Check Number"
-                                  name="checkNumber"
-                                  value={formData.checkNumber}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                />
-                                <TextField
-                                  label="Check Date"
-                                  name="checkDate"
-                                  type="date"
-                                  value={formData.checkDate}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                  InputLabelProps={{ shrink: true }}
-                                />
-                              </>
-                            )}
-                            <TextField
-                              select
-                              label="Bank"
-                              name="bank"
-                              value={formData.bank}
-                              onChange={handleBankChange}
-                              size="small"
-                              fullWidth
-                            >
-                              <MenuItem value="">Select bank</MenuItem>
-                              {banks.map((bank) => (
-                                <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
-                              ))}
-                            </TextField>
-                            <TextField
-                              select
-                              label="Bank Account"
-                              name="bankAccount"
-                              value={formData.bankAccount}
-                              onChange={handleBankAccountChange}
-                              size="small"
-                              fullWidth
-                              disabled={!formData.bank}
-                            >
-                              <MenuItem value="">Select account</MenuItem>
-                              {bankAccounts.map((account) => (
-                                <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
-                              ))}
-                            </TextField>
-                            <TextField
-                              label="Contra Account"
-                              name="contraAccount"
-                              value={formData.contraAccount}
-                              disabled
-                              size="small"
-                              fullWidth
-                              sx={{
-                                '& .MuiInputBase-input.Mui-disabled': {
-                                  backgroundColor: '#f5f5f5',
-                                  color: '#666',
-                                  fontWeight: 600,
-                                },
-                              }}
-                            />
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </Box>
-
+                  <TextField
+                    select
+                    label="Repayment Type"
+                    name="repaymentType"
+                    value={formData.repaymentType}
+                    onChange={handleRepaymentTypeChange}
+                    size="small"
+                    fullWidth
+                    required
+                  >
+                    <MenuItem value="">Select Repayment Type</MenuItem>
+                    <MenuItem value="cash">Cash</MenuItem>
+                    <MenuItem value="cheque">Cheque</MenuItem>
+                    <MenuItem value="bank">Bank</MenuItem>
+                    <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
+                  </TextField>
                   <TextField
                     label="Repayment Amount"
                     name="repaymentAmount"
@@ -660,6 +536,129 @@ export default function Repayments() {
                 </Box>
               </CardContent>
             </Card>
+
+            {/* Repayment Type Details Card - moved below Loan Details */}
+            {(formData.repaymentType === 'cash' || formData.repaymentType === 'cheque' || formData.repaymentType === 'bank') && (
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%', mt: 2 }}>
+                <CardContent>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                    {formData.repaymentType === 'cash'
+                      ? 'Cash Details'
+                      : formData.repaymentType === 'cheque'
+                        ? 'Check Details'
+                        : 'Bank Details'}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {formData.repaymentType === 'cash' && (
+                      <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                            Cash Account:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                            {formData.cashAccount || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                            Credit Limit:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                            {formData.creditLimit || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                            Debit Limit:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                            {formData.debitLimit || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                            Loan Limit:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                            {formData.loanLimit || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </>
+                    )}
+                    {(formData.repaymentType === 'cheque' || formData.repaymentType === 'bank') && (
+                      <>
+                        {formData.repaymentType === 'cheque' && (
+                          <>
+                            <TextField
+                              label="Check Number"
+                              name="checkNumber"
+                              value={formData.checkNumber}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                            />
+                            <TextField
+                              label="Check Date"
+                              name="checkDate"
+                              type="date"
+                              value={formData.checkDate}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          </>
+                        )}
+                        <TextField
+                          select
+                          label="Bank"
+                          name="bank"
+                          value={formData.bank}
+                          onChange={handleBankChange}
+                          size="small"
+                          fullWidth
+                        >
+                          <MenuItem value="">Select bank</MenuItem>
+                          {banks.map((bank) => (
+                            <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
+                          ))}
+                        </TextField>
+                        <TextField
+                          select
+                          label="Bank Account"
+                          name="bankAccount"
+                          value={formData.bankAccount}
+                          onChange={handleBankAccountChange}
+                          size="small"
+                          fullWidth
+                          disabled={!formData.bank}
+                        >
+                          <MenuItem value="">Select account</MenuItem>
+                          {bankAccounts.map((account) => (
+                            <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
+                          ))}
+                        </TextField>
+                        <TextField
+                          label="Contra Account"
+                          name="contraAccount"
+                          value={formData.contraAccount}
+                          disabled
+                          size="small"
+                          fullWidth
+                          sx={{
+                            '& .MuiInputBase-input.Mui-disabled': {
+                              backgroundColor: '#f5f5f5',
+                              color: '#666',
+                              fontWeight: 600,
+                            },
+                          }}
+                        />
+                      </>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
           </Box>
 
           {/* Action Buttons */}
