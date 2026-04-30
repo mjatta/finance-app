@@ -29,6 +29,10 @@
       }
     ],
     "rewrites": [
+          {
+            "source": "/api/GLTransactions/transactions/:accountNumber",
+            "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:accountNumber"
+          },
       {
         "source": "/api/remote-branches/:path*",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
