@@ -366,6 +366,52 @@ const depositsApiPlugin = () => ({
   },
 })
 
+// GL Transactions API Plugin (dev server middleware, backend only)
+const glTransactionsApiPlugin = () => ({
+  name: 'gl-transactions-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/GLTransactions/transactions', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend
+        if (req.method === 'GET') {
+          // Preserve the full path and query string
+          const fullPath = req.url.startsWith('/api/GLTransactions/transactions') ? req.url : `/api/GLTransactions/transactions${req.url}`
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process GL transactions data.', error: err.message }))
+      }
+    })
+  },
+})
+
 const loanRepaymentAccountApiPlugin = () => ({
   name: 'loan-repayment-account-api-plugin',
   configureServer(server) {
@@ -1444,6 +1490,7 @@ export default defineConfig({
   plugins: [
     react(),
     journalPostApiPlugin(),
+    glTransactionsApiPlugin(),
     memberActivatePlugin(),
     depositsApiPlugin(),
     withdrawalsApiPlugin(),
@@ -1465,6 +1512,13 @@ export default defineConfig({
   ],
   server: {
     proxy: {
+      // Proxy GL Transactions endpoint to avoid CORS
+      '/api/GLTransactions/transactions': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/GLTransactions\/transactions/, '/api/GLTransactions/transactions'),
+      },
       // Proxy for lookups (branches, etc.) to avoid CORS
       '/api/lookups': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

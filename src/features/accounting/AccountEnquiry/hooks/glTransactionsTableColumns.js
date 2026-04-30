@@ -7,7 +7,7 @@ export const glTransactionsTableColumns = [
     headerName: 'Post Date',
     minWidth: 120,
     flex: 1,
-    valueGetter: (params) => params.row.PostDate ? new Date(params.row.PostDate).toLocaleDateString() : '',
+    valueGetter: (params) => params.row && params.row.PostDate ? new Date(params.row.PostDate).toLocaleDateString() : '',
   },
   {
     field: 'Debit',
@@ -38,13 +38,13 @@ export const glTransactionsTableColumns = [
     headerName: 'Description',
     minWidth: 200,
     flex: 2,
-    valueGetter: (params) => params.row.Description?.trim() || '',
+    valueGetter: (params) => params.row && params.row.Description ? params.row.Description.trim() : '',
   },
   {
     field: 'VoucherNo',
     headerName: 'Voucher Number',
     minWidth: 140,
     flex: 1,
-    valueGetter: (params) => params.row.VoucherNo?.trim() || '',
+    valueGetter: (params) => params.row && params.row.VoucherNo ? params.row.VoucherNo.trim() : '',
   },
 ];

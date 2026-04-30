@@ -9,9 +9,10 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { useGetGLTransactions } from './hooks/useGetGLTransactions';
-import { glTransactionsTableColumns } from './hooks/glTransactionsTableColumns';
 
 export default function AccountEnquiry() {
   const [accountNumber, setAccountNumber] = useState('');
@@ -36,6 +37,7 @@ export default function AccountEnquiry() {
       return true;
     });
   }, [transactions, fromDate, toDate]);
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -124,67 +126,82 @@ export default function AccountEnquiry() {
           </CardContent>
         </Card>
 
-        {/* Results Table */}
-        {searched && (
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
-                GL Transactions
+        {/* Results Table - always show for better UX and debugging */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+              GL Transactions
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+              <DatePicker
+                label="From Date"
+                value={fromDate ? dayjs(fromDate) : null}
+                onChange={date => setFromDate(date ? date.format('YYYY-MM-DD') : '')}
+                slotProps={{ textField: { size: 'small', sx: { width: 180 } } }}
+              />
+              <DatePicker
+                label="To Date"
+                value={toDate ? dayjs(toDate) : null}
+                onChange={date => setToDate(date ? date.format('YYYY-MM-DD') : '')}
+                slotProps={{ textField: { size: 'small', sx: { width: 180 } } }}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleClearFilter}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Clear Filter
+              </Button>
+            </Box>
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={Array.isArray(filteredResults)
+                  ? filteredResults.map((row, idx) => ({ id: idx + 1, ...row }))
+                  : []}
+                columns={debugColumns}
+                loading={loading}
+                density="compact"
+                pageSizeOptions={[10, 25, 50, 100]}
+                pageSize={10}
+                disableRowSelectionOnClick
+                sx={{
+                  border: 'none',
+                  borderRadius: 0,
+                  '& .MuiDataGrid-cell': {
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                  },
+                  '& .MuiDataGrid-columnHeader': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    fontWeight: 700,
+                  },
+                }}
+                getRowId={(row) => row.id}
+              />
+            </div>
+            {Array.isArray(filteredResults) && filteredResults.length === 0 && !loading && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No results found.
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  type="date"
-                  label="From Date"
-                  InputLabelProps={{ shrink: true }}
-                  value={fromDate}
-                  onChange={e => setFromDate(e.target.value)}
-                  size="small"
-                  sx={{ width: 180 }}
-                />
-                <TextField
-                  type="date"
-                  label="To Date"
-                  InputLabelProps={{ shrink: true }}
-                  value={toDate}
-                  onChange={e => setToDate(e.target.value)}
-                  size="small"
-                  sx={{ width: 180 }}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleClearFilter}
-                  sx={{ fontWeight: 600, textTransform: 'none' }}
-                >
-                  Clear Filter
-                </Button>
-              </Box>
-              <div style={{ height: 400, width: '100%' }}>
-                <DataGrid
-                  rows={filteredResults.map((row, idx) => ({ id: idx + 1, ...row }))}
-                  columns={glTransactionsTableColumns}
-                  loading={loading}
-                  density="compact"
-                  pageSizeOptions={[10, 25, 50]}
-                  disableRowSelectionOnClick
-                  sx={{
-                    border: 'none',
-                    borderRadius: 0,
-                    '& .MuiDataGrid-cell': {
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                    },
-                    '& .MuiDataGrid-columnHeader': {
-                      backgroundColor: 'primary.main',
-                      color: 'primary.contrastText',
-                      fontWeight: 700,
-                    },
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );
 }
+
+// DEBUG: Show all fields as columns for troubleshooting
+const debugColumns = [
+  { field: 'id', headerName: 'ID', minWidth: 50 },
+  { field: 'PostDate', headerName: 'Post Date', minWidth: 120 },
+  { field: 'ValueDate', headerName: 'Value Date', minWidth: 120 },
+  { field: 'Debit', headerName: 'Debit', minWidth: 100 },
+  { field: 'Credit', headerName: 'Credit', minWidth: 100 },
+  { field: 'NewBalance', headerName: 'New Balance', minWidth: 120 },
+  { field: 'Description', headerName: 'Description', minWidth: 200 },
+  { field: 'ChequeNo', headerName: 'Cheque No', minWidth: 120 },
+  { field: 'UserId', headerName: 'User ID', minWidth: 100 },
+  { field: 'VoucherNo', headerName: 'Voucher No', minWidth: 140 },
+];

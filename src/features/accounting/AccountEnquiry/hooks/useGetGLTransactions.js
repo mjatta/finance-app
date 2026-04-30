@@ -21,7 +21,14 @@ export function useGetGLTransactions() {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error('Failed to fetch GL transactions');
       const data = await resp.json();
-      setTransactions(data);
+      // Accept both array and {rows: [...]} formats
+      if (Array.isArray(data)) {
+        setTransactions(data);
+      } else if (Array.isArray(data.rows)) {
+        setTransactions(data.rows);
+      } else {
+        setTransactions([]);
+      }
     } catch (err) {
       setError(err.message || 'Unknown error');
       setTransactions([]);
