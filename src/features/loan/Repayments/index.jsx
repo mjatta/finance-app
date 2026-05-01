@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
@@ -18,6 +17,7 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { useGetLoanRepaymentAccount } from './hooks/useGetLoanRepaymentAccount';
+import { useInsertLoanRepayment } from './hooks/useInsertLoanRepayment';
 import { useGetMemberDetails } from '../../member/DepositManagement/hooks/useGetMemberDetails';
 import { useGetAccountDetails } from '../../member/DepositManagement/hooks/useGetAccountDetails';
 import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
@@ -25,10 +25,227 @@ import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetB
 import { useAuthStore } from '../../../store/authStore';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 
+
+
 // Placeholder for profile/signature images
 const defaultProfileImage = '/src/assets/company-logo.jpg';
 
 export default function Repayments() {
+
+    const [printReceipt, setPrintReceipt] = useState(false);
+  const [lastReceipt, setLastReceipt] = useState(null);
+  const shouldAutoPrint = useRef(false);
+  // Print receipt handler (copied and adapted from Deposit page)
+  const handlePrintReceipt = React.useCallback(() => {
+    if (!lastReceipt) {
+      setStatusMessage('Please save a repayment first before printing a receipt.');
+      setStatusError(true);
+      return;
+    }
+    const receiptWindow = window.open('', '_blank', 'width=420,height=700');
+    if (!receiptWindow) {
+      setStatusMessage('Unable to open print window. Please allow pop-ups and try again.');
+      setStatusError(true);
+      return;
+    }
+    const receipt = lastReceipt;
+    const now = new Date();
+    const printDate = now.toLocaleDateString();
+    const printTime = now.toLocaleTimeString();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const cashierName = user?.name || user?.username || '-';
+    const amount = receipt.Amount != null ? parseFloat(receipt.Amount).toFixed(2) : '0.00';
+    receiptWindow.document.write(`
+      <html>
+        <head>
+          <title>Repayment Receipt</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              color: #000;
+              background: #fff;
+              padding: 20px;
+              width: 380px;
+              margin: 0 auto;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .center { text-align: center; }
+            .bold { font-weight: 700; }
+            .company-name { font-size: 16px; font-weight: 800; margin-bottom: 2px; }
+            .company-info { font-size: 11px; color: #333; margin-bottom: 1px; }
+            .divider { border: none; border-top: 1px solid #000; margin: 10px 0; }
+            .divider-double { border: none; border-top: 2px solid #000; margin: 10px 0; }
+            .row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+            .row .label { color: #333; }
+            .row .value { font-weight: 600; text-align: right; }
+            .section-header { font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 8px 0 4px; text-align: center; letter-spacing: 1px; }
+            .total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; padding: 4px 0; }
+            .sig-section { margin-top: 30px; font-size: 11px; }
+            .sig-line { border-bottom: 1px solid #000; margin: 25px 0 4px; width: 60%; }
+            .sig-label { font-size: 11px; color: #333; }
+            .payment-by { margin-top: 20px; font-size: 12px; font-weight: 600; }
+            .btn-row { text-align: center; margin-top: 20px; }
+            .btn-row button {
+              padding: 8px 20px; margin: 0 5px; font-size: 13px;
+              border: none; border-radius: 4px; cursor: pointer; font-weight: 600;
+            }
+            .btn-print { background: #667eea; color: #fff; }
+            .btn-print:hover { background: #5568d3; }
+            .btn-close { background: #999; color: #fff; }
+            .btn-close:hover { background: #777; }
+            @page { size: 80mm auto; margin: 5mm; }
+            @media print { .btn-row { display: none; } body { padding: 5px; } }
+          </style>
+        </head>
+        <body>
+          <div class="center">
+            <div class="company-name">${(receipt.CompanyName || 'MICROFINANCE').replace(/</g, '&lt;')}</div>
+            <div class="company-info">${(receipt.Address || '').replace(/</g, '&lt;')}</div>
+            <div class="company-info">${(receipt.Email || '').replace(/</g, '&lt;')}</div>
+          </div>
+          <hr class="divider-double" />
+          <div class="row">
+            <span class="label">Print Date:</span>
+            <span class="value">${printDate}</span>
+          </div>
+          <div class="row">
+            <span class="label">Print Time:</span>
+            <span class="value">${printTime}</span>
+          </div>
+          <div class="row">
+            <span class="label">Receipt Number:</span>
+            <span class="value">${receipt.ReceiptNumber || '-'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Customer Code:</span>
+            <span class="value">${(receipt.ClientCode || '-').replace(/</g, '&lt;')}</span>
+          </div>
+          <div class="row">
+            <span class="label">Customer Name:</span>
+            <span class="value">${(receipt.ClientName || '-').replace(/</g, '&lt;')}</span>
+          </div>
+          <hr class="divider" />
+          <div class="section-header">Transaction Details</div>
+          <hr class="divider" />
+          <div class="row">
+            <span class="label">Repayment</span>
+            <span class="value">${amount}</span>
+          </div>
+          <hr class="divider" />
+          <div class="total-row">
+            <span>Total</span>
+            <span>${amount}</span>
+          </div>
+          <hr class="divider-double" />
+          <div class="sig-section">
+            <div class="row">
+              <span class="label">Cashier:</span>
+              <span class="value">${cashierName.replace(/</g, '&lt;')}</span>
+            </div>
+            <div class="sig-line"></div>
+            <div class="sig-label">Cashier Signature</div>
+            <div class="sig-line"></div>
+            <div class="sig-label">Customer Signature</div>
+          </div>
+          <div class="payment-by">Payment By: _________________</div>
+          <div class="btn-row">
+            <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+            <button class="btn-close" onclick="window.close()">Close</button>
+          </div>
+        </body>
+      </html>
+    `);
+    receiptWindow.document.close();
+    receiptWindow.focus();
+  }, [lastReceipt]);
+
+  // Auto-print receipt after save when checkbox is checked
+  useEffect(() => {
+    if (lastReceipt && printReceipt && shouldAutoPrint.current) {
+      shouldAutoPrint.current = false;
+      handlePrintReceipt();
+    }
+  }, [lastReceipt, printReceipt, handlePrintReceipt]);
+  // Insert loan repayment hook
+  const { insertLoanRepayment } = useInsertLoanRepayment();
+
+  // Save repayment handler
+  const handleSaveRepayment = async () => {
+    // Find selected loan account for ProductID
+    const selectedLoan = (formData.loanAccounts || []).find(
+      (acc) => acc.AccountNumber === formData.postingAccount
+    );
+    // Get user info from localStorage or state
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const payload = {
+      accountNumber: formData.accountNumber,
+      productId: selectedLoan?.ProductID || '',
+      repaymentType: formData.repaymentType,
+      repaymentAmount: formData.repaymentAmount,
+      totalAccruedInterest: formData.totalAccruedInterest || 0,
+      transactionDate: formData.transactionDate,
+      checkNumber: formData.checkNumber,
+      username: user?.username || user?.UserName || '',
+      branchId: user?.BranchId || user?.branchId || '',
+    };
+    const result = await insertLoanRepayment(payload);
+    if (result) {
+      setStatusMessage('Repayment saved successfully!');
+      setStatusError(false);
+      if (result.Receipt) {
+        setLastReceipt(result.Receipt);
+        if (printReceipt) {
+          shouldAutoPrint.current = true;
+        }
+      }
+      // Reset all fields after 7 seconds, like deposit
+      setTimeout(() => {
+        setFormData({
+          memberCode: '',
+          profilePicture: '',
+          memberSignature: '',
+          phoneNumber: '',
+          postingAccount: '',
+          memberAccounts: [],
+          loanAccounts: [],
+          transactionDate: dayjs().format('YYYY-MM-DD'),
+          repaymentAmount: '',
+          loanAmount: undefined,
+          interest: undefined,
+          repayment: undefined,
+          duration: undefined,
+          startDate: undefined,
+          accountNumber: '',
+          customerCode: '',
+          bookBalance: undefined,
+          unclearedBalance: undefined,
+          clearedBalance: undefined,
+          controlAccount: '',
+          interestAccount: '',
+          badDebtAccount: '',
+          repaymentType: '',
+          checkNumber: '',
+          checkDate: '',
+          bank: '',
+          bankAccount: '',
+          contraAccount: '',
+          cashAccount: '',
+          creditLimit: '',
+          debitLimit: '',
+          loanLimit: '',
+        });
+        setLastReceipt(null);
+        setTouched({});
+        setStatusMessage('');
+        setStatusError(false);
+      }, 7000);
+    } else {
+      setStatusMessage('Failed to save repayment.');
+      setStatusError(true);
+    }
+  };
   // State
   const todayIso = dayjs().format('YYYY-MM-DD');
   const [formData, setFormData] = useState({
@@ -41,13 +258,21 @@ export default function Repayments() {
     loanAccounts: [],
     transactionDate: todayIso,
     repaymentAmount: '',
-    comments: '',
+    // comments: '',
     // Loan details
     loanAmount: undefined,
     interest: undefined,
     repayment: undefined,
     duration: undefined,
     startDate: undefined,
+    accountNumber: '',
+    customerCode: '',
+    bookBalance: undefined,
+    unclearedBalance: undefined,
+    clearedBalance: undefined,
+    controlAccount: '',
+    interestAccount: '',
+    badDebtAccount: '',
     // Repayment type details
     repaymentType: '',
     checkNumber: '',
@@ -243,10 +468,19 @@ export default function Repayments() {
         if (result) {
           setFormData((prev) => ({
             ...prev,
-            accountNumber: result.accountNumber || '',
-            accountBalance: result.accountBalance || '',
-            clearedBalance: result.clearedBalance || '',
-            unclearedBalance: result.unclearedBalance || '',
+            accountNumber: result.AccountNumber || '',
+            customerCode: result.CustomerCode || '',
+            bookBalance: result.Details?.BookBalance ?? '',
+            unclearedBalance: result.Details?.UnclearedBalance ?? '',
+            clearedBalance: result.Details?.ClearedBalance ?? '',
+            controlAccount: result.Details?.ControlAccount || '',
+            interestAccount: result.Details?.InterestAccount || '',
+            badDebtAccount: result.Details?.BadDebtAccount || '',
+            loanAmount: result.Loan?.LoanAmount ?? '',
+            interest: result.Loan?.Interest ?? '',
+            repayment: result.Loan?.Repayment ?? '',
+            duration: result.Loan?.Duration ?? '',
+            startDate: result.Loan?.StartDate || '',
           }));
         }
         setLoadingAccountDetails(false);
@@ -444,6 +678,14 @@ export default function Repayments() {
                     <>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                          Account Number:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.accountNumber || 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
                           Loan Amount:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
@@ -523,15 +765,6 @@ export default function Repayments() {
                       startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
                     }}
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-                  />
-                  <TextField
-                    label="Comments"
-                    name="comments"
-                    value={formData.comments}
-                    onChange={handleChange}
-                    multiline
-                    minRows={4}
-                    fullWidth
                   />
                 </Box>
               </CardContent>
@@ -661,15 +894,41 @@ export default function Repayments() {
             )}
           </Box>
 
-          {/* Action Buttons */}
-          <Box sx={{ mt: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              disabled
-              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, paddingX: 3, boxShadow: 'none', textTransform: 'none' }}
-            >
-              💾 Save Repayment
-            </Button>
+          {/* Print Receipt Checkbox and Action Buttons */}
+          <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={printReceipt}
+                  onChange={e => setPrintReceipt(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Print Receipt"
+              sx={{ mb: 1 }}
+            />
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="contained"
+                disabled={
+                  !formData.postingAccount ||
+                  !formData.repaymentAmount ||
+                  !formData.repaymentType
+                }
+                onClick={handleSaveRepayment}
+                sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, paddingX: 3, boxShadow: 'none', textTransform: 'none' }}
+              >
+                💾 Save Repayment
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={!lastReceipt}
+                onClick={handlePrintReceipt}
+                sx={{ fontWeight: 600, paddingX: 3, textTransform: 'none' }}
+              >
+                🖨️ Print Receipt
+              </Button>
+            </Box>
           </Box>
         </CardContent>
       </Card>

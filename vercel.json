@@ -1,3 +1,7 @@
+    {
+      "source": "/api/loanRepayment/InsertLoanRepayment",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanRepayment/InsertLoanRepayment"
+    },
 {
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
