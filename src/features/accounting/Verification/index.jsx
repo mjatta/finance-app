@@ -143,26 +143,64 @@ export default function Verification() {
       filtered = journals.filter((j) => j.ctrandesc === selectedTransactionType);
     }
 
-    setFilteredJournals(filtered);
+    // Add unique ID to each row based on index
+    const withIds = filtered.map((journal, index) => ({
+      ...journal,
+      uid: index + 1,
+    }));
+
+    setFilteredJournals(withIds);
   }, [journals, selectedTransactionType]);
+
+  /**
+   * Select all rows
+   */
+  const handleSelectAll = useCallback(() => {
+    const allUids = filteredJournals.map(j => j.uid);
+    setSelectedIds(allUids);
+    setSelectedJVNumbers(allUids);
+  }, [filteredJournals]);
+
+  /**
+   * Deselect all rows
+   */
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds([]);
+    setSelectedJVNumbers([]);
+  }, []);
 
   /**
    * Handle saving verification for selected rows
    */
   const handleSaveVerification = useCallback(async () => {
-    if (selectedIds.length === 0) {
-      notifySaveError('Please select at least one journal to verify');
+    
+    if (!selectedIds || selectedIds.length === 0) {
+      setStatusMessage('Please select at least one row.');
+      setStatusError(true);
       return;
     }
 
     setIsSaving(true);
 
     try {
-      // Get voucher numbers from selected rows (preserve duplicates and order)
-      const vouchers = filteredJournals
-        .filter((j) => selectedIds.map(String).includes(String(j.id)))
-        .map((j) => String(j.cvoucherno));
-      console.log('Saving verification:', { selectedIds, vouchers });
+      // Extract voucher numbers using uid to look up the actual row data
+      const vouchers = Array.from(new Set(
+        selectedIds.map(uid => {
+          const row = filteredJournals.find(j => j.uid === parseInt(uid));
+          return row ? String(row.cvoucherno) : null;
+        })
+        .filter(voucher => voucher)
+      ));
+      
+
+      
+      if (!vouchers || vouchers.length === 0) {
+        setStatusMessage('No valid vouchers found in selected rows');
+        setStatusError(true);
+        setIsSaving(false);
+        return;
+      }
+      
       const payload = {
         companyId: authUser?.CompId || 30,
         branchId: parseInt(authUser?.BranchId) || 16,
@@ -171,7 +209,7 @@ export default function Verification() {
         windowsUser: authUser?.name || authUser?.username || 'Unknown',
         vouchers,
       };
-      console.log('Payload to be sent:', payload);
+
       await confirmVouchers(payload);
 
       notifySaveSuccess(`Successfully verified ${selectedIds.length} journal(s)`);
@@ -311,30 +349,28 @@ export default function Verification() {
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
             onSortModelChange={setSortModel}
-            checkboxSelection
-            getRowId={(row) => row.cvoucherno}
-            selectionModel={selectedIds}
-            onRowSelectionModelChange={(selection) => {
-              let arr = Array.isArray(selection) ? selection : [selection];
-              arr = arr.map(String);
-              setSelectedIds(arr);
-              setSelectedJVNumbers(arr);
-            }}
+            checkboxSelection={false}
+            getRowId={(row) => row.uid}
             onRowClick={(params) => {
-              const rowVoucher = String(params.id);
-              // Select/deselect all rows with this voucher number
+              const clickedRow = params.row;
+              const rowVoucher = String(clickedRow.cvoucherno);
+              
+              // Find all rows with the same voucher number
               const sameVoucherRows = filteredJournals
                 .filter((j) => String(j.cvoucherno) === rowVoucher)
-                .map((j) => String(j.cvoucherno));
-              let arr = Array.isArray(selectedIds) ? selectedIds.map(String) : [String(selectedIds)];
-              const allSelected = sameVoucherRows.every((id) => arr.includes(id));
+                .map((j) => j.uid);
+              
+              let arr = Array.isArray(selectedIds) ? [...selectedIds] : [];
+              const allSelected = sameVoucherRows.every((uid) => arr.includes(uid));
+              
               if (allSelected) {
-                // Deselect all
-                arr = arr.filter((id) => !sameVoucherRows.includes(id));
+                // Deselect all with same voucher
+                arr = arr.filter((uid) => !sameVoucherRows.includes(uid));
               } else {
-                // Select all
+                // Select all with same voucher
                 arr = Array.from(new Set([...arr, ...sameVoucherRows]));
               }
+              
               setSelectedIds(arr);
               setSelectedJVNumbers(arr);
             }}
@@ -389,7 +425,30 @@ export default function Verification() {
       </Card>
 
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+        <Button
+          variant="outlined"
+          onClick={handleSelectAll}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+            textTransform: 'none',
+          }}
+        >
+          ✓ Select All Rows
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={handleClearSelection}
+          disabled={selectedIds.length === 0}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+            textTransform: 'none',
+          }}
+        >
+          ✕ Clear Selection
+        </Button>
         <Button
           variant="contained"
           color="primary"
