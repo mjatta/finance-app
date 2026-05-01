@@ -334,7 +334,7 @@ const depositsApiPlugin = () => ({
             const data = await backendRes.text()
             res.statusCode = backendRes.status
             res.end(data)
-          } catch (err) {
+          } catch {
             // Backend unreachable — fall back to local storage
             if (!body || typeof body !== 'object') {
               res.statusCode = 400
@@ -574,7 +574,7 @@ const withdrawalsApiPlugin = () => ({
             const data = await backendRes.text()
             res.statusCode = backendRes.status
             res.end(data)
-          } catch (err) {
+          } catch {
             // Backend unreachable — fall back to local storage
             if (!body || typeof body !== 'object') {
               res.statusCode = 400
