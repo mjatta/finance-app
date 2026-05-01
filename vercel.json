@@ -227,6 +227,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/loanreason"
     },
     {
+      "source": "/api/UnverifiedJournal/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/UnverifiedJournal/:path*"
+    },
+    {
       "source": "/api/unverified-journals/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/UnverifiedJournal/:path*"
     },
