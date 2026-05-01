@@ -247,6 +247,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount"
     },
     {
+      "source": "/api/loanRepayment/InsertLoanRepayment",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanRepayment/InsertLoanRepayment"
+    },
+    {
       "source": "/api/GLTransactions/transactions/:account*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },
