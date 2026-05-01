@@ -251,10 +251,6 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },
     {
-      "source": "/api/unverified-journals/:path*",
-      "destination": "https://alakuyateh-001-site10.atempurl.com/api/UnverifiedJournal/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
