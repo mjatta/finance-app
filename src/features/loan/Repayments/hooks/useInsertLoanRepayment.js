@@ -40,7 +40,7 @@ export function useInsertLoanRepayment() {
       });
       if (!resp.ok) throw new Error('Failed to save loan repayment');
       return await resp.json();
-    } catch (err) {
+    } catch {
       return null;
     }
   }, []);

@@ -19,7 +19,7 @@ export function useGetLoanRepaymentAccount() {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error('Failed to fetch loan repayment account');
       return await resp.json();
-    } catch (err) {
+    } catch {
       return null;
     }
   }, []);
