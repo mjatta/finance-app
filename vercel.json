@@ -239,10 +239,6 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Internaljournalaccounts/:path*"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    },
-    {
       "source": "/api/LoanRepayment/getLoanRepaymentAccount",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount"
     },
@@ -261,6 +257,11 @@
     {
       "source": "/api/loanRepayment/InsertLoanRepayment",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanRepayment/InsertLoanRepayment"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
+
   ]
 }
