@@ -173,22 +173,47 @@ export default function Repayments() {
 
   // Save repayment handler
   const handleSaveRepayment = async () => {
-    // Find selected loan account for ProductID
-    const selectedLoan = (formData.loanAccounts || []).find(
-      (acc) => acc.AccountNumber === formData.postingAccount
-    );
-    // Get user info from localStorage or state
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const parseLocalStorageJson = (key) => {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const appState = parseLocalStorageJson('State');
+    const stateUser = appState?.users || appState?.user || null;
+    const persistedAuth = parseLocalStorageJson('microfinance-auth');
+    const persistedUser = persistedAuth?.state?.user || null;
+    const legacyUser = parseLocalStorageJson('user') || {};
+
+    const resolvedUsername =
+      stateUser?.username ||
+      persistedUser?.username ||
+      legacyUser?.username ||
+      legacyUser?.UserName ||
+      '';
+
+    const resolvedBranchId =
+      stateUser?.BranchId ??
+      stateUser?.branchId ??
+      persistedUser?.BranchId ??
+      persistedUser?.branchId ??
+      legacyUser?.BranchId ??
+      legacyUser?.branchId ??
+      '';
+
     const payload = {
       accountNumber: formData.accountNumber,
-      productId: selectedLoan?.ProductID || '',
+      productId: formData.loanProductId,
       repaymentType: formData.repaymentType,
       repaymentAmount: formData.repaymentAmount,
       totalAccruedInterest: formData.totalAccruedInterest || 0,
       transactionDate: formData.transactionDate,
       checkNumber: formData.checkNumber,
-      username: user?.username || user?.UserName || '',
-      branchId: user?.BranchId || user?.branchId || '',
+      username: resolvedUsername,
+      branchId: resolvedBranchId,
     };
     const result = await insertLoanRepayment(payload);
     if (result) {
@@ -212,6 +237,7 @@ export default function Repayments() {
           loanAccounts: [],
           transactionDate: dayjs().format('YYYY-MM-DD'),
           repaymentAmount: '',
+          loanProductId: '',
           loanAmount: undefined,
           interest: undefined,
           repayment: undefined,
@@ -258,6 +284,7 @@ export default function Repayments() {
     loanAccounts: [],
     transactionDate: todayIso,
     repaymentAmount: '',
+    loanProductId: '',
     // comments: '',
     // Loan details
     loanAmount: undefined,
@@ -436,6 +463,7 @@ export default function Repayments() {
       unclearedBalance: '',
       transactionDate: todayIso,
       repaymentAmount: '',
+      loanProductId: '',
       comments: '',
     });
     setStatusMessage('');
@@ -481,6 +509,7 @@ export default function Repayments() {
             repayment: result.Loan?.Repayment ?? '',
             duration: result.Loan?.Duration ?? '',
             startDate: result.Loan?.StartDate || '',
+            loanProductId: result.Loan?.ProductID ?? '',
           }));
         }
         setLoadingAccountDetails(false);
@@ -689,7 +718,7 @@ export default function Repayments() {
                           Loan Amount:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.loanAmount !== undefined ? formatCurrency(formData.loanAmount) : 'N/A'}
+                          {formData.loanAmount !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.loanAmount)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -697,7 +726,7 @@ export default function Repayments() {
                           Interest:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.interest !== undefined ? `${formData.interest}%` : 'N/A'}
+                          {formData.interest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.interest)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -705,7 +734,7 @@ export default function Repayments() {
                           Repayment:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.repayment !== undefined ? formatCurrency(formData.repayment) : 'N/A'}
+                          {formData.repayment !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.repayment)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -721,7 +750,7 @@ export default function Repayments() {
                           Start Date:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.startDate || 'N/A'}
+                          {formData.startDate ? dayjs(formData.startDate).format('DD-MM-YYYY') : 'N/A'}
                         </Typography>
                       </Box>
                     </>
