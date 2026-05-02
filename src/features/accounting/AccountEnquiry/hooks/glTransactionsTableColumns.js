@@ -1,5 +1,6 @@
 // DataGrid columns for GL Transactions
 // For use with MUI DataGrid or similar table
+import dayjs from 'dayjs';
 
 export const glTransactionsTableColumns = [
   {
@@ -7,7 +8,14 @@ export const glTransactionsTableColumns = [
     headerName: 'Post Date',
     minWidth: 120,
     flex: 1,
-    valueGetter: (params) => params.row && params.row.PostDate ? new Date(params.row.PostDate).toLocaleDateString() : '',
+    valueGetter: (params) => (params.row && params.row.PostDate ? dayjs(params.row.PostDate).format('DD-MM-YYYY') : ''),
+  },
+  {
+    field: 'ValueDate',
+    headerName: 'Value Date',
+    minWidth: 120,
+    flex: 1,
+    valueGetter: (params) => (params.row && params.row.ValueDate ? dayjs(params.row.ValueDate).format('DD-MM-YYYY') : ''),
   },
   {
     field: 'Debit',

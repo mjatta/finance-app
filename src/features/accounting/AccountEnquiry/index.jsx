@@ -195,8 +195,18 @@ export default function AccountEnquiry() {
 // DEBUG: Show all fields as columns for troubleshooting
 const debugColumns = [
   { field: 'id', headerName: 'ID', minWidth: 50 },
-  { field: 'PostDate', headerName: 'Post Date', minWidth: 120 },
-  { field: 'ValueDate', headerName: 'Value Date', minWidth: 120 },
+  {
+    field: 'PostDate',
+    headerName: 'Post Date',
+    minWidth: 120,
+    valueGetter: (value) => (value ? dayjs(value).format('DD-MM-YYYY') : ''),
+  },
+  {
+    field: 'ValueDate',
+    headerName: 'Value Date',
+    minWidth: 120,
+    valueGetter: (value) => (value ? dayjs(value).format('DD-MM-YYYY') : ''),
+  },
   { field: 'Debit', headerName: 'Debit', minWidth: 100 },
   { field: 'Credit', headerName: 'Credit', minWidth: 100 },
   { field: 'NewBalance', headerName: 'New Balance', minWidth: 120 },
