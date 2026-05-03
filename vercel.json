@@ -275,6 +275,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/productsource"
     },
     {
+      "source": "/api/Product/insert",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Product/insert"
+    },
+    {
       "source": "/api/GLTransactions/transactions/:account*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },

@@ -1836,6 +1836,12 @@ export default defineConfig({
           changeOrigin: true,
           secure: false,
         },
+        // Proxy product insert endpoint to avoid CORS
+        '/api/Product/insert': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
     },
   },
 // (duplicate plugins array removed)

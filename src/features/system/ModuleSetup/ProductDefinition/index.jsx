@@ -21,6 +21,7 @@ import { useGetIncomeAccounts } from './hooks/useGetIncomeAccounts';
 import { useGetExpenseAccounts } from './hooks/useGetExpenseAccounts';
 import { useGetLiabilitiesAccounts } from './hooks/useGetLiabilitiesAccounts';
 import { useGetProductSource } from './hooks/useGetProductSource';
+import { useInsertProduct } from './hooks/useInsertProduct';
 
 export default function ProductDefinition() {
   const { accountTypes, loading: loadingTypes } = useGetAccountTypes();
@@ -28,6 +29,7 @@ export default function ProductDefinition() {
   const { expenseAccounts, loading: loadingExpenseAccounts } = useGetExpenseAccounts();
   const { liabilitiesAccounts, loading: loadingLiabilitiesAccounts } = useGetLiabilitiesAccounts();
   const { productSources, loading: loadingProductSources } = useGetProductSource();
+  const { insertProduct } = useInsertProduct();
 
   const initialForm = {
     mainCategory: '',
@@ -60,6 +62,7 @@ export default function ProductDefinition() {
 
   const selectedCategory = accountTypes.find((t) => t.adescrip === form.mainCategory);
   const selectedAdescrip = selectedCategory?.adescrip?.toUpperCase() || '';
+  const selectedCategoryCode = selectedCategory?.acode || '';
   const isLoan = selectedAdescrip.includes('LOAN');
   const isSavingOrShares = selectedAdescrip.includes('SAVING') || selectedAdescrip.includes('SHARE');
 
@@ -82,13 +85,14 @@ export default function ProductDefinition() {
     setIsSaving(true);
     setStatusMessage('');
     try {
-      // Placeholder: POST to product-definition endpoint
-      const response = await fetch('/api/product-definition', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const result = await insertProduct({
+        ...form,
+        mainCategoryCode: selectedCategoryCode,
+        productKind: isLoan ? 'loan' : isSavingOrShares ? 'saving' : 'other',
       });
-      if (!response.ok) throw new Error('Save failed');
+
+      if (!result) throw new Error('Save failed');
+
       setStatusMessage('Product definition saved successfully.');
       setStatusError(false);
       setForm(initialForm);
