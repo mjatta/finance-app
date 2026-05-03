@@ -55,6 +55,8 @@ export default function Repayments() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const cashierName = user?.name || user?.username || '-';
     const amount = receipt.Amount != null ? parseFloat(receipt.Amount).toFixed(2) : '0.00';
+    const principalPaid = receipt.PrincipalPaid != null ? parseFloat(receipt.PrincipalPaid).toFixed(2) : '0.00';
+    const interestPaid = receipt.InterestPaid != null ? parseFloat(receipt.InterestPaid).toFixed(2) : '0.00';
     receiptWindow.document.write(`
       <html>
         <head>
@@ -130,13 +132,16 @@ export default function Repayments() {
           <div class="section-header">Transaction Details</div>
           <hr class="divider" />
           <div class="row">
+            <span class="label">Principal Paid</span>
+            <span class="value">${principalPaid}</span>
+          </div>
+          <div class="row">
+            <span class="label">Interest Paid</span>
+            <span class="value">${interestPaid}</span>
+          </div>
+          <div class="row">
             <span class="label">Repayment</span>
             <span class="value">${amount}</span>
-          </div>
-          <hr class="divider" />
-          <div class="total-row">
-            <span>Total</span>
-            <span>${amount}</span>
           </div>
           <hr class="divider-double" />
           <div class="sig-section">
@@ -220,7 +225,12 @@ export default function Repayments() {
       setStatusMessage('Repayment saved successfully!');
       setStatusError(false);
       if (result.Receipt) {
-        setLastReceipt(result.Receipt);
+        const receiptWithDetails = {
+          ...result.Receipt,
+          PrincipalPaid: result.res?.PrincipalPaid || 0,
+          InterestPaid: result.res?.InterestPaid || 0,
+        };
+        setLastReceipt(receiptWithDetails);
         if (printReceipt) {
           shouldAutoPrint.current = true;
         }
@@ -745,11 +755,11 @@ export default function Repayments() {
                           {formData.loanBalance !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.loanBalance)}` : 'N/A'}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderRadius: 1, border: '2px solid', borderColor: '#ff9800', backgroundColor: '#fff3e0' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#e65100', minWidth: '110px' }}>
                           Calculated Interest:
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#e65100', fontSize: '0.95rem' }}>
                           {formData.calculatedInterest !== undefined ? `${CURRENCY_SYMBOL} ${parseFloat(formData.calculatedInterest).toFixed(2)}` : 'N/A'}
                         </Typography>
                       </Box>
