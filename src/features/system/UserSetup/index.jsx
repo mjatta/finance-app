@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -15,7 +16,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-import { useCreateUser } from './hooks/useCreateUser';
+import { useAddUser } from './Hooks/useAddUser';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
@@ -36,6 +37,22 @@ const featureLabelMap = {
 };
 
 const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(0).toUpperCase() + feature.slice(1);
+
+const upsertByKey = (rows, nextRow, key) => {
+  const nextKey = nextRow?.[key];
+  if (!nextKey) {
+    return [nextRow, ...rows];
+  }
+
+  const existingIndex = rows.findIndex((row) => row?.[key] === nextKey);
+  if (existingIndex === -1) {
+    return [nextRow, ...rows];
+  }
+
+  const updated = [...rows];
+  updated[existingIndex] = nextRow;
+  return updated;
+};
 
 const defaultFeaturePermissions = {
   member: 'hide feature',
@@ -122,7 +139,7 @@ export default function UserSetup({ user }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isSavingRole, setIsSavingRole] = useState(false);
-  const { createUser } = useCreateUser();
+  const { addUser } = useAddUser();
 
   const [userForm, setUserForm] = useState({
     companyName: 'Social Development Fund',
@@ -157,6 +174,10 @@ export default function UserSetup({ user }) {
   const canSaveRole = useMemo(
     () => roleForm.roleName.trim().length > 0,
     [roleForm],
+  );
+  const canSaveAll = useMemo(
+    () => canSave && canSaveRole,
+    [canSave, canSaveRole],
   );
   const availableBranches = useMemo(() => {
     if (remoteBranchesLoaded) return branches;
@@ -366,49 +387,104 @@ export default function UserSetup({ user }) {
     setStatusMessage(`Editing user: ${userRecord?.userName || userRecord?.userId || '-'}`);
   };
 
-  const handleSaveUser = async () => {
-    if (!canSave || isReadOnlyRole) {
+  const handleSaveAll = async () => {
+    if (!canSaveAll || isReadOnlyRole) {
       if (!userForm.baseRole) {
         setStatusMessage('Please assign a role before saving the user.');
+      } else if (!canSaveRole) {
+        setStatusMessage('Please complete the user role details before saving.');
       }
       return;
     }
 
     setIsSavingUser(true);
+    setIsSavingRole(true);
     setStatusMessage('');
 
     try {
-      // Call the backend API to create the user
-      const result = await createUser(userForm, rawBranchesData);
+      const rolePayload = {
+        roleName: roleForm.roleName.trim(),
+        roleDescription: roleForm.roleDescription.trim(),
+        featurePermissions: roleForm.featurePermissions || {},
+        pagePermissions: roleForm.pagePermissions || {},
+      };
+
+      // Call the backend API to create the user with role permissions
+      const result = await addUser({
+        userForm,
+        roleForm,
+        branchesData: rawBranchesData,
+      });
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create user.');
       }
 
-      // Also persist locally via middleware
-      const url = getFullApiUrl('/api/user-setup');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companies,
-          branches,
-          companyBranches,
-          user: { ...userForm, createdAt: new Date().toISOString() },
-        }),
-      });
+      const payload = result.data;
+      const responseUsers = Array.isArray(payload?.users) ? payload.users : null;
+      const responseRoles = Array.isArray(payload?.roles) ? payload.roles : null;
 
-      if (!response.ok) throw new Error('Failed to save user setup.');
+      const responseUserRecord = payload?.user || payload?.User || payload?.data?.user || payload?.data?.User || null;
+      const responseRoleRecord = payload?.role || payload?.Role || payload?.data?.role || payload?.data?.Role || null;
 
-      const payload = await response.json();
+      const nextUserRecord = responseUserRecord
+        ? {
+            companyName: userForm.companyName,
+            branch: userForm.branch,
+            staffNumber: responseUserRecord?.Staffno || responseUserRecord?.staffNumber || userForm.staffNumber,
+            userId: responseUserRecord?.ExternalId || responseUserRecord?.userId || userForm.userId,
+            userName: responseUserRecord?.Username || responseUserRecord?.userName || userForm.userName,
+            temporaryPassword: userForm.temporaryPassword,
+            baseRole: responseUserRecord?.Role || responseUserRecord?.role || rolePayload.roleName || userForm.baseRole,
+            cashAccount: responseUserRecord?.Cashaccont || responseUserRecord?.cashAccount || userForm.cashAccount,
+            userType: userForm.userType,
+            debitMit: responseUserRecord?.Debtlimitamt ?? responseUserRecord?.debtMit ?? userForm.debitMit,
+            creditLimit: responseUserRecord?.Credlimitamt ?? responseUserRecord?.creditLimit ?? userForm.creditLimit,
+            loanLimit: responseUserRecord?.Loanlimitamt ?? responseUserRecord?.loanLimit ?? userForm.loanLimit,
+            loanApprovalLimit: Boolean(userForm.loanApprovalLimit),
+            disableUser: Boolean(userForm.disableUser),
+            resetPassword: Boolean(userForm.resetPassword),
+          }
+        : {
+            ...userForm,
+            baseRole: rolePayload.roleName || userForm.baseRole,
+          };
 
-      if (Array.isArray(payload?.users)) setSavedUsers(payload.users);
-      if (Array.isArray(payload?.companies) && payload.companies.length > 0) setCompanies(payload.companies);
-      if (Array.isArray(payload?.branches) && payload.branches.length > 0) setBranches(payload.branches);
-      if (Array.isArray(payload?.companyBranches)) setCompanyBranches(payload.companyBranches);
-      if (Array.isArray(payload?.roles)) setSavedRoles(payload.roles);
+      const nextRoleRecord = responseRoleRecord
+        ? {
+            roleName: responseRoleRecord?.Role || responseRoleRecord?.roleName || rolePayload.roleName,
+            roleDescription: responseRoleRecord?.roleDescription || rolePayload.roleDescription,
+            featurePermissions: responseRoleRecord?.FeaturePermissions || responseRoleRecord?.featurePermissions || rolePayload.featurePermissions,
+            pagePermissions: responseRoleRecord?.PagePermissions || responseRoleRecord?.pagePermissions || rolePayload.pagePermissions,
+          }
+        : rolePayload;
 
-      setStatusMessage('User setup saved successfully.');
+      if (responseUsers) {
+        setSavedUsers(responseUsers);
+      } else {
+        setSavedUsers((prev) => upsertByKey(prev, nextUserRecord, 'userId'));
+      }
+
+      if (responseRoles) {
+        setSavedRoles(responseRoles);
+      } else {
+        setSavedRoles((prev) => upsertByKey(prev, nextRoleRecord, 'roleName'));
+      }
+
+      setCompanies((prev) => (prev.includes(userForm.companyName) ? prev : [...prev, userForm.companyName]));
+      if (userForm.branch) {
+        setBranches((prev) => (prev.includes(userForm.branch) ? prev : [...prev, userForm.branch]));
+        setCompanyBranches((prev) => {
+          const exists = prev.some(
+            (item) => item.companyName === userForm.companyName && item.branchName === userForm.branch,
+          );
+          return exists ? prev : [...prev, { companyName: userForm.companyName, branchName: userForm.branch }];
+        });
+      }
+
+      setBaseRoles((prev) => Array.from(new Set([...prev, rolePayload.roleName])));
+
+      setStatusMessage('User setup and role saved successfully.');
       setEditingUserId(userForm.userId || '');
       setUserForm((prev) => ({
         ...prev,
@@ -425,80 +501,29 @@ export default function UserSetup({ user }) {
         disableUser: false,
         resetPassword: false,
       }));
-      setEditingUserId('');
-      notifySaveSuccess({
-        page: 'System Administration / User Setup',
-        action: 'Save User Setup',
-        message: 'User setup saved successfully.',
-      });
-    } catch (error) {
-      setStatusMessage('Unable to save user setup data.');
-      notifySaveError({
-        page: 'System Administration / User Setup',
-        action: 'Save User Setup',
-        message: 'Unable to save user setup data.',
-        error,
-      });
-    } finally {
-      setIsSavingUser(false);
-    }
-  };
-
-  const handleSaveRole = async () => {
-    if (!canSaveRole || isReadOnlyRole) {
-      return;
-    }
-
-    setIsSavingRole(true);
-    setStatusMessage('');
-
-    try {
-      const rolePayload = {
-        roleName: roleForm.roleName.trim(),
-        roleDescription: roleForm.roleDescription.trim(),
-        featurePermissions: roleForm.featurePermissions || {},
-        pagePermissions: roleForm.pagePermissions || {},
-      };
-
-      // Use relative path for consistency with middleware
-      const url = getFullApiUrl('/api/user-setup');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: rolePayload }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save role setup.');
-
-      const payload = await response.json();
-      if (Array.isArray(payload?.roles)) {
-        setSavedRoles(payload.roles);
-      }
-
-      setBaseRoles((prev) => Array.from(new Set([...prev, rolePayload.roleName])));
-      setEditingRoleName(rolePayload.roleName);
       setRoleForm({
         roleName: '',
         roleDescription: '',
         featurePermissions: defaultFeaturePermissions,
         pagePermissions: {},
       });
+      setEditingUserId('');
       setEditingRoleName('');
-      setStatusMessage('User role saved successfully.');
       notifySaveSuccess({
         page: 'System Administration / User Setup',
-        action: 'Save User Role',
-        message: 'User role saved successfully.',
+        action: 'Save User Setup And Role',
+        message: 'User setup and role saved successfully.',
       });
     } catch (error) {
-      setStatusMessage('Unable to save user role data.');
+      setStatusMessage('Unable to save user setup and role data.');
       notifySaveError({
         page: 'System Administration / User Setup',
-        action: 'Save User Role',
-        message: 'Unable to save user role data.',
+        action: 'Save User Setup And Role',
+        message: 'Unable to save user setup and role data.',
         error,
       });
     } finally {
+      setIsSavingUser(false);
       setIsSavingRole(false);
     }
   };
@@ -584,240 +609,192 @@ export default function UserSetup({ user }) {
   );
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        User Setup
-      </Typography>
+    <Box component="fieldset" sx={{ border: 'none', p: 3, m: 0 }}>
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          User Setup
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Create users, assign roles, and manage access across the system
+        </Typography>
+      </Box>
 
       {isReadOnlyRole && (
-        <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontWeight: 700 }}>
+        <Alert severity="warning" sx={{ mb: 2, fontWeight: 700 }}>
           Read-only access: you can view fields, but cannot save user setup.
-        </Typography>
+        </Alert>
       )}
 
       {statusMessage && (
-        <Typography
-          variant="body2"
-          color={statusMessage.startsWith('Unable') ? 'error.main' : 'success.main'}
-          sx={{ mb: 2, fontWeight: 700 }}
+        <Alert
+          severity={statusMessage.startsWith('Unable') ? 'error' : 'success'}
+          sx={{ mb: 2, '& .MuiAlert-message': { fontWeight: 700 } }}
         >
           {statusMessage}
-        </Typography>
+        </Alert>
       )}
 
       <Box
         {...(isReadOnlyRole ? { inert: '' } : {})}
         sx={{ p: 0, m: 0, opacity: isReadOnlyRole ? 0.55 : 1 }}
       >
-        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
-              USER SETUP
-            </Typography>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, alignItems: 'start' }}>
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: editingUserId ? 'warning.main' : 'divider', bgcolor: editingUserId ? 'rgba(255, 193, 7, 0.05)' : 'background.paper' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                {editingUserId ? `Edit User: ${editingUserId}` : 'User Details'}
+              </Typography>
+              {editingUserId && (
+                <Typography variant="caption" color="warning.main" sx={{ display: 'block', mb: 2, fontWeight: 700 }}>
+                  Editing existing user setup
+                </Typography>
+              )}
 
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-                gap: 2.5,
-                '& .MuiInputLabel-root': {
-                  fontWeight: 700,
-                },
-                '& .MuiFormControlLabel-label': {
-                  fontWeight: 700,
-                },
-              }}
-            >
-              <TextField
-                select
-                label="Company name"
-                name="companyName"
-                value={userForm.companyName}
-                onChange={handleUserFormChange}
-                disabled
-              >
-                {companies.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                select
-                label="Branch"
-                name="branch"
-                value={userForm.branch}
-                onChange={handleUserFormChange}
-                SelectProps={{
-                  displayEmpty: true,
-                  renderValue: (selected) => selected || 'Select a Branch',
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                  gap: 2.5,
+                  '& .MuiInputLabel-root': {
+                    fontWeight: 700,
+                  },
+                  '& .MuiFormControlLabel-label': {
+                    fontWeight: 700,
+                  },
                 }}
               >
-                <MenuItem value="" disabled>
-                  Select a Branch
-                </MenuItem>
-                {availableBranches.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Staff number"
-                name="staffNumber"
-                value={userForm.staffNumber}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                label="User id"
-                name="userId"
-                value={userForm.userId}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                label="User name"
-                name="userName"
-                value={userForm.userName}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                label="Temporary password"
-                name="temporaryPassword"
-                value={userForm.temporaryPassword}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                select
-                label="Assign role"
-                name="baseRole"
-                value={userForm.baseRole}
-                onChange={handleUserFormChange}
-                required
-                helperText={!userForm.baseRole ? 'Role is required for new user setup' : 'Selected role determines user permissions'}
-              >
-                {baseRoles.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Cash account"
-                name="cashAccount"
-                value={userForm.cashAccount}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                select
-                label="User type"
-                name="userType"
-                value={userForm.userType}
-                onChange={handleUserFormChange}
-              >
-                <MenuItem value="maker">Maker</MenuItem>
-                <MenuItem value="checker">Checker</MenuItem>
-                <MenuItem value="approver">Approver</MenuItem>
-                <MenuItem value="viewer">Viewer</MenuItem>
-              </TextField>
-              <TextField
-                label="Debit Limit"
-                name="debitMit"
-                value={userForm.debitMit}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                label="Credit limit"
-                name="creditLimit"
-                value={userForm.creditLimit}
-                onChange={handleUserFormChange}
-              />
-              <TextField
-                label="Loan limit"
-                name="loanLimit"
-                value={userForm.loanLimit}
-                onChange={handleUserFormChange}
-              />
-
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
-                <FormControlLabel
-                  control={<Checkbox name="loanApprovalLimit" checked={userForm.loanApprovalLimit} onChange={handleUserFormChange} />}
-                  label="Loan approval limit"
-                />
-                <FormControlLabel
-                  control={<Checkbox name="disableUser" checked={userForm.disableUser} onChange={handleUserFormChange} />}
-                  label="Disable user"
-                />
-                <FormControlLabel
-                  control={<Checkbox name="resetPassword" checked={userForm.resetPassword} onChange={handleUserFormChange} />}
-                  label="Reset password"
-                />
-              </Box>
-            </Box>
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                onClick={handleSaveUser}
-                disabled={!canSave || isSavingUser}
-              >
-                {isSavingUser ? 'Saving...' : editingUserId ? 'Update user setup' : 'Save user setup'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: editingRoleName ? 'warning.main' : 'divider', bgcolor: editingRoleName ? 'rgba(255, 193, 7, 0.05)' : 'transparent' }}>
-          <CardContent>
-            <Box
-              onClick={() => setShowCreateUserRoles((prev) => !prev)}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: showCreateUserRoles ? 2 : 0,
-                cursor: 'pointer',
-                borderRadius: 1,
-                px: 0.5,
-              }}
-            >
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {editingRoleName ? `EDIT USER ROLE: ${editingRoleName}` : 'CREATE USER ROLES'}
-                </Typography>
-                {editingRoleName && (
-                  <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
-                    Editing existing role • Click Save to update
-                  </Typography>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {showCreateUserRoles ? 'Collapse' : 'Expand'}
-                </Typography>
-                <IconButton
+                <TextField
+                  select
+                  label="Company name"
+                  name="companyName"
+                  value={userForm.companyName}
+                  onChange={handleUserFormChange}
+                  disabled
                   size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowCreateUserRoles((prev) => !prev);
+                  fullWidth
+                >
+                  {companies.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  label="Branch"
+                  name="branch"
+                  value={userForm.branch}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => selected || 'Select a Branch',
                   }}
                 >
-                  <ExpandMoreIcon
-                    fontSize="small"
-                    sx={{ transform: showCreateUserRoles ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
-                  />
-                </IconButton>
-              </Box>
-            </Box>
+                  <MenuItem value="" disabled>
+                    Select a Branch
+                  </MenuItem>
+                  {availableBranches.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
 
-            {showCreateUserRoles && (
-              <>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField label="Staff number" name="staffNumber" value={userForm.staffNumber} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="User id" name="userId" value={userForm.userId} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="User name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Temporary password" name="temporaryPassword" value={userForm.temporaryPassword} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField
+                  select
+                  label="Assign role"
+                  name="baseRole"
+                  value={userForm.baseRole}
+                  onChange={handleUserFormChange}
+                  required
+                  size="small"
+                  fullWidth
+                  helperText={!userForm.baseRole ? 'Role is required for new user setup' : 'Selected role determines user permissions'}
+                >
+                  {baseRoles.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField label="Cash account" name="cashAccount" value={userForm.cashAccount} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField select label="User type" name="userType" value={userForm.userType} onChange={handleUserFormChange} size="small" fullWidth>
+                  <MenuItem value="maker">Maker</MenuItem>
+                  <MenuItem value="checker">Checker</MenuItem>
+                  <MenuItem value="approver">Approver</MenuItem>
+                  <MenuItem value="viewer">Viewer</MenuItem>
+                </TextField>
+                <TextField label="Debit Limit" name="debitMit" value={userForm.debitMit} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Credit limit" name="creditLimit" value={userForm.creditLimit} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Loan limit" name="loanLimit" value={userForm.loanLimit} onChange={handleUserFormChange} size="small" fullWidth />
+
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', gridColumn: { xs: '1 / -1', md: '1 / -1' }, pt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <FormControlLabel control={<Checkbox name="loanApprovalLimit" checked={userForm.loanApprovalLimit} onChange={handleUserFormChange} />} label="Loan approval limit" />
+                  <FormControlLabel control={<Checkbox name="disableUser" checked={userForm.disableUser} onChange={handleUserFormChange} />} label="Disable user" />
+                  <FormControlLabel control={<Checkbox name="resetPassword" checked={userForm.resetPassword} onChange={handleUserFormChange} />} label="Reset password" />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: editingRoleName ? 'warning.main' : 'divider', bgcolor: editingRoleName ? 'rgba(255, 193, 7, 0.05)' : 'background.paper' }}>
+            <CardContent>
+              <Box
+                onClick={() => setShowCreateUserRoles((prev) => !prev)}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: showCreateUserRoles ? 2 : 0,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                }}
+              >
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                    {editingRoleName ? `Edit User Role: ${editingRoleName}` : 'User Roles'}
+                  </Typography>
+                  {editingRoleName && (
+                    <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.75, fontWeight: 700 }}>
+                      Editing existing role • Click save to update
+                    </Typography>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {showCreateUserRoles ? 'Collapse' : 'Expand'}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateUserRoles((prev) => !prev);
+                    }}
+                  >
+                    <ExpandMoreIcon
+                      fontSize="small"
+                      sx={{ transform: showCreateUserRoles ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
+                    />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {showCreateUserRoles && (
+                <>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <TextField
                     label="Role name"
                     name="roleName"
                     value={roleForm.roleName}
                     onChange={handleRoleFormChange}
+                    size="small"
                     sx={{ flex: '1 1 240px', minWidth: 220 }}
                   />
                   <TextField
@@ -825,6 +802,7 @@ export default function UserSetup({ user }) {
                     name="roleDescription"
                     value={roleForm.roleDescription}
                     onChange={handleRoleFormChange}
+                    size="small"
                     sx={{ flex: '1 1 320px', minWidth: 260 }}
                   />
                   <Box sx={{ width: '100%' }}>
@@ -877,14 +855,7 @@ export default function UserSetup({ user }) {
                     </Box>
                   </Box>
                 </Box>
-                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleSaveRole}
-                    disabled={!canSaveRole || isSavingRole}
-                  >
-                    {isSavingRole ? 'Saving...' : editingRoleName ? 'Update user role' : 'Save user role'}
-                  </Button>
+                  <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
                   {editingRoleName && (
                     <Button
                       variant="outlined"
@@ -898,17 +869,30 @@ export default function UserSetup({ user }) {
                         });
                         setStatusMessage('');
                       }}
+                      sx={{ fontWeight: 600, textTransform: 'none' }}
                     >
                       Clear Edit
                     </Button>
                   )}
-                </Box>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                  </Box>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
 
-        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ mt: 2, display: 'flex', gap: 1.5, justifyContent: 'flex-start' }}>
+          <Button
+            variant="contained"
+            onClick={handleSaveAll}
+            disabled={!canSaveAll || isSavingUser || isSavingRole}
+            sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+          >
+            {isSavingUser || isSavingRole ? 'Saving...' : editingUserId || editingRoleName ? 'Update user setup' : 'Save user setup'}
+          </Button>
+        </Box>
+
+        <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Box
               onClick={() => setShowSavedRoles((prev) => !prev)}
@@ -922,8 +906,8 @@ export default function UserSetup({ user }) {
                 px: 0.5,
               }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Saved user roles
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                Saved User Roles
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -944,7 +928,7 @@ export default function UserSetup({ user }) {
               </Box>
             </Box>
             {showSavedRoles && (
-              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                 <DataGrid
                   rows={savedRoleRows}
                   columns={savedRoleColumns}
@@ -994,8 +978,8 @@ export default function UserSetup({ user }) {
                 px: 0.5,
               }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                SAVED USERS
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                Saved Users
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -1016,7 +1000,7 @@ export default function UserSetup({ user }) {
               </Box>
             </Box>
             {showSavedUsers && (
-              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                 <DataGrid
                   rows={savedUserRows}
                   columns={savedUserColumns}
