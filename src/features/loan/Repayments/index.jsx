@@ -750,7 +750,7 @@ export default function Repayments() {
                           Calculated Interest:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.calculatedInterest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.calculatedInterest)}` : 'N/A'}
+                          {formData.calculatedInterest !== undefined ? `${CURRENCY_SYMBOL} ${parseFloat(formData.calculatedInterest).toFixed(2)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -766,7 +766,7 @@ export default function Repayments() {
                           Total Accrued:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.totalAccruedInterest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.totalAccruedInterest)}` : 'N/A'}
+                          {formData.totalAccruedInterest !== undefined ? `${CURRENCY_SYMBOL} ${parseFloat(formData.totalAccruedInterest).toFixed(2)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
