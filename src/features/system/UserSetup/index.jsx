@@ -16,7 +16,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-import { useAddUser } from './Hooks/useAddUser';
+import { useAddUser } from './hooks/useAddUser';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
