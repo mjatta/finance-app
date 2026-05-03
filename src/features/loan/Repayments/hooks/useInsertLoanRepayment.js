@@ -29,7 +29,6 @@ export function useInsertLoanRepayment() {
         TranDate: params.transactionDate,
         ChequeNo: params.checkNumber || '',
         cUserID: params.username,
-        lcurrcode: 1,
         lbranchid: params.branchId,
         llcBank: 0,
       };

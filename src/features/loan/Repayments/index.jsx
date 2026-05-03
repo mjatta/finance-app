@@ -238,8 +238,10 @@ export default function Repayments() {
           transactionDate: dayjs().format('YYYY-MM-DD'),
           repaymentAmount: '',
           loanProductId: '',
-          loanAmount: undefined,
-          interest: undefined,
+          loanBalance: undefined,
+          calculatedInterest: undefined,
+          storedAccruedInterest: undefined,
+          totalAccruedInterest: 0,
           repayment: undefined,
           duration: undefined,
           startDate: undefined,
@@ -285,10 +287,12 @@ export default function Repayments() {
     transactionDate: todayIso,
     repaymentAmount: '',
     loanProductId: '',
+    loanBalance: undefined,
+    calculatedInterest: undefined,
+    storedAccruedInterest: undefined,
+    totalAccruedInterest: 0,
     // comments: '',
     // Loan details
-    loanAmount: undefined,
-    interest: undefined,
     repayment: undefined,
     duration: undefined,
     startDate: undefined,
@@ -383,11 +387,22 @@ export default function Repayments() {
         const data = await resp.json();
         setFormData((prev) => ({
           ...prev,
-          loanAmount: data.LoanAmount,
-          interest: data.Interest,
-          repayment: data.Repayment,
-          duration: data.Duration,
-          startDate: data.StartDate,
+          accountNumber: data.AccountNumber || '',
+          customerCode: data.CustomerCode || '',
+          bookBalance: data.Details?.BookBalance ?? '',
+          unclearedBalance: data.Details?.UnclearedBalance ?? '',
+          clearedBalance: data.Details?.ClearedBalance ?? '',
+          controlAccount: data.Details?.ControlAccount || '',
+          interestAccount: data.Details?.InterestAccount || '',
+          badDebtAccount: data.Details?.BadDebtAccount || '',
+          loanBalance: data.AccruedInterest?.LoanBalance ?? '',
+          calculatedInterest: data.AccruedInterest?.CalculatedInterest ?? '',
+          storedAccruedInterest: data.AccruedInterest?.StoredAccruedInterest ?? '',
+          repayment: data.Loan?.Repayment ?? '',
+          duration: data.Loan?.Duration ?? '',
+          startDate: data.Loan?.StartDate || '',
+          loanProductId: data.Loan?.ProductID ?? '',
+          totalAccruedInterest: data.AccruedInterest?.TotalAccruedInterest ?? 0,
         }));
       } finally {
         setLoadingAccountDetails(false);
@@ -464,6 +479,10 @@ export default function Repayments() {
       transactionDate: todayIso,
       repaymentAmount: '',
       loanProductId: '',
+      loanBalance: undefined,
+      calculatedInterest: undefined,
+      storedAccruedInterest: undefined,
+      totalAccruedInterest: 0,
       comments: '',
     });
     setStatusMessage('');
@@ -504,12 +523,14 @@ export default function Repayments() {
             controlAccount: result.Details?.ControlAccount || '',
             interestAccount: result.Details?.InterestAccount || '',
             badDebtAccount: result.Details?.BadDebtAccount || '',
-            loanAmount: result.Loan?.LoanAmount ?? '',
-            interest: result.Loan?.Interest ?? '',
+            loanBalance: result.AccruedInterest?.LoanBalance ?? '',
+            calculatedInterest: result.AccruedInterest?.CalculatedInterest ?? '',
+            storedAccruedInterest: result.AccruedInterest?.StoredAccruedInterest ?? '',
             repayment: result.Loan?.Repayment ?? '',
             duration: result.Loan?.Duration ?? '',
             startDate: result.Loan?.StartDate || '',
             loanProductId: result.Loan?.ProductID ?? '',
+            totalAccruedInterest: result.AccruedInterest?.TotalAccruedInterest ?? 0,
           }));
         }
         setLoadingAccountDetails(false);
@@ -694,9 +715,12 @@ export default function Repayments() {
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                   Loan Details
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                   {loadingAccountDetails ? (
                     <>
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
+                      <Skeleton variant="rounded" height={30} />
                       <Skeleton variant="rounded" height={30} />
                       <Skeleton variant="rounded" height={30} />
                       <Skeleton variant="rounded" height={30} />
@@ -706,7 +730,7 @@ export default function Repayments() {
                   ) : (
                     <>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
                           Account Number:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
@@ -714,23 +738,39 @@ export default function Repayments() {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                          Loan Amount:
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                          Loan Balance:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.loanAmount !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.loanAmount)}` : 'N/A'}
+                          {formData.loanBalance !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.loanBalance)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                          Interest:
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                          Calculated Interest:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                          {formData.interest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.interest)}` : 'N/A'}
+                          {formData.calculatedInterest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.calculatedInterest)}` : 'N/A'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                          Accrued Interest:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.storedAccruedInterest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.storedAccruedInterest)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                          Total Accrued:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {formData.totalAccruedInterest !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.totalAccruedInterest)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
                           Repayment:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
@@ -738,7 +778,7 @@ export default function Repayments() {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
                           Duration:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
@@ -746,7 +786,7 @@ export default function Repayments() {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
                           Start Date:
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
@@ -801,7 +841,7 @@ export default function Repayments() {
 
             {/* Repayment Type Details Card - moved below Loan Details */}
             {(formData.repaymentType === 'cash' || formData.repaymentType === 'cheque' || formData.repaymentType === 'bank') && (
-              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%', mt: 2 }}>
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                 <CardContent>
                   <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
                     {formData.repaymentType === 'cash'
@@ -810,7 +850,7 @@ export default function Repayments() {
                         ? 'Check Details'
                         : 'Bank Details'}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr' } }}>
                     {formData.repaymentType === 'cash' && (
                       <>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
