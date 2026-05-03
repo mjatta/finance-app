@@ -255,6 +255,26 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanRepayment/InsertLoanRepayment"
     },
     {
+      "source": "/api/Setup/accounttypes",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounttypes"
+    },
+    {
+      "source": "/api/Setup/accounts/income",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounts/income"
+    },
+    {
+      "source": "/api/Setup/accounts/expense",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounts/expense"
+    },
+    {
+      "source": "/api/Setup/accounts/liabilities",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounts/liabilities"
+    },
+    {
+      "source": "/api/Setup/productsource",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/productsource"
+    },
+    {
       "source": "/api/GLTransactions/transactions/:account*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },

@@ -1806,6 +1806,36 @@ export default defineConfig({
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/LoanRepayment\/getLoanRepaymentAccount/, '/api/LoanRepayment/getLoanRepaymentAccount'),
         },
+        // Proxy setup account types endpoint to avoid CORS
+        '/api/Setup/accounttypes': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
+        // Proxy setup income accounts endpoint to avoid CORS
+        '/api/Setup/accounts/income': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
+        // Proxy setup expense accounts endpoint to avoid CORS
+        '/api/Setup/accounts/expense': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
+        // Proxy setup liabilities accounts endpoint to avoid CORS
+        '/api/Setup/accounts/liabilities': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
+        // Proxy setup product source endpoint to avoid CORS
+        '/api/Setup/productsource': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
     },
   },
 // (duplicate plugins array removed)
