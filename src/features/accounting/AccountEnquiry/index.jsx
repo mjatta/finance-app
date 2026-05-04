@@ -59,13 +59,85 @@ export default function AccountEnquiry() {
     setToDate('');
   };
 
+  const handlePrintTransactions = () => {
+    const rows = Array.isArray(filteredResults) ? filteredResults : [];
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+    if (!printWindow) return;
+
+    const tableRows = rows.map((row) => `
+      <tr>
+        <td>${row.PostDate ? dayjs(row.PostDate).format('DD-MM-YYYY') : ''}</td>
+        <td>${row.ValueDate ? dayjs(row.ValueDate).format('DD-MM-YYYY') : ''}</td>
+        <td>${row.Debit ?? ''}</td>
+        <td>${row.Credit ?? ''}</td>
+        <td>${row.NewBalance ?? ''}</td>
+        <td>${row.Description ?? ''}</td>
+        <td>${row.ChequeNo ?? ''}</td>
+        <td>${row.UserId ?? ''}</td>
+        <td>${row.VoucherNo ?? ''}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>GL Transactions Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+            h1 { margin: 0 0 8px; font-size: 22px; }
+            p { margin: 0 0 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; text-align: left; }
+            th { background: #f1f5f9; font-weight: 700; }
+            .meta { margin-top: 8px; color: #475569; }
+          </style>
+        </head>
+        <body>
+          <h1>GL Transactions Report</h1>
+          <p class="meta">Account Number: ${accountNumber || '-'}</p>
+          <p class="meta">From: ${fromDate || '-'} | To: ${toDate || '-'}</p>
+          <p class="meta">Generated: ${dayjs().format('DD-MM-YYYY HH:mm:ss')}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Post Date</th>
+                <th>Value Date</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>New Balance</th>
+                <th>Description</th>
+                <th>Cheque No</th>
+                <th>User ID</th>
+                <th>Voucher No</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows || '<tr><td colspan="9">No transactions found.</td></tr>'}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, color: '#2c3e50', mb: 3 }}>
-        GL Account Enquiry
-      </Typography>
+      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <CardContent>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
+            GL Account Enquiry
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>
+            Search and review general ledger transactions
+          </Typography>
+        </CardContent>
+      </Card>
 
-      <Box sx={{ display: 'grid', gap: 3, maxWidth: '75%' }}>
+      <Box sx={{ display: 'grid', gap: 3, width: '100%' }}>
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
@@ -127,32 +199,93 @@ export default function AccountEnquiry() {
         </Card>
 
         {/* Results Table - always show for better UX and debugging */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
-              GL Transactions
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 300 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
+                  GL Transactions
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
               <DatePicker
                 label="From Date"
                 value={fromDate ? dayjs(fromDate) : null}
                 onChange={date => setFromDate(date ? date.format('YYYY-MM-DD') : '')}
-                slotProps={{ textField: { size: 'small', sx: { width: 180 } } }}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    sx: {
+                      width: 180,
+                      '& .MuiOutlinedInput-root': {
+                        color: 'primary.contrastText',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.8)' },
+                      },
+                      '& .MuiOutlinedInput-input': { color: 'primary.contrastText' },
+                      '& label': { color: 'rgba(255, 255, 255, 0.8)' },
+                      '& .MuiSvgIcon-root': { color: 'primary.contrastText' },
+                    },
+                  },
+                }}
               />
               <DatePicker
                 label="To Date"
                 value={toDate ? dayjs(toDate) : null}
                 onChange={date => setToDate(date ? date.format('YYYY-MM-DD') : '')}
-                slotProps={{ textField: { size: 'small', sx: { width: 180 } } }}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    sx: {
+                      width: 180,
+                      '& .MuiOutlinedInput-root': {
+                        color: 'primary.contrastText',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.8)' },
+                      },
+                      '& .MuiOutlinedInput-input': { color: 'primary.contrastText' },
+                      '& label': { color: 'rgba(255, 255, 255, 0.8)' },
+                      '& .MuiSvgIcon-root': { color: 'primary.contrastText' },
+                    },
+                  },
+                }}
               />
               <Button
                 variant="outlined"
                 onClick={handleClearFilter}
-                sx={{ fontWeight: 600, textTransform: 'none' }}
+                sx={{
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.contrastText',
+                  '&:hover': {
+                    borderColor: 'primary.contrastText',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
               >
                 Clear Filter
               </Button>
+              </Box>
+              <Button
+                variant="outlined"
+                onClick={handlePrintTransactions}
+                disabled={!Array.isArray(filteredResults) || filteredResults.length === 0}
+                sx={{
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.contrastText',
+                  '&:hover': {
+                    borderColor: 'primary.contrastText',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Print
+              </Button>
             </Box>
+            <Box>
             <div style={{ height: 400, width: '100%' }}>
               <DataGrid
                 rows={Array.isArray(filteredResults)
@@ -181,10 +314,11 @@ export default function AccountEnquiry() {
               />
             </div>
             {Array.isArray(filteredResults) && filteredResults.length === 0 && !loading && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2, px: 2, pb: 2 }}>
                 No results found.
               </Typography>
             )}
+            </Box>
           </CardContent>
         </Card>
       </Box>
