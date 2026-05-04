@@ -133,7 +133,7 @@ export default function UserSetup({ user }) {
   const [rawBranchesData, setRawBranchesData] = useState([]);
   const [companyBranches, setCompanyBranches] = useState([]);
   const [remoteBranchesLoaded, setRemoteBranchesLoaded] = useState(false);
-  const [baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
+  const [_baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
   const [_savedUsers, setSavedUsers] = useState([]);
   const [_savedRoles, setSavedRoles] = useState([]);
   const [showCreateUserRoles, setShowCreateUserRoles] = useState(false);
@@ -174,7 +174,7 @@ export default function UserSetup({ user }) {
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
 
   const canSave = useMemo(
-    () => userForm.companyName && userForm.branch && userForm.userId && userForm.userName && userForm.baseRole,
+    () => userForm.companyName && userForm.branch && userForm.userId && userForm.userName,
     [userForm],
   );
   const canSaveRole = useMemo(
@@ -457,9 +457,7 @@ export default function UserSetup({ user }) {
 
   const handleSaveAll = async () => {
     if (!canSaveAll || isReadOnlyRole) {
-      if (!userForm.baseRole) {
-        setStatusMessage('Please assign a role before saving the user.');
-      } else if (!canSaveRole) {
+      if (!canSaveRole) {
         setStatusMessage('Please complete the user role details before saving.');
       }
       return;
@@ -755,23 +753,6 @@ export default function UserSetup({ user }) {
                 <TextField label="Temporary password" name="temporaryPassword" value={userForm.temporaryPassword} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField
                   select
-                  label="Assign role"
-                  name="baseRole"
-                  value={userForm.baseRole}
-                  onChange={handleUserFormChange}
-                  required
-                  size="small"
-                  fullWidth
-                  helperText={!userForm.baseRole ? 'Role is required for new user setup' : 'Selected role determines user permissions'}
-                >
-                  {baseRoles.map((item) => (
-                    <MenuItem key={item} value={item}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
                   label="Cash account"
                   name="cashAccount"
                   value={userForm.cashAccount}
@@ -792,12 +773,6 @@ export default function UserSetup({ user }) {
                       {item.cacctnumb}
                     </MenuItem>
                   ))}
-                </TextField>
-                <TextField select label="User type" name="userType" value={userForm.userType} onChange={handleUserFormChange} size="small" fullWidth>
-                  <MenuItem value="maker">Maker</MenuItem>
-                  <MenuItem value="checker">Checker</MenuItem>
-                  <MenuItem value="approver">Approver</MenuItem>
-                  <MenuItem value="viewer">Viewer</MenuItem>
                 </TextField>
                 <TextField label="Debit Limit" name="debitMit" value={userForm.debitMit} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField label="Credit limit" name="creditLimit" value={userForm.creditLimit} onChange={handleUserFormChange} size="small" fullWidth />
