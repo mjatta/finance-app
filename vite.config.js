@@ -1682,12 +1682,25 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/banks/, '/api/banks'),
       },
+      // Proxy setup endpoint to avoid CORS
+      '/api/setup': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/setup/, '/api/setup'),
+      },
       // Proxy auth login endpoint to avoid CORS
       '/api/auth/login': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),
+      },
+      // Proxy auth GetAllUsers endpoint to avoid CORS
+      '/api/auth/GetAllUsers': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
       },
       // Proxy deposit and withdrawal transaction endpoints to avoid CORS
       '/api/Cusystem': {

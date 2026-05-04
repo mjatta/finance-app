@@ -17,6 +17,8 @@ import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useAddUser } from './hooks/useAddUser';
+import { useGetAllUsers } from './hooks/useGetAllUsers';
+import { useGetBasicDetails } from './hooks/useGetBasicDetails';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
@@ -37,6 +39,9 @@ const featureLabelMap = {
 };
 
 const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(0).toUpperCase() + feature.slice(1);
+
+const getCompanyName = (record) => (record?.com_name || record?.companyName || '').toString().trim();
+const getBranchName = (record) => (record?.branchName || record?.br_name || record?.branch || '').toString().trim();
 
 const upsertByKey = (rows, nextRow, key) => {
   const nextKey = nextRow?.[key];
@@ -123,26 +128,27 @@ const featurePageMap = {
 };
 
 export default function UserSetup({ user }) {
-  const [companies, setCompanies] = useState(['Social Development Fund']);
+  const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
   const [rawBranchesData, setRawBranchesData] = useState([]);
   const [companyBranches, setCompanyBranches] = useState([]);
   const [remoteBranchesLoaded, setRemoteBranchesLoaded] = useState(false);
   const [baseRoles, setBaseRoles] = useState(['Admin', 'Supervisor', 'Officer']);
-  const [savedUsers, setSavedUsers] = useState([]);
-  const [savedRoles, setSavedRoles] = useState([]);
+  const [_savedUsers, setSavedUsers] = useState([]);
+  const [_savedRoles, setSavedRoles] = useState([]);
   const [showCreateUserRoles, setShowCreateUserRoles] = useState(false);
-  const [showSavedRoles, setShowSavedRoles] = useState(false);
-  const [showSavedUsers, setShowSavedUsers] = useState(false);
   const [editingUserId, setEditingUserId] = useState('');
   const [editingRoleName, setEditingRoleName] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isSavingRole, setIsSavingRole] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const { addUser } = useAddUser();
+  const { cashAccounts, loading: cashAccountsLoading } = useGetBasicDetails();
+  const { users: allUsers, loading: allUsersLoading } = useGetAllUsers();
 
   const [userForm, setUserForm] = useState({
-    companyName: 'Social Development Fund',
+    companyName: '',
     branch: '',
     staffNumber: '',
     userId: '',
@@ -184,8 +190,9 @@ export default function UserSetup({ user }) {
     if (!userForm.companyName) return branches;
 
     const linkedBranches = companyBranches
-      .filter((item) => item.companyName === userForm.companyName)
-      .map((item) => item.branchName);
+      .filter((item) => getCompanyName(item) === userForm.companyName)
+      .map((item) => getBranchName(item))
+      .filter(Boolean);
 
     return Array.from(new Set(linkedBranches));
   }, [branches, companyBranches, userForm.companyName, remoteBranchesLoaded]);
@@ -205,9 +212,15 @@ export default function UserSetup({ user }) {
 
     const applySetupPayload = (payload) => {
       if (!isMounted) return;
-      if (Array.isArray(payload?.companies) && payload.companies.length > 0) {
-        setCompanies(payload.companies);
-        setUserForm((prev) => ({ ...prev, companyName: prev.companyName || payload.companies[0] }));
+      const payloadCompanies = Array.isArray(payload?.companies)
+        ? payload.companies
+          .map((item) => (typeof item === 'string' ? item.toString().trim() : getCompanyName(item)))
+          .filter(Boolean)
+        : [];
+
+      if (payloadCompanies.length > 0) {
+        setCompanies((prev) => Array.from(new Set([...prev, ...payloadCompanies])));
+        setUserForm((prev) => ({ ...prev, companyName: prev.companyName || payloadCompanies[0] }));
       }
       if (Array.isArray(payload?.companyBranches) && payload.companyBranches.length > 0) {
         setCompanyBranches(payload.companyBranches);
@@ -239,6 +252,25 @@ export default function UserSetup({ user }) {
 
     const loadSetupData = async () => {
       try {
+        try {
+          const companyDetailsUrl = getFullApiUrl('/api/lookups/creditunion/30');
+          const companyDetailsResp = await fetch(companyDetailsUrl);
+          if (companyDetailsResp.ok) {
+            const companyDetailsPayload = await companyDetailsResp.json();
+            const companyRecord = Array.isArray(companyDetailsPayload)
+              ? companyDetailsPayload[0]
+              : companyDetailsPayload;
+            const companyNameFromEndpoint = getCompanyName(companyRecord);
+
+            if (companyNameFromEndpoint) {
+              setCompanies([companyNameFromEndpoint]);
+              setUserForm((prev) => ({ ...prev, companyName: companyNameFromEndpoint }));
+            }
+          }
+        } catch {
+          // keep fallback values when endpoint is unavailable
+        }
+
         try {
           // Use relative path so Vite proxy can intercept and handle CORS
           const url = getFullApiUrl('/api/remote-branches/branches');
@@ -336,55 +368,91 @@ export default function UserSetup({ user }) {
     });
   };
 
-  const handleEditSavedRole = (roleRecord) => {
-    setRoleForm({
-      roleName: roleRecord?.roleName || '',
-      roleDescription: roleRecord?.roleDescription || '',
-      featurePermissions: { ...defaultFeaturePermissions, ...(roleRecord?.featurePermissions || {}) },
-      pagePermissions: { ...(roleRecord?.pagePermissions || {}) },
-    });
-    setEditingRoleName(roleRecord?.roleName || '');
-    setStatusMessage(`Editing role: ${roleRecord?.roleName || '-'}`);
+  const normalizeFeaturePermission = (val) => {
+    if (!val) return 'hide feature';
+    if (val === 'hide') return 'hide feature';
+    if (val === 'write' || val === 'view only' || val === 'hide feature') return val;
+    return 'hide feature';
+  };
+
+  const normalizePagePermission = (val) => {
+    if (!val) return 'inherit';
+    if (val === 'hide') return 'hide page';
+    if (val === 'write' || val === 'view only' || val === 'hide page' || val === 'inherit') return val;
+    return 'inherit';
   };
 
   const handleEditSavedUser = (userRecord) => {
+    const selectedCompanyName = getCompanyName(userRecord);
+    const selectedBranch = getBranchName(userRecord);
+
     setUserForm({
-      companyName: userRecord?.companyName || '',
-      branch: userRecord?.branch || '',
-      staffNumber: userRecord?.staffNumber || '',
-      userId: userRecord?.userId || '',
-      userName: userRecord?.userName || '',
+      companyName: selectedCompanyName,
+      branch: selectedBranch,
+      staffNumber: userRecord?.StaffNo || userRecord?.staffNumber || '',
+      userId: userRecord?.UserID || userRecord?.userId || '',
+      userName: userRecord?.UserName || userRecord?.userName || '',
       temporaryPassword: userRecord?.temporaryPassword || '',
-      baseRole: userRecord?.baseRole || '',
-      cashAccount: userRecord?.cashAccount || '',
+      baseRole: userRecord?.Role || userRecord?.baseRole || '',
+      cashAccount: userRecord?.CashAccount || userRecord?.cashAccount || '',
       userType: userRecord?.userType || '',
-      debitMit: userRecord?.debitMit || '',
-      creditLimit: userRecord?.creditLimit || '',
-      loanLimit: userRecord?.loanLimit || '',
+      debitMit: userRecord?.DebitLimit !== undefined && userRecord?.DebitLimit !== '' ? String(userRecord.DebitLimit) : (userRecord?.debitMit || ''),
+      creditLimit: userRecord?.CreditLimit !== undefined && userRecord?.CreditLimit !== '' ? String(userRecord.CreditLimit) : (userRecord?.creditLimit || ''),
+      loanLimit: userRecord?.LoanLimit !== undefined && userRecord?.LoanLimit !== '' ? String(userRecord.LoanLimit) : (userRecord?.loanLimit || ''),
       loanApprovalLimit: Boolean(userRecord?.loanApprovalLimit),
       disableUser: Boolean(userRecord?.disableUser),
       resetPassword: Boolean(userRecord?.resetPassword),
     });
 
-    if (userRecord?.companyName) {
-      setCompanies((prev) => (prev.includes(userRecord.companyName) ? prev : [...prev, userRecord.companyName]));
+    if (selectedCompanyName) {
+      setCompanies((prev) => (prev.includes(selectedCompanyName) ? prev : [...prev, selectedCompanyName]));
     }
-    if (userRecord?.branch) {
+    if (selectedBranch) {
       if (!remoteBranchesLoaded) {
-        setBranches((prev) => (prev.includes(userRecord.branch) ? prev : [...prev, userRecord.branch]));
+        setBranches((prev) => (prev.includes(selectedBranch) ? prev : [...prev, selectedBranch]));
       }
-      if (userRecord?.companyName) {
+      if (selectedCompanyName) {
         setCompanyBranches((prev) => {
           const exists = prev.some(
-            (item) => item.companyName === userRecord.companyName && item.branchName === userRecord.branch,
+            (item) => getCompanyName(item) === selectedCompanyName && getBranchName(item) === selectedBranch,
           );
-          return exists ? prev : [...prev, { companyName: userRecord.companyName, branchName: userRecord.branch }];
+          return exists ? prev : [...prev, { companyName: selectedCompanyName, branchName: selectedBranch }];
         });
       }
     }
 
-    setEditingUserId(userRecord?.userId || '');
-    setStatusMessage(`Editing user: ${userRecord?.userName || userRecord?.userId || '-'}`);
+    setEditingUserId(userRecord?.UserID || userRecord?.userId || '');
+    setStatusMessage(`Editing user: ${userRecord?.UserName || userRecord?.UserID || userRecord?.userName || userRecord?.userId || '-'}`);
+
+    // Preload existing feature/page permissions into the role form
+    const rawFeaturePerms = userRecord?.FeaturePermissions && typeof userRecord.FeaturePermissions === 'object'
+      ? userRecord.FeaturePermissions
+      : {};
+    const rawPagePerms = userRecord?.PagePermissions && typeof userRecord.PagePermissions === 'object'
+      ? userRecord.PagePermissions
+      : {};
+
+    const normalizedFeaturePerms = {
+      ...defaultFeaturePermissions,
+      ...Object.fromEntries(
+        Object.entries(rawFeaturePerms).map(([k, v]) => [k, normalizeFeaturePermission(v)]),
+      ),
+    };
+    const normalizedPagePerms = Object.fromEntries(
+      Object.entries(rawPagePerms)
+        .map(([k, v]) => [k, normalizePagePermission(v)])
+        .filter(([, v]) => v !== 'inherit'),
+    );
+
+    const roleName = (userRecord?.Role || userRecord?.baseRole || '').trim();
+    setRoleForm({
+      roleName,
+      roleDescription: '',
+      featurePermissions: normalizedFeaturePerms,
+      pagePermissions: normalizedPagePerms,
+    });
+    setEditingRoleName(roleName);
+    setShowCreateUserRoles(true);
   };
 
   const handleSaveAll = async () => {
@@ -528,20 +596,24 @@ export default function UserSetup({ user }) {
     }
   };
 
-  const savedRoleColumns = useMemo(
+  const savedUserColumns = useMemo(
     () => [
       { field: 'id', headerName: 'ID', width: 80 },
-      { field: 'roleName', headerName: 'Role name', width: 140, flex: 0.8 },
-      { field: 'roleDescription', headerName: 'Role description', width: 160, flex: 0.9 },
+      { field: 'userID', headerName: 'User ID', width: 120, flex: 0.6 },
+      { field: 'userName', headerName: 'User Name', width: 160, flex: 0.8 },
+      { field: 'staffNo', headerName: 'Staff No', width: 110, flex: 0.5 },
+      { field: 'accessLevel', headerName: 'Access Level', width: 110, flex: 0.5 },
+      { field: 'cashAccount', headerName: 'Cash Account', width: 140, flex: 0.7 },
+      { field: 'features', headerName: 'Features', width: 180, flex: 0.9 },
       {
         field: 'featurePermissions',
-        headerName: 'Feature permissions',
-        width: 200,
-        flex: 1,
+        headerName: 'Feature Permissions',
+        width: 220,
+        flex: 1.1,
         valueFormatter: (value) => {
-          if (value && typeof value === 'object') {
-            return featureOptions
-              .map((feature) => `${feature}: ${value[feature] || 'hide feature'}`)
+          if (value && typeof value === 'object' && Object.keys(value).length > 0) {
+            return Object.entries(value)
+              .map(([k, v]) => `${k}: ${v}`)
               .join(' | ');
           }
           return '-';
@@ -549,63 +621,37 @@ export default function UserSetup({ user }) {
       },
       {
         field: 'pagePermissions',
-        headerName: 'Page permissions',
-        width: 200,
-        flex: 1,
+        headerName: 'Page Permissions',
+        width: 220,
+        flex: 1.1,
         valueFormatter: (value) => {
           if (value && typeof value === 'object' && Object.keys(value).length > 0) {
             return Object.entries(value)
-              .map(([page, permission]) => `${page}: ${permission}`)
+              .map(([k, v]) => `${k}: ${v}`)
               .join(' | ');
           }
-          return 'Inherit from feature';
+          return '-';
         },
       },
     ],
     [],
   );
 
-  const savedRoleRows = useMemo(
-    () =>
-      savedRoles.map((item, idx) => ({
-        id: `role-${idx}`,
-        roleName: item.roleName || '-',
-        roleDescription: item.roleDescription || '-',
-        featurePermissions: item.featurePermissions,
-        pagePermissions: item.pagePermissions,
-        _originalData: item,
-      })),
-    [savedRoles],
-  );
-
-  const savedUserColumns = useMemo(
-    () => [
-      { field: 'id', headerName: 'ID', width: 80 },
-      { field: 'companyName', headerName: 'Company', width: 130, flex: 0.7 },
-      { field: 'branch', headerName: 'Branch', width: 120, flex: 0.6 },
-      { field: 'staffNumber', headerName: 'Staff Number', width: 120, flex: 0.6 },
-      { field: 'userId', headerName: 'User ID', width: 120, flex: 0.6 },
-      { field: 'userName', headerName: 'User Name', width: 130, flex: 0.7 },
-      { field: 'baseRole', headerName: 'Assigned Role', width: 130, flex: 0.7 },
-      { field: 'userType', headerName: 'User Type', width: 120, flex: 0.6 },
-    ],
-    [],
-  );
-
   const savedUserRows = useMemo(
     () =>
-      savedUsers.map((item, idx) => ({
+      allUsers.map((item, idx) => ({
         id: `user-${idx}`,
-        companyName: item.companyName || '-',
-        branch: item.branch || '-',
-        staffNumber: item.staffNumber || '-',
-        userId: item.userId || '-',
-        userName: item.userName || '-',
-        baseRole: item.baseRole || '-',
-        userType: item.userType || '-',
+        userID: item.UserID || '-',
+        userName: item.UserName || '-',
+        staffNo: item.StaffNo || '-',
+        accessLevel: item.AccessLevel !== '' ? item.AccessLevel : '-',
+        cashAccount: item.CashAccount || '-',
+        features: item.Features || '-',
+        featurePermissions: item.FeaturePermissions,
+        pagePermissions: item.PagePermissions,
         _originalData: item,
       })),
-    [savedUsers],
+    [allUsers],
   );
 
   return (
@@ -724,7 +770,29 @@ export default function UserSetup({ user }) {
                     </MenuItem>
                   ))}
                 </TextField>
-                <TextField label="Cash account" name="cashAccount" value={userForm.cashAccount} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField
+                  select
+                  label="Cash account"
+                  name="cashAccount"
+                  value={userForm.cashAccount}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  helperText={cashAccountsLoading ? 'Loading cash accounts...' : ''}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => selected || 'Select Cash Account',
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    Select Cash Account
+                  </MenuItem>
+                  {cashAccounts.map((item) => (
+                    <MenuItem key={item.cacctnumb} value={item.cacctnumb}>
+                      {item.cacctnumb}
+                    </MenuItem>
+                  ))}
+                </TextField>
                 <TextField select label="User type" name="userType" value={userForm.userType} onChange={handleUserFormChange} size="small" fullWidth>
                   <MenuItem value="maker">Maker</MenuItem>
                   <MenuItem value="checker">Checker</MenuItem>
@@ -892,150 +960,68 @@ export default function UserSetup({ user }) {
           </Button>
         </Box>
 
-        <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Box
-              onClick={() => setShowSavedRoles((prev) => !prev)}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: showSavedRoles ? 1.5 : 0,
-                cursor: 'pointer',
-                borderRadius: 1,
-                px: 0.5,
-              }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                Saved User Roles
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {showSavedRoles ? 'Collapse' : 'Expand'}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSavedRoles((prev) => !prev);
-                  }}
-                >
-                  <ExpandMoreIcon
-                    fontSize="small"
-                    sx={{ transform: showSavedRoles ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
-                  />
-                </IconButton>
-              </Box>
-            </Box>
-            {showSavedRoles && (
-              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
-                <DataGrid
-                  rows={savedRoleRows}
-                  columns={savedRoleColumns}
-                  disableSelectionOnClick
-                  density="compact"
-                  pageSizeOptions={[10, 25, 50]}
-                  initialState={{
-                    pagination: { paginationModel: { pageSize: 10 } },
-                    columnVisibilityModel: { id: false },
-                  }}
-                  onRowClick={(params) => handleEditSavedRole(params.row._originalData)}
-                  sx={{
-                    '& .MuiDataGrid-cell': {
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      fontSize: '0.875rem',
-                    },
-                    '& .MuiDataGrid-columnHeader': {
-                      backgroundColor: 'primary.main',
-                      color: 'primary.contrastText',
-                      fontWeight: 700,
-                      borderBottom: 'none',
-                    },
-                    '& .MuiDataGrid-row': {
-                      cursor: 'pointer',
-                      '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
-                      '&:hover': { backgroundColor: '#e9ecef' },
-                    },
-                  }}
-                />
-              </Paper>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Box
-              onClick={() => setShowSavedUsers((prev) => !prev)}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: showSavedUsers ? 2 : 0,
-                cursor: 'pointer',
-                borderRadius: 1,
-                px: 0.5,
-              }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+        <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                 Saved Users
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {showSavedUsers ? 'Collapse' : 'Expand'}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSavedUsers((prev) => !prev);
-                  }}
-                >
-                  <ExpandMoreIcon
-                    fontSize="small"
-                    sx={{ transform: showSavedUsers ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
-                  />
-                </IconButton>
-              </Box>
             </Box>
-            {showSavedUsers && (
-              <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
-                <DataGrid
-                  rows={savedUserRows}
-                  columns={savedUserColumns}
-                  disableSelectionOnClick
-                  density="compact"
-                  pageSizeOptions={[10, 25, 50]}
-                  initialState={{
-                    pagination: { paginationModel: { pageSize: 25 } },
-                    sorting: { sortModel: [{ field: 'companyName', sort: 'asc' }] },
-                    columnVisibilityModel: { id: false },
-                  }}
-                  onRowClick={(params) => handleEditSavedUser(params.row._originalData)}
-                  sx={{
+            <DataGrid
+              rows={savedUserRows}
+              columns={savedUserColumns}
+              disableSelectionOnClick
+              density="compact"
+              pageSizeOptions={[10, 25, 50]}
+              loading={allUsersLoading}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 25 } },
+                sorting: { sortModel: [{ field: 'userName', sort: 'asc' }] },
+                columnVisibilityModel: { id: false },
+              }}
+              onRowClick={(params) => {
+                handleEditSavedUser(params.row._originalData);
+                const userId = params.row.userID;
+                setSelectedUserIds((prev) => 
+                  prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+                );
+              }}
+              getRowClassName={(params) => {
+                if (selectedUserIds.includes(params.row.userID)) return 'selected-row';
+                return '';
+              }}
+              sx={{
+                '& .MuiDataGrid-root': { border: 'none', borderRadius: 0 },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  fontSize: '0.875rem',
+                },
+                '& .MuiDataGrid-columnHeader': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
+                  borderBottom: 'none',
+                },
+                '& .MuiDataGrid-row': {
+                  cursor: 'pointer',
+                  '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
+                  '&:hover': { backgroundColor: '#e9ecef' },
+                  '&.selected-row': {
+                    backgroundColor: '#1976d2 !important',
+                    color: '#ffffff',
+                    fontWeight: 600,
                     '& .MuiDataGrid-cell': {
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      fontSize: '0.875rem',
+                      color: '#ffffff',
+                      borderBottomColor: '#1565c0',
                     },
-                    '& .MuiDataGrid-columnHeader': {
-                      backgroundColor: 'primary.main',
-                      color: 'primary.contrastText',
-                      fontWeight: 700,
-                      borderBottom: 'none',
-                      textTransform: 'uppercase',
-                      fontSize: '0.75rem',
+                    '&:hover': {
+                      backgroundColor: '#1565c0 !important',
                     },
-                    '& .MuiDataGrid-row': {
-                      cursor: 'pointer',
-                      '&:nth-of-type(odd)': { backgroundColor: '#f8f9fa' },
-                      '&:hover': { backgroundColor: '#e9ecef' },
-                    },
-                  }}
-                />
-              </Paper>
-            )}
+                  },
+                },
+              }}
+            />
           </CardContent>
         </Card>
       </Box>

@@ -203,6 +203,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/banks/:path*"
     },
     {
+      "source": "/api/setup/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/setup/:path*"
+    },
+    {
       "source": "/api/transaction/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/transaction/:path*"
     },
@@ -213,6 +217,10 @@
     {
       "source": "/api/auth/login",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/auth/login"
+    },
+    {
+      "source": "/api/auth/GetAllUsers",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/auth/GetAllUsers"
     },
           {
         "source": "/api/members/validate",
