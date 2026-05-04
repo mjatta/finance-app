@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
+  CircularProgress,
   FormControlLabel,
+  InputAdornment,
   IconButton,
   MenuItem,
   Paper,
@@ -15,6 +18,7 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useAddUser } from './hooks/useAddUser';
 import { useGetAllUsers } from './hooks/useGetAllUsers';
@@ -42,6 +46,11 @@ const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(
 
 const getCompanyName = (record) => (record?.com_name || record?.companyName || '').toString().trim();
 const getBranchName = (record) => (record?.branchName || record?.br_name || record?.branch || '').toString().trim();
+
+const generateTemporaryPassword = () => {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  return Array.from({ length: 10 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+};
 
 const upsertByKey = (rows, nextRow, key) => {
   const nextKey = nextRow?.[key];
@@ -176,14 +185,6 @@ export default function UserSetup({ user }) {
   const canSave = useMemo(
     () => userForm.companyName && userForm.branch && userForm.userId && userForm.userName,
     [userForm],
-  );
-  const canSaveRole = useMemo(
-    () => roleForm.roleName.trim().length > 0,
-    [roleForm],
-  );
-  const canSaveAll = useMemo(
-    () => canSave && canSaveRole,
-    [canSave, canSaveRole],
   );
   const availableBranches = useMemo(() => {
     if (remoteBranchesLoaded) return branches;
@@ -330,10 +331,34 @@ export default function UserSetup({ user }) {
   const handleUserFormChange = (event) => {
     const { name, value, type, checked } = event.target;
     setStatusMessage('');
+
+    if (name === 'resetPassword' && type === 'checkbox') {
+      setUserForm((prev) => {
+        const nextResetValue = checked;
+        return {
+          ...prev,
+          resetPassword: nextResetValue,
+          temporaryPassword: nextResetValue ? (prev.temporaryPassword || generateTemporaryPassword()) : '',
+        };
+      });
+      return;
+    }
+
     setUserForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleCopyTemporaryPassword = async () => {
+    if (!userForm.temporaryPassword) return;
+
+    try {
+      await navigator.clipboard.writeText(userForm.temporaryPassword);
+      setStatusMessage('Temporary password copied to clipboard.');
+    } catch {
+      setStatusMessage('Unable to copy temporary password.');
+    }
   };
 
   const handleRoleFormChange = (event) => {
@@ -456,10 +481,7 @@ export default function UserSetup({ user }) {
   };
 
   const handleSaveAll = async () => {
-    if (!canSaveAll || isReadOnlyRole) {
-      if (!canSaveRole) {
-        setStatusMessage('Please complete the user role details before saving.');
-      }
+    if (!canSave || isReadOnlyRole) {
       return;
     }
 
@@ -548,7 +570,9 @@ export default function UserSetup({ user }) {
         });
       }
 
-      setBaseRoles((prev) => Array.from(new Set([...prev, rolePayload.roleName])));
+      if (rolePayload.roleName) {
+        setBaseRoles((prev) => Array.from(new Set([...prev, rolePayload.roleName])));
+      }
 
       setStatusMessage('User setup and role saved successfully.');
       setEditingUserId(userForm.userId || '');
@@ -592,6 +616,41 @@ export default function UserSetup({ user }) {
       setIsSavingUser(false);
       setIsSavingRole(false);
     }
+  };
+
+  const handleClearAll = () => {
+    const defaultCompanyName = companies[0] || '';
+
+    setUserForm({
+      companyName: defaultCompanyName,
+      branch: '',
+      staffNumber: '',
+      userId: '',
+      userName: '',
+      temporaryPassword: '',
+      baseRole: '',
+      cashAccount: '',
+      userType: '',
+      debitMit: '',
+      creditLimit: '',
+      loanLimit: '',
+      loanApprovalLimit: false,
+      disableUser: false,
+      resetPassword: false,
+    });
+
+    setRoleForm({
+      roleName: '',
+      roleDescription: '',
+      featurePermissions: defaultFeaturePermissions,
+      pagePermissions: {},
+    });
+
+    setEditingUserId('');
+    setEditingRoleName('');
+    setShowCreateUserRoles(false);
+    setSelectedUserIds([]);
+    setStatusMessage('');
   };
 
   const savedUserColumns = useMemo(
@@ -652,8 +711,34 @@ export default function UserSetup({ user }) {
     [allUsers],
   );
 
+  const isSaving = isSavingUser || isSavingRole;
+
   return (
-    <Box component="fieldset" sx={{ border: 'none', p: 3, m: 0 }}>
+    <Box component="fieldset" sx={{ border: 'none', p: 3, m: 0, position: 'relative' }}>
+      <Backdrop
+        open={isSaving}
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.7)',
+          borderRadius: 1,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={88} thickness={5} />
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Saving user setup...
+          </Typography>
+        </Box>
+      </Backdrop>
+
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           User Setup
@@ -750,7 +835,30 @@ export default function UserSetup({ user }) {
                 <TextField label="Staff number" name="staffNumber" value={userForm.staffNumber} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField label="User id" name="userId" value={userForm.userId} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField label="User name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
-                <TextField label="Temporary password" name="temporaryPassword" value={userForm.temporaryPassword} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField
+                  label="Temporary password"
+                  name="temporaryPassword"
+                  value={userForm.temporaryPassword}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  InputProps={{
+                    readOnly: userForm.resetPassword,
+                    endAdornment: userForm.resetPassword && userForm.temporaryPassword ? (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="Copy temporary password"
+                          edge="end"
+                          onClick={handleCopyTemporaryPassword}
+                          size="small"
+                        >
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                  helperText={userForm.resetPassword ? 'Auto-generated temporary password' : ''}
+                />
                 <TextField
                   select
                   label="Cash account"
@@ -778,10 +886,63 @@ export default function UserSetup({ user }) {
                 <TextField label="Credit limit" name="creditLimit" value={userForm.creditLimit} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField label="Loan limit" name="loanLimit" value={userForm.loanLimit} onChange={handleUserFormChange} size="small" fullWidth />
 
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', gridColumn: { xs: '1 / -1', md: '1 / -1' }, pt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <FormControlLabel control={<Checkbox name="loanApprovalLimit" checked={userForm.loanApprovalLimit} onChange={handleUserFormChange} />} label="Loan approval limit" />
-                  <FormControlLabel control={<Checkbox name="disableUser" checked={userForm.disableUser} onChange={handleUserFormChange} />} label="Disable user" />
-                  <FormControlLabel control={<Checkbox name="resetPassword" checked={userForm.resetPassword} onChange={handleUserFormChange} />} label="Reset password" />
+                <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' }, pt: 1.25, mt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.25, fontWeight: 800, color: '#2c3e50' }}>
+                    Access & Security Options
+                  </Typography>
+
+                  <Box sx={{ display: 'grid', gap: 1.25, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+                    <Box sx={{ p: 1.25, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', bgcolor: userForm.loanApprovalLimit ? 'rgba(25, 118, 210, 0.06)' : 'background.paper' }}>
+                      <FormControlLabel
+                        sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
+                        control={<Checkbox name="loanApprovalLimit" checked={userForm.loanApprovalLimit} onChange={handleUserFormChange} />}
+                        label={
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              Loan Approval Limit
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Allow this user to approve loans.
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+
+                    <Box sx={{ p: 1.25, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', bgcolor: userForm.disableUser ? 'rgba(211, 47, 47, 0.08)' : 'background.paper' }}>
+                      <FormControlLabel
+                        sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
+                        control={<Checkbox name="disableUser" checked={userForm.disableUser} onChange={handleUserFormChange} />}
+                        label={
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              Disable User
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Block sign-in for this account.
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+
+                    <Box sx={{ p: 1.25, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', bgcolor: userForm.resetPassword ? 'rgba(255, 152, 0, 0.10)' : 'background.paper' }}>
+                      <FormControlLabel
+                        sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
+                        control={<Checkbox name="resetPassword" checked={userForm.resetPassword} onChange={handleUserFormChange} />}
+                        label={
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              Reset Password
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Generate a temporary password.
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
             </CardContent>
@@ -926,9 +1087,17 @@ export default function UserSetup({ user }) {
 
         <Box sx={{ mt: 2, display: 'flex', gap: 1.5, justifyContent: 'flex-start' }}>
           <Button
+            variant="outlined"
+            onClick={handleClearAll}
+            disabled={isSavingUser || isSavingRole}
+            sx={{ fontWeight: 600, textTransform: 'none' }}
+          >
+            Clear
+          </Button>
+          <Button
             variant="contained"
             onClick={handleSaveAll}
-            disabled={!canSaveAll || isSavingUser || isSavingRole}
+            disabled={!canSave || isSavingUser || isSavingRole}
             sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
           >
             {isSavingUser || isSavingRole ? 'Saving...' : editingUserId || editingRoleName ? 'Update user setup' : 'Save user setup'}
