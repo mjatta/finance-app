@@ -1,186 +1,437 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
   CircularProgress,
-  FormControl,
-  RadioGroup,
+  MenuItem,
   TextField,
   Typography,
-  Alert,
-  // Dialog imports removed (no longer used)
-  MenuItem,
-  Grid,
 } from '@mui/material';
-import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
-import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetBankAccounts';
-import { DataGrid } from '@mui/x-data-grid';
 import SaveIcon from '@mui/icons-material/Save';
-import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
 import dayjs from 'dayjs';
 import { useSaveJournal } from './hooks/useSaveJournal';
+import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
+import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetBankAccounts';
+import { useGetInternalJournalAccounts } from './hooks/useGetInternalJournalAccounts';
 
-const initialFormData = {
-  transactionComments: '',
-  bankName: '',
-  bankBranch: '',
+const fallbackAccountOptions = [
+  { cacctnumb: '10000123101', displayName: '10000123101 Building Cost Banjulinding' },
+  { cacctnumb: '10000123301', displayName: '10000123301 Building Cost Bundung Head Office' },
+  { cacctnumb: '10000600001', displayName: '10000600001 Fixed Assets' },
+  { cacctnumb: '10000600101', displayName: '10000600101 Land Cost @ Bijilo' },
+  { cacctnumb: '10000600201', displayName: '10000600201 Building Cost' },
+  { cacctnumb: '10000600301', displayName: '10000600301 Equipment Cost' },
+  { cacctnumb: '10000600401', displayName: '10000600401 Furniture Cost' },
+  { cacctnumb: '10000600501', displayName: '10000600501 M/ Vehicle And Motor Cycles Cost' },
+  { cacctnumb: '10000600601', displayName: '10000600601 Credit Union Software' },
+  { cacctnumb: '10000600701', displayName: '10000600701 Computer Cost' },
+  { cacctnumb: '10000730101', displayName: '10000730101 Divideneds Paid On Shares' },
+  { cacctnumb: '10100610001', displayName: '10100610001 Accumulated Depreciation' },
+  { cacctnumb: '10100610101', displayName: '10100610101 Acc. Depre. Building' },
+  { cacctnumb: '10100610201', displayName: '10100610201 Acc. Depre. Equipment' },
+  { cacctnumb: '10100610301', displayName: '10100610301 Acc. Depre. Furniture' },
+  { cacctnumb: '10100610401', displayName: '10100610401 Acc. Depre. Motor Vehicles /Cycles' },
+  { cacctnumb: '10100610501', displayName: '10100610501 Acc. Depre. Software' },
+  { cacctnumb: '10100610601', displayName: '10100610601 Acc. Depre. Computer' },
+];
+
+const paymentTypeOptions = ['cash', 'cheque'];
+
+const createPaymentRow = () => ({ transactionType: '', amount: '' });
+
+const createTransactionState = () => ({
+  date: dayjs().format('YYYY-MM-DD'),
+  transactionDescription: '',
+  amount: '',
+  account: '',
+  uploadDocument: null,
+  paymentDetails: [createPaymentRow()],
   chequeNumber: '',
   chequeDate: dayjs().format('YYYY-MM-DD'),
-  chequeAmount: '',
-  accountNumber1: '',
-  amountDescription1: '',
-  budgetAmount1: '',
-  variance1: '',
-  totalExpense1: '',
-  accountNumber2: '',
-  amountDescription2: '',
-  budgetAmount2: '',
-  variance2: '',
-  totalExpense2: '',
-  jvNumber: `JV-${dayjs().format('YYYYMMDD')}-${Math.floor(Math.random() * 10000)}`,
-};
+  bank: '',
+  bankAccount: '',
+  contraAccount: '',
+});
 
-const initialGridData = [];
-
-export default function SaveJournals() {
-  // Retrieve user from zustand-persisted localStorage (key: 'microfinance-auth' > state.user)
-  let user = null;
+const getPersistedUser = () => {
   try {
     const persisted = localStorage.getItem('microfinance-auth');
-    if (persisted) {
-      const parsed = JSON.parse(persisted);
-      user = parsed?.state?.user || null;
+    if (!persisted) {
+      return null;
     }
+    const parsed = JSON.parse(persisted);
+    return parsed?.state?.user || null;
   } catch {
-    user = null;
+    return null;
   }
+};
 
+export default function SaveJournals() {
   const { saveJournal, isSaving, statusMessage, statusError } = useSaveJournal();
-  const [formData, setFormData] = useState(initialFormData);
-  const [banks, setBanks] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
   const { fetchBanks } = useGetBanks();
   const { fetchBankAccounts } = useGetBankAccounts();
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [gridData] = useState(initialGridData);
-  const [totalDebit] = useState(0);
-  const [totalCredit] = useState(0);
-  const [accountDebits, setAccountDebits] = useState([{ value: '' }]);
-  const [accountCredits, setAccountCredits] = useState([{ value: '' }]);
-  const handleAccountDebitChange = (idx, value) => {
-    setAccountDebits((prev) => prev.map((item, i) => i === idx ? { value } : item));
+  const {
+    accounts: internalJournalAccounts,
+    loading: internalJournalAccountsLoading,
+  } = useGetInternalJournalAccounts();
+  const [debitTransactions, setDebitTransactions] = useState([createTransactionState()]);
+  const [creditTransactions, setCreditTransactions] = useState([createTransactionState()]);
+  const [banksByCard, setBanksByCard] = useState({});
+  const [bankAccountsByCard, setBankAccountsByCard] = useState({});
+
+  const user = useMemo(() => getPersistedUser(), []);
+  const accountOptions = useMemo(
+    () => (internalJournalAccounts.length > 0 ? internalJournalAccounts : fallbackAccountOptions),
+    [internalJournalAccounts],
+  );
+  const totalDebit = debitTransactions.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalCredit = creditTransactions.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const hasEnteredBothAmounts =
+    debitTransactions.some((item) => String(item.amount).trim() !== '')
+    && creditTransactions.some((item) => String(item.amount).trim() !== '');
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.0001;
+  const canSave = hasEnteredBothAmounts && isBalanced;
+
+  const getSetter = (type) => (type === 'debit' ? setDebitTransactions : setCreditTransactions);
+  const getTransactions = (type) => (type === 'debit' ? debitTransactions : creditTransactions);
+  const getCardKey = (type, cardIndex) => `${type}-${cardIndex}`;
+
+  const handleTransactionChange = (type, cardIndex, field, value) => {
+    const setter = getSetter(type);
+    setter((prev) => prev.map((item, idx) => (idx === cardIndex ? { ...item, [field]: value } : item)));
   };
-  const handleAddAccountDebit = () => {
-    setAccountDebits((prev) => prev.length < 4 ? [...prev, { value: '' }] : prev);
-  };
-  const handleAccountCreditChange = (idx, value) => {
-    setAccountCredits((prev) => prev.map((item, i) => i === idx ? { value } : item));
-  };
-  const handleAddAccountCredit = () => {
-    setAccountCredits((prev) => prev.length < 4 ? [...prev, { value: '' }] : prev);
+
+  const handleUploadChange = (type, cardIndex, file) => {
+    const setter = getSetter(type);
+    setter((prev) => prev.map((item, idx) => (idx === cardIndex ? { ...item, uploadDocument: file || null } : item)));
   };
 
-  // JV Number is set in initialFormData
+  const handlePaymentRowChange = (type, cardIndex, paymentIndex, field, value) => {
+    const setter = getSetter(type);
+    setter((prev) => prev.map((card, i) => (
+      i === cardIndex
+        ? {
+          ...card,
+          paymentDetails: card.paymentDetails.map((item, j) => (j === paymentIndex ? { ...item, [field]: value } : item)),
+        }
+        : card
+    )));
 
-  // Calculate totals inline where needed
-
-
-  const handleChange = (e) => {
-
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Transaction Type logic for Transaction Details card
-    if (name === 'transactionType') {
-      if (value === 'cash') {
-        setFormData((prev) => ({
-          ...prev,
-          cashAccount: user?.CashAccount || '',
-          creditLimit: user?.CreditLimit != null ? String(user.CreditLimit) : '',
-          debitLimit: user?.DebitLimit != null ? String(user.DebitLimit) : '',
-          loanLimit: user?.LoanLimit != null ? String(user.LoanLimit) : '',
-        }));
-      } else if (value === 'cheque') {
-        // Fetch banks immediately when Cheque is selected
+    if (paymentIndex === 0 && field === 'transactionType') {
+      const cardKey = getCardKey(type, cardIndex);
+      if (value === 'cheque') {
         fetchBanks().then((result) => {
-          if (result.success && result.data) {
-            setBanks(result.data);
+          if (result.success && Array.isArray(result.data)) {
+            setBanksByCard((prev) => ({ ...prev, [cardKey]: result.data }));
           } else {
-            setBanks([]);
-          }
-        });
-        setFormData((prev) => ({
-          ...prev,
-          bank: '',
-          bankAccount: '',
-          contraAccount: '',
-        }));
-        setBankAccounts([]);
-      }
-    }
-
-    // Bank logic for Check Details (fetch bank accounts and reset account fields)
-    if (name === 'bank') {
-      setFormData((prev) => ({
-        ...prev,
-        bank: value,
-        bankAccount: '',
-        contraAccount: '',
-      }));
-      if (value) {
-        fetchBankAccounts(value).then((result) => {
-          if (result.success && result.data) {
-            setBankAccounts(result.data);
-          } else {
-            setBankAccounts([]);
+            setBanksByCard((prev) => ({ ...prev, [cardKey]: [] }));
           }
         });
       } else {
-        setBankAccounts([]);
+        setBanksByCard((prev) => ({ ...prev, [cardKey]: [] }));
+        setBankAccountsByCard((prev) => ({ ...prev, [cardKey]: [] }));
+        const clearChequeFields = getSetter(type);
+        clearChequeFields((prev) => prev.map((card, i) => (
+          i === cardIndex
+            ? {
+              ...card,
+              bank: '',
+              bankAccount: '',
+              contraAccount: '',
+            }
+            : card
+        )));
       }
     }
+  };
 
-    // Bank Account logic for Check Details (set contra account to selected bank account)
-    if (name === 'bankAccount') {
-      setFormData((prev) => ({
-        ...prev,
-        bankAccount: value,
-        contraAccount: value,
-      }));
+  const handleChequeFieldChange = (type, cardIndex, field, value) => {
+    const setter = getSetter(type);
+    const cardKey = getCardKey(type, cardIndex);
+
+    if (field === 'bank') {
+      setter((prev) => prev.map((card, i) => (
+        i === cardIndex ? { ...card, bank: value, bankAccount: '', contraAccount: '' } : card
+      )));
+      if (!value) {
+        setBankAccountsByCard((prev) => ({ ...prev, [cardKey]: [] }));
+        return;
+      }
+      fetchBankAccounts(value).then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          setBankAccountsByCard((prev) => ({ ...prev, [cardKey]: result.data }));
+        } else {
+          setBankAccountsByCard((prev) => ({ ...prev, [cardKey]: [] }));
+        }
+      });
+      return;
     }
+
+    if (field === 'bankAccount') {
+      setter((prev) => prev.map((card, i) => (
+        i === cardIndex ? { ...card, bankAccount: value, contraAccount: value } : card
+      )));
+      return;
+    }
+
+    setter((prev) => prev.map((card, i) => (i === cardIndex ? { ...card, [field]: value } : card)));
   };
 
-  const handleDateChange = (fieldName, date) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: date ? dayjs(date).format('YYYY-MM-DD') : '',
-    }));
+  const handleAddTransactionCard = (type) => {
+    const setter = getSetter(type);
+    setter((prev) => [...prev, createTransactionState()]);
   };
-
-  // Removed unused batch entry handlers
-
-  // Removed unused handleAddRow
-
-  // Removed unused handleDeleteRow and handleGridChange
 
   const handleSaveDetails = () => {
+    const combinedDescription = [
+      ...debitTransactions.map((item) => item.transactionDescription),
+      ...creditTransactions.map((item) => item.transactionDescription),
+    ]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .join(' | ');
+
+    const firstDebitWithDate = debitTransactions.find((item) => item.date)?.date;
+    const firstUpload = [...debitTransactions, ...creditTransactions].find((item) => item.uploadDocument?.name);
+
+    const formData = {
+      batchEntryDate: firstDebitWithDate || dayjs().format('YYYY-MM-DD'),
+      batchTransactionDetails: combinedDescription || 'Combined Journal Posting',
+      transactionDebitAmount: totalDebit,
+      transactionCreditAmount: totalCredit,
+      bookBalance: 0,
+      uploadDocument: firstUpload?.uploadDocument?.name || '',
+    };
+
+    const accountDebits = debitTransactions
+      .map((item) => String(item.account || '').trim())
+      .filter(Boolean)
+      .map((value) => ({ value }));
+    const accountCredits = creditTransactions
+      .map((item) => String(item.account || '').trim())
+      .filter(Boolean)
+      .map((value) => ({ value }));
+
     saveJournal(formData, accountDebits, accountCredits);
   };
 
-  // Removed unused handleUpdateJournal
+  const renderCashOrChequeDetails = (type, cardIndex) => {
+    const transaction = getTransactions(type)[cardIndex];
+    const primaryPaymentType = transaction.paymentDetails[0]?.transactionType || '';
+    const cardKey = getCardKey(type, cardIndex);
 
-  // Removed unused handleConfirmUpdate
+    if (primaryPaymentType === 'cash') {
+      return (
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', backgroundColor: '#fafafa' }}>
+          <CardContent sx={{ py: 2.5, '&:last-child': { pb: 2.5 } }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, color: '#2c3e50' }}>
+              Cash Details
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 1.25 }}>
+              <Typography variant="body2"><strong>Cash Account:</strong> {user?.CashAccount || '-'}</Typography>
+              <Typography variant="body2"><strong>Credit Limit:</strong> {user?.CreditLimit ?? '-'}</Typography>
+              <Typography variant="body2"><strong>Debit Limit:</strong> {user?.DebitLimit ?? '-'}</Typography>
+              <Typography variant="body2"><strong>Loan Limit:</strong> {user?.LoanLimit ?? '-'}</Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    }
 
-  // Removed unused columns definition
+    if (primaryPaymentType === 'cheque') {
+      return (
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', backgroundColor: '#fafafa' }}>
+          <CardContent sx={{ py: 2.5, '&:last-child': { pb: 2.5 } }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, color: '#2c3e50' }}>
+              Cheque Details
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 1.5 }}>
+              <TextField
+                label="Cheque Number"
+                size="small"
+                value={transaction.chequeNumber}
+                onChange={(e) => handleTransactionChange(type, 'chequeNumber', e.target.value)}
+              />
+              <TextField
+                label="Cheque Date"
+                size="small"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                value={transaction.chequeDate}
+                onChange={(e) => handleTransactionChange(type, 'chequeDate', e.target.value)}
+              />
+              <TextField
+                label="Bank"
+                select
+                size="small"
+                value={transaction.bank}
+                onChange={(e) => handleChequeFieldChange(type, cardIndex, 'bank', e.target.value)}
+              >
+                <MenuItem value="">Select Bank</MenuItem>
+                {(banksByCard[cardKey] || []).map((bank) => (
+                  <MenuItem key={bank.id} value={bank.id}>
+                    {bank.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Bank Account"
+                select
+                size="small"
+                value={transaction.bankAccount}
+                onChange={(e) => handleChequeFieldChange(type, cardIndex, 'bankAccount', e.target.value)}
+              >
+                <MenuItem value="">Select Bank Account</MenuItem>
+                {(bankAccountsByCard[cardKey] || []).map((account) => (
+                  <MenuItem key={account.id} value={account.id}>
+                    {account.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Contra Account"
+                size="small"
+                value={transaction.contraAccount}
+                onChange={(e) => handleTransactionChange(type, cardIndex, 'contraAccount', e.target.value)}
+              />
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return null;
+  };
+
+  const renderTransactionCard = (type, cardIndex, title, amountLabel, accountLabel) => {
+    const transaction = getTransactions(type)[cardIndex];
+    const addMoreLabel = type === 'debit' ? 'Add more Debit' : 'Add more Credit';
+    const titleWithIndex = cardIndex === 0 ? title : `${title} ${cardIndex + 1}`;
+
+    return (
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#2c3e50' }}>
+              {titleWithIndex}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => handleAddTransactionCard(type)}
+              sx={{ fontWeight: 700, textTransform: 'none' }}
+              title={`Add another ${title} card`}
+            >
+              {addMoreLabel}
+            </Button>
+          </Box>
+
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            <TextField
+              label="Date"
+              size="small"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={transaction.date}
+              onChange={(e) => handleTransactionChange(type, cardIndex, 'date', e.target.value)}
+            />
+            <TextField
+              label="Transaction Description"
+              size="small"
+              value={transaction.transactionDescription}
+              onChange={(e) => handleTransactionChange(type, cardIndex, 'transactionDescription', e.target.value)}
+            />
+            <TextField
+              label={amountLabel}
+              size="small"
+              type="number"
+              value={transaction.amount}
+              onChange={(e) => handleTransactionChange(type, cardIndex, 'amount', e.target.value)}
+            />
+            <TextField
+              select
+              label={accountLabel}
+              size="small"
+              value={transaction.account}
+              onChange={(e) => handleTransactionChange(type, cardIndex, 'account', e.target.value)}
+              helperText={internalJournalAccountsLoading ? 'Loading account list...' : ''}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select Account';
+                  }
+                  const selectedAccount = accountOptions.find((acc) => acc.cacctnumb === selected);
+                  return selectedAccount?.displayName || selected;
+                },
+              }}
+            >
+              <MenuItem value="" disabled>Select Account</MenuItem>
+              {accountOptions.map((acc) => (
+                <MenuItem key={acc.cacctnumb} value={acc.cacctnumb}>
+                  {acc.displayName || acc.cacctnumb}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              fullWidth
+              sx={{ height: 40, textTransform: 'none', justifyContent: 'flex-start' }}
+            >
+              {transaction.uploadDocument?.name || 'Upload Document'}
+              <input
+                type="file"
+                hidden
+                onChange={(e) => handleUploadChange(type, cardIndex, e.target.files?.[0])}
+              />
+            </Button>
+
+            <Typography variant="body2" sx={{ fontWeight: 700, mt: 1 }}>
+              Payment Details
+            </Typography>
+            {transaction.paymentDetails.map((row, idx) => (
+              <Box key={`${type}-payment-${cardIndex}-${idx}`} sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+                <TextField
+                  select
+                  label="Transaction Type"
+                  size="small"
+                  value={row.transactionType}
+                  onChange={(e) => handlePaymentRowChange(type, cardIndex, idx, 'transactionType', e.target.value)}
+                >
+                  <MenuItem value="">Select Type</MenuItem>
+                  {paymentTypeOptions.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Amount"
+                  size="small"
+                  type="number"
+                  value={row.amount}
+                  onChange={(e) => handlePaymentRowChange(type, cardIndex, idx, 'amount', e.target.value)}
+                />
+              </Box>
+            ))}
+
+            {renderCashOrChequeDetails(type, cardIndex)}
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
       <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
           <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
@@ -192,7 +443,6 @@ export default function SaveJournals() {
         </CardContent>
       </Card>
 
-      {/* Batch Information Section */}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
           Batch Information
@@ -209,345 +459,53 @@ export default function SaveJournals() {
         </Box>
       </Box>
 
-      {/* Two Card Layout for Batch Posting */}
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-        {/* Transaction Details Card */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-              Transaction Details
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2 }}>
-              <TextField
-                label="Transaction Details"
-                name="batchTransactionDetails"
-                value={formData.batchTransactionDetails}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                placeholder="Enter transaction details"
-              />
-                <TextField
-                  label="Transaction Date"
-                  name="batchEntryDate"
-                  value={formData.batchEntryDate || dayjs().format('YYYY-MM-DD')}
-                  onChange={() => {}}
-                  fullWidth
-                  size="small"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{ readOnly: true }}
-                  sx={{ backgroundColor: '#f5f5f5', pointerEvents: 'none' }}
-                />
-              <TextField
-                label="Debit Amount"
-                name="transactionDebitAmount"
-                value={formData.transactionDebitAmount || ''}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                type="number"
-              />
-              <TextField
-                label="Credit Amount"
-                name="transactionCreditAmount"
-                value={formData.transactionCreditAmount || ''}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-                type="number"
-              />
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          {debitTransactions.map((_, cardIndex) => (
+            <Box key={`debit-card-${cardIndex}`}>
+              {renderTransactionCard('debit', cardIndex, 'Debit Transaction', 'Debit Amount', 'Debit Account')}
             </Box>
-          </CardContent>
-        </Card>
-
-        {/* Account Details Card */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-              Account Details
-            </Typography>
-            {/* Upload Document moved here */}
-            <Button
-              component="label"
-              variant="outlined"
-              startIcon={<CloudUploadIcon />}
-              fullWidth
-              sx={{ height: 40, textTransform: 'none', justifyContent: 'flex-start', mb: 2 }}
-            >
-              {uploadedFile ? uploadedFile.name : 'Upload Document'}
-              <input
-                type="file"
-                hidden
-                onChange={(e) => setUploadedFile(e.target.files[0] || null)}
-              />
-            </Button>
-            {/* Static account options for Account Debit and Credit dropdowns */}
-            {(() => {
-              const accountOptions = [
-                { cacctnumb: "10000123101", displayName: "10000123101 Building Cost Banjulinding" },
-                { cacctnumb: "10000123301", displayName: "10000123301 Building Cost Bundung Head Office" },
-                { cacctnumb: "10000600001", displayName: "10000600001 Fixed Assets" },
-                { cacctnumb: "10000600101", displayName: "10000600101 Land Cost @ Bijilo" },
-                { cacctnumb: "10000600201", displayName: "10000600201 Building Cost" },
-                { cacctnumb: "10000600301", displayName: "10000600301 Equipment Cost" },
-                { cacctnumb: "10000600401", displayName: "10000600401 Furniture Cost" },
-                { cacctnumb: "10000600501", displayName: "10000600501 M/ Vehicle And Motor Cycles Cost" },
-                { cacctnumb: "10000600601", displayName: "10000600601 Credit Union Software" },
-                { cacctnumb: "10000600701", displayName: "10000600701 Computer Cost" },
-                { cacctnumb: "10000730101", displayName: "10000730101 Divideneds Paid On Shares" },
-                { cacctnumb: "10100610001", displayName: "10100610001 Accumulated Depreciation" },
-                { cacctnumb: "10100610101", displayName: "10100610101 Acc. Depre. Building" },
-                { cacctnumb: "10100610201", displayName: "10100610201 Acc. Depre. Equipment" },
-                { cacctnumb: "10100610301", displayName: "10100610301 Acc. Depre. Furniture" },
-                { cacctnumb: "10100610401", displayName: "10100610401 Acc. Depre. Motor Vehicles /Cycles" },
-                { cacctnumb: "10100610501", displayName: "10100610501 Acc. Depre. Software" },
-                { cacctnumb: "10100610601", displayName: "10100610601 Acc. Depre. Computer" },
-                // ... (add the rest of the payload here as needed)
-              ];
-              return (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', alignItems: 'flex-start' }}>
-                  {accountDebits.map((item, idx) => (
-                    <Box key={`account-debit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                      <TextField
-                        select
-                        label={idx === 0 ? 'Account to Debit' : `Account to Debit ${idx + 1}`}
-                        value={item.value}
-                        onChange={e => handleAccountDebitChange(idx, e.target.value)}
-                        fullWidth
-                        size="small"
-                      >
-                        <MenuItem value="">Select Account</MenuItem>
-                        {accountOptions.map((acc) => (
-                          <MenuItem key={acc.cacctnumb} value={acc.cacctnumb}>
-                            {acc.displayName}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                      {idx === accountDebits.length - 1 && accountDebits.length < 4 && (
-                        <Button onClick={handleAddAccountDebit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
-                          <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
-                        </Button>
-                      )}
-                    </Box>
-                  ))}
-                  {accountCredits.map((item, idx) => (
-                    <Box key={`account-credit-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                      <TextField
-                        select
-                        label={idx === 0 ? 'Account to Credit' : `Account to Credit ${idx + 1}`}
-                        value={item.value}
-                        onChange={e => handleAccountCreditChange(idx, e.target.value)}
-                        fullWidth
-                        size="small"
-                      >
-                        <MenuItem value="">Select Account</MenuItem>
-                        {accountOptions.map((acc) => (
-                          <MenuItem key={acc.cacctnumb} value={acc.cacctnumb}>
-                            {acc.displayName}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                      {idx === accountCredits.length - 1 && accountCredits.length < 4 && (
-                        <Button onClick={handleAddAccountCredit} variant="outlined" size="small" sx={{ minWidth: 36, p: 0, ml: 1 }}>
-                          <span style={{ fontSize: 24, fontWeight: 700 }}>+</span>
-                        </Button>
-                      )}
-                    </Box>
-                  ))}
-                </Box>
-              );
-            })()}
-          </CardContent>
-        </Card>
+          ))}
+        </Box>
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          {creditTransactions.map((_, cardIndex) => (
+            <Box key={`credit-card-${cardIndex}`}>
+              {renderTransactionCard('credit', cardIndex, 'Credit Transaction', 'Credit Amount', 'Credit Account')}
+            </Box>
+          ))}
+        </Box>
       </Box>
 
-      {/* Posting Type Radio Buttons */}
-      {/* Posting Type card removed as requested */}
-
-      {/* Batch Header Details section removed as requested */}
-
-      {/* Transaction Details Card */}
-      <Grid container spacing={2} sx={{ mb: 3 }} columns={2}>
-        <Grid sx={{ minWidth: 340, maxWidth: 600, flex: 1 }}>
-          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 2, height: '100%', width: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                Payment Information
-              </Typography>
-              <Box sx={{ display: 'grid', gap: 2 }}>
-                <TextField
-                  select
-                  label="Transaction Type"
-                  name="transactionType"
-                  value={formData.transactionType || ''}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  required
-                >
-                  <MenuItem value="">Select Transaction Type</MenuItem>
-                  <MenuItem value="cash">Cash</MenuItem>
-                  <MenuItem value="cheque">Cheque</MenuItem>
-                </TextField>
-                <TextField
-                  label="Book Balance"
-                  name="bookBalance"
-                  value={formData.bookBalance || ''}
-                  onChange={handleChange}
-                  size="small"
-                  fullWidth
-                  required
-                  type="number"
-                />
-                {/* Date field removed as requested */}
-                {/* Comments field removed as requested */}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid>
-          {formData.transactionType === 'cash' && (
-            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 2, width: '100%', minWidth: 340, maxWidth: 600 }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                  Cash Details
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                      Cash Account:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                      {user && user.CashAccount ? user.CashAccount : '[Missing CashAccount]'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                      Credit Limit:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                      {user && user.CreditLimit !== undefined ? user.CreditLimit : '[Missing CreditLimit]'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                      Debit Limit:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                      {user && user.DebitLimit !== undefined ? user.DebitLimit : '[Missing DebitLimit]'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
-                      Loan Limit:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                      {user && user.LoanLimit !== undefined ? user.LoanLimit : '[Missing LoanLimit]'}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-          {formData.transactionType === 'cheque' && (
-            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 2, width: '100%', minWidth: 340, maxWidth: 600 }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                  Check Details
-                </Typography>
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <TextField
-                    label="Check Number"
-                    name="checkNumber"
-                    value={formData.checkNumber || ''}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  />
-                  <TextField
-                    label="Check Date"
-                    name="checkDate"
-                    value={formData.checkDate || ''}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                  <TextField
-                    select
-                    label="Bank"
-                    name="bank"
-                    value={formData.bank || ''}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  >
-                    <MenuItem value="">Select bank</MenuItem>
-                    {banks.map((bank) => (
-                      <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    select
-                    label="Bank Account"
-                    name="bankAccount"
-                    value={formData.bankAccount || ''}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  >
-                    <MenuItem value="">Select account</MenuItem>
-                    {bankAccounts.map((account) => (
-                      <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    label="Contra Account"
-                    name="contraAccount"
-                    value={formData.contraAccount || ''}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-        </Grid>
-      </Grid>
-
-      {/* Journal Entries card removed as requested */}
-
-      {/* Check Details */}
-      {/* Check Details card removed as requested */}
-
-      {/* Account Details - Two Columns */}
-      {/* Account Details 1, 2, and Check Details cards removed as requested */}
-
-      {/* Status Message */}
       {statusMessage && (
-        <Alert severity={statusError ? 'error' : 'success'} sx={{ mb: 3 }}>
+        <Alert severity={statusError ? 'error' : 'success'} sx={{ my: 3 }}>
           {statusMessage}
         </Alert>
       )}
 
-      {/* Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+      {!isBalanced && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          Total Debit and Total Credit must be equal before you can save.
+        </Alert>
+      )}
+
+      {!hasEnteredBothAmounts && (
+        <Alert severity="info" sx={{ my: 2 }}>
+          Enter both Debit Amount and Credit Amount to enable save.
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
         <Button
           variant="contained"
           color="primary"
           startIcon={isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
           onClick={handleSaveDetails}
-          disabled={isSaving}
+          disabled={isSaving || !canSave}
           sx={{ fontWeight: 600 }}
         >
           {isSaving ? 'Saving...' : 'Save Details'}
         </Button>
       </Box>
-
-      {/* Confirmation Dialog removed */}
     </Box>
   );
 }
