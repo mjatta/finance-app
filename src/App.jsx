@@ -134,6 +134,62 @@ const normalizePermission = (permission) => {
   return '';
 };
 
+const writeActionKeywords = [
+  'save',
+  'submit',
+  'create',
+  'add',
+  'update',
+  'edit',
+  'delete',
+  'remove',
+  'approve',
+  'disburse',
+  'post',
+  'reverse',
+  'activate',
+  'deactivate',
+  'close',
+  'write off',
+  'change off',
+  'recover',
+  'confirm',
+];
+
+const isLikelyWriteAction = (target) => {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  const actionElement = target.closest('button, [role="button"], input[type="button"], input[type="submit"]');
+  if (!actionElement) {
+    return false;
+  }
+
+  if (actionElement.getAttribute('data-readonly-allow') === 'true') {
+    return false;
+  }
+
+  const actionType = String(actionElement.getAttribute('type') || '').trim().toLowerCase();
+  if (actionType === 'submit') {
+    return true;
+  }
+
+  const actionText = [
+    actionElement.textContent,
+    actionElement.getAttribute('aria-label'),
+    actionElement.getAttribute('title'),
+    actionElement.getAttribute('name'),
+    actionElement.getAttribute('value'),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+    .toLowerCase();
+
+  return writeActionKeywords.some((keyword) => actionText.includes(keyword));
+};
+
 function App() {
   const pageLoader = (
     <Box sx={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}>
@@ -403,18 +459,28 @@ function App() {
           return (
             <Box>
               <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontWeight: 700 }}>
-                View-only mode: edits are disabled for this page.
+                View-only mode: you can browse and click through the page, but write actions are blocked.
               </Typography>
               <Box
+                onClickCapture={(event) => {
+                  if (isLikelyWriteAction(event.target)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }}
+                onSubmitCapture={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
                 sx={{
-                  '& button, & input, & textarea, & select, & [role="button"], & [contenteditable="true"]': {
+                  '& input, & textarea, & select, & [contenteditable="true"]': {
                     pointerEvents: 'none',
                   },
                   '& input, & textarea, & select': {
                     backgroundColor: 'action.hover',
                   },
-                  '& .MuiButtonBase-root': {
-                    opacity: 0.7,
+                  '& .MuiInputBase-input.Mui-disabled, & .Mui-disabled .MuiInputBase-input': {
+                    WebkitTextFillColor: 'rgba(0, 0, 0, 0.7)',
                   },
                 }}
               >

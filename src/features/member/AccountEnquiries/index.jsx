@@ -565,9 +565,14 @@ export default function AccountEnquiries({ user }) {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
       {/* Header */}
-      <Typography variant="h5" sx={{ fontWeight: 700, color: '#2c3e50', mb: 3 }}>
-        Account Enquiries
-      </Typography>
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Account Enquiries
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Search customer accounts and review balances and transaction activity
+        </Typography>
+      </Box>
 
       {isReadOnly && (
         <Typography

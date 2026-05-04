@@ -544,9 +544,14 @@ export default function LoanApplication() {
       </Backdrop>
 
       {/* Header */}
-      <Typography variant="h5" sx={{ fontWeight: 700, color: '#2c3e50', mb: 3 }}>
-        Loan Application
-      </Typography>
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Loan Application
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Capture and process new loan requests with product-based controls
+        </Typography>
+      </Box>
 
       <Box sx={{ display: 'grid', gap: 3, maxWidth: '80%' }}>
 
