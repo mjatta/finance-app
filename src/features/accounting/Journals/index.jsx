@@ -398,7 +398,7 @@ export default function SaveJournals() {
               Payment Details
             </Typography>
             {transaction.paymentDetails.map((row, idx) => (
-              <Box key={`${type}-payment-${cardIndex}-${idx}`} sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+              <Box key={`${type}-payment-${cardIndex}-${idx}`} sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr' } }}>
                 <TextField
                   select
                   label="Transaction Type"
@@ -413,13 +413,6 @@ export default function SaveJournals() {
                     </MenuItem>
                   ))}
                 </TextField>
-                <TextField
-                  label="Amount"
-                  size="small"
-                  type="number"
-                  value={row.amount}
-                  onChange={(e) => handlePaymentRowChange(type, cardIndex, idx, 'amount', e.target.value)}
-                />
               </Box>
             ))}
 

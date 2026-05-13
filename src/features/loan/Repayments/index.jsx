@@ -755,11 +755,11 @@ export default function Repayments() {
                           {formData.loanBalance !== undefined ? `${CURRENCY_SYMBOL} ${formatCurrency(formData.loanBalance)}` : 'N/A'}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderRadius: 1, border: '2px solid', borderColor: '#ff9800', backgroundColor: '#fff3e0' }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#e65100', minWidth: '110px' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderRadius: 1, border: '2px solid', borderColor: '#4caf50', backgroundColor: '#e8f5e9' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2e7d32', minWidth: '110px' }}>
                           Calculated Interest:
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#e65100', fontSize: '0.95rem' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#2e7d32', fontSize: '0.95rem' }}>
                           {formData.calculatedInterest !== undefined ? `${CURRENCY_SYMBOL} ${parseFloat(formData.calculatedInterest).toFixed(2)}` : 'N/A'}
                         </Typography>
                       </Box>
