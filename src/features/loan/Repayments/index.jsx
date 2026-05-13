@@ -139,10 +139,6 @@ export default function Repayments() {
             <span class="label">Interest Paid</span>
             <span class="value">${interestPaid}</span>
           </div>
-          <div class="row">
-            <span class="label">Repayment</span>
-            <span class="value">${amount}</span>
-          </div>
           <hr class="divider-double" />
           <div class="sig-section">
             <div class="row">

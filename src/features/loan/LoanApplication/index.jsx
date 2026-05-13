@@ -871,17 +871,6 @@ export default function LoanApplication() {
                       ))}
                     </TextField>
 
-                    {/* Grace Period */}
-                    <TextField
-                      label="Grace Period (Months)"
-                      name="gracePeriod"
-                      value={formData.gracePeriod}
-                      onChange={handleChange}
-                      size="small"
-                      fullWidth
-                      type="number"
-                    />
-
                     {/* Purpose of Loan */}
                     <TextField
                       select
