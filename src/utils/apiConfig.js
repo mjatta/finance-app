@@ -41,8 +41,8 @@ const ENDPOINT_MAP = {
     prod: '/api/user-setup',
   },
   'password-change': {
-    dev: '/api/user-setup/password-change',
-    prod: '/api/user-setup/password-change',
+    dev: '/api/changepassword/update',
+    prod: '/api/changepassword/update',
   },
   // Authentication
   'auth-login': {

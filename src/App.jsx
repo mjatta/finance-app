@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, lazy, Suspense, useState } from 'react';
+import { cloneElement, isValidElement, lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
@@ -191,6 +191,32 @@ const isLikelyWriteAction = (target) => {
   return writeActionKeywords.some((keyword) => actionText.includes(keyword));
 };
 
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = 5 * 60 * 60 * 1000;
+const SESSION_LOGIN_AT_KEY = 'microfinance_session_login_at';
+const SESSION_LAST_ACTIVITY_AT_KEY = 'microfinance_session_last_activity_at';
+const SESSION_LOGOUT_REASON_KEY = 'microfinance_logout_reason';
+
+const setUserCookie = (userInfo) => {
+  const expires = new Date(Date.now() + ABSOLUTE_TIMEOUT_MS).toUTCString();
+  document.cookie = `user=${encodeURIComponent(JSON.stringify(userInfo))}; expires=${expires}; path=/`;
+};
+
+const initializeSessionWindow = () => {
+  const now = Date.now();
+  localStorage.setItem(SESSION_LOGIN_AT_KEY, String(now));
+  localStorage.setItem(SESSION_LAST_ACTIVITY_AT_KEY, String(now));
+};
+
+const touchSessionActivity = () => {
+  localStorage.setItem(SESSION_LAST_ACTIVITY_AT_KEY, String(Date.now()));
+};
+
+const parseTimestamp = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 function App() {
   const pageLoader = (
     <Box sx={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}>
@@ -228,9 +254,8 @@ function App() {
 
   const handleLogin = (userInfo) => {
     setUser(userInfo);
-    // store in cookie for 1 hour
-    const expires = new Date(Date.now() + 60 * 60 * 1000).toUTCString();
-    document.cookie = `user=${encodeURIComponent(JSON.stringify(userInfo))}; expires=${expires}; path=/`;
+    setUserCookie(userInfo);
+    initializeSessionWindow();
     navigate('/home');
   };
 
@@ -245,24 +270,80 @@ function App() {
         mustChangePassword: false,
       };
 
-      const expires = new Date(Date.now() + 60 * 60 * 1000).toUTCString();
-      document.cookie = `user=${encodeURIComponent(JSON.stringify(nextUser))}; expires=${expires}; path=/`;
+      setUserCookie(nextUser);
+      initializeSessionWindow();
       return nextUser;
     });
 
     navigate('/home');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (reason = 'manual') => {
     setUser(null);
     setActiveCategoryOverride(null);
     // Clear Zustand stores + localStorage
     useAuthStore.getState().clearUser();
     useUsersStore.getState().clearUsers();
+    localStorage.removeItem(SESSION_LOGIN_AT_KEY);
+    localStorage.removeItem(SESSION_LAST_ACTIVITY_AT_KEY);
+    if (reason === 'idle' || reason === 'absolute') {
+      localStorage.setItem(SESSION_LOGOUT_REASON_KEY, reason);
+    } else {
+      localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
+    }
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
   };
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const loginAt = parseTimestamp(localStorage.getItem(SESSION_LOGIN_AT_KEY));
+    const lastActivityAt = parseTimestamp(localStorage.getItem(SESSION_LAST_ACTIVITY_AT_KEY));
+    const now = Date.now();
+
+    if (!loginAt) {
+      localStorage.setItem(SESSION_LOGIN_AT_KEY, String(now));
+    }
+
+    if (!lastActivityAt) {
+      localStorage.setItem(SESSION_LAST_ACTIVITY_AT_KEY, String(now));
+    }
+
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    const onActivity = () => {
+      touchSessionActivity();
+    };
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, onActivity, { passive: true });
+    });
+
+    const timerId = window.setInterval(() => {
+      const currentTime = Date.now();
+      const sessionLoginAt = parseTimestamp(localStorage.getItem(SESSION_LOGIN_AT_KEY)) || currentTime;
+      const sessionLastActivityAt = parseTimestamp(localStorage.getItem(SESSION_LAST_ACTIVITY_AT_KEY)) || currentTime;
+
+      if (currentTime - sessionLoginAt >= ABSOLUTE_TIMEOUT_MS) {
+        handleLogout('absolute');
+        return;
+      }
+
+      if (currentTime - sessionLastActivityAt >= IDLE_TIMEOUT_MS) {
+        handleLogout('idle');
+      }
+    }, 10000);
+
+    return () => {
+      window.clearInterval(timerId);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, onActivity);
+      });
+    };
+  }, [user]);
 
   // ensure we redirect based on auth state
   if (!user) {

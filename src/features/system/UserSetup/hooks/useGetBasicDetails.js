@@ -2,9 +2,39 @@ import { useEffect, useState } from 'react';
 import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 const normalizeAccount = (item) => {
-  const cacctnumb = (item?.cacctnumb || '').toString().trim();
-  const cacctname = (item?.cacctname || '').toString().trim();
+  const cacctnumb = (
+    item?.cacctnumb
+    ?? item?.CACCTNUMB
+    ?? item?.cAcctNumb
+    ?? item?.CashAccount
+    ?? item?.cashAccount
+    ?? item?.accountNumber
+    ?? ''
+  ).toString().trim();
+  const cacctname = (
+    item?.cacctname
+    ?? item?.CACCTNAME
+    ?? item?.cAcctName
+    ?? item?.accountName
+    ?? ''
+  ).toString().trim();
   return { cacctnumb, cacctname };
+};
+
+const extractRawAccounts = (payload) => {
+  if (Array.isArray(payload)) return payload;
+
+  const candidates = [
+    payload?.CashAccounts,
+    payload?.cashAccounts,
+    payload?.accounts,
+    payload?.data?.CashAccounts,
+    payload?.data?.cashAccounts,
+    payload?.data?.accounts,
+  ];
+
+  const match = candidates.find((entry) => Array.isArray(entry));
+  return Array.isArray(match) ? match : [];
 };
 
 export function useGetBasicDetails() {
@@ -31,7 +61,7 @@ export function useGetBasicDetails() {
         }
 
         const payload = await response.json();
-        const rawAccounts = Array.isArray(payload?.CashAccounts) ? payload.CashAccounts : [];
+        const rawAccounts = extractRawAccounts(payload);
         const normalized = rawAccounts
           .map(normalizeAccount)
           .filter((item) => item.cacctnumb);

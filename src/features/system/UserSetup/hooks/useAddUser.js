@@ -23,17 +23,6 @@ const getOprcode = (userForm) => {
   return ((nameParts[0]?.[0] || '') + (nameParts[1]?.[0] || '') + (nameParts[2]?.[0] || '')).toUpperCase();
 };
 
-const getBranchId = (branchName, branchesData) => {
-  const branchObj = Array.isArray(branchesData)
-    ? branchesData.find(
-        (item) =>
-          (item?.br_name || item?.branchName || item?.name || '').toString().trim() === branchName,
-      )
-    : null;
-
-  return branchObj?.br_id ?? branchObj?.branchId ?? branchObj?.id ?? 0;
-};
-
 const getAccessLevel = (userForm) => {
   const userTypeMap = {
     maker: 1,
@@ -62,19 +51,25 @@ export function useAddUser() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const addUser = async ({ userForm, roleForm, branchesData }) => {
+  const addUser = async ({ userForm, roleForm, branchesData: _branchesData }) => {
     setLoading(true);
     setError(null);
 
     try {
+      if (!userForm.branchId) {
+        throw new Error('Please select a valid branch before saving.');
+      }
+
       const payload = {
         Compid: 30,
         Oprcode: getOprcode(userForm),
         Username: userForm.userName || '',
         Userpassword: userForm.temporaryPassword || '',
         Dateforce: toDateOnly(new Date()),
-        Branchid: getBranchId(userForm.branch, branchesData),
-        Cashaccont: userForm.cashAccount || '',
+        ResetPassword: Boolean(userForm.resetPassword),
+        MustChangePassword: Boolean(userForm.resetPassword),
+        Branchid: Number(userForm.branchId),
+        Cashaccont: (userForm.cashAccount || '').toString().trim(),
         Staffno: userForm.staffNumber || '',
         Accesslvl: getAccessLevel(userForm),
         Debtlimitamt: toNumber(userForm.debitMit),

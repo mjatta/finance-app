@@ -22,11 +22,29 @@ const loginHighlights = [
   'Fast access to reporting and accounting tools',
 ];
 
+const SESSION_LOGOUT_REASON_KEY = 'microfinance_logout_reason';
+
+const getInitialErrorMessage = () => {
+  const logoutReason = localStorage.getItem(SESSION_LOGOUT_REASON_KEY);
+
+  if (logoutReason === 'idle') {
+    localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
+    return 'Session expired after 15 minutes of inactivity. Please sign in again.';
+  }
+
+  if (logoutReason === 'absolute') {
+    localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
+    return 'Session expired after 5 hours. Please sign in again.';
+  }
+
+  return '';
+};
+
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(() => getInitialErrorMessage());
   const { login: backendLogin, loading: loginLoading } = useLogin();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const setAuthUser = useAuthStore((state) => state.setUser);
@@ -47,6 +65,7 @@ export default function Login({ onLogin }) {
         id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
         name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
         username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
+        mustChangePassword: Boolean(apiUser.MustChangePassword || apiUser.ResetPassword),
         role: role || 'USER',
         access: {
           allPages: apiUser.Allpages ?? false,

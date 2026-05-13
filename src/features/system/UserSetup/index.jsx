@@ -26,6 +26,7 @@ import { useGetBasicDetails } from './hooks/useGetBasicDetails';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
+const BRANCHES_RAW_CACHE_KEY = 'userSetup_remoteBranchesRaw';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
 
 const featureOptions = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting'];
@@ -46,11 +47,44 @@ const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(
 
 const getCompanyName = (record) => (record?.com_name || record?.companyName || '').toString().trim();
 const getBranchName = (record) => (record?.branchName || record?.br_name || record?.branch || '').toString().trim();
+const getBranchIdFromRecord = (record) => {
+  const value = record?.br_id
+    ?? record?.branchid
+    ?? record?.BranchId
+    ?? record?.Branchid
+    ?? record?.branchId
+    ?? record?.id
+    ?? record?.gnBranchid
+    ?? null;
+
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
 
 const generateTemporaryPassword = () => {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
   return Array.from({ length: 10 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
 };
+
+const createDefaultUserForm = (companyName = '') => ({
+  companyName,
+  branch: '',
+  branchId: null,
+  staffNumber: '',
+  userId: '',
+  userName: '',
+  temporaryPassword: generateTemporaryPassword(),
+  baseRole: '',
+  cashAccount: '',
+  userType: '',
+  debitMit: '',
+  creditLimit: '',
+  loanLimit: '',
+  loanApprovalLimit: false,
+  disableUser: false,
+  resetPassword: true,
+});
 
 const upsertByKey = (rows, nextRow, key) => {
   const nextKey = nextRow?.[key];
@@ -157,23 +191,7 @@ export default function UserSetup({ user }) {
   const { cashAccounts, loading: cashAccountsLoading } = useGetBasicDetails();
   const { users: allUsers, loading: allUsersLoading } = useGetAllUsers();
 
-  const [userForm, setUserForm] = useState({
-    companyName: '',
-    branch: '',
-    staffNumber: '',
-    userId: '',
-    userName: '',
-    temporaryPassword: '',
-    baseRole: '',
-    cashAccount: '',
-    userType: '',
-    debitMit: '',
-    creditLimit: '',
-    loanLimit: '',
-    loanApprovalLimit: false,
-    disableUser: false,
-    resetPassword: false,
-  });
+  const [userForm, setUserForm] = useState(() => createDefaultUserForm(''));
 
   const [roleForm, setRoleForm] = useState({
     roleName: '',
@@ -184,7 +202,14 @@ export default function UserSetup({ user }) {
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
 
   const canSave = useMemo(
-    () => userForm.companyName && userForm.branch && userForm.userId && userForm.userName,
+    () => Boolean(
+      userForm.companyName
+      && userForm.branch
+      && userForm.userId
+      && userForm.userName
+      && userForm.branchId !== null
+      && userForm.branchId !== undefined,
+    ),
     [userForm],
   );
   const availableBranches = useMemo(() => {
@@ -209,6 +234,7 @@ export default function UserSetup({ user }) {
       setUserForm((prev) => ({
         ...prev,
         branch: prev.branch && remoteBranches.includes(prev.branch) ? prev.branch : '',
+        branchId: prev.branch && remoteBranches.includes(prev.branch) ? prev.branchId : null,
       }));
     };
 
@@ -245,6 +271,11 @@ export default function UserSetup({ user }) {
       if (cachedBranches) {
         const parsed = JSON.parse(cachedBranches);
         if (Array.isArray(parsed) && parsed.length > 0) applyRemoteBranches(parsed);
+      }
+      const cachedRawBranches = localStorage.getItem(BRANCHES_RAW_CACHE_KEY);
+      if (cachedRawBranches) {
+        const parsedRaw = JSON.parse(cachedRawBranches);
+        if (Array.isArray(parsedRaw) && parsedRaw.length > 0) setRawBranchesData(parsedRaw);
       }
       const cachedSetup = localStorage.getItem(SETUP_CACHE_KEY);
       if (cachedSetup) applySetupPayload(JSON.parse(cachedSetup));
@@ -289,7 +320,10 @@ export default function UserSetup({ user }) {
                 ),
               );
               if (remoteBranches.length > 0) {
-                try { localStorage.setItem(BRANCHES_CACHE_KEY, JSON.stringify(remoteBranches)); } catch { /* quota */ }
+                try {
+                  localStorage.setItem(BRANCHES_CACHE_KEY, JSON.stringify(remoteBranches));
+                  localStorage.setItem(BRANCHES_RAW_CACHE_KEY, JSON.stringify(remoteJson));
+                } catch { /* quota */ }
                 applyRemoteBranches(remoteBranches);
               }
             }
@@ -320,18 +354,28 @@ export default function UserSetup({ user }) {
     if (!userForm.companyName) return;
 
     if (availableBranches.length === 0) {
-      setUserForm((prev) => ({ ...prev, branch: '' }));
+      setUserForm((prev) => ({ ...prev, branch: '', branchId: null }));
       return;
     }
 
     if (userForm.branch && !availableBranches.includes(userForm.branch)) {
-      setUserForm((prev) => ({ ...prev, branch: availableBranches[0] }));
+      setUserForm((prev) => ({ ...prev, branch: '', branchId: null }));
     }
   }, [availableBranches, userForm.companyName, userForm.branch]);
 
   const handleUserFormChange = (event) => {
     const { name, value, type, checked } = event.target;
     setStatusMessage('');
+
+    if (name === 'branch') {
+      const normalizedValue = value.toString().trim().toLowerCase();
+      const branchObj = rawBranchesData.find(
+        (item) => getBranchName(item).toLowerCase() === normalizedValue,
+      );
+      const resolvedBranchId = getBranchIdFromRecord(branchObj);
+      setUserForm((prev) => ({ ...prev, branch: value, branchId: resolvedBranchId }));
+      return;
+    }
 
     if (name === 'resetPassword' && type === 'checkbox') {
       setUserForm((prev) => {
@@ -342,6 +386,14 @@ export default function UserSetup({ user }) {
           temporaryPassword: nextResetValue ? (prev.temporaryPassword || generateTemporaryPassword()) : '',
         };
       });
+      return;
+    }
+
+    if (name === 'cashAccount') {
+      setUserForm((prev) => ({
+        ...prev,
+        cashAccount: (value ?? '').toString().trim(),
+      }));
       return;
     }
 
@@ -415,6 +467,7 @@ export default function UserSetup({ user }) {
     setUserForm({
       companyName: selectedCompanyName,
       branch: selectedBranch,
+      branchId: getBranchIdFromRecord(userRecord),
       staffNumber: userRecord?.StaffNo || userRecord?.staffNumber || '',
       userId: userRecord?.UserID || userRecord?.userId || '',
       userName: userRecord?.UserName || userRecord?.userName || '',
@@ -483,6 +536,11 @@ export default function UserSetup({ user }) {
 
   const handleSaveAll = async () => {
     if (!canSave || isReadOnlyRole) {
+      return;
+    }
+
+    if (!(userForm.cashAccount || '').toString().trim()) {
+      setStatusMessage('Please select a cash account before saving.');
       return;
     }
 
@@ -578,19 +636,8 @@ export default function UserSetup({ user }) {
       setStatusMessage('User setup and role saved successfully.');
       setEditingUserId(userForm.userId || '');
       setUserForm((prev) => ({
-        ...prev,
-        staffNumber: '',
-        userId: '',
-        userName: '',
-        temporaryPassword: '',
-        cashAccount: '',
-        userType: '',
-        debitMit: '',
-        creditLimit: '',
-        loanLimit: '',
-        loanApprovalLimit: false,
-        disableUser: false,
-        resetPassword: false,
+        ...createDefaultUserForm(prev.companyName),
+        branch: prev.branch,
       }));
       setRoleForm({
         roleName: '',
@@ -622,23 +669,7 @@ export default function UserSetup({ user }) {
   const handleClearAll = () => {
     const defaultCompanyName = companies[0] || '';
 
-    setUserForm({
-      companyName: defaultCompanyName,
-      branch: '',
-      staffNumber: '',
-      userId: '',
-      userName: '',
-      temporaryPassword: '',
-      baseRole: '',
-      cashAccount: '',
-      userType: '',
-      debitMit: '',
-      creditLimit: '',
-      loanLimit: '',
-      loanApprovalLimit: false,
-      disableUser: false,
-      resetPassword: false,
-    });
+    setUserForm(createDefaultUserForm(defaultCompanyName));
 
     setRoleForm({
       roleName: '',

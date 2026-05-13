@@ -183,6 +183,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
     },
     {
+      "source": "/api/changepassword/update",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/changepassword/update"
+    },
+    {
       "source": "/api/user-setup/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/:path*"
     },

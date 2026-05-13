@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import { getFullApiUrl } from '../../utils/apiConfig';
+import { useUpdatePassword } from './hooks/useUpdatePassword';
 
 export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -20,9 +20,9 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
+  const { updatePassword, loading: isSaving } = useUpdatePassword();
 
   const complexityRules = {
     minLength: newPassword.length >= 8,
@@ -72,29 +72,19 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
       return;
     }
 
-    setIsSaving(true);
     setStatusMessage('');
     setStatusError(false);
 
     try {
-      // Use relative path so Vite proxy can intercept and handle CORS
-      const url = getFullApiUrl('/api/user-setup/password-change');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.username || '',
-          currentPassword,
-          newPassword,
-        }),
+      const result = await updatePassword({
+        userId: user?.username || user?.id || '',
+        oldPassword: currentPassword,
+        newPassword,
+        confirmPassword,
       });
 
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setStatusMessage(payload?.message || 'Failed to change password.');
+      if (!result.success) {
+        setStatusMessage(result.error || 'Failed to change password.');
         setStatusError(true);
         return;
       }
@@ -105,8 +95,6 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
     } catch {
       setStatusMessage('Failed to change password.');
       setStatusError(true);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -135,6 +123,7 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
               type={showCurrentPassword ? 'text' : 'password'}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
+              helperText="For first-time login, use your temporary password as the current password."
               InputProps={{
                 endAdornment: renderVisibilityAdornment(
                   showCurrentPassword,
