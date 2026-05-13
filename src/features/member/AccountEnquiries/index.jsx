@@ -24,7 +24,7 @@ const formatProfileImage = (imageData) => {
   return `data:image/jpeg;base64,${imageData}`;
 };
 
-export default function AccountEnquiries({ user }) {
+export default function AccountEnquiries({ user, title = 'Account Enquiries' }) {
   const [searchMemberCode, setSearchMemberCode] = useState('');
   const [memberDetails, setMemberDetails] = useState(null);
   const [error, setError] = useState('');
@@ -567,7 +567,7 @@ export default function AccountEnquiries({ user }) {
       {/* Header */}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          Account Enquiries
+          {title}
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>
           Search customer accounts and review balances and transaction activity

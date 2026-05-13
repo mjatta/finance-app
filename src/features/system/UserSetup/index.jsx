@@ -100,6 +100,7 @@ const featurePageMap = {
     { path: '/loan/activate', label: 'Loan Activate' },
     { path: '/loan/disbursement', label: 'Loan Disbursement' },
     { path: '/loan/repayments', label: 'Loan Repayments' },
+    { path: '/loan/account-enquires', label: 'Loan Account Enquires' },
     { path: '/loan/application-reschedule', label: 'Loan Application Reschedule' },
     { path: '/loan/application-top-up', label: 'Loan Application Top Up' },
     { path: '/loan/change-off', label: 'Loan Change Off' },
