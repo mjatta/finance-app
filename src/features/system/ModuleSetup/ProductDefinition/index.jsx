@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Card,
@@ -35,6 +35,7 @@ export default function ProductDefinition() {
     mainCategory: '',
     productName: '',
     hasDeductions: false,
+    isIslamicProduct: false,
     interestRate: '',
     minimumAmount: '',
     maximumAmount: '',
@@ -65,6 +66,12 @@ export default function ProductDefinition() {
   const selectedCategoryCode = selectedCategory?.acode || '';
   const isLoan = selectedAdescrip.includes('LOAN');
   const isSavingOrShares = selectedAdescrip.includes('SAVING') || selectedAdescrip.includes('SHARE');
+
+  useEffect(() => {
+    if (!isLoan && form.isIslamicProduct) {
+      setForm((prev) => ({ ...prev, isIslamicProduct: false }));
+    }
+  }, [isLoan, form.isIslamicProduct]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -179,6 +186,18 @@ export default function ProductDefinition() {
                   label="Deductions"
                 />
               )}
+              {isLoan && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="isIslamicProduct"
+                      checked={form.isIslamicProduct}
+                      onChange={handleChange}
+                    />
+                  }
+                  label="Islamic Products"
+                />
+              )}
             </Box>
           </CardContent>
         </Card>
@@ -190,15 +209,17 @@ export default function ProductDefinition() {
               Financial Parameters
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Interest Rate (%)"
-                name="interestRate"
-                value={form.interestRate}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-                inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
-              />
+              {!(isLoan && form.isIslamicProduct) && (
+                <TextField
+                  label="Interest Rate (%)"
+                  name="interestRate"
+                  value={form.interestRate}
+                  onChange={handleChange}
+                  size="small"
+                  fullWidth
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                />
+              )}
               <TextField
                 label="Minimum Amount"
                 name="minimumAmount"
