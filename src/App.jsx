@@ -4,9 +4,13 @@ import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
@@ -46,8 +50,8 @@ import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import logo from './assets/company-logo.jpg';
 import './App.css';
 
@@ -247,10 +251,12 @@ function App() {
   const companyName = companyDetails?.com_name?.trim() || 'Social Development Fund';
   const [activeCategoryOverride, setActiveCategoryOverride] = useState(null);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const activeCategory = activeCategoryOverride || deriveCategoryFromPath(location.pathname);
+  const isProfileMenuOpen = Boolean(profileMenuAnchor);
 
   const handleLogin = (userInfo) => {
     setUser(userInfo);
@@ -294,6 +300,25 @@ function App() {
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
+  };
+
+  const handleOpenProfileMenu = (event) => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseProfileMenu = () => {
+    setProfileMenuAnchor(null);
+  };
+
+  const handleChangePasswordFromMenu = () => {
+    handleCloseProfileMenu();
+    setActiveCategoryOverride(null);
+    navigate('/change-password');
+  };
+
+  const handleLogoutFromMenu = () => {
+    handleCloseProfileMenu();
+    handleLogout();
   };
 
   useEffect(() => {
@@ -628,19 +653,45 @@ function App() {
                 />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FontAwesomeIcon icon={faUser} />
-                <Typography variant="subtitle1" sx={{ ml: 0.5, fontWeight: 'bold' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                   Welcome {user?.username}
                 </Typography>
+                <IconButton
+                  onClick={handleOpenProfileMenu}
+                  size="small"
+                  sx={{
+                    ml: 0.5,
+                    p: 0.25,
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.16)' },
+                  }}
+                >
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: '#2bb673', fontWeight: 800, fontSize: '0.9rem' }}>
+                    {(user?.username || 'U').toString().trim().charAt(0).toUpperCase()}
+                  </Avatar>
+                </IconButton>
+                <Menu
+                  anchorEl={profileMenuAnchor}
+                  open={isProfileMenuOpen}
+                  onClose={handleCloseProfileMenu}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                  <MenuItem onClick={handleChangePasswordFromMenu}>
+                    <ListItemIcon>
+                      <LockResetRoundedIcon fontSize="small" />
+                    </ListItemIcon>
+                    Change Password
+                  </MenuItem>
+                  <MenuItem onClick={handleLogoutFromMenu}>
+                    <ListItemIcon>
+                      <LogoutRoundedIcon fontSize="small" />
+                    </ListItemIcon>
+                    Logout
+                  </MenuItem>
+                </Menu>
               </Box>
-              <Button
-                color="inherit"
-                startIcon={<FontAwesomeIcon icon={faSignOutAlt} />}
-                onClick={handleLogout}
-                sx={{ border: '1px solid rgba(255,255,255,0.22)', borderRadius: 2, px: 1.8 }}
-              >
-                Logout
-              </Button>
             </Box>
 
             <header className="app-top-nav-wrap">
