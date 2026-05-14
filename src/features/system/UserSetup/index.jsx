@@ -369,11 +369,21 @@ export default function UserSetup({ user }) {
 
     if (name === 'branch') {
       const normalizedValue = value.toString().trim().toLowerCase();
-      const branchObj = rawBranchesData.find(
+      
+      // Try rawBranchesData first
+      let branchObj = rawBranchesData.find(
         (item) => getBranchName(item).toLowerCase() === normalizedValue,
       );
+      
+      // Fallback: try companyBranches
+      if (!branchObj) {
+        branchObj = companyBranches.find(
+          (item) => getBranchName(item).toLowerCase() === normalizedValue,
+        );
+      }
+      
       const resolvedBranchId = getBranchIdFromRecord(branchObj);
-      setUserForm((prev) => ({ ...prev, branch: value, branchId: resolvedBranchId }));
+      setUserForm((prev) => ({ ...prev, branch: value, branchId: resolvedBranchId || null }));
       return;
     }
 
@@ -401,6 +411,16 @@ export default function UserSetup({ user }) {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleCopyUserId = async () => {
+    if (!userForm.userId) return;
+    try {
+      await navigator.clipboard.writeText(userForm.userId);
+      setStatusMessage('User ID copied to clipboard.');
+    } catch {
+      setStatusMessage('Unable to copy User ID.');
+    }
   };
 
   const handleCopyTemporaryPassword = async () => {
@@ -638,6 +658,7 @@ export default function UserSetup({ user }) {
       setUserForm((prev) => ({
         ...createDefaultUserForm(prev.companyName),
         branch: prev.branch,
+        branchId: prev.branchId,
       }));
       setRoleForm({
         roleName: '',
@@ -865,7 +886,39 @@ export default function UserSetup({ user }) {
                 </TextField>
 
                 <TextField label="Staff number" name="staffNumber" value={userForm.staffNumber} onChange={handleUserFormChange} size="small" fullWidth />
-                <TextField label="User id" name="userId" value={userForm.userId} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField
+                  label="User id"
+                  name="userId"
+                  value={userForm.userId}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  helperText="This is the username the user will log in with"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#f0faf0',
+                      '& fieldset': { borderColor: '#43a047', borderWidth: 2 },
+                      '&:hover fieldset': { borderColor: '#2e7d32' },
+                      '&.Mui-focused fieldset': { borderColor: '#1b5e20' },
+                    },
+                    '& .MuiInputLabel-root': { color: '#2e7d32', fontWeight: 800 },
+                    '& .MuiFormHelperText-root': { color: '#388e3c', fontWeight: 700 },
+                  }}
+                  InputProps={{
+                    endAdornment: userForm.userId ? (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="Copy user ID"
+                          edge="end"
+                          onClick={handleCopyUserId}
+                          size="small"
+                        >
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                />
                 <TextField label="User name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField
                   label="Temporary password"
@@ -874,6 +927,16 @@ export default function UserSetup({ user }) {
                   onChange={handleUserFormChange}
                   size="small"
                   fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#f0faf0',
+                      '& fieldset': { borderColor: '#43a047', borderWidth: 2 },
+                      '&:hover fieldset': { borderColor: '#2e7d32' },
+                      '&.Mui-focused fieldset': { borderColor: '#1b5e20' },
+                    },
+                    '& .MuiInputLabel-root': { color: '#2e7d32', fontWeight: 800 },
+                    '& .MuiFormHelperText-root': { color: '#388e3c', fontWeight: 700 },
+                  }}
                   InputProps={{
                     readOnly: userForm.resetPassword,
                     endAdornment: userForm.resetPassword && userForm.temporaryPassword ? (
