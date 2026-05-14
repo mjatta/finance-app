@@ -108,6 +108,7 @@ const Reporting = lazy(() => import('./features/reporting'));
 const ReportingAnalytics = lazy(() => import('./features/reporting/Analytics'));
 const TrialBalance = lazy(() => import('./features/reporting/TrialBalance'));
 const IncomeStatement = lazy(() => import('./features/reporting/IncomeStatement'));
+const BalanceSheet = lazy(() => import('./features/reporting/BalanceSheet'));
 const Landing = lazy(() => import('./features/home/Landing'));
 const Login = lazy(() => import('./features/auth/Login'));
 const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
@@ -477,6 +478,7 @@ function App() {
         { label: 'Analytics', to: '/reporting/analytics', icon: InsightsRoundedIcon },
         { label: 'Trial Balance', to: '/reporting/trial-balance', icon: BalanceRoundedIcon },
         { label: 'Income Statement', to: '/reporting/income-statement', icon: AssessmentRoundedIcon },
+        { label: 'Balance Sheet', to: '/reporting/balance-sheet', icon: BalanceRoundedIcon },
       ],
     },
   ];
@@ -1001,6 +1003,10 @@ function App() {
                     <Route
                       path="/reporting/income-statement"
                       element={renderWithAccess('reporting', <IncomeStatement />)}
+                    />
+                    <Route
+                      path="/reporting/balance-sheet"
+                      element={renderWithAccess('reporting', <BalanceSheet />)}
                     />
 
                     <Route path="*" element={<Navigate to="/home" replace />} />
