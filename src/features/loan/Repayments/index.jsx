@@ -174,6 +174,12 @@ export default function Repayments() {
 
   // Save repayment handler
   const handleSaveRepayment = async () => {
+    if (isSavingRepayment) {
+      return;
+    }
+
+    setIsSavingRepayment(true);
+
     const parseLocalStorageJson = (key) => {
       try {
         const raw = localStorage.getItem(key);
@@ -205,79 +211,83 @@ export default function Repayments() {
       legacyUser?.branchId ??
       '';
 
-    const payload = {
-      accountNumber: formData.accountNumber,
-      productId: formData.loanProductId,
-      repaymentType: formData.repaymentType,
-      repaymentAmount: formData.repaymentAmount,
-      totalAccruedInterest: formData.totalAccruedInterest || 0,
-      transactionDate: formData.transactionDate,
-      checkNumber: formData.checkNumber,
-      username: resolvedUsername,
-      branchId: resolvedBranchId,
-    };
-    const result = await insertLoanRepayment(payload);
-    if (result) {
-      setStatusMessage('Repayment saved successfully!');
-      setStatusError(false);
-      if (result.Receipt) {
-        const receiptWithDetails = {
-          ...result.Receipt,
-          PrincipalPaid: result.res?.PrincipalPaid || 0,
-          InterestPaid: result.res?.InterestPaid || 0,
-        };
-        setLastReceipt(receiptWithDetails);
-        if (printReceipt) {
-          shouldAutoPrint.current = true;
-        }
-      }
-      // Reset all fields after 7 seconds, like deposit
-      setTimeout(() => {
-        setFormData({
-          memberCode: '',
-          profilePicture: '',
-          memberSignature: '',
-          phoneNumber: '',
-          postingAccount: '',
-          memberAccounts: [],
-          loanAccounts: [],
-          transactionDate: dayjs().format('YYYY-MM-DD'),
-          repaymentAmount: '',
-          loanProductId: '',
-          loanBalance: undefined,
-          calculatedInterest: undefined,
-          storedAccruedInterest: undefined,
-          totalAccruedInterest: 0,
-          repayment: undefined,
-          duration: undefined,
-          startDate: undefined,
-          accountNumber: '',
-          customerCode: '',
-          bookBalance: undefined,
-          unclearedBalance: undefined,
-          clearedBalance: undefined,
-          controlAccount: '',
-          interestAccount: '',
-          badDebtAccount: '',
-          repaymentType: '',
-          checkNumber: '',
-          checkDate: '',
-          bank: '',
-          bankAccount: '',
-          contraAccount: '',
-          cashAccount: '',
-          creditLimit: '',
-          debitLimit: '',
-          loanLimit: '',
-        });
-        setLastReceipt(null);
-        setTouched({});
-        setStatusMessage('');
+    try {
+      const payload = {
+        accountNumber: formData.accountNumber,
+        productId: formData.loanProductId,
+        repaymentType: formData.repaymentType,
+        repaymentAmount: formData.repaymentAmount,
+        totalAccruedInterest: formData.totalAccruedInterest || 0,
+        transactionDate: formData.transactionDate,
+        checkNumber: formData.checkNumber,
+        username: resolvedUsername,
+        branchId: resolvedBranchId,
+      };
+      const result = await insertLoanRepayment(payload);
+      if (result) {
+        setStatusMessage('Repayment saved successfully!');
         setStatusError(false);
-      }, 7000);
-    } else {
-      setStatusMessage('Failed to save repayment.');
-      setStatusError(true);
+        if (result.Receipt) {
+          const receiptWithDetails = {
+            ...result.Receipt,
+            PrincipalPaid: result.res?.PrincipalPaid || 0,
+            InterestPaid: result.res?.InterestPaid || 0,
+          };
+          setLastReceipt(receiptWithDetails);
+          if (printReceipt) {
+            shouldAutoPrint.current = true;
+          }
+        }
+        // Reset all fields after 7 seconds, like deposit
+        setTimeout(() => {
+          setFormData({
+            memberCode: '',
+            profilePicture: '',
+            memberSignature: '',
+            phoneNumber: '',
+            postingAccount: '',
+            memberAccounts: [],
+            loanAccounts: [],
+            transactionDate: dayjs().format('YYYY-MM-DD'),
+            repaymentAmount: '',
+            loanProductId: '',
+            loanBalance: undefined,
+            calculatedInterest: undefined,
+            storedAccruedInterest: undefined,
+            totalAccruedInterest: 0,
+            repayment: undefined,
+            duration: undefined,
+            startDate: undefined,
+            accountNumber: '',
+            customerCode: '',
+            bookBalance: undefined,
+            unclearedBalance: undefined,
+            clearedBalance: undefined,
+            controlAccount: '',
+            interestAccount: '',
+            badDebtAccount: '',
+            repaymentType: '',
+            checkNumber: '',
+            checkDate: '',
+            bank: '',
+            bankAccount: '',
+            contraAccount: '',
+            cashAccount: '',
+            creditLimit: '',
+            debitLimit: '',
+            loanLimit: '',
+          });
+          setLastReceipt(null);
+          setTouched({});
+          setStatusMessage('');
+          setStatusError(false);
+        }, 7000);
+      } else {
+        setStatusMessage('Failed to save repayment.');
+        setStatusError(true);
+      }
+    } finally {
+      setIsSavingRepayment(false);
     }
   };
   // State
@@ -417,6 +427,7 @@ export default function Repayments() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
+  const [isSavingRepayment, setIsSavingRepayment] = useState(false);
   const [loadingAccountDetails, setLoadingAccountDetails] = useState(false);
   const [touched, setTouched] = useState({});
 
@@ -554,10 +565,10 @@ export default function Repayments() {
   // Main render
   return (
     <Box component="fieldset" p={3} sx={{ border: 'none', p: 3, m: 0, position: 'relative' }}>
-      <Backdrop open={isLoadingMember} sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}>
+      <Backdrop open={isLoadingMember || isSavingRepayment} sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 1 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <CircularProgress size={96} thickness={5} />
-          <Typography variant="h6" fontWeight={800}>Loading member...</Typography>
+          <Typography variant="h6" fontWeight={800}>{isSavingRepayment ? 'Saving repayment...' : 'Loading member...'}</Typography>
         </Box>
       </Backdrop>
 
@@ -988,12 +999,13 @@ export default function Repayments() {
                 disabled={
                   !formData.postingAccount ||
                   !formData.repaymentAmount ||
-                  !formData.repaymentType
+                  !formData.repaymentType ||
+                  isSavingRepayment
                 }
                 onClick={handleSaveRepayment}
                 sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, paddingX: 3, boxShadow: 'none', textTransform: 'none' }}
               >
-                💾 Save Repayment
+                {isSavingRepayment ? 'Saving...' : '💾 Save Repayment'}
               </Button>
               <Button
                 variant="outlined"
