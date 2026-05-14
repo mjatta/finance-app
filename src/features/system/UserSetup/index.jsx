@@ -919,7 +919,7 @@ export default function UserSetup({ user }) {
                     ) : null,
                   }}
                 />
-                <TextField label="User name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Full Name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField
                   label="Temporary password"
                   name="temporaryPassword"
