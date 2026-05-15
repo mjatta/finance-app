@@ -171,6 +171,7 @@ const featurePageMap = {
     { path: '/reporting/trial-balance', label: 'Trial Balance' },
     { path: '/reporting/income-statement', label: 'Income Statement' },
     { path: '/reporting/balance-sheet', label: 'Balance Sheet' },
+    { path: '/reporting/savings-balance', label: 'Savings Balance' },
   ],
 };
 
