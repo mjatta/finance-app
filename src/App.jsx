@@ -104,8 +104,6 @@ const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
 const ProductDefinition = lazy(() => import('./features/system/ModuleSetup/ProductDefinition'));
 const SaveLogs = lazy(() => import('./features/system/SaveLogs'));
 
-const Reporting = lazy(() => import('./features/reporting'));
-const ReportingAnalytics = lazy(() => import('./features/reporting/Analytics'));
 const TrialBalance = lazy(() => import('./features/reporting/TrialBalance'));
 const IncomeStatement = lazy(() => import('./features/reporting/IncomeStatement'));
 const BalanceSheet = lazy(() => import('./features/reporting/BalanceSheet'));
@@ -479,8 +477,6 @@ function App() {
       key: 'reporting',
       label: 'Reporting & Analytics',
       children: [
-        { label: 'Reporting', to: '/reporting', icon: AssessmentRoundedIcon },
-        { label: 'Analytics', to: '/reporting/analytics', icon: InsightsRoundedIcon },
         { label: 'Trial Balance', to: '/reporting/trial-balance', icon: BalanceRoundedIcon },
         { label: 'Income Statement', to: '/reporting/income-statement', icon: AssessmentRoundedIcon },
         { label: 'Balance Sheet', to: '/reporting/balance-sheet', icon: BalanceRoundedIcon },
@@ -1001,11 +997,6 @@ function App() {
                       element={renderWithAccess('system', <RunningBalanceFix />)}
                     />
 
-                    <Route path="/reporting" element={renderWithAccess('reporting', <Reporting />)} />
-                    <Route
-                      path="/reporting/analytics"
-                      element={renderWithAccess('reporting', <ReportingAnalytics />)}
-                    />
                     <Route
                       path="/reporting/trial-balance"
                       element={renderWithAccess('reporting', <TrialBalance />)}

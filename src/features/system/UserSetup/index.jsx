@@ -166,8 +166,6 @@ const featurePageMap = {
     { path: '/system/end-of-year', label: 'End of Year' },
   ],
   reporting: [
-    { path: '/reporting', label: 'Reporting' },
-    { path: '/reporting/analytics', label: 'Analytics' },
     { path: '/reporting/trial-balance', label: 'Trial Balance' },
     { path: '/reporting/income-statement', label: 'Income Statement' },
     { path: '/reporting/balance-sheet', label: 'Balance Sheet' },
