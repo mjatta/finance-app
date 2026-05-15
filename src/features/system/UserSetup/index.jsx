@@ -172,6 +172,7 @@ const featurePageMap = {
     { path: '/reporting/income-statement', label: 'Income Statement' },
     { path: '/reporting/balance-sheet', label: 'Balance Sheet' },
     { path: '/reporting/savings-balance', label: 'Savings Balance' },
+    { path: '/reporting/loan-balance', label: 'Loan Balance' },
   ],
 };
 
