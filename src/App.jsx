@@ -112,6 +112,7 @@ const BalanceSheet = lazy(() => import('./features/reporting/BalanceSheet'));
 const SavingsBalance = lazy(() => import('./features/reporting/SavingsBalance'));
 const LoanBalance = lazy(() => import('./features/reporting/LoanBalance'));
 const LoanSchedule = lazy(() => import('./features/reporting/LoanSchedule'));
+const TransactionListing = lazy(() => import('./features/reporting/TransactionListing'));
 const Landing = lazy(() => import('./features/home/Landing'));
 const Login = lazy(() => import('./features/auth/Login'));
 const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
@@ -485,6 +486,7 @@ function App() {
         { label: 'Savings Balance', to: '/reporting/savings-balance', icon: AssessmentRoundedIcon },
         { label: 'Loan Balance', to: '/reporting/loan-balance', icon: AssessmentRoundedIcon },
         { label: 'Loan Schedule', to: '/reporting/loan-schedule', icon: AssessmentRoundedIcon },
+        { label: 'Transaction Listing', to: '/reporting/transaction-listing', icon: AssessmentRoundedIcon },
       ],
     },
   ];
@@ -1025,6 +1027,10 @@ function App() {
                     <Route
                       path="/reporting/loan-schedule"
                       element={renderWithAccess('reporting', <LoanSchedule />)}
+                    />
+                    <Route
+                      path="/reporting/transaction-listing"
+                      element={renderWithAccess('reporting', <TransactionListing />)}
                     />
 
                     <Route path="*" element={<Navigate to="/home" replace />} />
