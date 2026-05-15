@@ -175,6 +175,7 @@ const featurePageMap = {
     { path: '/reporting/loan-balance', label: 'Loan Balance' },
     { path: '/reporting/loan-schedule', label: 'Loan Schedule' },
     { path: '/reporting/transaction-listing', label: 'Transaction Listing' },
+    { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
   ],
 };
 
