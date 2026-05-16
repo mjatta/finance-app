@@ -299,6 +299,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GLTransactions/transactions/:account*"
     },
     {
+      "source": "/api/trialbalance/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/trialbalance/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

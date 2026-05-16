@@ -1,15 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   MenuItem,
   TextField,
   Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useGetTrialBalance } from './hooks/useGetTrialBalance';
+import { buildTrialBalancePrintHtml } from './TrialBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -19,25 +25,66 @@ const normalizeBranchName = (branch) => (
   || ''
 ).toString().trim();
 
+const normalizeBranchId = (branch) => (
+  branch?.branchid
+  ?? branch?.BranchID
+  ?? branch?.branchId
+  ?? branch?.id
+  ?? ''
+).toString().trim();
+
 export default function TrialBalance() {
   const { branches, loading: branchesLoading } = useBranches();
-  const [branch, setBranch] = useState('');
+  const { fetchTrialBalance, loading: isFetching, error: trialBalanceError } = useGetTrialBalance();
+  const [branchId, setBranchId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [statusMessage, setStatusMessage] = useState('');
 
-  const branchOptions = useMemo(
-    () => Array.from(new Set((Array.isArray(branches) ? branches : []).map(normalizeBranchName).filter(Boolean))),
-    [branches],
-  );
+  const branchOptions = useMemo(() => {
+    const rows = Array.isArray(branches) ? branches : [];
+    const byId = new Map();
 
-  const handlePrint = () => {
-    if (!branch || !date) {
+    rows.forEach((item) => {
+      const id = normalizeBranchId(item);
+      const name = normalizeBranchName(item);
+
+      if (!id || !name || byId.has(id)) {
+        return;
+      }
+
+      byId.set(id, { id, name });
+    });
+
+    return Array.from(byId.values());
+  }, [branches]);
+
+  const handlePrint = async () => {
+    if (!branchId || !date) {
       setStatusMessage('Please select a branch and date before printing.');
       return;
     }
 
     setStatusMessage('');
-    window.print();
+
+    // Fetch trial balance data
+    const data = await fetchTrialBalance(branchId, date);
+
+    if (Array.isArray(data) && data.length > 0) {
+      const printWindow = window.open('', '_blank', 'width=1200,height=900');
+      if (!printWindow) {
+        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+        return;
+      }
+
+      const reportHtml = buildTrialBalancePrintHtml(data, date);
+      printWindow.document.open();
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } else {
+      setStatusMessage(trialBalanceError || 'No trial balance data found for the selected date.');
+    }
   };
 
   return (
@@ -64,31 +111,44 @@ export default function TrialBalance() {
             <TextField
               select
               label="Branch"
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
               size="small"
               fullWidth
-              disabled={branchesLoading}
-              SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a branch' }}
+              disabled={branchesLoading || isFetching}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select a branch';
+                  }
+
+                  const option = branchOptions.find((item) => item.id === selected);
+                  return option?.name || 'Select a branch';
+                },
+              }}
             >
               <MenuItem value="" disabled>
                 Select a branch
               </MenuItem>
               {branchOptions.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
                 </MenuItem>
               ))}
             </TextField>
 
-            <TextField
+            <DatePicker
               label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
+              value={date ? dayjs(date) : null}
+              onChange={(value) => setDate(value ? value.format('YYYY-MM-DD') : '')}
+              disabled={isFetching}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  fullWidth: true,
+                },
+              }}
             />
           </Box>
 
@@ -96,14 +156,26 @@ export default function TrialBalance() {
             <Button
               variant="contained"
               onClick={handlePrint}
-              disabled={!branch || !date || branchesLoading}
+              disabled={!branchId || !date || branchesLoading || isFetching}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              Print
+              {isFetching ? 'Fetching...' : 'Print'}
             </Button>
           </Box>
         </CardContent>
       </Card>
+
+      {/* Loading Overlay */}
+      <Backdrop
+        open={isFetching}
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Box>
   );
 }

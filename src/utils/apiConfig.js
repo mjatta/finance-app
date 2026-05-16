@@ -193,6 +193,11 @@ const ENDPOINT_MAP = {
     dev: '/api/verification/confirm-vouchers',
     prod: '/api/verification/confirm-vouchers',
   },
+  // Trial Balance - Report
+  'trial-balance': {
+    dev: '/api/trialbalance/get',
+    prod: '/api/trialbalance/get',
+  },
 };
 
 /**
