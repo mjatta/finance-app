@@ -307,6 +307,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/trialbalance/:path*"
     },
     {
+      "source": "/api/incomestatement/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/incomestatement/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -198,6 +198,11 @@ const ENDPOINT_MAP = {
     dev: '/api/trialbalance/get',
     prod: '/api/trialbalance/get',
   },
+  // Income Statement - Report
+  'income-statement': {
+    dev: '/api/incomestatement/get',
+    prod: '/api/incomestatement/get',
+  },
 };
 
 /**

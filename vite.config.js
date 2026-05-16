@@ -1635,6 +1635,58 @@ const trialBalanceApiPlugin = () => ({
   },
 })
 
+const incomeStatementApiPlugin = () => ({
+  name: 'income-statement-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/incomestatement', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST') {
+          const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/incomestatement/get'
+          let body = ''
+
+          req.on('data', (chunk) => {
+            body += chunk.toString()
+          })
+
+          req.on('end', async () => {
+            try {
+              const backendRes = await fetch(backendUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+              })
+
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (fetchErr) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
+            }
+          })
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -1662,6 +1714,7 @@ export default defineConfig({
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),
     trialBalanceApiPlugin(),
+    incomeStatementApiPlugin(),
   ],
   server: {
     proxy: {
