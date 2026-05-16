@@ -203,6 +203,11 @@ const ENDPOINT_MAP = {
     dev: '/api/incomestatement/get',
     prod: '/api/incomestatement/get',
   },
+  // Balance Sheet - Report
+  'balance-sheet': {
+    dev: '/api/balancesheet/get',
+    prod: '/api/balancesheet/get',
+  },
 };
 
 /**

@@ -1,15 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   MenuItem,
   TextField,
   Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useGetBalanceSheet } from './BalanceSheet/hook/useGetBalanceSheet';
+import { buildBalanceSheetPrintHtml } from './BalanceSheet/printSetup';
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -21,6 +27,7 @@ const normalizeBranchName = (branch) => (
 
 export default function BalanceSheet() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { fetchBalanceSheet, loading: isFetching, error: fetchError } = useGetBalanceSheet();
   const [branch, setBranch] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [statusMessage, setStatusMessage] = useState('');
@@ -30,14 +37,31 @@ export default function BalanceSheet() {
     [branches],
   );
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!branch || !date) {
       setStatusMessage('Please select a branch and date before printing.');
       return;
     }
 
     setStatusMessage('');
-    window.print();
+
+    const data = await fetchBalanceSheet(date);
+    if (Array.isArray(data) && data.length > 0) {
+      const printWindow = window.open('', '_blank', 'width=1200,height=900');
+      if (!printWindow) {
+        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+        return;
+      }
+
+      const reportHtml = buildBalanceSheetPrintHtml(data, date);
+      printWindow.document.open();
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } else {
+      setStatusMessage(fetchError || 'No balance sheet data found for the selected date.');
+    }
   };
 
   return (
@@ -67,7 +91,7 @@ export default function BalanceSheet() {
               onChange={(e) => setBranch(e.target.value)}
               size="small"
               fullWidth
-              disabled={branchesLoading}
+              disabled={branchesLoading || isFetching}
               SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a branch' }}
             >
               <MenuItem value="" disabled>
@@ -80,14 +104,17 @@ export default function BalanceSheet() {
               ))}
             </TextField>
 
-            <TextField
+            <DatePicker
               label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
+              value={date ? dayjs(date) : null}
+              onChange={(value) => setDate(value ? value.format('YYYY-MM-DD') : '')}
+              disabled={isFetching}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  fullWidth: true,
+                },
+              }}
             />
           </Box>
 
@@ -95,14 +122,25 @@ export default function BalanceSheet() {
             <Button
               variant="contained"
               onClick={handlePrint}
-              disabled={!branch || !date || branchesLoading}
+              disabled={!branch || !date || branchesLoading || isFetching}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              Print
+              {isFetching ? 'Fetching...' : 'Print'}
             </Button>
           </Box>
         </CardContent>
       </Card>
+
+      <Backdrop
+        open={isFetching}
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Box>
   );
 }

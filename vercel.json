@@ -311,6 +311,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/incomestatement/:path*"
     },
     {
+      "source": "/api/balancesheet/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/balancesheet/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
