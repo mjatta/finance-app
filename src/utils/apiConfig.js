@@ -213,6 +213,23 @@ const ENDPOINT_MAP = {
     dev: '/api/loanschedule/get',
     prod: '/api/loanschedule/get',
   },
+  // Loan Aging
+  'aging-ranges': {
+    dev: '/api/loanaging/ranges',
+    prod: '/api/loanaging/ranges',
+  },
+  'aging-products': {
+    dev: '/api/loanaging/products',
+    prod: '/api/loanaging/products',
+  },
+  'aging-categories': {
+    dev: '/api/loanaging/categories',
+    prod: '/api/loanaging/categories',
+  },
+  'aging-report': {
+    dev: '/api/loanaging/report',
+    prod: '/api/loanaging/report',
+  },
 };
 
 /**

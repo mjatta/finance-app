@@ -172,6 +172,7 @@ const featurePageMap = {
     { path: '/reporting/savings-balance', label: 'Savings Balance' },
     { path: '/reporting/loan-balance', label: 'Loan Balance' },
     { path: '/reporting/loan-schedule', label: 'Loan Schedule' },
+    { path: '/reporting/detailed-aging', label: 'Detailed Aging' },
     { path: '/reporting/transaction-listing', label: 'Transaction Listing' },
     { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
   ],
