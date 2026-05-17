@@ -208,6 +208,11 @@ const ENDPOINT_MAP = {
     dev: '/api/balancesheet/get',
     prod: '/api/balancesheet/get',
   },
+  // Loan Schedule - Report
+  'loan-schedule': {
+    dev: '/api/loanschedule/get',
+    prod: '/api/loanschedule/get',
+  },
 };
 
 /**

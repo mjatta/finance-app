@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -21,11 +21,21 @@ const normalizeBranchName = (branch) => (
   || ''
 ).toString().trim();
 
+const normalizeProductLabel = (product) => (
+  product?.prd_name
+  || product?.productName
+  || product?.name
+  || product?.label
+  || ''
+).toString().trim();
+
 export default function SavingsBalance() {
   const { branches, loading: branchesLoading } = useBranches();
   const [branch, setBranch] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [product, setProduct] = useState('');
+  const [productOptions, setProductOptions] = useState([]);
+  const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
     active: false,
     closed: false,
@@ -46,7 +56,39 @@ export default function SavingsBalance() {
     [branches],
   );
 
-  const products = ['Regular Saving', 'Development Saving', 'Education Saving', 'Emergency Saving'];
+  useEffect(() => {
+    const loadProducts = async () => {
+      setProductLoading(true);
+      try {
+        const response = await fetch('/api/products/types');
+        if (!response.ok) {
+          return;
+        }
+
+        const result = await response.json();
+        const rows = result?.status === 'success' && Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : [];
+
+        const options = rows
+          .map((item) => ({
+            value: String(item?.prd_id ?? item?.id ?? normalizeProductLabel(item)).trim(),
+            label: normalizeProductLabel(item),
+          }))
+          .filter((item) => item.value && item.label);
+
+        setProductOptions(options);
+      } catch {
+        setProductOptions([]);
+      } finally {
+        setProductLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   const handlePrint = () => {
     if (!branch || !date) {
@@ -144,14 +186,15 @@ export default function SavingsBalance() {
               onChange={(e) => setProduct(e.target.value)}
               size="small"
               fullWidth
+              disabled={productLoading}
               SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a product' }}
             >
               <MenuItem value="" disabled>
                 Select a product
               </MenuItem>
-              {products.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
+              {productOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
                 </MenuItem>
               ))}
             </TextField>

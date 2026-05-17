@@ -315,6 +315,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/balancesheet/:path*"
     },
     {
+      "source": "/api/loanschedule/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanschedule/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
