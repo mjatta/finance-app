@@ -1802,6 +1802,50 @@ const loanAgingApiPlugin = () => ({
   },
 })
 
+const loanProvisionApiPlugin = () => ({
+  name: 'loan-provision-api-plugin',
+  configureServer(server) {
+    // Handles loan provision summary/details GET endpoints via /api/loanprovision/*
+    server.middlewares.use('/api/loanprovision', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          const fullPath = req.url.startsWith('/api/loanprovision') ? req.url : `/api/loanprovision${req.url}`
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
 const loanScheduleApiPlugin = () => ({
   name: 'loan-schedule-api-plugin',
   configureServer(server) {
@@ -1885,6 +1929,7 @@ export default defineConfig({
     balanceSheetApiPlugin(),
     loanScheduleApiPlugin(),
     loanAgingApiPlugin(),
+    loanProvisionApiPlugin(),
   ],
   server: {
     proxy: {

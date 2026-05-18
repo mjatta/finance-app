@@ -21,6 +21,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
 import useGetAgingProducts from '../DetailedAging/hooks/useGetAgingProducts';
+import useGetLoanProvisionSummary from './hooks/useGetLoanProvisionSummary';
+import useGetLoanProvisionDetails from './hooks/useGetLoanProvisionDetails';
 
 const FALLBACK_ROWS = [
   { id: 1, daysFrom: '', daysTo: '', percentage: '' },
@@ -31,6 +33,8 @@ const FALLBACK_ROWS = [
 export default function LoanProvision() {
   const { ranges, loading: rangesLoading } = useGetAgingRanges();
   const { products: productOptions, loading: productLoading } = useGetAgingProducts();
+  const { fetchSummary, loading: printLoading } = useGetLoanProvisionSummary();
+  const { fetchDetails, loading: detailsLoading } = useGetLoanProvisionDetails();
 
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
@@ -64,6 +68,46 @@ export default function LoanProvision() {
         setStatusMessage(`${actionLabel} completed.`);
       }
     }, 800);
+  };
+
+  const handlePrint = async () => {
+    if (!canRunAction) {
+      setStatusMessage('Please select Product and Run Date first.');
+      return;
+    }
+
+    setStatusMessage('');
+    const response = await fetchSummary({
+      toDate: runDate.format('YYYY-MM-DD'),
+      productId: product,
+    });
+
+    if (!response.success) {
+      setStatusMessage('Failed to fetch loan provision summary. Please try again.');
+      return;
+    }
+
+    window.print();
+  };
+
+  const handleDetailsProvisioning = async () => {
+    if (!canRunAction) {
+      setStatusMessage('Please select Product and Run Date first.');
+      return;
+    }
+
+    setStatusMessage('');
+    const response = await fetchDetails({
+      toDate: runDate.format('YYYY-MM-DD'),
+      productId: product,
+    });
+
+    if (!response.success) {
+      setStatusMessage('Failed to fetch loan provision details. Please try again.');
+      return;
+    }
+
+    setStatusMessage('Details provisioning completed.');
   };
 
   const handleClear = () => {
@@ -184,22 +228,22 @@ export default function LoanProvision() {
             <Button
               variant="contained"
               color="secondary"
-              onClick={() => simulateAction('Details Provisioning')}
-              disabled={!canRunAction || Boolean(workingButton)}
-              startIcon={workingButton === 'Details Provisioning' ? <CircularProgress size={16} color="inherit" /> : null}
+              onClick={handleDetailsProvisioning}
+              disabled={!canRunAction || Boolean(workingButton) || detailsLoading}
+              startIcon={detailsLoading ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              Details Provisioning
+              {detailsLoading ? 'Loading...' : 'Details Provisioning'}
             </Button>
 
             <Button
               variant="outlined"
-              onClick={() => simulateAction('Print')}
-              disabled={!canRunAction || Boolean(workingButton)}
-              startIcon={workingButton === 'Print' ? <CircularProgress size={16} color="inherit" /> : null}
+              onClick={handlePrint}
+              disabled={!canRunAction || Boolean(workingButton) || printLoading}
+              startIcon={printLoading ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ fontWeight: 600, textTransform: 'none' }}
             >
-              Print
+              {printLoading ? 'Loading...' : 'Print'}
             </Button>
 
             <Button

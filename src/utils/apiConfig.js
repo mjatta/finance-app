@@ -230,6 +230,14 @@ const ENDPOINT_MAP = {
     dev: '/api/loanaging/report',
     prod: '/api/loanaging/report',
   },
+  'loan-provision-summary': {
+    dev: '/api/loanprovision/summary',
+    prod: '/api/loanprovision/summary',
+  },
+  'loan-provision-details': {
+    dev: '/api/loanprovision/details',
+    prod: '/api/loanprovision/details',
+  },
 };
 
 /**
