@@ -238,6 +238,10 @@ const ENDPOINT_MAP = {
     dev: '/api/loanprovision/details',
     prod: '/api/loanprovision/details',
   },
+  'loan-balance-print': {
+    dev: '/api/loanbalances/get',
+    prod: '/api/loanbalances/get',
+  },
 };
 
 /**

@@ -1,17 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   FormControlLabel,
   Checkbox,
+  CircularProgress,
   MenuItem,
   TextField,
   Typography,
 } from '@mui/material';
 import { useBranches } from '../../hooks/useBranches';
+import useGetLoanBalancePrint from './LoanBalance/hooks/useGetLoanBalancePrint';
+import { buildLoanBalancePrintHtml } from './LoanBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -21,11 +25,29 @@ const normalizeBranchName = (branch) => (
   || ''
 ).toString().trim();
 
+const normalizeBranchId = (branch) => (
+  branch?.branchid
+  ?? branch?.BranchID
+  ?? branch?.branchId
+  ?? branch?.id
+  ?? ''
+).toString().trim();
+
+const productOptions = [
+  { value: 1, label: 'Development Loan' },
+  { value: 2, label: 'Emergency Loan' },
+  { value: 3, label: 'Regular Loan' },
+  { value: 4, label: 'Consumer Loan' },
+  { value: 5, label: 'Building Loan' },
+  { value: 6, label: 'Tobaski Loan' },
+];
+
 export default function LoanBalance() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
   const [branch, setBranch] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [product, setProduct] = useState('');
+  const [productType, setProductType] = useState('');
   const [memberStatus, setMemberStatus] = useState({
     active: false,
     closed: false,
@@ -38,24 +60,108 @@ export default function LoanBalance() {
   const [gender, setGender] = useState({
     male: false,
     female: false,
+    other: false,
   });
   const [statusMessage, setStatusMessage] = useState('');
 
   const branchOptions = useMemo(
-    () => Array.from(new Set((Array.isArray(branches) ? branches : []).map(normalizeBranchName).filter(Boolean))),
+    () => {
+      const rows = Array.isArray(branches) ? branches : [];
+      const byId = new Map();
+
+      rows.forEach((item) => {
+        const id = normalizeBranchId(item);
+        const name = normalizeBranchName(item);
+
+        if (!name || byId.has(id || name)) {
+          return;
+        }
+
+        byId.set(id || name, { id: id || name, name });
+      });
+
+      return Array.from(byId.values());
+    },
     [branches],
   );
 
-  const products = ['Development Loan', 'Emergency Loan', 'Regular Loan', 'Consumer Loan', 'Building Loan', 'Tobaski Loan'];
-
-  const handlePrint = () => {
-    if (!branch || !date) {
+  const handlePrint = async () => {
+    if (!branch || !date || !productType) {
       setStatusMessage('Please select a branch and date before printing.');
       return;
     }
 
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+
     setStatusMessage('');
-    window.print();
+
+    const payload = {
+      BranchID: Number(branch) || 0,
+      ProductType: Number(productType) || 0,
+      CustType0: customerType.individual ? '1' : '',
+      CustType1: customerType.group ? '2' : '',
+      CustType2: customerType.corporate ? '3' : '',
+      GenderMale: gender.male ? 1 : '',
+      GenderFemale: gender.female ? 2 : '',
+      GenderOther: gender.other ? '3' : '',
+      TransactionDate: date,
+      ByLoanOfficer: '',
+    };
+
+    const data = await fetchLoanBalance(payload);
+
+    if (!data) {
+      printWindow.close();
+      setStatusMessage('Failed to fetch loan balance report. Please try again.');
+      return;
+    }
+
+    const rows = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.rows)
+        ? data.rows
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+    if (rows.length === 0) {
+      printWindow.close();
+      setStatusMessage('No loan balance data found for the selected filters.');
+      return;
+    }
+
+    const selectedBranch = branchOptions.find((item) => item.id === branch);
+    const selectedProduct = productOptions.find((item) => String(item.value) === String(productType));
+
+    const reportHtml = buildLoanBalancePrintHtml(rows, {
+      branchLabel: selectedBranch?.name || '',
+      date,
+      productLabel: selectedProduct?.label || '',
+      memberStatusLabel: [
+        memberStatus.active ? 'Active' : '',
+        memberStatus.closed ? 'Closed' : '',
+      ].filter(Boolean).join(', '),
+      customerTypeLabel: [
+        customerType.individual ? 'Individual' : '',
+        customerType.group ? 'Group' : '',
+        customerType.corporate ? 'Corporate' : '',
+      ].filter(Boolean).join(', '),
+      genderLabel: [
+        gender.male ? 'Male' : '',
+        gender.female ? 'Female' : '',
+        gender.other ? 'Other' : '',
+      ].filter(Boolean).join(', '),
+    });
+
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handleMemberStatusChange = (event) => {
@@ -84,6 +190,13 @@ export default function LoanBalance() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <Backdrop
+        open={printLoading}
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           Loan Balance
@@ -112,14 +225,24 @@ export default function LoanBalance() {
               size="small"
               fullWidth
               disabled={branchesLoading}
-              SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a branch' }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select a branch';
+                  }
+
+                  const option = branchOptions.find((item) => item.id === selected);
+                  return option?.name || selected;
+                },
+              }}
             >
               <MenuItem value="" disabled>
                 Select a branch
               </MenuItem>
               {branchOptions.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -140,18 +263,28 @@ export default function LoanBalance() {
             <TextField
               select
               label="Products"
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
               size="small"
               fullWidth
-              SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a product' }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select a product';
+                  }
+
+                  const option = productOptions.find((item) => String(item.value) === String(selected));
+                  return option?.label || selected;
+                },
+              }}
             >
               <MenuItem value="" disabled>
                 Select a product
               </MenuItem>
-              {products.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
+              {productOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
                 </MenuItem>
               ))}
             </TextField>
@@ -251,6 +384,16 @@ export default function LoanBalance() {
                 }
                 label="Female"
               />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={gender.other}
+                    onChange={handleGenderChange}
+                    name="other"
+                  />
+                }
+                label="Other"
+              />
             </Box>
           </Box>
 
@@ -259,10 +402,11 @@ export default function LoanBalance() {
             <Button
               variant="contained"
               onClick={handlePrint}
-              disabled={!branch || !date || branchesLoading}
+              disabled={!branch || !date || !productType || branchesLoading || printLoading}
+              startIcon={printLoading ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
-              Print
+              {printLoading ? 'Loading...' : 'Print'}
             </Button>
           </Box>
         </CardContent>
