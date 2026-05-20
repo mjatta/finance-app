@@ -34,6 +34,7 @@ const initialFormData = {
   principalAmount: '',
   interestMethod: '',
   interestRate: '',
+  interestScope: '',
   yearlyFrequency: '',
   loanDuration: '',
   gracePeriod: '',
@@ -42,6 +43,7 @@ const initialFormData = {
   startDate: todayIso,
   loanLimit: '',
   loanPurpose: '',
+  profitAmount: '',
   sourceOfFunds: '',
   guarantorSourceOfFunds: '',
   gracePeriodInterest: '',
@@ -68,11 +70,6 @@ const formatProfileImage = (imageData) => {
   return `data:image/jpeg;base64,${imageData}`;
 };
 
-const interestMethods = [
-  { value: 'flat', label: 'Flat Rate' },
-  { value: 'reducing', label: 'Reducing Balance' },
-  { value: 'compound', label: 'Compound Interest' },
-];
 
 const yearlyFrequencies = [
   { value: '1', label: 'Annually' },
@@ -191,6 +188,7 @@ export default function LoanApplication() {
               let intMethod = result.data.interestMethod || result.data.int_method || result.data.intMethod || result.data.method || '';
               const intRate = result.data.interestRate || result.data.int_rate || result.data.intRate || result.data.rate || '';
               const loanLimitVal = result.data.maxAmount || result.data.max_amount || result.data.maxAmount || '';
+              const intScope = result.data.interestScope || result.data.interest_scope || result.data.IntScope || '';
               
               // Map interest method label from API to internal value format
               // API returns labels like "Reducing Balance", we need to map to "reducing"
@@ -204,7 +202,7 @@ export default function LoanApplication() {
               };
               intMethod = interestMethodMap[intMethod] || intMethod;
               
-              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal);
+              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal, 'InterestScope:', intScope);
               
               // Apply mappings to form fields
               setFormData((prev) => ({
@@ -212,6 +210,7 @@ export default function LoanApplication() {
                 interestMethod: intMethod || prev.interestMethod,
                 interestRate: intRate || prev.interestRate,
                 loanLimit: loanLimitVal || prev.loanLimit,
+                interestScope: intScope || prev.interestScope,
               }));
             }
           }
@@ -428,6 +427,7 @@ export default function LoanApplication() {
         lLOAN_INTEREST: parseFloat(formData.calculatedInterestRate) || parseFloat(formData.interestRate) || 0,
         lPRINCIPAL_AMT: parseFloat(formData.principalAmount) || 0,
         lLDURATION_NUM: parseInt(formData.loanDuration) || 0,
+        lPROFIT_AMT: formData.interestScope === 3 ? (parseFloat(formData.profitAmount) || 0) : 0,
         txtStartDate: dayjs(formData.startDate).isValid() ? dayjs(formData.startDate).format('YYYY-MM-DD') : formData.startDate,
         txtEndDate: dayjs(formData.finalPaymentDate).isValid() ? dayjs(formData.finalPaymentDate).format('YYYY-MM-DD') : formData.finalPaymentDate,
         lREPAYMENT_AMT: parseFloat(formData.totalPayment) || 0,
@@ -506,12 +506,6 @@ export default function LoanApplication() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const readOnlyFieldSx = {
-    '& .MuiInputBase-root': {
-      backgroundColor: '#f5f5f5',
-    },
   };
 
   return (
@@ -729,6 +723,31 @@ export default function LoanApplication() {
                       ))}
                     </TextField>
 
+                    {/* Profit Amount - Only for Islamic Products (interestScope: 3) */}
+                    {Number(formData.interestScope) === 3 && (
+                      <TextField
+                        label="Profit Amount"
+                        name="profitAmount"
+                        value={formatCurrency(formData.profitAmount)}
+                        onChange={(e) => {
+                          const cleanValue = cleanNumericInput(e.target.value);
+                          setFormData((prev) => ({ ...prev, profitAmount: cleanValue }));
+                        }}
+                        size="small"
+                        fullWidth
+                        inputProps={{
+                          inputMode: 'numeric',
+                          pattern: '[0-9.]*',
+                          placeholder: '0',
+                        }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+
                     {/* Principal Amount */}
                     <TextField
                       label="Principal Amount"
@@ -911,16 +930,6 @@ export default function LoanApplication() {
                       ))}
                     </TextField>
 
-                    {/* Grace Period Interest */}
-                    <TextField
-                      label="Grace Period Interest (%)"
-                      name="gracePeriodInterest"
-                      value={formData.gracePeriodInterest}
-                      onChange={handleChange}
-                      size="small"
-                      fullWidth
-                      type="number"
-                    />
                   </Box>
                 </CardContent>
               </Card>
