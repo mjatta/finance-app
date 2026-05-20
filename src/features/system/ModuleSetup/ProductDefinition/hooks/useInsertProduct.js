@@ -20,6 +20,8 @@ export function useInsertProduct() {
       const isGlDestination = params.deductionAccountType === 'gl';
       const isMemberDestination = params.deductionAccountType === 'member';
 
+      const isIslamicProduct = params.isIslamicProduct && isLoan;
+
       const payload = {
         ProductName: toNullableString(params.productName),
         ProductScope: 1,
@@ -30,7 +32,7 @@ export function useInsertProduct() {
         MinMembers: 0,
         MaxMembers: 0,
         InterestRate: toNumber(params.interestRate),
-        InterestScope: 1,
+        InterestScope: isIslamicProduct ? 3 : 1,
         MinSavings: 0,
         AgeFrom: 0,
         AgeTo: 0,

@@ -318,13 +318,22 @@ export default function ProductDefinition() {
                   ))}
                 </TextField>
                 <TextField
+                  select
                   label="Product Control"
                   name="loanProductControl"
                   value={form.loanProductControl}
                   onChange={handleChange}
                   size="small"
                   fullWidth
-                />
+                  disabled={loadingLiabilitiesAccounts}
+                >
+                  <MenuItem value="">Select Product Control Account</MenuItem>
+                  {liabilitiesAccounts.map((account) => (
+                    <MenuItem key={`liability-loan-${account.cacctnumb}`} value={account.cacctnumb}>
+                      {account.cacctname}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Box>
             </CardContent>
           </Card>
