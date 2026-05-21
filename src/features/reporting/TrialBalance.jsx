@@ -36,9 +36,93 @@ const normalizeBranchId = (branch) => (
 export default function TrialBalance() {
   const { branches, loading: branchesLoading } = useBranches();
   const { fetchTrialBalance, loading: isFetching, error: trialBalanceError } = useGetTrialBalance();
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState('ALL');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [statusMessage, setStatusMessage] = useState('');
+
+  const formatAmount = (value) => {
+    const amount = Number(value ?? 0);
+    if (Number.isNaN(amount)) return '0.00';
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const escapeCSV = (value) => {
+    const str = String(value ?? '');
+    return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+
+  const convertToCSV = (rows) => {
+    const headers = ['Account Number', 'Account Name', 'Debit', 'Credit'];
+    const csvRows = rows.map((row) => [
+      row.cacctnumb || '',
+      row.cacctname || '',
+      formatAmount(row.debitClose || 0),
+      formatAmount(row.creditClose || 0),
+    ]);
+    return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  };
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = (data) => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+    const reportHtml = buildTrialBalancePrintHtml(data, date);
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `trial-balance-${date}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `trial-balance-${date}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
+    if (!date) {
+      setStatusMessage('Please select a date before exporting.');
+      return;
+    }
+
+    setStatusMessage('');
+
+    // Always fetch fresh data
+    const data = await fetchTrialBalance(branchId === 'ALL' ? '' : branchId, date);
+    if (!Array.isArray(data) || data.length === 0) {
+      setStatusMessage(trialBalanceError || 'No trial balance data found for the selected date.');
+      return;
+    }
+
+    if (exportType === 'pdf') {
+      handleExportPDF(data);
+    } else if (exportType === 'csv') {
+      handleExportCSV(data);
+    } else if (exportType === 'excel') {
+      handleExportExcel(data);
+    }
+  };
 
   const branchOptions = useMemo(() => {
     const rows = Array.isArray(branches) ? branches : [];
@@ -57,35 +141,6 @@ export default function TrialBalance() {
 
     return Array.from(byId.values());
   }, [branches]);
-
-  const handlePrint = async () => {
-    if (!branchId || !date) {
-      setStatusMessage('Please select a branch and date before printing.');
-      return;
-    }
-
-    setStatusMessage('');
-
-    // Fetch trial balance data
-    const data = await fetchTrialBalance(branchId, date);
-
-    if (Array.isArray(data) && data.length > 0) {
-      const printWindow = window.open('', '_blank', 'width=1200,height=900');
-      if (!printWindow) {
-        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
-        return;
-      }
-
-      const reportHtml = buildTrialBalancePrintHtml(data, date);
-      printWindow.document.open();
-      printWindow.document.write(reportHtml);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-    } else {
-      setStatusMessage(trialBalanceError || 'No trial balance data found for the selected date.');
-    }
-  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -119,17 +174,14 @@ export default function TrialBalance() {
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
-                  if (!selected) {
-                    return 'Select a branch';
-                  }
-
+                  if (selected === 'ALL' || !selected) return 'All Branches';
                   const option = branchOptions.find((item) => item.id === selected);
-                  return option?.name || 'Select a branch';
+                  return option?.name || 'All Branches';
                 },
               }}
             >
-              <MenuItem value="" disabled>
-                Select a branch
+              <MenuItem value="ALL">
+                All Branches
               </MenuItem>
               {branchOptions.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
@@ -152,14 +204,30 @@ export default function TrialBalance() {
             />
           </Box>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
             <Button
               variant="contained"
-              onClick={handlePrint}
-              disabled={!branchId || !date || branchesLoading || isFetching}
+              onClick={() => handleFetchAndExport('pdf')}
+              disabled={!date || branchesLoading || isFetching}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              {isFetching ? 'Fetching...' : 'Print'}
+              {isFetching ? 'Fetching...' : 'PDF'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={!date || branchesLoading || isFetching}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={!date || branchesLoading || isFetching}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              CSV
             </Button>
           </Box>
         </CardContent>

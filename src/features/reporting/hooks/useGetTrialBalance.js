@@ -7,7 +7,7 @@ export const useGetTrialBalance = () => {
   const [error, setError] = useState(null);
   const { user } = useAuthStore();
 
-  const fetchTrialBalance = async (_branchId, date) => {
+  const fetchTrialBalance = async (branchId, date) => {
     setLoading(true);
     setError(null);
 
@@ -20,7 +20,7 @@ export const useGetTrialBalance = () => {
 
       const payload = {
         CompanyID: companyId,
-        BranchID: 0,
+        BranchID: Number(branchId) || 0,
         ToDate: formattedDate,
       };
 

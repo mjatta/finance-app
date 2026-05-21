@@ -7,7 +7,7 @@ export const useGetIncomeStatement = () => {
   const [error, setError] = useState(null);
   const { user } = useAuthStore();
 
-  const fetchIncomeStatement = async (atDate) => {
+  const fetchIncomeStatement = async (branchId, atDate) => {
     setLoading(true);
     setError(null);
 
@@ -16,7 +16,7 @@ export const useGetIncomeStatement = () => {
 
       const payload = {
         CompanyID: companyId,
-        BranchID: 0,
+        BranchID: Number(branchId) || 0,
         AtDate: atDate || new Date().toISOString().slice(0, 10),
       };
 
