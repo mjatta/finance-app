@@ -51,6 +51,8 @@ export default function LoanSchedule() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
 
+  const isSuccessStatus = statusMessage === 'Customer and account details loaded successfully.';
+
   const handleCustomerCodeChange = (e) => {
     const code = e.target.value;
     setCustomerCode(code);
@@ -173,7 +175,7 @@ export default function LoanSchedule() {
         <CardContent sx={{ p: 3 }}>
 
           {statusMessage && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
+            <Alert severity={isSuccessStatus ? 'success' : 'warning'} sx={{ mb: 2 }}>
               {statusMessage}
             </Alert>
           )}
@@ -188,6 +190,13 @@ export default function LoanSchedule() {
               fullWidth
               placeholder="Enter customer code"
               disabled={isLoadingCustomer}
+              helperText="Enter customer code and press Tab to load customer and account details."
+              FormHelperTextProps={{
+                sx: {
+                  fontWeight: 800,
+                  color: '#b45309',
+                },
+              }}
             />
 
             <TextField
