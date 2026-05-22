@@ -44,6 +44,38 @@ const formatProfileImage = (imageData) => {
 
 
 export default function DepositManagement() {
+  const resetFormState = {
+    transactionType: 'deposits',
+    memberCode: '',
+    payrollNumber: '',
+    profilePicture: '',
+    memberSignature: '',
+    phoneNumber: '',
+    postingAccount: '',
+    memberAccounts: [],
+    accountBalance: '',
+    accountNumber: '',
+    clearedBalance: '',
+    unclearedBalance: '',
+    referenceNumber: '',
+    printReceipt: false,
+    transactionDate: todayIso,
+    sendSmsFee: false,
+    feeAmount: '',
+    depositAmount: '',
+    comments: '',
+    depositType: '',
+    contraAccount: '',
+    checkNumber: '',
+    checkDate: todayIso,
+    bank: '',
+    bankAccount: '',
+    cashAccount: '',
+    creditLimit: '',
+    debitLimit: '',
+    loanLimit: '',
+  };
+
   const [formData, setFormData] = useState({
     transactionType: 'deposits',
     memberCode: '',
@@ -234,36 +266,7 @@ export default function DepositManagement() {
   };
 
   const handleClear = () => {
-    setFormData({
-      transactionType: 'deposit',
-      memberCode: '',
-      payrollNumber: '',
-      profilePicture: '',
-      memberSignature: '',
-      phoneNumber: '',
-      postingAccount: '',
-      memberAccounts: [],
-      accountBalance: '',
-      accountNumber: '',
-      clearedBalance: '',
-      unclearedBalance: '',
-      printReceipt: false,
-      transactionDate: todayIso,
-      sendSmsFee: false,
-      feeAmount: '',
-      depositAmount: '',
-      comments: '',
-      depositType: '',
-      contraAccount: '',
-      checkNumber: '',
-      checkDate: todayIso,
-      bank: '',
-      bankAccount: '',
-      cashAccount: '',
-      creditLimit: '',
-      debitLimit: '',
-      loanLimit: '',
-    });
+    setFormData({ ...resetFormState });
     // setRows removed
     setStatusMessage('');
     setStatusError(false);
@@ -458,37 +461,7 @@ export default function DepositManagement() {
           message: 'Deposit saved successfully.',
         });
         // Reset all fields after successful save
-        setFormData({
-          transactionType: 'deposits',
-          memberCode: '',
-          payrollNumber: '',
-          profilePicture: '',
-          memberSignature: '',
-          phoneNumber: '',
-          postingAccount: '',
-          memberAccounts: [],
-          accountBalance: '',
-          accountNumber: '',
-          clearedBalance: '',
-          unclearedBalance: '',
-          referenceNumber: '',
-          printReceipt: false,
-          transactionDate: todayIso,
-          sendSmsFee: false,
-          feeAmount: '',
-          depositAmount: '',
-          comments: '',
-          depositType: '',
-          contraAccount: '',
-          checkNumber: '',
-          checkDate: todayIso,
-          bank: '',
-          bankAccount: '',
-          cashAccount: '',
-          creditLimit: '',
-          debitLimit: '',
-          loanLimit: '',
-        });
+        setFormData({ ...resetFormState });
         // setRows removed
         setTouched({});
         setBankAccounts([]);

@@ -42,6 +42,37 @@ const formatProfileImage = (imageData) => {
 
 
 export default function Withdrawal() {
+  const resetFormState = {
+    transactionType: 'withdrawals',
+    memberCode: '',
+    payrollNumber: '',
+    profilePicture: '',
+    memberSignature: '',
+    phoneNumber: '',
+    postingAccount: '',
+    memberAccounts: [],
+    accountBalance: '',
+    accountNumber: '',
+    clearedBalance: '',
+    unclearedBalance: '',
+    printReceipt: false,
+    transactionDate: todayIso,
+    sendSmsFee: false,
+    feeAmount: '',
+    withdrawalAmount: '',
+    comments: '',
+    depositType: '',
+    contraAccount: '',
+    checkNumber: '',
+    checkDate: todayIso,
+    bank: '',
+    bankAccount: '',
+    cashAccount: '',
+    creditLimit: '',
+    debitLimit: '',
+    loanLimit: '',
+  };
+
   const [formData, setFormData] = useState({
     transactionType: 'withdrawals',
     memberCode: '',
@@ -278,36 +309,7 @@ export default function Withdrawal() {
   };
 
   const handleClear = () => {
-    setFormData({
-      transactionType: 'withdrawals',
-      memberCode: '',
-      payrollNumber: '',
-      profilePicture: '',
-      memberSignature: '',
-      phoneNumber: '',
-      postingAccount: '',
-      memberAccounts: [],
-      accountBalance: '',
-      accountNumber: '',
-      clearedBalance: '',
-      unclearedBalance: '',
-      printReceipt: false,
-      transactionDate: todayIso,
-      sendSmsFee: false,
-      feeAmount: '',
-      withdrawalAmount: '',
-      comments: '',
-      depositType: '',
-      contraAccount: '',
-      checkNumber: '',
-      checkDate: todayIso,
-      bank: '',
-      bankAccount: '',
-      cashAccount: '',
-      creditLimit: '',
-      debitLimit: '',
-      loanLimit: '',
-    });
+    setFormData({ ...resetFormState });
     // setRows([]); // rows state removed
     setStatusMessage('');
     setStatusError(false);
@@ -470,36 +472,7 @@ export default function Withdrawal() {
         });
         // Reset form and validation state after successful save
         setTouched({});
-        setFormData({
-          transactionType: 'withdrawals',
-          memberCode: '',
-          payrollNumber: '',
-          profilePicture: '',
-          memberSignature: '',
-          phoneNumber: '',
-          postingAccount: '',
-          memberAccounts: [],
-          accountBalance: '',
-          accountNumber: '',
-          clearedBalance: '',
-          unclearedBalance: '',
-          printReceipt: false,
-          transactionDate: todayIso,
-          sendSmsFee: false,
-          feeAmount: '',
-          withdrawalAmount: '',
-          comments: '',
-          depositType: '',
-          contraAccount: '',
-          checkNumber: '',
-          checkDate: todayIso,
-          bank: '',
-          bankAccount: '',
-          cashAccount: '',
-          creditLimit: '',
-          debitLimit: '',
-          loanLimit: '',
-        });
+        setFormData({ ...resetFormState });
       } else {
         throw new Error('Failed to save withdrawal transaction.');
       }
