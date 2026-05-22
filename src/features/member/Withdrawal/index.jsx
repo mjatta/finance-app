@@ -705,6 +705,13 @@ export default function Withdrawal() {
                   onBlur={() => searchMember('memberCode')}
                   disabled={isLoadingMember}
                   placeholder="Member Code"
+                  helperText="Enter customer code and press Tab to load member details."
+                  FormHelperTextProps={{
+                    sx: {
+                      fontWeight: 800,
+                      color: '#b45309',
+                    },
+                  }}
                 />
                 <TextField
                   label="Payroll Number"
