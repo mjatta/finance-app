@@ -568,6 +568,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
+        setGroupMembers([
+          {
+            id: Date.now() + Math.random(),
+            firstName: '',
+            lastName: '',
+            phoneNumber: '',
+            dateOfBirth: '',
+          },
+        ]);
         photoFileRef.current = null;
         signatureFileRef.current = null;
         setPhotoPreviewUrl('');
