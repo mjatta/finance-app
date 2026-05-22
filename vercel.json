@@ -175,6 +175,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Deposits/:path*"
     },
     {
+      "source": "/api/withdrawals/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/withdrawals/:path*"
+    },
+    {
+      "source": "/api/Withdrawals/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Withdrawals/:path*"
+    },
+    {
       "source": "/api/Cusystem/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Cusystem/:path*"
     },
