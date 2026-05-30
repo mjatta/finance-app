@@ -11,7 +11,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { buildSavingsBalancePrintHtml } from './SavingsBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -19,6 +22,14 @@ const normalizeBranchName = (branch) => (
   || branch?.name
   || branch?.branch
   || ''
+).toString().trim();
+
+const normalizeBranchId = (branch) => (
+  branch?.branchid
+  ?? branch?.BranchID
+  ?? branch?.branchId
+  ?? branch?.id
+  ?? ''
 ).toString().trim();
 
 const normalizeProductLabel = (product) => (
@@ -31,7 +42,7 @@ const normalizeProductLabel = (product) => (
 
 export default function SavingsBalance() {
   const { branches, loading: branchesLoading } = useBranches();
-  const [branch, setBranch] = useState('');
+  const [branchId, setBranchId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [product, setProduct] = useState('');
   const [productOptions, setProductOptions] = useState([]);
@@ -51,10 +62,23 @@ export default function SavingsBalance() {
   });
   const [statusMessage, setStatusMessage] = useState('');
 
-  const branchOptions = useMemo(
-    () => Array.from(new Set((Array.isArray(branches) ? branches : []).map(normalizeBranchName).filter(Boolean))),
-    [branches],
-  );
+  const branchOptions = useMemo(() => {
+    const rows = Array.isArray(branches) ? branches : [];
+    const byId = new Map();
+
+    rows.forEach((item) => {
+      const id = normalizeBranchId(item);
+      const name = normalizeBranchName(item);
+
+      if (!id || !name || byId.has(id)) {
+        return;
+      }
+
+      byId.set(id, { id, name });
+    });
+
+    return Array.from(byId.values());
+  }, [branches]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -90,14 +114,58 @@ export default function SavingsBalance() {
     loadProducts();
   }, []);
 
-  const handlePrint = () => {
-    if (!branch || !date) {
+  const handlePrint = async () => {
+    if (!branchId || !date) {
       setStatusMessage('Please select a branch and date before printing.');
       return;
     }
 
     setStatusMessage('');
-    window.print();
+
+    try {
+      // Build payload based on selected filters
+      const payload = {
+        BranchID: Number(branchId),
+        ProductType: product ? Number(product) : 0,
+        CustType0: customerType.individual ? 1 : 0,
+        CustType1: customerType.group ? 2 : 0,
+        CustType2: customerType.corporate ? 3 : 0,
+        GenderMale: gender.male ? 1 : 0,
+        GenderFemale: gender.female ? 2 : 0,
+        GenderOther: 3,
+        TransactionDate: date,
+      };
+
+      const response = await fetch('/api/savingsbalances/get', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch savings balance data: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Open print preview window with the data
+      const printWindow = window.open('', '_blank', 'width=1200,height=900');
+      if (!printWindow) {
+        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+        return;
+      }
+
+      const reportHtml = buildSavingsBalancePrintHtml(data, date);
+      printWindow.document.open();
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } catch (err) {
+      setStatusMessage(`Error: ${err.message}`);
+    }
   };
 
   const handleMemberStatusChange = (event) => {
@@ -149,31 +217,37 @@ export default function SavingsBalance() {
             <TextField
               select
               label="Branch"
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
               size="small"
               fullWidth
               disabled={branchesLoading}
-              SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a branch' }}
+              SelectProps={{ displayEmpty: true, renderValue: (selected) => {
+                if (!selected) return 'Select a branch';
+                const option = branchOptions.find((item) => item.id === selected);
+                return option?.name || 'Select a branch';
+              } }}
             >
               <MenuItem value="" disabled>
                 Select a branch
               </MenuItem>
               {branchOptions.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
                 </MenuItem>
               ))}
             </TextField>
 
-            <TextField
+            <DatePicker
               label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
+              value={date ? dayjs(date) : null}
+              onChange={(value) => setDate(value ? value.format('YYYY-MM-DD') : '')}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  fullWidth: true,
+                },
+              }}
             />
           </Box>
 
@@ -187,7 +261,11 @@ export default function SavingsBalance() {
               size="small"
               fullWidth
               disabled={productLoading}
-              SelectProps={{ displayEmpty: true, renderValue: (selected) => selected || 'Select a product' }}
+              SelectProps={{ displayEmpty: true, renderValue: (selected) => {
+                if (!selected) return 'Select a product';
+                const option = productOptions.find((item) => item.value === selected);
+                return option?.label || 'Select a product';
+              } }}
             >
               <MenuItem value="" disabled>
                 Select a product
@@ -302,10 +380,10 @@ export default function SavingsBalance() {
             <Button
               variant="contained"
               onClick={handlePrint}
-              disabled={!branch || !date || branchesLoading}
+              disabled={!branchId || !date}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
-              Print
+              Save
             </Button>
           </Box>
         </CardContent>

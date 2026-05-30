@@ -2287,6 +2287,13 @@ export default defineConfig({
           changeOrigin: true,
           secure: false,
         },
+        // Proxy savings balance endpoint to avoid CORS
+        '/api/savingsbalances/get': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/savingsbalances\/get/, '/api/savingsbalances/get'),
+        },
     },
   },
 // (duplicate plugins array removed)
