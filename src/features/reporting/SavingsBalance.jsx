@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   FormControlLabel,
   Checkbox,
   MenuItem,
@@ -40,9 +42,43 @@ const normalizeProductLabel = (product) => (
   || ''
 ).toString().trim();
 
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const convertToCSV = (rows) => {
+  const headers = ['Account Number', 'Account Name', 'Account Balance', 'Age'];
+  const csvRows = rows.map((row) => [
+    row?.account_number ?? row?.cacctnumb ?? '',
+    row?.account_name ?? row?.cacctname ?? '',
+    formatAmount(row?.balance ?? row?.accountBalance ?? 0),
+    row?.age ?? row?.days_outstanding ?? '0',
+  ]);
+  return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export default function SavingsBalance() {
   const { branches, loading: branchesLoading } = useBranches();
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [product, setProduct] = useState('');
   const [productOptions, setProductOptions] = useState([]);
@@ -61,6 +97,7 @@ export default function SavingsBalance() {
     female: false,
   });
   const [statusMessage, setStatusMessage] = useState('');
+  const [printLoading, setPrintLoading] = useState(false);
 
   const branchOptions = useMemo(() => {
     const rows = Array.isArray(branches) ? branches : [];
@@ -114,12 +151,39 @@ export default function SavingsBalance() {
     loadProducts();
   }, []);
 
-  const handlePrint = async () => {
-    if (!branchId || !date) {
-      setStatusMessage('Please select a branch and date before printing.');
+  const handleExportPDF = (data) => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+    const reportHtml = buildSavingsBalancePrintHtml(data, date);
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `savings-balance-${date}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `savings-balance-${date}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
+    if (branchId === '' || !date) {
+      setStatusMessage('Please select a date before exporting.');
       return;
     }
 
+    setPrintLoading(true);
     setStatusMessage('');
 
     try {
@@ -149,22 +213,23 @@ export default function SavingsBalance() {
       }
 
       const data = await response.json();
-      
-      // Open print preview window with the data
-      const printWindow = window.open('', '_blank', 'width=1200,height=900');
-      if (!printWindow) {
-        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+
+      if (!Array.isArray(data) || data.length === 0) {
+        setStatusMessage('No savings balance data found for the selected filters.');
         return;
       }
 
-      const reportHtml = buildSavingsBalancePrintHtml(data, date);
-      printWindow.document.open();
-      printWindow.document.write(reportHtml);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
+      if (exportType === 'pdf') {
+        handleExportPDF(data);
+      } else if (exportType === 'csv') {
+        handleExportCSV(data);
+      } else if (exportType === 'excel') {
+        handleExportExcel(data);
+      }
     } catch (err) {
       setStatusMessage(`Error: ${err.message}`);
+    } finally {
+      setPrintLoading(false);
     }
   };
 
@@ -194,6 +259,13 @@ export default function SavingsBalance() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <Backdrop
+        open={printLoading}
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           Savings Balance
@@ -224,12 +296,16 @@ export default function SavingsBalance() {
               disabled={branchesLoading}
               SelectProps={{ displayEmpty: true, renderValue: (selected) => {
                 if (!selected) return 'Select a branch';
+                if (selected === '0') return 'All Branches';
                 const option = branchOptions.find((item) => item.id === selected);
                 return option?.name || 'Select a branch';
               } }}
             >
               <MenuItem value="" disabled>
                 Select a branch
+              </MenuItem>
+              <MenuItem value="0">
+                All Branches
               </MenuItem>
               {branchOptions.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
@@ -375,15 +451,31 @@ export default function SavingsBalance() {
             </Box>
           </Box>
 
-          {/* Print Button */}
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
+          {/* Export Buttons */}
+          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
             <Button
               variant="contained"
-              onClick={handlePrint}
-              disabled={!branchId || !date}
+              onClick={() => handleFetchAndExport('pdf')}
+              disabled={branchId === '' || !date || printLoading}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
-              Save
+              {printLoading ? 'Processing...' : 'PDF'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={branchId === '' || !date || printLoading}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={branchId === '' || !date || printLoading}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              CSV
             </Button>
           </Box>
         </CardContent>
