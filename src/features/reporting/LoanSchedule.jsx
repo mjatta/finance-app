@@ -17,6 +17,43 @@ import { getFullApiUrl } from '../../utils/apiConfig';
 import { useGetLoanSchedule } from './LoanSchedule/hooks/useGetLoanSchedule';
 import { buildLoanSchedulePrintHtml } from './LoanSchedule/printSetup';
 
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const convertToCSV = (rows) => {
+  const headers = ['Serial', 'Date', 'Periodic Payment', 'Principal', 'Interest', 'Beginning Balance', 'Ending Balance'];
+  const csvRows = rows.map((row) => [
+    row?.serial ?? '',
+    row?.date ?? '',
+    formatAmount(row?.periodicPayment ?? 0),
+    formatAmount(row?.principal ?? 0),
+    formatAmount(row?.interest ?? 0),
+    formatAmount(row?.beginningBalance ?? 0),
+    formatAmount(row?.endingBalance ?? 0),
+  ]);
+  return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 const getCustomerNameFromPayload = (payload) => {
   const directName = payload?.CustomerName || payload?.MemberName || payload?.Name || '';
   if (String(directName).trim()) {
@@ -91,13 +128,10 @@ export default function LoanSchedule() {
       }
 
       const payload = await response.json();
-      const savingsAccounts = Array.isArray(payload?.Accounts)
-        ? payload.Accounts.map((item) => mapAccountOption(item, 'Account'))
-        : [];
       const loanAccounts = Array.isArray(payload?.LoanAccounts)
         ? payload.LoanAccounts.map((item) => mapAccountOption(item, 'Loan Account'))
         : [];
-      const allAccounts = [...savingsAccounts, ...loanAccounts].filter((item) => item.value);
+      const allAccounts = loanAccounts.filter((item) => item.value);
 
       setCustomerName(getCustomerNameFromPayload(payload));
       setAccountOptions(allAccounts);
@@ -107,7 +141,7 @@ export default function LoanSchedule() {
       }
 
       if (allAccounts.length === 0) {
-        setStatusMessage('Customer loaded, but no linked accounts were found.');
+        setStatusMessage('Customer loaded, but no loan accounts were found.');
       } else {
         setStatusMessage('Customer and account details loaded successfully.');
       }
@@ -121,32 +155,57 @@ export default function LoanSchedule() {
     }
   };
 
-  const handlePrint = async () => {
+  const handleExportPDF = (data, customerName) => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+
+    const reportHtml = buildLoanSchedulePrintHtml(data, {
+      customerCode,
+      customerName,
+      accountNumber,
+    });
+
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data, customerName) => {
+    const scheduleRows = Array.isArray(data?.Schedule) ? data.Schedule : Array.isArray(data) ? data : [];
+    const csvContent = convertToCSV(scheduleRows);
+    const filename = `loan-schedule-${customerCode}-${customerName || 'export'}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data, customerName) => {
+    const scheduleRows = Array.isArray(data?.Schedule) ? data.Schedule : Array.isArray(data) ? data : [];
+    const csvContent = convertToCSV(scheduleRows);
+    const filename = `loan-schedule-${customerCode}-${customerName || 'export'}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
     if (!customerCode.trim() || !accountNumber.trim()) {
-      setStatusMessage('Please enter customer code and account number before printing.');
+      setStatusMessage('Please enter customer code and account number before exporting.');
       return;
     }
 
     setStatusMessage('');
+
     const data = await fetchLoanSchedule(customerCode, accountNumber);
     if (data) {
-      const printWindow = window.open('', '_blank', 'width=1200,height=900');
-      if (!printWindow) {
-        setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
-        return;
+      if (exportType === 'pdf') {
+        handleExportPDF(data, customerName);
+      } else if (exportType === 'csv') {
+        handleExportCSV(data, customerName);
+      } else if (exportType === 'excel') {
+        handleExportExcel(data, customerName);
       }
-
-      const reportHtml = buildLoanSchedulePrintHtml(data, {
-        customerCode,
-        customerName,
-        accountNumber,
-      });
-
-      printWindow.document.open();
-      printWindow.document.write(reportHtml);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
     } else {
       setStatusMessage(printError || 'Failed to fetch loan schedule. Please try again.');
     }
@@ -264,12 +323,29 @@ export default function LoanSchedule() {
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 1.5 }}>
             <Button
               variant="contained"
-              onClick={handlePrint}
+              onClick={() => handleFetchAndExport('pdf')}
               disabled={!customerCode.trim() || !accountNumber.trim() || isLoadingCustomer || isPrinting}
-              startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              {isPrinting ? 'Fetching...' : 'Print'}
+              {isPrinting ? 'Processing...' : 'PDF'}
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={!customerCode.trim() || !accountNumber.trim() || isLoadingCustomer || isPrinting}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              Excel
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={!customerCode.trim() || !accountNumber.trim() || isLoadingCustomer || isPrinting}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              CSV
             </Button>
 
             <Button
