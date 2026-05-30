@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -13,6 +13,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
 import useGetLoanBalancePrint from './LoanBalance/hooks/useGetLoanBalancePrint';
 import { buildLoanBalancePrintHtml } from './LoanBalance/printSetup';
@@ -33,21 +35,56 @@ const normalizeBranchId = (branch) => (
   ?? ''
 ).toString().trim();
 
-const productOptions = [
-  { value: 1, label: 'Development Loan' },
-  { value: 2, label: 'Emergency Loan' },
-  { value: 3, label: 'Regular Loan' },
-  { value: 4, label: 'Consumer Loan' },
-  { value: 5, label: 'Building Loan' },
-  { value: 6, label: 'Tobaski Loan' },
-];
+const normalizeProductLabel = (product) => (
+  product?.prd_name
+  || product?.productName
+  || product?.name
+  || product?.label
+  || ''
+).toString().trim();
+
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const convertToCSV = (rows) => {
+  const headers = ['Account Number', 'Account Name', 'Loan Balance', 'Age'];
+  const csvRows = rows.map((row) => [
+    row?.cacctnumb ?? '',
+    row?.cacctname ?? '',
+    formatAmount(row?.LoanBalance ?? row?.nbookbal ?? 0),
+    row?.age ?? row?.days_outstanding ?? '0',
+  ]);
+  return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
 
 export default function LoanBalance() {
   const { branches, loading: branchesLoading } = useBranches();
   const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
-  const [branch, setBranch] = useState('');
+  const [branch, setBranch] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [productType, setProductType] = useState('');
+  const [productOptions, setProductOptions] = useState([]);
+  const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
     active: false,
     closed: false,
@@ -60,9 +97,42 @@ export default function LoanBalance() {
   const [gender, setGender] = useState({
     male: false,
     female: false,
-    other: false,
   });
   const [statusMessage, setStatusMessage] = useState('');
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setProductLoading(true);
+      try {
+        const response = await fetch('/api/products/types');
+        if (!response.ok) {
+          return;
+        }
+
+        const result = await response.json();
+        const rows = result?.status === 'success' && Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : [];
+
+        const options = rows
+          .map((item) => ({
+            value: String(item?.prd_id ?? item?.id ?? normalizeProductLabel(item)).trim(),
+            label: normalizeProductLabel(item),
+          }))
+          .filter((item) => item.value && item.label);
+
+        setProductOptions(options);
+      } catch {
+        setProductOptions([]);
+      } finally {
+        setProductLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   const branchOptions = useMemo(
     () => {
@@ -85,83 +155,84 @@ export default function LoanBalance() {
     [branches],
   );
 
-  const handlePrint = async () => {
-    if (!branch || !date || !productType) {
-      setStatusMessage('Please select a branch and date before printing.');
-      return;
-    }
-
+  const handleExportPDF = (data) => {
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) {
       setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+    const reportHtml = buildLoanBalancePrintHtml(data);
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `loan-balance-${date}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `loan-balance-${date}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
+    if (branch === '' || !date || !productType) {
+      setStatusMessage('Please select a date and product type before exporting.');
       return;
     }
 
     setStatusMessage('');
 
     const payload = {
-      BranchID: Number(branch) || 0,
+      BranchID: branch === '0' ? 0 : Number(branch),
       ProductType: Number(productType) || 0,
       CustType0: customerType.individual ? '1' : '',
       CustType1: customerType.group ? '2' : '',
       CustType2: customerType.corporate ? '3' : '',
       GenderMale: gender.male ? 1 : '',
       GenderFemale: gender.female ? 2 : '',
-      GenderOther: gender.other ? '3' : '',
       TransactionDate: date,
       ByLoanOfficer: '',
     };
 
-    const data = await fetchLoanBalance(payload);
+    try {
+      const data = await fetchLoanBalance(payload);
 
-    if (!data) {
-      printWindow.close();
-      setStatusMessage('Failed to fetch loan balance report. Please try again.');
-      return;
+      if (!data) {
+        setStatusMessage('Failed to fetch loan balance report. Please try again.');
+        return;
+      }
+
+      const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.rows)
+          ? data.rows
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+
+      if (rows.length === 0) {
+        setStatusMessage('No loan balance data found for the selected filters.');
+        return;
+      }
+
+      if (exportType === 'pdf') {
+        handleExportPDF(rows);
+      } else if (exportType === 'csv') {
+        handleExportCSV(rows);
+      } else if (exportType === 'excel') {
+        handleExportExcel(rows);
+      }
+    } catch (error) {
+      setStatusMessage('Error fetching loan balance report. Please try again.');
+      console.error('Loan Balance Report Error:', error);
     }
-
-    const rows = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.rows)
-        ? data.rows
-        : Array.isArray(data?.data)
-          ? data.data
-          : [];
-
-    if (rows.length === 0) {
-      printWindow.close();
-      setStatusMessage('No loan balance data found for the selected filters.');
-      return;
-    }
-
-    const selectedBranch = branchOptions.find((item) => item.id === branch);
-    const selectedProduct = productOptions.find((item) => String(item.value) === String(productType));
-
-    const reportHtml = buildLoanBalancePrintHtml(rows, {
-      branchLabel: selectedBranch?.name || '',
-      date,
-      productLabel: selectedProduct?.label || '',
-      memberStatusLabel: [
-        memberStatus.active ? 'Active' : '',
-        memberStatus.closed ? 'Closed' : '',
-      ].filter(Boolean).join(', '),
-      customerTypeLabel: [
-        customerType.individual ? 'Individual' : '',
-        customerType.group ? 'Group' : '',
-        customerType.corporate ? 'Corporate' : '',
-      ].filter(Boolean).join(', '),
-      genderLabel: [
-        gender.male ? 'Male' : '',
-        gender.female ? 'Female' : '',
-        gender.other ? 'Other' : '',
-      ].filter(Boolean).join(', '),
-    });
-
-    printWindow.document.open();
-    printWindow.document.write(reportHtml);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   };
 
   const handleMemberStatusChange = (event) => {
@@ -228,6 +299,7 @@ export default function LoanBalance() {
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
+                  if (selected === '0') return 'All Branches';
                   if (!selected) {
                     return 'Select a branch';
                   }
@@ -237,8 +309,8 @@ export default function LoanBalance() {
                 },
               }}
             >
-              <MenuItem value="" disabled>
-                Select a branch
+              <MenuItem value="0">
+                All Branches
               </MenuItem>
               {branchOptions.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
@@ -247,14 +319,16 @@ export default function LoanBalance() {
               ))}
             </TextField>
 
-            <TextField
+            <DatePicker
               label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
+              value={date ? dayjs(date) : null}
+              onChange={(value) => setDate(value ? value.format('YYYY-MM-DD') : '')}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  fullWidth: true,
+                },
+              }}
             />
           </Box>
 
@@ -267,6 +341,7 @@ export default function LoanBalance() {
               onChange={(e) => setProductType(e.target.value)}
               size="small"
               fullWidth
+              disabled={productLoading}
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
@@ -384,29 +459,34 @@ export default function LoanBalance() {
                 }
                 label="Female"
               />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={gender.other}
-                    onChange={handleGenderChange}
-                    name="other"
-                  />
-                }
-                label="Other"
-              />
             </Box>
           </Box>
 
-          {/* Print Button */}
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
+          {/* Export Buttons */}
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
             <Button
               variant="contained"
-              onClick={handlePrint}
-              disabled={!branch || !date || !productType || branchesLoading || printLoading}
-              startIcon={printLoading ? <CircularProgress size={16} color="inherit" /> : null}
+              onClick={() => handleFetchAndExport('pdf')}
+              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
-              {printLoading ? 'Loading...' : 'Print'}
+              {printLoading ? 'Processing...' : 'PDF'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              CSV
             </Button>
           </Box>
         </CardContent>

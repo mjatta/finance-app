@@ -42,40 +42,33 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
   const rows = normalizeRows(payload);
   const firstRow = rows[0] ?? {};
   const companyName = String(firstRow?.com_name ?? '').trim() || 'Company';
+  const branchName = (firstRow?.br_name ?? firstRow?.branchName ?? '').trim();
   const address = String(firstRow?.caddress ?? '').trim();
   const telephone = String(firstRow?.tel ?? '').trim();
   const email = String(firstRow?.email ?? '').trim();
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
   const totals = rows.reduce((acc, row) => ({
-    amountIssued: acc.amountIssued + toNumber(row?.PRINCIPAL_AMT),
     loanBalance: acc.loanBalance + toNumber(row?.LoanBalance ?? row?.nbookbal),
-    savingsBalance: acc.savingsBalance + toNumber(row?.SavingsBalance),
-    netLoan: acc.netLoan + toNumber(row?.NetLoan ?? row?.nnewbal),
-    loanProvision: acc.loanProvision + toNumber(row?.LoanProvision),
   }), {
-    amountIssued: 0,
     loanBalance: 0,
-    savingsBalance: 0,
-    netLoan: 0,
-    loanProvision: 0,
   });
 
   const tableRows = rows.length > 0
-    ? rows.map((row) => `
-      <tr>
-        <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
-        <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
-        <td class="amt">${formatAmount(row?.PRINCIPAL_AMT)}</td>
-        <td class="amt">${formatAmount(row?.LoanBalance ?? row?.nbookbal)}</td>
-        <td class="amt">${formatAmount(row?.SavingsBalance)}</td>
-        <td class="amt">${formatAmount(row?.NetLoan ?? row?.nnewbal)}</td>
-        <td class="amt">${formatAmount(row?.LoanProvision)}</td>
-      </tr>
-    `).join('')
+    ? rows.map((row) => {
+      const age = (row?.age ?? row?.days_outstanding ?? '0').toString().trim();
+      return `
+        <tr>
+          <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
+          <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
+          <td class="amt">${formatAmount(row?.LoanBalance ?? row?.nbookbal)}</td>
+          <td class="num">${escapeHtml(age)}</td>
+        </tr>
+      `;
+    }).join('')
     : `
       <tr>
-        <td colspan="7" class="no-data">No loan balance data found.</td>
+        <td colspan="4" class="no-data">No loan balance data found.</td>
       </tr>
     `;
 
@@ -142,15 +135,6 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
           font-size: 12px;
           color: var(--muted);
         }
-        .filters {
-          display: flex;
-          justify-content: center;
-          gap: 16px;
-          flex-wrap: wrap;
-          margin-top: 8px;
-          font-size: 12px;
-          color: var(--muted);
-        }
         table {
           width: 100%;
           border-collapse: collapse;
@@ -195,6 +179,7 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
           body { padding: 8mm; }
           .report { max-width: none; }
           .meta-right { right: 0; }
+          tfoot { display: table-row-group; }
         }
       </style>
     </head>
@@ -203,17 +188,12 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
         <div class="header">
           <div class="meta-right">Printed: ${escapeHtml(printedAt)}</div>
           <div class="company">${escapeHtml(companyName)}</div>
+          ${branchName ? `<div class="line">${escapeHtml(branchName)}</div>` : ''}
           ${address ? `<div class="line">${escapeHtml(address)}</div>` : ''}
           ${telephone ? `<div class="line">Tel: ${escapeHtml(telephone)}</div>` : ''}
           ${email ? `<div class="line">Email: ${escapeHtml(email)}</div>` : ''}
           <div class="title">Loan Balance</div>
-          <div class="sub-title">Branch: ${escapeHtml(context.branchLabel || '')} | Date: ${escapeHtml(context.date || '')}</div>
-          <div class="filters">
-            <span>Product: ${escapeHtml(context.productLabel || '')}</span>
-            <span>Member Status: ${escapeHtml(context.memberStatusLabel || '')}</span>
-            <span>Customer Type: ${escapeHtml(context.customerTypeLabel || '')}</span>
-            <span>Gender: ${escapeHtml(context.genderLabel || '')}</span>
-          </div>
+          <div class="sub-title">As of: ${escapeHtml(context.date || '')}</div>
         </div>
 
         <table>
@@ -221,11 +201,8 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
             <tr>
               <th>Account Number</th>
               <th>Account Name</th>
-              <th>Amount Issued</th>
               <th>Loan Balance</th>
-              <th>Savings Balance</th>
-              <th>Net Loan</th>
-              <th>Loan Provision</th>
+              <th>Age</th>
             </tr>
           </thead>
           <tbody>
@@ -234,11 +211,8 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
           <tfoot>
             <tr>
               <td colspan="2">Total</td>
-              <td class="amt">${formatAmount(totals.amountIssued)}</td>
               <td class="amt">${formatAmount(totals.loanBalance)}</td>
-              <td class="amt">${formatAmount(totals.savingsBalance)}</td>
-              <td class="amt">${formatAmount(totals.netLoan)}</td>
-              <td class="amt">${formatAmount(totals.loanProvision)}</td>
+              <td></td>
             </tr>
           </tfoot>
         </table>
