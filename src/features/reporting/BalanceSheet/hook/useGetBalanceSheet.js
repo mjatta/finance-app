@@ -7,7 +7,7 @@ export const useGetBalanceSheet = () => {
   const [error, setError] = useState(null);
   const { user } = useAuthStore();
 
-  const fetchBalanceSheet = async (atDate) => {
+  const fetchBalanceSheet = async (branchId, atDate) => {
     setLoading(true);
     setError(null);
 
@@ -15,7 +15,7 @@ export const useGetBalanceSheet = () => {
       const companyId = user?.CompId || 30;
       const payload = {
         CompanyID: companyId,
-        BranchID: 0,
+        BranchID: Number(branchId) || 0,
         AtDate: atDate || new Date().toISOString().slice(0, 10),
       };
 
