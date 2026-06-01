@@ -343,6 +343,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanbalances/:path*"
     },
     {
+      "source": "/api/transactionlisting/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/transactionlisting/:path*"
+    },
+    {
       "source": "/api/savingsbalances/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsbalances/:path*"
     },
