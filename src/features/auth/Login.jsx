@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -417,6 +418,7 @@ export default function Login({ onLogin }) {
               variant="contained"
               fullWidth
               disabled={loginLoading}
+              startIcon={loginLoading ? <CircularProgress size={18} color="inherit" /> : null}
               sx={{
                 mt: 1,
                 py: 1.4,
@@ -432,7 +434,7 @@ export default function Login({ onLogin }) {
                 },
               }}
             >
-              Sign In
+              {loginLoading ? 'Signing in...' : 'Sign In'}
             </Button>
 
             <Typography sx={{ textAlign: 'center', color: 'text.secondary', fontSize: '0.9rem', pt: 0.5 }}>
