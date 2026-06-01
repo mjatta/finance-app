@@ -21,8 +21,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
 import useGetAgingProducts from '../DetailedAging/hooks/useGetAgingProducts';
-import useGetLoanProvisionSummary from './hooks/useGetLoanProvisionSummary';
 import useGetLoanProvisionDetails from './hooks/useGetLoanProvisionDetails';
+import { buildLoanProvisionDetailsPrintHtml } from './printSetup';
 
 const FALLBACK_ROWS = [
   { id: 1, daysFrom: '', daysTo: '', percentage: '' },
@@ -30,18 +30,40 @@ const FALLBACK_ROWS = [
   { id: 3, daysFrom: '', daysTo: '', percentage: '' },
 ];
 
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export default function LoanProvision() {
   const { ranges, loading: rangesLoading } = useGetAgingRanges();
   const { products: productOptions, loading: productLoading } = useGetAgingProducts();
-  const { fetchSummary, loading: printLoading } = useGetLoanProvisionSummary();
   const { fetchDetails, loading: detailsLoading } = useGetLoanProvisionDetails();
 
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
   const [runDate, setRunDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
-  const [workingButton, setWorkingButton] = useState('');
   const [rangesInitialized, setRangesInitialized] = useState(false);
+  const [savingRanges, setSavingRanges] = useState(false);
 
   useEffect(() => {
     if (!rangesLoading && ranges.length > 0 && !rangesInitialized) {
@@ -52,47 +74,114 @@ export default function LoanProvision() {
 
   const canRunAction = Boolean(product && runDate);
 
-  const simulateAction = (actionLabel) => {
-    if (!canRunAction) {
-      setStatusMessage('Please select Product and Run Date first.');
-      return;
-    }
+  const convertToCSV = (data) => {
+    const groupedData = {};
+    const ageRanges = [];
 
-    setStatusMessage('');
-    setWorkingButton(actionLabel);
-    setTimeout(() => {
-      setWorkingButton('');
-      if (actionLabel === 'Print') {
-        window.print();
-      } else {
-        setStatusMessage(`${actionLabel} completed.`);
+    data.forEach((row) => {
+      const key = `${row.DaysFrom || 'N/A'}-${row.DaysTo || 'N/A'}`;
+      if (!groupedData[key]) {
+        groupedData[key] = {
+          daysFrom: row.DaysFrom,
+          daysTo: row.DaysTo,
+          ageCategory: row.LoanAgeCategory || '',
+          rows: [],
+          savingsBalance: 0,
+          loanBalance: 0,
+          netLoan: 0,
+          provisioningAmount: 0,
+        };
+        ageRanges.push(key);
       }
-    }, 800);
-  };
 
-  const handlePrint = async () => {
-    if (!canRunAction) {
-      setStatusMessage('Please select Product and Run Date first.');
-      return;
-    }
-
-    setStatusMessage('');
-    const response = await fetchSummary({
-      toDate: runDate.format('YYYY-MM-DD'),
-      productId: product,
+      const group = groupedData[key];
+      group.rows.push(row);
+      group.savingsBalance += Number(row.SavingsBalance ?? 0);
+      group.loanBalance += Number(row.LoanBalance ?? 0);
+      group.netLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
+      group.provisioningAmount += Number(row.LoanProvision ?? 0);
     });
 
-    if (!response.success) {
-      setStatusMessage('Failed to fetch loan provision summary. Please try again.');
+    let totalSavingsBalance = 0;
+    let totalLoanBalance = 0;
+    let totalNetLoan = 0;
+    let totalProvisioningAmount = 0;
+
+    data.forEach((row) => {
+      totalSavingsBalance += Number(row.SavingsBalance ?? 0);
+      totalLoanBalance += Number(row.LoanBalance ?? 0);
+      totalNetLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
+      totalProvisioningAmount += Number(row.LoanProvision ?? 0);
+    });
+
+    const headers = ['Days (from - to)', 'Savings Balance', 'Loan Balance', 'Net Loan', 'Provisioning Amount', 'Percentage (%)'];
+    const csvRows = ageRanges.map((key) => {
+      const group = groupedData[key];
+      const daysLabel = group.ageCategory || `${group.daysFrom || 'N/A'}-${group.daysTo || 'N/A'}`;
+      const percentage = group.loanBalance !== 0 && group.provisioningAmount !== 0
+        ? ((group.provisioningAmount / Math.abs(group.loanBalance)) * 100).toFixed(2)
+        : '0.00';
+
+      return [
+        daysLabel,
+        formatAmount(group.savingsBalance),
+        formatAmount(group.loanBalance),
+        formatAmount(group.netLoan),
+        formatAmount(group.provisioningAmount),
+        `${percentage}%`,
+      ];
+    });
+
+    const totalPercentageCalc = totalLoanBalance !== 0 && totalProvisioningAmount !== 0
+      ? ((totalProvisioningAmount / Math.abs(totalLoanBalance)) * 100).toFixed(2)
+      : '0.00';
+
+    csvRows.push([
+      'TOTAL',
+      formatAmount(totalSavingsBalance),
+      formatAmount(totalLoanBalance),
+      formatAmount(totalNetLoan),
+      formatAmount(totalProvisioningAmount),
+      `${totalPercentageCalc}%`,
+    ]);
+
+    return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  };
+
+  const handleExportPDF = async (data) => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+    const reportHtml = buildLoanProvisionDetailsPrintHtml(data, runDate.format('YYYY-MM-DD'));
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `loan-provision-${runDate.format('YYYY-MM-DD')}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `loan-provision-${runDate.format('YYYY-MM-DD')}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
+    if (!product) {
+      setStatusMessage('Please select a product before exporting.');
       return;
     }
 
-    window.print();
-  };
-
-  const handleDetailsProvisioning = async () => {
-    if (!canRunAction) {
-      setStatusMessage('Please select Product and Run Date first.');
+    if (!runDate) {
+      setStatusMessage('Please select a run date before exporting.');
       return;
     }
 
@@ -107,7 +196,62 @@ export default function LoanProvision() {
       return;
     }
 
-    setStatusMessage('Details provisioning completed.');
+    const detailsData = Array.isArray(response.data)
+      ? response.data
+      : Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+    if (detailsData.length === 0) {
+      setStatusMessage('No loan provision details found for the selected filters.');
+      return;
+    }
+
+    if (exportType === 'pdf') {
+      handleExportPDF(detailsData);
+    } else if (exportType === 'csv') {
+      handleExportCSV(detailsData);
+    } else if (exportType === 'excel') {
+      handleExportExcel(detailsData);
+    }
+  };
+
+  const handleCellChange = (rowId, field, value) => {
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === rowId ? { ...row, [field]: value } : row
+      )
+    );
+  };
+
+  const handleSaveRanges = async () => {
+    try {
+      setSavingRanges(true);
+      setStatusMessage('');
+
+      const payload = rows.map((row) => ({
+        daysFrom: Number(row.daysFrom) || 0,
+        daysTo: Number(row.daysTo) || 0,
+        percentage: Number(row.percentage) || 0,
+      }));
+
+      const response = await fetch('/api/loanaging/saveranges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save aging ranges: ${response.status}`);
+      }
+
+      setStatusMessage('Aging ranges saved successfully!');
+      setTimeout(() => setStatusMessage(''), 3000);
+    } catch (error) {
+      setStatusMessage(`Error saving ranges: ${error.message}`);
+    } finally {
+      setSavingRanges(false);
+    }
   };
 
   const handleClear = () => {
@@ -116,7 +260,6 @@ export default function LoanProvision() {
     setProduct('');
     setRunDate(dayjs());
     setStatusMessage('');
-    setWorkingButton('');
   };
 
   return (
@@ -161,9 +304,39 @@ export default function LoanProvision() {
                       '&:hover': { backgroundColor: '#e9ecef' },
                     }}
                   >
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.daysFrom}</TableCell>
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.daysTo}</TableCell>
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.percentage}</TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.daysFrom}
+                        onChange={(e) => handleCellChange(row.id, 'daysFrom', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.daysTo}
+                        onChange={(e) => handleCellChange(row.id, 'daysTo', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.percentage}
+                        onChange={(e) => handleCellChange(row.id, 'percentage', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 0.01 }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -217,39 +390,45 @@ export default function LoanProvision() {
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
-              onClick={() => simulateAction('Reschedule Provisioning')}
-              disabled={!canRunAction || Boolean(workingButton)}
-              startIcon={workingButton === 'Reschedule Provisioning' ? <CircularProgress size={16} color="inherit" /> : null}
-              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+              onClick={handleSaveRanges}
+              disabled={savingRanges}
+              startIcon={savingRanges ? <CircularProgress size={16} color="inherit" /> : null}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              Reschedule Provisioning
+              {savingRanges ? 'Saving...' : 'Save Ranges'}
             </Button>
 
             <Button
               variant="contained"
-              color="secondary"
-              onClick={handleDetailsProvisioning}
-              disabled={!canRunAction || Boolean(workingButton) || detailsLoading}
+              onClick={() => handleFetchAndExport('pdf')}
+              disabled={!canRunAction || detailsLoading}
               startIcon={detailsLoading ? <CircularProgress size={16} color="inherit" /> : null}
-              sx={{ fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              {detailsLoading ? 'Loading...' : 'Details Provisioning'}
+              {detailsLoading ? 'Generating...' : 'PDF'}
             </Button>
 
             <Button
-              variant="outlined"
-              onClick={handlePrint}
-              disabled={!canRunAction || Boolean(workingButton) || printLoading}
-              startIcon={printLoading ? <CircularProgress size={16} color="inherit" /> : null}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={!canRunAction || detailsLoading}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              {printLoading ? 'Loading...' : 'Print'}
+              Excel
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={!canRunAction || detailsLoading}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              CSV
             </Button>
 
             <Button
               variant="text"
               onClick={handleClear}
-              disabled={Boolean(workingButton)}
               sx={{ fontWeight: 600, textTransform: 'none' }}
             >
               Clear
