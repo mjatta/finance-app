@@ -32,6 +32,29 @@ const FALLBACK_ROWS = [
   { id: 3, daysFrom: '', daysTo: '', percentage: '' },
 ];
 
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export default function DetailedAging() {
   const { ranges, loading: rangesLoading } = useGetAgingRanges();
   const { products: productOptions, loading: productLoading } = useGetAgingProducts();
@@ -43,8 +66,9 @@ export default function DetailedAging() {
   const [category, setCategory] = useState('');
   const [date, setDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
+  const [savingRanges, setSavingRanges] = useState(false);
   const [rangesInitialized, setRangesInitialized] = useState(false);
-  const isPrintDisabled = !product || !category || printLoading;
+  const isExportDisabled = !product || !category || printLoading;
 
   useEffect(() => {
     if (!rangesLoading && ranges.length > 0 && !rangesInitialized) {
@@ -53,21 +77,52 @@ export default function DetailedAging() {
     }
   }, [ranges, rangesLoading, rangesInitialized]);
 
-  const handlePrint = async () => {
+  const convertToCSV = (rows) => {
+    const headers = ['Days From', 'Days To', 'Percentage (%)'];
+    const csvRows = rows.map((row) => [row.daysFrom || '', row.daysTo || '', row.percentage || '']);
+    return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  };
+
+  const handleExportPDF = async (data) => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      return;
+    }
+    const dateStr = date.format('YYYY-MM-DD');
+    const reportHtml = buildDetailedAgingPrintHtml(data, dateStr);
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleExportCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `detailed-aging-${date.format('YYYY-MM-DD')}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (data) => {
+    const csvContent = convertToCSV(data);
+    const filename = `detailed-aging-${date.format('YYYY-MM-DD')}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleFetchAndExport = async (exportType) => {
     if (!product) {
-      setStatusMessage('Please select a product before printing.');
+      setStatusMessage('Please select a product before exporting.');
+      return;
+    }
+
+    if (!category) {
+      setStatusMessage('Please select a category before exporting.');
       return;
     }
 
     if (!date) {
-      setStatusMessage('Please select a date before printing.');
-      return;
-    }
-
-    // Open preview window synchronously to avoid browser popup blocking
-    const printWindow = window.open('', '_blank', 'width=1200,height=900');
-    if (!printWindow) {
-      setStatusMessage('Unable to open print preview. Please allow pop-ups and try again.');
+      setStatusMessage('Please select a date before exporting.');
       return;
     }
 
@@ -80,7 +135,6 @@ export default function DetailedAging() {
 
     const response = await generateReport(payload);
     if (!response.success) {
-      printWindow.close();
       setStatusMessage('Failed to generate detailed aging report. Please try again.');
       return;
     }
@@ -94,19 +148,19 @@ export default function DetailedAging() {
           : [];
 
     if (reportRows.length === 0) {
-      printWindow.close();
       setStatusMessage('No detailed aging data found for the selected filters.');
       return;
     }
 
-    const reportHtml = buildDetailedAgingPrintHtml(reportRows, payload.ToDate);
-    printWindow.document.open();
-    printWindow.document.write(reportHtml);
-    printWindow.document.close();
-    printWindow.focus();
-
     setStatusMessage('');
-    printWindow.print();
+
+    if (exportType === 'pdf') {
+      handleExportPDF(reportRows);
+    } else if (exportType === 'csv') {
+      handleExportCSV(reportRows);
+    } else if (exportType === 'excel') {
+      handleExportExcel(reportRows);
+    }
   };
 
   const handleClear = () => {
@@ -116,6 +170,44 @@ export default function DetailedAging() {
     setCategory('');
     setDate(dayjs());
     setStatusMessage('');
+  };
+
+  const handleCellChange = (rowId, field, value) => {
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === rowId ? { ...row, [field]: value } : row
+      )
+    );
+  };
+
+  const handleSaveRanges = async () => {
+    try {
+      setSavingRanges(true);
+      setStatusMessage('');
+
+      const payload = rows.map((row) => ({
+        daysFrom: Number(row.daysFrom) || 0,
+        daysTo: Number(row.daysTo) || 0,
+        percentage: Number(row.percentage) || 0,
+      }));
+
+      const response = await fetch('/api/loanaging/saveranges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save aging ranges: ${response.status}`);
+      }
+
+      setStatusMessage('Aging ranges saved successfully!');
+      setTimeout(() => setStatusMessage(''), 3000);
+    } catch (error) {
+      setStatusMessage(`Error saving ranges: ${error.message}`);
+    } finally {
+      setSavingRanges(false);
+    }
   };
 
   return (
@@ -170,9 +262,39 @@ export default function DetailedAging() {
                       '&:hover': { backgroundColor: '#e9ecef' },
                     }}
                   >
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.daysFrom}</TableCell>
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.daysTo}</TableCell>
-                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>{row.percentage}</TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.daysFrom}
+                        onChange={(e) => handleCellChange(row.id, 'daysFrom', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.daysTo}
+                        onChange={(e) => handleCellChange(row.id, 'daysTo', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
+                      <TextField
+                        type="number"
+                        value={row.percentage}
+                        onChange={(e) => handleCellChange(row.id, 'percentage', e.target.value)}
+                        size="small"
+                        fullWidth
+                        variant="outlined"
+                        inputProps={{ min: 0, step: 0.01 }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -258,12 +380,37 @@ export default function DetailedAging() {
           <Box sx={{ display: 'flex', gap: 1.5 }}>
             <Button
               variant="contained"
-              onClick={handlePrint}
-              disabled={isPrintDisabled}
+              onClick={handleSaveRanges}
+              disabled={savingRanges}
+              startIcon={savingRanges ? <CircularProgress size={16} color="inherit" /> : null}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              {savingRanges ? 'Saving...' : 'Save Ranges'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('pdf')}
+              disabled={isExportDisabled}
               startIcon={printLoading ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
-              {printLoading ? 'Generating...' : 'Print'}
+              {printLoading ? 'Generating...' : 'PDF'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('excel')}
+              disabled={isExportDisabled}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleFetchAndExport('csv')}
+              disabled={isExportDisabled}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              CSV
             </Button>
             <Button
               variant="outlined"
