@@ -58,8 +58,8 @@ const convertToCSV = (rows) => {
   const csvRows = rows.map((row) => [
     row?.account_number ?? row?.cacctnumb ?? '',
     row?.account_name ?? row?.cacctname ?? '',
-    formatAmount(row?.balance ?? row?.accountBalance ?? 0),
-    row?.age ?? row?.days_outstanding ?? '0',
+    formatAmount(row?.balance ?? row?.accountBalance ?? row?.nbookbal ?? 0),
+    row?.nage ?? row?.age ?? row?.days_outstanding ?? '0',
   ]);
   return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
 };

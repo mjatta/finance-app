@@ -33,8 +33,8 @@ export const buildSavingsBalancePrintHtml = (rows, reportDate) => {
   const tableRows = safeRows.map((row) => {
     const accountNumber = (row?.account_number ?? row?.cacctnumb ?? '').trim();
     const accountName = (row?.account_name ?? row?.cacctname ?? '').trim();
-    const accountBalance = formatAmount(row?.balance ?? row?.accountBalance ?? 0);
-    const age = (row?.age ?? row?.days_outstanding ?? '0').toString().trim();
+    const accountBalance = formatAmount(row?.balance ?? row?.accountBalance ?? row?.nbookbal ?? 0);
+    const age = (row?.nage ?? row?.age ?? row?.days_outstanding ?? '0').toString().trim();
 
     return `
       <tr>
