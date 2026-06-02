@@ -563,6 +563,13 @@ export default function LoanApplication() {
                   value={searchMemberCode}
                   onChange={(e) => setSearchMemberCode(e.target.value)}
                   placeholder="Enter customer code"
+                  helperText="Enter customer code and press Tab to load member details."
+                  FormHelperTextProps={{
+                    sx: {
+                      fontWeight: 800,
+                      color: '#b45309',
+                    },
+                  }}
                   size="small"
                   fullWidth
                   disabled={loadingMember}
