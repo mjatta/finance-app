@@ -58,7 +58,11 @@ const downloadFile = (content, filename, mimeType) => {
 export default function DetailedAging() {
   const { ranges, loading: rangesLoading } = useGetAgingRanges();
   const { products: productOptions, loading: productLoading } = useGetAgingProducts();
-  const { categories: categoryOptions, loading: categoryLoading } = useGetAgingCategories();
+  const {
+    categories: categoryOptions,
+    loading: categoryLoading,
+    refetchCategories,
+  } = useGetAgingCategories();
   const { generateReport, loading: printLoading } = useGenerateAgingReport();
 
   const [rows, setRows] = useState(FALLBACK_ROWS);
@@ -68,7 +72,7 @@ export default function DetailedAging() {
   const [statusMessage, setStatusMessage] = useState('');
   const [savingRanges, setSavingRanges] = useState(false);
   const [rangesInitialized, setRangesInitialized] = useState(false);
-  const isExportDisabled = !product || !category || printLoading;
+  const isExportDisabled = !product || printLoading;
 
   useEffect(() => {
     if (!rangesLoading && ranges.length > 0 && !rangesInitialized) {
@@ -116,11 +120,6 @@ export default function DetailedAging() {
       return;
     }
 
-    if (!category) {
-      setStatusMessage('Please select a category before exporting.');
-      return;
-    }
-
     if (!date) {
       setStatusMessage('Please select a date before exporting.');
       return;
@@ -129,7 +128,7 @@ export default function DetailedAging() {
     const payload = {
       ToDate: date.format('YYYY-MM-DD'),
       Product: Number(product) || 0,
-      Category: Number(category) || 0,
+      Category: category ? Number(category) || 0 : 0,
       ByLoanOfficer: '',
     };
 
@@ -180,6 +179,13 @@ export default function DetailedAging() {
     );
   };
 
+  const handleAddColumn = () => {
+    setRows((prevRows) => {
+      const maxId = prevRows.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0);
+      return [...prevRows, { id: maxId + 1, daysFrom: '', daysTo: '', percentage: '' }];
+    });
+  };
+
   const handleSaveRanges = async () => {
     try {
       setSavingRanges(true);
@@ -200,6 +206,11 @@ export default function DetailedAging() {
       if (!response.ok) {
         throw new Error(`Failed to save aging ranges: ${response.status}`);
       }
+
+      await refetchCategories();
+      window.setTimeout(() => {
+        refetchCategories();
+      }, 700);
 
       setStatusMessage('Aging ranges saved successfully!');
       setTimeout(() => setStatusMessage(''), 3000);
@@ -240,10 +251,37 @@ export default function DetailedAging() {
 
           {/* Aging bands grid */}
           <TableContainer component={Paper} sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+              }}
+            >
               <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                 Aging Bands
               </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleAddColumn}
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.3)' },
+                }}
+              >
+                Add Column
+              </Button>
             </Box>
             <Table size="small">
               <TableHead>

@@ -5,7 +5,7 @@ export default function useGetLoanProvisionDetails() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchDetails = async ({ toDate, productId }) => {
+  const fetchDetails = async ({ toDate, productId, categoryId = 0 }) => {
     setLoading(true);
     setError(null);
 
@@ -13,6 +13,7 @@ export default function useGetLoanProvisionDetails() {
       const url = buildApiUrl('loan-provision-details', {
         ToDate: toDate,
         ProductID: productId,
+        Category: categoryId,
       });
 
       const response = await fetch(url, {

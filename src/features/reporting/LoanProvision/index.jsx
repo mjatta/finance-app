@@ -22,6 +22,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
 import useGetAgingProducts from '../DetailedAging/hooks/useGetAgingProducts';
+import useGetAgingCategories from '../DetailedAging/hooks/useGetAgingCategories';
 import useGetLoanProvisionDetails from './hooks/useGetLoanProvisionDetails';
 import { buildLoanProvisionDetailsPrintHtml } from './printSetup';
 
@@ -57,10 +58,16 @@ const downloadFile = (content, filename, mimeType) => {
 export default function LoanProvision() {
   const { ranges, loading: rangesLoading } = useGetAgingRanges();
   const { products: productOptions, loading: productLoading } = useGetAgingProducts();
+  const {
+    categories: categoryOptions,
+    loading: categoryLoading,
+    refetchCategories,
+  } = useGetAgingCategories();
   const { fetchDetails, loading: detailsLoading } = useGetLoanProvisionDetails();
 
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
+  const [category, setCategory] = useState('');
   const [runDate, setRunDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [rangesInitialized, setRangesInitialized] = useState(false);
@@ -191,6 +198,7 @@ export default function LoanProvision() {
     const response = await fetchDetails({
       toDate: runDate.format('YYYY-MM-DD'),
       productId: product,
+      categoryId: category ? Number(category) || 0 : 0,
     });
 
     if (!response.success) {
@@ -226,6 +234,13 @@ export default function LoanProvision() {
     );
   };
 
+  const handleAddColumn = () => {
+    setRows((prevRows) => {
+      const maxId = prevRows.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0);
+      return [...prevRows, { id: maxId + 1, daysFrom: '', daysTo: '', percentage: '' }];
+    });
+  };
+
   const handleSaveRanges = async () => {
     try {
       setSavingRanges(true);
@@ -247,6 +262,11 @@ export default function LoanProvision() {
         throw new Error(`Failed to save aging ranges: ${response.status}`);
       }
 
+      await refetchCategories();
+      window.setTimeout(() => {
+        refetchCategories();
+      }, 700);
+
       setStatusMessage('Aging ranges saved successfully!');
       setTimeout(() => setStatusMessage(''), 3000);
     } catch (error) {
@@ -260,6 +280,7 @@ export default function LoanProvision() {
     setRows(ranges.length > 0 ? ranges : FALLBACK_ROWS.map((row) => ({ ...row, daysFrom: '', daysTo: '', percentage: '' })));
     setRangesInitialized(false);
     setProduct('');
+    setCategory('');
     setRunDate(dayjs());
     setStatusMessage('');
   };
@@ -284,10 +305,37 @@ export default function LoanProvision() {
           )}
 
           <TableContainer component={Paper} sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+              }}
+            >
               <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                 Aging Bands
               </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleAddColumn}
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.3)' },
+                }}
+              >
+                Add Column
+              </Button>
             </Box>
             <Table size="small">
               <TableHead>
@@ -345,7 +393,7 @@ export default function LoanProvision() {
             </Table>
           </TableContainer>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
               label="Product"
@@ -370,6 +418,34 @@ export default function LoanProvision() {
                 Select product
               </MenuItem>
               {productOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              size="small"
+              fullWidth
+              disabled={categoryLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return categoryLoading ? 'Loading...' : 'All Categories';
+                  }
+
+                  const option = categoryOptions.find((item) => item.value === selected);
+                  return option?.label || selected;
+                },
+              }}
+            >
+              <MenuItem value="">All Categories</MenuItem>
+              {categoryOptions.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
                 </MenuItem>
