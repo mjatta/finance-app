@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
@@ -64,6 +65,7 @@ export default function LoanProvision() {
   const [statusMessage, setStatusMessage] = useState('');
   const [rangesInitialized, setRangesInitialized] = useState(false);
   const [savingRanges, setSavingRanges] = useState(false);
+  const isBusy = detailsLoading || savingRanges;
 
   useEffect(() => {
     if (!rangesLoading && ranges.length > 0 && !rangesInitialized) {
@@ -391,7 +393,7 @@ export default function LoanProvision() {
             <Button
               variant="contained"
               onClick={handleSaveRanges}
-              disabled={savingRanges}
+              disabled={isBusy}
               startIcon={savingRanges ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
@@ -401,7 +403,7 @@ export default function LoanProvision() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('pdf')}
-              disabled={!canRunAction || detailsLoading}
+              disabled={!canRunAction || isBusy}
               startIcon={detailsLoading ? <CircularProgress size={16} color="inherit" /> : null}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
@@ -411,7 +413,7 @@ export default function LoanProvision() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('excel')}
-              disabled={!canRunAction || detailsLoading}
+              disabled={!canRunAction || isBusy}
               sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
               Excel
@@ -420,7 +422,7 @@ export default function LoanProvision() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('csv')}
-              disabled={!canRunAction || detailsLoading}
+              disabled={!canRunAction || isBusy}
               sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
             >
               CSV
@@ -436,6 +438,17 @@ export default function LoanProvision() {
           </Box>
         </CardContent>
       </Card>
+
+      <Backdrop
+        open={isBusy}
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Box>
   );
 }
