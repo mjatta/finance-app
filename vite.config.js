@@ -2006,6 +2006,69 @@ const transactionListingApiPlugin = () => ({
   },
 })
 
+const memberReportApiPlugin = () => ({
+  name: 'member-report-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/memberreport', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          const fullPath = req.url.startsWith('/api/memberreport') ? req.url : `/api/memberreport${req.url}`
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        if (req.method === 'POST') {
+          const fullPath = req.url.startsWith('/api/memberreport') ? req.url : `/api/memberreport${req.url}`
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
+      }
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -2040,6 +2103,7 @@ export default defineConfig({
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
     transactionListingApiPlugin(),
+    memberReportApiPlugin(),
   ],
   server: {
     proxy: {

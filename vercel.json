@@ -347,6 +347,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/transactionlisting/:path*"
     },
     {
+      "source": "/api/memberreport/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/memberreport/:path*"
+    },
+    {
       "source": "/api/savingsbalances/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsbalances/:path*"
     },

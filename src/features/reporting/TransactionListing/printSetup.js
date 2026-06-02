@@ -8,7 +8,7 @@ export const buildTransactionListingPrintHtml = (data) => {
   const address = firstRecord.caddress?.trim() || '';
   const phone = firstRecord.Expr1?.trim() || '';
   const email = firstRecord.email?.trim() || '';
-  const printedDate = new Date().toLocaleString();
+  const printedDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   // Helper functions
   const formatDate = (dateString) => {
@@ -83,21 +83,30 @@ export const buildTransactionListingPrintHtml = (data) => {
       <meta charset="UTF-8">
       <title>Transaction Listing</title>
       <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
+        :root {
+          --text: #0f172a;
+          --muted: #475569;
+          --line: #cbd5e1;
+          --header-bg: #e2e8f0;
+          --stripe: #f8fafc;
         }
+        * { box-sizing: border-box; }
         body {
-          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          font-family: "Segoe UI", Tahoma, sans-serif;
           line-height: 1.4;
-          color: #333;
+          color: var(--text);
+          background: #fff;
+        }
+        .report {
+          width: 100%;
+          max-width: 1100px;
+          margin: 0 auto;
         }
         @media print {
-          body {
-            margin: 0;
-            padding: 10mm;
-          }
+          body { padding: 8mm; }
+          .report { max-width: none; }
           .page-break {
             page-break-after: always;
           }
@@ -112,56 +121,57 @@ export const buildTransactionListingPrintHtml = (data) => {
           }
         }
         .header {
-          margin-bottom: 20px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 10px;
+          position: relative;
+          text-align: center;
+          margin-bottom: 18px;
         }
-        .company-info {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 10px;
+        .meta-right {
+          position: absolute;
+          right: 0;
+          top: 0;
+          text-align: right;
+          font-size: 12px;
+          color: var(--muted);
         }
-        .company-details h2 {
-          font-size: 16px;
-          font-weight: bold;
+        .company {
+          font-size: 22px;
+          font-weight: 800;
+          letter-spacing: 0.3px;
           margin-bottom: 4px;
         }
-        .company-details p {
-          font-size: 11px;
+        .line {
+          font-size: 13px;
+          color: var(--muted);
           margin: 2px 0;
         }
-        .print-info {
-          text-align: right;
-          font-size: 11px;
-          color: #666;
-        }
         .report-title {
-          text-align: center;
-          font-size: 14px;
-          font-weight: bold;
-          margin: 15px 0;
+          margin-top: 14px;
+          font-size: 19px;
+          font-weight: 700;
+          text-transform: uppercase;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 15px;
+          margin-top: 14px;
+          font-size: 12.5px;
         }
         th {
-          background-color: #667eea;
-          color: white;
-          padding: 10px;
+          background: var(--header-bg);
+          color: var(--text);
+          padding: 8px 10px;
           text-align: left;
-          font-size: 11px;
-          font-weight: bold;
-          border: 1px solid #667eea;
+          font-size: 12.5px;
+          font-weight: 700;
+          border: 1px solid var(--line);
         }
         td {
-          padding: 8px;
-          font-size: 11px;
-          border-bottom: 1px solid #ddd;
+          padding: 7px 10px;
+          font-size: 12.5px;
+          border: 1px solid var(--line);
         }
         tr:nth-child(even) {
-          background-color: #f9f9f9;
+          background-color: var(--stripe);
         }
         .text-right {
           text-align: right;
@@ -169,47 +179,43 @@ export const buildTransactionListingPrintHtml = (data) => {
         .text-center {
           text-align: center;
         }
+        tfoot td {
+          font-weight: 700;
+          background: #f1f5f9;
+        }
       </style>
     </head>
     <body>
-      <!-- Header -->
-      <div class="header">
-        <div class="company-info">
-          <div class="company-details">
-            <h2>${companyName}</h2>
-            <p>${address}</p>
-            <p>Tel: ${phone}</p>
-            <p>Email: ${email}</p>
-          </div>
-          <div class="print-info">
-            <p><strong>Printed:</strong> ${printedDate}</p>
-            <p>Transaction Listing Report</p>
-          </div>
+      <div class="report">
+        <div class="header">
+          <div class="meta-right">Printed: ${printedDate}</div>
+          <div class="company">${companyName}</div>
+          ${address ? `<div class="line">${address}</div>` : ''}
+          ${phone ? `<div class="line">Tel: ${phone}</div>` : ''}
+          ${email ? `<div class="line">Email: ${email}</div>` : ''}
+          <div class="report-title">Transaction Listing</div>
         </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Account Number</th>
+              <th>Full Name</th>
+              <th style="text-align: center;">Transaction Date</th>
+              <th style="text-align: right;">Credit</th>
+              <th style="text-align: right;">Debit</th>
+              <th>Description</th>
+              <th>Branch</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+          <tfoot>
+            ${totalsRow}
+          </tfoot>
+        </table>
       </div>
-
-      <div class="report-title">TRANSACTION LISTING</div>
-
-      <!-- Table -->
-      <table>
-        <thead>
-          <tr>
-            <th>Account Number</th>
-            <th>Full Name</th>
-            <th style="text-align: center;">Transaction Date</th>
-            <th style="text-align: right;">Credit</th>
-            <th style="text-align: right;">Debit</th>
-            <th>Description</th>
-            <th>Branch</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          ${totalsRow}
-        </tfoot>
-      </table>
     </body>
     </html>
   `;

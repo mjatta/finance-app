@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Checkbox,
   FormControlLabel,
   MenuItem,
@@ -22,6 +24,17 @@ const normalizeBranchName = (branch) => (
   || branch?.branch
   || ''
 ).toString().trim();
+
+const normalizeBranchId = (branch) => (
+  branch?.branchid
+  ?? branch?.BranchID
+  ?? branch?.branchId
+  ?? branch?.br_id
+  ?? branch?.id
+  ?? ''
+).toString().trim();
+
+const ALL_BRANCHES_VALUE = 'ALL';
 
 const TRANSACTION_SOURCES = [
   { name: 'transfer', label: 'Transfer' },
@@ -58,9 +71,59 @@ const TRANSACTION_TYPES = [
 const initCheckboxState = (items) =>
   items.reduce((acc, { name }) => ({ ...acc, [name]: false }), {});
 
+const normalizeReportRows = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.records)) return payload.records;
+  if (Array.isArray(payload?.Table)) return payload.Table;
+  if (Array.isArray(payload?.table)) return payload.table;
+  if (Array.isArray(payload?.data?.rows)) return payload.data.rows;
+  if (Array.isArray(payload?.data?.Table)) return payload.data.Table;
+  if (Array.isArray(payload?.data?.table)) return payload.data.table;
+  return [];
+};
+
+const escapeCSV = (value) => {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const formatAmount = (value) => {
+  const amount = Number(value ?? 0);
+  if (Number.isNaN(amount)) return '0.00';
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const formatDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString().slice(0, 10);
+};
+
+const fullNameOf = (row) => {
+  const first = String(row?.ccustfname ?? '').trim();
+  const middle = String(row?.ccustmname ?? '').trim();
+  const last = String(row?.ccustlname ?? '').trim();
+  return [first, middle, last].filter(Boolean).join(' ');
+};
+
+const downloadFile = (content, filename, mimeType) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export default function TransactionListing() {
   const { branches, loading: branchesLoading } = useBranches();
-  const [branch, setBranch] = useState('');
+  const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
   const [transDateFrom, setTransDateFrom] = useState(null);
@@ -75,7 +138,23 @@ export default function TransactionListing() {
   const [isPrinting, setIsPrinting] = useState(false);
 
   const branchOptions = useMemo(
-    () => Array.from(new Set((Array.isArray(branches) ? branches : []).map(normalizeBranchName).filter(Boolean))),
+    () => {
+      const rows = Array.isArray(branches) ? branches : [];
+      const byId = new Map();
+
+      rows.forEach((item) => {
+        const id = normalizeBranchId(item);
+        const name = normalizeBranchName(item);
+
+        if (!id || !name || byId.has(id)) {
+          return;
+        }
+
+        byId.set(id, { id, name });
+      });
+
+      return Array.from(byId.values());
+    },
     [branches],
   );
 
@@ -89,72 +168,148 @@ export default function TransactionListing() {
     setTypes((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handlePrint = async () => {
-    if (!branch) {
-      setStatusMessage('Please select a branch before printing.');
-      return;
+  const formatDateTime = (value, fallbackDate, endOfDay = false) => {
+    if (value?.format) {
+      return value.format(`YYYY-MM-DD ${endOfDay ? '23:59:59' : '00:00:00'}`);
     }
+    return `${fallbackDate} ${endOfDay ? '23:59:59' : '00:00:00'}`;
+  };
+
+  const buildPayload = () => ({
+    Currency: '',
+    BranchID: branch === ALL_BRANCHES_VALUE ? 0 : parseInt(branch, 10) || 0,
+    BatchID: selectedBatch ? parseInt(selectedBatch.replace('batch-', '')) || 0 : 0,
+    ProductID: 0,
+    UserID: user || '',
+    Deposit: sources.deposit ? '01' : '',
+    Withdrawal: sources.withdrawal ? '02' : '',
+    LoanIssued: sources.loanDisbursement ? '06' : '',
+    LoanRepayment: sources.batchLoanRepayment ? '07' : '',
+    InterestCharged: types.interestCharged ? '17' : '',
+    InterestPaid: types.interestPaid ? '05' : '',
+    SavingsInterest: sources.savingInterest ? '04' : '',
+    FeeCharged: types.feePaid ? '27' : '',
+    FeePaid: types.feePaid ? '15' : '',
+    Adjustment: sources.adjustment ? '21' : '',
+    Reversal: sources.reversal ? '16' : '',
+    Transfer: sources.transfer ? '' : '',
+    ChargeOff: sources.chargeOff ? '22' : '',
+    WriteOff: types.withdrawal ? 'Loan Write off' : '',
+    StandingOrder: '',
+    DepositInterest: sources.savingInterest ? '24' : '',
+    MobileMoneyTran: sources.mobileMoney ? '25' : '',
+    ATM: sources.atm ? '26' : '',
+    Dividend: sources.dividend ? '20' : '',
+    InternetBanking: sources.internetBanking ? '27' : '',
+    BadDebitTransfer: types.badDebtTransfer ? '11' : '',
+    BadDebitRecovered: types.badDebtRecovered ? '10' : '',
+    BatchInterestPaid: sources.batchInterestPaid ? '13' : '',
+    BatchLoanRepayment: sources.batchLoanRepayment ? '08' : '',
+    AnnualFee: types.annualFeePaid ? '14' : '',
+    AnnualShares: sources.annualShares ? '18' : '',
+    TranFromDate: formatDateTime(transDateFrom, '1900-01-01'),
+    TranToDate: formatDateTime(transDateTo, '2100-12-31', true),
+    PostFromDate: formatDateTime(postDateFrom, '1900-01-01'),
+    PostToDate: formatDateTime(postDateTo, '2100-12-31', true),
+  });
+
+  const fetchTransactionData = async () => {
+    const response = await fetch('/api/transactionlisting/get', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildPayload()),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(errorData || 'Failed to fetch transaction data.');
+    }
+
+    const data = await response.json();
+    const rows = normalizeReportRows(data);
+
+    if (rows.length === 0) {
+      throw new Error('No transaction data found for the selected filters.');
+    }
+
+    return { data, rows };
+  };
+
+  const handleExportPDF = (data) => {
+    const printHtml = buildTransactionListingPrintHtml(data);
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      throw new Error('Unable to open print preview. Please allow pop-ups and try again.');
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+
+    let didPrint = false;
+    const triggerPrint = () => {
+      if (didPrint || printWindow.closed) return;
+      didPrint = true;
+      printWindow.focus();
+      printWindow.print();
+    };
+
+    printWindow.onload = () => {
+      triggerPrint();
+    };
+
+    window.setTimeout(() => {
+      triggerPrint();
+    }, 250);
+  };
+
+  const convertToCSV = (rows) => {
+    const headers = ['Account Number', 'Full Name', 'Transaction Date', 'Credit', 'Debit', 'Description', 'Branch'];
+
+    const csvRows = rows.map((row) => {
+      const amount = Number(row?.ntranamnt ?? 0);
+      const credit = amount > 0 ? formatAmount(amount) : '';
+      const debit = amount < 0 ? formatAmount(Math.abs(amount)) : '';
+
+      return [
+        String(row?.cacctnumb ?? '').trim(),
+        fullNameOf(row),
+        formatDate(row?.dtrandate),
+        credit,
+        debit,
+        String(row?.ctrandesc ?? '').trim(),
+        String(row?.br_name ?? '').trim(),
+      ];
+    });
+
+    return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  };
+
+  const handleExportCSV = (rows) => {
+    const csvContent = convertToCSV(rows);
+    const filename = `transaction-listing-${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadFile(csvContent, filename, 'text/csv');
+  };
+
+  const handleExportExcel = (rows) => {
+    const csvContent = convertToCSV(rows);
+    const filename = `transaction-listing-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
+
+  const handleExport = async (exportType) => {
     setStatusMessage('');
     setIsPrinting(true);
 
     try {
-      // Build payload matching backend structure
-      const payload = {
-        Currency: '',
-        BranchID: parseInt(branch) || 0,
-        BatchID: selectedBatch ? parseInt(selectedBatch.replace('batch-', '')) || 0 : 0,
-        ProductID: 0,
-        UserID: user || '',
-        Deposit: sources.deposit ? '01' : '',
-        Withdrawal: sources.withdrawal ? '02' : '',
-        LoanIssued: sources.loanDisbursement ? '06' : '',
-        LoanRepayment: sources.batchLoanRepayment ? '07' : '',
-        InterestCharged: types.interestCharged ? '17' : '',
-        InterestPaid: types.interestPaid ? '05' : '',
-        SavingsInterest: sources.savingInterest ? '04' : '',
-        FeeCharged: types.feePaid ? '27' : '',
-        FeePaid: types.feePaid ? '15' : '',
-        Adjustment: sources.adjustment ? '21' : '',
-        Reversal: sources.reversal ? '16' : '',
-        Transfer: sources.transfer ? '' : '',
-        ChargeOff: sources.chargeOff ? '22' : '',
-        WriteOff: types.withdrawal ? 'Loan Write off' : '',
-        StandingOrder: '',
-        DepositInterest: sources.savingInterest ? '24' : '',
-        MobileMoneyTran: sources.mobileMoney ? '25' : '',
-        ATM: sources.atm ? '26' : '',
-        Dividend: sources.dividend ? '20' : '',
-        InternetBanking: sources.internetBanking ? '27' : '',
-        BadDebitTransfer: types.badDebtTransfer ? '11' : '',
-        BadDebitRecovered: types.badDebtRecovered ? '10' : '',
-        BatchInterestPaid: sources.batchInterestPaid ? '13' : '',
-        BatchLoanRepayment: sources.batchLoanRepayment ? '08' : '',
-        AnnualFee: types.annualFeePaid ? '14' : '',
-        AnnualShares: sources.annualShares ? '18' : '',
-        TranFromDate: transDateFrom ? transDateFrom.format('YYYY-MM-DD 00:00:00') : null,
-        TranToDate: transDateTo ? transDateTo.format('YYYY-MM-DD 23:59:59') : null,
-        PostFromDate: postDateFrom ? postDateFrom.format('YYYY-MM-DD 00:00:00') : null,
-        PostToDate: postDateTo ? postDateTo.format('YYYY-MM-DD 23:59:59') : null,
-      };
+      const { data, rows } = await fetchTransactionData();
 
-      const response = await fetch('/api/transactionlisting/get', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const printHtml = buildTransactionListingPrintHtml(data);
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(printHtml);
-          printWindow.document.close();
-          printWindow.print();
-        }
-      } else {
-        const errorData = await response.text();
-        setStatusMessage(`Error: ${errorData || 'Failed to fetch transaction data.'}`);
+      if (exportType === 'pdf') {
+        handleExportPDF(data);
+      } else if (exportType === 'excel') {
+        handleExportExcel(rows);
+      } else if (exportType === 'csv') {
+        handleExportCSV(rows);
       }
     } catch (error) {
       setStatusMessage(`Error: ${error.message}`);
@@ -199,11 +354,18 @@ export default function TransactionListing() {
                 size="small"
                 fullWidth
                 disabled={branchesLoading}
-                SelectProps={{ displayEmpty: true, renderValue: (v) => v || 'Select a branch' }}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (v) => {
+                    if (!v || v === ALL_BRANCHES_VALUE) return 'All Branches';
+                    const option = branchOptions.find((item) => item.id === v);
+                    return option?.name || 'All Branches';
+                  },
+                }}
               >
-                <MenuItem value="" disabled>Select a branch</MenuItem>
+                <MenuItem value={ALL_BRANCHES_VALUE}>All Branches</MenuItem>
                 {branchOptions.map((item) => (
-                  <MenuItem key={item} value={item}>{item}</MenuItem>
+                  <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
                 ))}
               </TextField>
 
@@ -379,17 +541,46 @@ export default function TransactionListing() {
         </Card>
       </Box>
 
-      {/* Print Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+      {/* Export Buttons */}
+      <Box sx={{ mt: 1, display: 'flex', gap: 1.5, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
         <Button
           variant="contained"
-          onClick={handlePrint}
-          disabled={!branch || branchesLoading || isPrinting}
+          onClick={() => handleExport('pdf')}
+          disabled={branchesLoading || isPrinting}
           sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 4 }}
         >
-          {isPrinting ? 'Loading...' : 'Print'}
+          PDF
+        </Button>
+
+        <Button
+          variant="contained"
+          onClick={() => handleExport('excel')}
+          disabled={branchesLoading || isPrinting}
+          sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+        >
+          Excel
+        </Button>
+
+        <Button
+          variant="contained"
+          onClick={() => handleExport('csv')}
+          disabled={branchesLoading || isPrinting}
+          sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+        >
+          CSV
         </Button>
       </Box>
+
+      <Backdrop
+        open={isPrinting}
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Box>
   );
 }
