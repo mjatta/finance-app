@@ -16,7 +16,7 @@ export default function SaveToastListener() {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         message: event.detail.message,
         severity: event.detail.severity || 'info',
-        duration: Number(event.detail.duration) || SAVE_TOAST_DURATION_MS,
+         duration: SAVE_TOAST_DURATION_MS,
       };
 
       setToasts((prev) => [...prev, toast]);

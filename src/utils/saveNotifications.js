@@ -1,7 +1,7 @@
 const SAVE_LOG_STORAGE_KEY = 'microfinance.save.logs';
 const MAX_LOG_ENTRIES = 500;
 export const SAVE_TOAST_EVENT = 'microfinance:save-toast';
-export const SAVE_TOAST_DURATION_MS = 8000;
+export const SAVE_TOAST_DURATION_MS = 5000;
 
 const getStoredLogs = () => {
   try {
