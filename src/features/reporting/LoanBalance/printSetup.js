@@ -56,7 +56,7 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
 
   const tableRows = rows.length > 0
     ? rows.map((row) => {
-      const age = (row?.age ?? row?.days_outstanding ?? '0').toString().trim();
+      const age = (row?.nage ?? row?.age ?? row?.days_outstanding ?? '0').toString().trim();
       return `
         <tr>
           <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>

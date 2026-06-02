@@ -60,7 +60,7 @@ const convertToCSV = (rows) => {
     row?.cacctnumb ?? '',
     row?.cacctname ?? '',
     formatAmount(row?.LoanBalance ?? row?.nbookbal ?? 0),
-    row?.age ?? row?.days_outstanding ?? '0',
+    row?.nage ?? row?.age ?? row?.days_outstanding ?? '0',
   ]);
   return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
 };
