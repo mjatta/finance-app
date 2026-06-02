@@ -168,6 +168,21 @@ export default function TransactionListing() {
     setTypes((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const handleClear = () => {
+    setBranch(ALL_BRANCHES_VALUE);
+    setUser('');
+    setTransactionRange('');
+    setTransDateFrom(null);
+    setTransDateTo(null);
+    setPostDateFrom(null);
+    setPostDateTo(null);
+    setSources(initCheckboxState(TRANSACTION_SOURCES));
+    setTypes(initCheckboxState(TRANSACTION_TYPES));
+    setSelectedBatch('');
+    setSelectedProduct('');
+    setStatusMessage('');
+  };
+
   const formatDateTime = (value, fallbackDate, endOfDay = false) => {
     if (value?.format) {
       return value.format(`YYYY-MM-DD ${endOfDay ? '23:59:59' : '00:00:00'}`);
@@ -568,6 +583,15 @@ export default function TransactionListing() {
           sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           CSV
+        </Button>
+
+        <Button
+          variant="text"
+          onClick={handleClear}
+          disabled={isPrinting}
+          sx={{ fontWeight: 600, textTransform: 'none' }}
+        >
+          Clear
         </Button>
       </Box>
 
