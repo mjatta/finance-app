@@ -279,6 +279,26 @@ export default function CustomerEnquiries() {
     }
   };
 
+  const handleClear = () => {
+    setBranch('');
+    setRegion('');
+    setDistrict('');
+    setWard('');
+    setMaritalStatus('');
+    setEducationalLevel('');
+    setActiveAccount(false);
+    setClosedAccount(false);
+    setOpenDateFrom(null);
+    setOpenDateTo(null);
+    setCloseDateFrom(null);
+    setCloseDateTo(null);
+    setCustomerType({ individual: false, group: false, corporate: false });
+    setAgeFrom('');
+    setAgeTo('');
+    setGender({ male: false, female: false });
+    setStatusMessage('');
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
@@ -556,6 +576,14 @@ export default function CustomerEnquiries() {
           sx={{ backgroundColor: '#0ea5e9', '&:hover': { backgroundColor: '#0284c7' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           CSV
+        </Button>
+        <Button
+          variant="text"
+          onClick={handleClear}
+          disabled={isPrinting}
+          sx={{ fontWeight: 600, textTransform: 'none' }}
+        >
+          Clear
         </Button>
       </Box>
 
