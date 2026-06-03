@@ -15,11 +15,14 @@ import {
   Button,
   Alert,
   Skeleton,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import { useGetAccountTypes } from './hooks/useGetAccountTypes';
 import { useGetIncomeAccounts } from './hooks/useGetIncomeAccounts';
 import { useGetExpenseAccounts } from './hooks/useGetExpenseAccounts';
 import { useGetLiabilitiesAccounts } from './hooks/useGetLiabilitiesAccounts';
+import { useGetAssetsAccounts } from './hooks/useGetAssetsAccounts';
 import { useGetProductSource } from './hooks/useGetProductSource';
 import { useInsertProduct } from './hooks/useInsertProduct';
 
@@ -28,6 +31,7 @@ export default function ProductDefinition() {
   const { incomeAccounts, loading: loadingIncomeAccounts } = useGetIncomeAccounts();
   const { expenseAccounts, loading: loadingExpenseAccounts } = useGetExpenseAccounts();
   const { liabilitiesAccounts, loading: loadingLiabilitiesAccounts } = useGetLiabilitiesAccounts();
+  const { assetsAccounts, loading: loadingAssetsAccounts } = useGetAssetsAccounts();
   const { productSources, loading: loadingProductSources } = useGetProductSource();
   const { insertProduct } = useInsertProduct();
 
@@ -325,11 +329,11 @@ export default function ProductDefinition() {
                   onChange={handleChange}
                   size="small"
                   fullWidth
-                  disabled={loadingLiabilitiesAccounts}
+                  disabled={loadingAssetsAccounts}
                 >
                   <MenuItem value="">Select Product Control Account</MenuItem>
-                  {liabilitiesAccounts.map((account) => (
-                    <MenuItem key={`liability-loan-${account.cacctnumb}`} value={account.cacctnumb}>
+                  {assetsAccounts.map((account) => (
+                    <MenuItem key={`assets-loan-${account.cacctnumb}`} value={account.cacctnumb}>
                       {account.cacctname}
                     </MenuItem>
                   ))}
@@ -451,6 +455,10 @@ export default function ProductDefinition() {
         )}
 
       </Box>
+
+      <Backdrop open={isSaving} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>

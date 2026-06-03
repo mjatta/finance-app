@@ -2392,6 +2392,12 @@ export default defineConfig({
           changeOrigin: true,
           secure: false,
         },
+        // Proxy setup assets accounts endpoint to avoid CORS
+        '/api/Setup/accounts/assets': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
         // Proxy setup product source endpoint to avoid CORS
         '/api/Setup/productsource': {
           target: 'https://alakuyateh-001-site10.atempurl.com',

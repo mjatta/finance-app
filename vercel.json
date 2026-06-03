@@ -295,6 +295,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounts/liabilities"
     },
     {
+      "source": "/api/Setup/accounts/assets",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounts/assets"
+    },
+    {
       "source": "/api/Setup/productsource",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/productsource"
     },
