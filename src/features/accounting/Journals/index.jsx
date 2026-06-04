@@ -187,7 +187,7 @@ export default function SaveJournals() {
     setter((prev) => [...prev, createTransactionState()]);
   };
 
-  const handleSaveDetails = () => {
+  const handleSaveDetails = async () => {
     const combinedDescription = [
       ...debitTransactions.map((item) => item.transactionDescription),
       ...creditTransactions.map((item) => item.transactionDescription),
@@ -217,7 +217,13 @@ export default function SaveJournals() {
       .filter(Boolean)
       .map((value) => ({ value }));
 
-    saveJournal(formData, accountDebits, accountCredits);
+    const result = await saveJournal(formData, accountDebits, accountCredits);
+    if (result?.success) {
+      setDebitTransactions([createTransactionState()]);
+      setCreditTransactions([createTransactionState()]);
+      setBanksByCard({});
+      setBankAccountsByCard({});
+    }
   };
 
   const renderCashOrChequeDetails = (type, cardIndex) => {

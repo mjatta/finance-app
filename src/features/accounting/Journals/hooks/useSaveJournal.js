@@ -47,9 +47,11 @@ export function useSaveJournal() {
       if (!response.ok) throw new Error('Failed to save journal');
       setStatusMessage('Journal details saved successfully');
       setStatusError(false);
+      return { success: true };
     } catch (error) {
       setStatusMessage('Error saving journal details: ' + error.message);
       setStatusError(true);
+      return { success: false, error };
     } finally {
       setIsSaving(false);
     }
