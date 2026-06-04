@@ -423,7 +423,7 @@ export default function LoanApplication() {
         gnNewLoanID: '',
         membcode: String(formData.memberCode).padStart(6, '0'), // Pad to 6 digits like "000001"
         lNET_SAVINGS: parseInt(formData.savingBalance) || 0, // Convert to number, not empty string
-        gnPrdId: parseInt(formData.productId) || 1,
+        gnPrdId: parseInt(formData.loanProduct) || 0,
         lLOAN_INTEREST: parseFloat(formData.calculatedInterestRate) || parseFloat(formData.interestRate) || 0,
         lPRINCIPAL_AMT: parseFloat(formData.principalAmount) || 0,
         lLDURATION_NUM: parseInt(formData.loanDuration) || 0,
