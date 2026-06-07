@@ -7,8 +7,19 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   InputAdornment,
   MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -118,6 +129,13 @@ export default function LoanApplication() {
   const { loanReasons, fetchLoanReasons } = useLoanReasons();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
+  const [sectorOptions, setSectorOptions] = useState([]);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersSaving, setMembersSaving] = useState(false);
+  const [membersStatusMessage, setMembersStatusMessage] = useState('');
+  const [membersStatusError, setMembersStatusError] = useState(false);
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -151,6 +169,13 @@ export default function LoanApplication() {
           label: item.sou_name.trim(),
         }));
         setSourceFundsOptions(funds);
+      }
+      if (response && response.data && Array.isArray(response.data.sectors)) {
+        const sectors = response.data.sectors.map((item) => ({
+          value: String(item.sec_id),
+          label: String(item.sec_name || '').trim(),
+        }));
+        setSectorOptions(sectors);
       }
     };
     loadSetupDetails();
@@ -412,6 +437,147 @@ export default function LoanApplication() {
   const handleDateChange = (name, newValue) => {
     const iso = newValue ? dayjs(newValue).format('YYYY-MM-DD') : '';
     setFormData((prev) => ({ ...prev, [name]: iso }));
+  };
+
+  const resolveGroupCode = () => {
+    const value = String(formData.memberCode || searchMemberCode || '').trim();
+    return value ? value.padStart(6, '0') : '';
+  };
+
+  const normalizeGroupMembers = (rows) => rows.map((item, index) => ({
+    id: item?.ID || item?.id || item?.MemberCode || `${index}`,
+    ID: item?.ID || item?.id || null,
+    FirstName: String(item?.FirstName || '').trim(),
+    LastName: String(item?.LastName || '').trim(),
+    Sector: String(item?.Sector ?? ''),
+    LoanAmount: String(item?.LoanAmount ?? ''),
+    ExpiryDate: item?.ExpiryDate ? dayjs(item.ExpiryDate).format('YYYY-MM-DD') : '',
+    MemberCode: item?.MemberCode || '',
+  }));
+
+  const loadGroupMembers = async () => {
+    const groupCode = resolveGroupCode();
+    if (!groupCode) {
+      setMembersStatusMessage('Search and select a member before loading group members.');
+      setMembersStatusError(true);
+      return;
+    }
+
+    setMembersLoading(true);
+    setMembersStatusMessage('');
+    setMembersStatusError(false);
+
+    try {
+      const response = await fetch(`/api/groupmembers/${groupCode}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load group members (${response.status})`);
+      }
+
+      const result = await response.json();
+      const rows = Array.isArray(result)
+        ? result
+        : Array.isArray(result?.data)
+          ? result.data
+          : [];
+
+      setGroupMembers(normalizeGroupMembers(rows));
+      setMembersStatusMessage('');
+      setMembersStatusError(false);
+    } catch (error) {
+      setGroupMembers([]);
+      setMembersStatusMessage(error?.message || 'Failed to load group members.');
+      setMembersStatusError(true);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleShowMembers = async () => {
+    setMembersOpen(true);
+    await loadGroupMembers();
+  };
+
+  const handleGroupMemberFieldChange = (index, field, value) => {
+    setGroupMembers((prev) => prev.map((member, rowIndex) => {
+      if (rowIndex !== index) {
+        return member;
+      }
+
+      if (field === 'LoanAmount') {
+        return { ...member, LoanAmount: cleanNumericInput(value) };
+      }
+
+      if (field === 'Sector') {
+        return { ...member, Sector: String(value).replace(/\D/g, '') };
+      }
+
+      return { ...member, [field]: value };
+    }));
+  };
+
+  const saveGroupMembersUpdates = async () => {
+    const groupCode = resolveGroupCode();
+    if (!groupCode) {
+      setMembersStatusMessage('Search and select a member before saving updates.');
+      setMembersStatusError(true);
+      return;
+    }
+
+    const membersPayload = groupMembers.map((member) => ({
+      ID: Number(member.ID || member.id) || 0,
+      Sector: Number(member.Sector) || 0,
+      LoanAmount: parseFloat(member.LoanAmount) || 0,
+      ExpiryDate: member.ExpiryDate ? `${dayjs(member.ExpiryDate).format('YYYY-MM-DD')}T00:00:00` : null,
+    }));
+
+    setMembersSaving(true);
+    setMembersStatusMessage('');
+    setMembersStatusError(false);
+
+    try {
+      let saveSucceeded = false;
+      let response = await fetch('/api/groupmembers/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(membersPayload),
+      });
+
+      if (response.ok) {
+        saveSucceeded = true;
+      }
+
+      if (!response.ok) {
+        const individualResponses = await Promise.all(
+          membersPayload.map((item) => fetch('/api/groupmembers/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          })),
+        );
+        const allOk = individualResponses.every((item) => item.ok);
+        if (!allOk) {
+          const failed = individualResponses.find((item) => !item.ok);
+          const failedText = failed ? await failed.text() : '';
+          throw new Error(`Failed to save member updates (${failed?.status || response.status})${failedText ? `: ${failedText}` : ''}`);
+        }
+
+        saveSucceeded = true;
+      }
+
+      if (!saveSucceeded) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save member updates (${response.status})${errorText ? `: ${errorText}` : ''}`);
+      }
+
+      setMembersStatusMessage('Group member updates saved successfully.');
+      setMembersStatusError(false);
+      await loadGroupMembers();
+    } catch (error) {
+      setMembersStatusMessage(error?.message || 'Failed to save member updates.');
+      setMembersStatusError(true);
+    } finally {
+      setMembersSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -795,9 +961,19 @@ export default function LoanApplication() {
               {/* Card 2: Additional Details */}
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                    Additional Details
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#2c3e50' }}>
+                      Additional Details
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleShowMembers}
+                      sx={{ fontWeight: 700, textTransform: 'none' }}
+                    >
+                      Show Members
+                    </Button>
+                  </Box>
 
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1085,6 +1261,120 @@ export default function LoanApplication() {
           </Box>
         )}
       </Box>
+
+      <Dialog
+        open={membersOpen}
+        onClose={() => setMembersOpen(false)}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd', pb: 1.5 }}>
+          Group Members
+        </DialogTitle>
+        <DialogContent dividers>
+          {membersStatusMessage && (
+            <Alert severity={membersStatusError ? 'error' : 'success'} sx={{ mb: 2 }}>
+              {membersStatusMessage}
+            </Alert>
+          )}
+
+          {membersLoading ? (
+            <Box sx={{ py: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ backgroundColor: '#f4f7fb' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>First Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>Last Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>Sector</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>Loan Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>Expiry Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {groupMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">No group members found.</TableCell>
+                    </TableRow>
+                  ) : (
+                    groupMembers.map((member, index) => (
+                      <TableRow key={member.id || `${member.FirstName}-${member.LastName}-${index}`}>
+                        <TableCell>{member.FirstName || 'N/A'}</TableCell>
+                        <TableCell>{member.LastName || 'N/A'}</TableCell>
+                        <TableCell sx={{ minWidth: 240 }}>
+                          <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={member.Sector}
+                            onChange={(e) => handleGroupMemberFieldChange(index, 'Sector', e.target.value)}
+                            SelectProps={{
+                              displayEmpty: true,
+                              renderValue: (selected) => {
+                                if (!selected) {
+                                  return <em>Select a sector</em>;
+                                }
+                                const selectedSector = sectorOptions.find((sector) => sector.value === selected);
+                                return selectedSector?.label || selected;
+                              },
+                            }}
+                          >
+                            <MenuItem value="">
+                              <em>Select a sector</em>
+                            </MenuItem>
+                            {sectorOptions.map((sector) => (
+                              <MenuItem key={sector.value} value={sector.value}>
+                                {sector.label}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 180 }}>
+                          <TextField
+                            size="small"
+                            value={formatCurrency(member.LoanAmount)}
+                            onChange={(e) => handleGroupMemberFieldChange(index, 'LoanAmount', e.target.value)}
+                            InputProps={{ startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment> }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 170 }}>
+                          <DatePicker
+                            value={member.ExpiryDate ? dayjs(member.ExpiryDate) : null}
+                            onChange={(newValue) => handleGroupMemberFieldChange(
+                              index,
+                              'ExpiryDate',
+                              newValue ? dayjs(newValue).format('YYYY-MM-DD') : '',
+                            )}
+                            slotProps={{
+                              textField: {
+                                size: 'small',
+                                fullWidth: true,
+                              },
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMembersOpen(false)} disabled={membersSaving}>Close</Button>
+          <Button
+            variant="contained"
+            onClick={saveGroupMembersUpdates}
+            disabled={membersSaving || membersLoading || groupMembers.length === 0}
+          >
+            {membersSaving ? 'Saving...' : 'Save Updates'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -303,6 +303,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/productsource"
     },
     {
+      "source": "/api/groupmembers/update",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/groupmembers/update"
+    },
+    {
+      "source": "/api/groupmembers/:groupCode",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/groupmembers/:groupCode"
+    },
+    {
       "source": "/api/Product/insert",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Product/insert"
     },
