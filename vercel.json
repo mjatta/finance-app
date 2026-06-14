@@ -95,6 +95,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/:path*"
     },
     {
+      "source": "/api/loan-change-off-clients",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/clients?chargeType=1"
+    },
+    {
       "source": "/api/loan-setup/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-setup/:path*"
     },
