@@ -103,6 +103,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/clients?chargeType=2"
     },
     {
+      "source": "/api/loan-recovery-write-off-clients",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/clients?chargeType=3"
+    },
+    {
       "source": "/api/loan-setup/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-setup/:path*"
     },

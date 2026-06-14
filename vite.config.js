@@ -2303,6 +2303,13 @@ export default defineConfig({
         secure: false,
         rewrite: () => '/api/loans/clients?chargeType=2',
       },
+      // Proxy loan recovery/write-off clients endpoint with fixed charge type
+      '/api/loan-recovery-write-off-clients': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '/api/loans/clients?chargeType=3',
+      },
       // Proxy loan setup details endpoint
       '/api/loan-setup': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

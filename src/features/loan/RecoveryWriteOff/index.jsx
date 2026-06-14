@@ -1,53 +1,129 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Paper,
-  Typography,
-} from '@mui/material';
+import React, { useMemo, useState } from 'react';
+import { Box, Card, CardContent, CircularProgress, Paper, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import recoveryWriteOffData from '../../../data/loan-recovery-write-off.json';
+import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
+import { useRecoveryWriteOffClients } from './hooks/useRecoveryWriteOffClients';
 
 export default function RecoveryWriteOff() {
-  const rows = Array.isArray(recoveryWriteOffData?.rows) ? recoveryWriteOffData.rows : [];
-  const [selectedId, setSelectedId] = useState(rows[0]?.id || null);
-  const [writeOffDate, setWriteOffDate] = useState('');
-  const [confirmMessage, setConfirmMessage] = useState('');
+  const { rows, isLoading, error } = useRecoveryWriteOffClients();
+  const [selectedId, setSelectedId] = useState(null);
 
-  const selectedRow = rows.find((row) => row.id === selectedId) || rows[0] || null;
+  const normalizedRows = useMemo(
+    () => rows.map((row) => ({
+      id: row.LoanId,
+      customerCode: row.CustCode || '',
+      customerName: row.MemberName || '',
+      loanType: row.LoanType || '',
+      loanAmount: Number(row.PrincipalAmount ?? 0),
+      approvalDate: row.IssuedDate || null,
+      loanNumber: row.MemberAccount || '',
+      initialPrincipal: Number(row.InitialPrincipal ?? row.PrincipalAmount ?? 0),
+      grossInterest: Number(row.GrossInterest ?? 0),
+      totalAmount: Number(row.TotalAmount ?? row.PrincipalAmount ?? 0),
+      loanBalance: Number(row.LoanBalance ?? row.PrincipalAmount ?? 0),
+      currentInterest: Number(row.CurrentInterest ?? 0),
+      accruedInterest: Number(row.AccruedInterest ?? row.AccuredInterest ?? 0),
+      totalOutstanding: Number(row.TotalOutstanding ?? row.PrincipalAmount ?? 0),
+    })),
+    [rows],
+  );
+
+  const selectedRow =
+    normalizedRows.find((row) => row.id === selectedId) || normalizedRows[0] || null;
+
+  const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
   const detailItems = [
-    { label: 'initial prinicipal', value: selectedRow?.initialPrincipal || '0.00' },
-    { label: 'loan Balance', value: selectedRow?.loanBalance || '0.00' },
-    { label: 'gross interset', value: selectedRow?.grossInterest || '0.00' },
-    { label: 'total amountm', value: selectedRow?.totalAmount || '0.00' },
-    { label: 'current intertert', value: selectedRow?.currentInterest || '0.00' },
-    { label: 'accured interesr', value: selectedRow?.accruedInterest || '0.00' },
-    { label: 'total Oustanding', value: selectedRow?.totalOutstanding || '0.00' },
-    { label: 'Loan Amount to be Wriiten off', value: selectedRow?.loanAmountToBeWrittenOff || '0.00' },
+    { label: 'Initial Principal', value: money(selectedRow?.initialPrincipal) },
+    { label: 'Gross Interest', value: money(selectedRow?.grossInterest) },
+    { label: 'Total Amount', value: money(selectedRow?.totalAmount) },
+    { label: 'Loan Balance', value: money(selectedRow?.loanBalance) },
+    { label: 'Current Interest', value: money(selectedRow?.currentInterest) },
+    { label: 'Accured Interest', value: money(selectedRow?.accruedInterest) },
+    { label: 'Total Oustanding', value: money(selectedRow?.totalOutstanding) },
   ];
-
-  const handleConfirmWriteOff = () => {
-    if (!selectedRow || !writeOffDate) {
-      return;
-    }
-
-    setConfirmMessage(`Write-off confirmed for ${selectedRow.memberName} on ${writeOffDate}.`);
-  };
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Loan Recovery &amp; Write-off
-      </Typography>
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          color: 'white',
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+          Loan Recovery &amp; Write-off
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.95 }}>
+          Process and manage loan recovery and write-offs for clients
+        </Typography>
+      </Box>
 
-      <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Paper sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+        <div style={{ height: 420, width: '100%' }}>
+          <DataGrid
+            rows={normalizedRows}
+            columns={[
+              { field: 'customerCode', headerName: 'Customer Code', flex: 1, minWidth: 130 },
+              { field: 'customerName', headerName: 'Customer Name', flex: 1.4, minWidth: 180 },
+              { field: 'loanType', headerName: 'Loan Type', flex: 1.1, minWidth: 150 },
+              {
+                field: 'loanAmount',
+                headerName: 'Loan Amount',
+                flex: 1,
+                minWidth: 140,
+                valueFormatter: (value) => money(value),
+              },
+              {
+                field: 'approvalDate',
+                headerName: 'Approval Date',
+                flex: 1,
+                minWidth: 130,
+                valueFormatter: (value) => (value ? dayjs(value).format('YYYY-MM-DD') : ''),
+              },
+              { field: 'loanNumber', headerName: 'Loan Number', flex: 1.2, minWidth: 170 },
+            ]}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            density="compact"
+            loading={isLoading}
+            onRowClick={(params) => setSelectedId(params.row.id)}
+            getRowClassName={(params) => (params.row.id === selectedRow?.id ? 'selected-row' : '')}
+            sx={{
+              cursor: 'pointer',
+              '& .MuiDataGrid-columnHeader': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                fontWeight: 700,
+              },
+              '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+              '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+              '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+              '& .selected-row': { backgroundColor: '#cfe2ff !important', fontWeight: 700 },
+            }}
+            slots={{
+              noRowsOverlay: () => (
+                <Box sx={{ p: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {error ? 'Failed to load recovery/write-off clients.' : 'No records found.'}
+                  </Typography>
+                </Box>
+              ),
+              loadingOverlay: () => (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ),
+            }}
+          />
+        </div>
+      </Paper>
+
+      <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
             Loan Details
@@ -59,7 +135,7 @@ export default function RecoveryWriteOff() {
               gap: 1.5,
               gridTemplateColumns: {
                 xs: '1fr',
-                md: 'repeat(3, minmax(0, 1fr))',
+                md: 'repeat(2, minmax(0, 1fr))',
               },
             }}
           >
@@ -72,15 +148,15 @@ export default function RecoveryWriteOff() {
                   borderColor: 'divider',
                   borderRadius: 1.5,
                   bgcolor: 'grey.50',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 2,
                 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}
-                >
+                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
                   {item.label}
                 </Typography>
-                <Typography variant="body1" sx={{ mt: 0.4, fontWeight: 700 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
                   {item.value}
                 </Typography>
               </Box>
@@ -88,74 +164,6 @@ export default function RecoveryWriteOff() {
           </Box>
         </CardContent>
       </Card>
-
-      <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
-            Write-off Action
-          </Typography>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <DatePicker
-                label="Write-off Date"
-                value={writeOffDate ? dayjs(writeOffDate) : null}
-                onChange={(newValue) => {
-                  setWriteOffDate(newValue ? newValue.format('YYYY-MM-DD') : '');
-                  setConfirmMessage('');
-                }}
-                slotProps={{
-                  textField: {
-                    sx: { minWidth: 220 },
-                  },
-                }}
-              />
-              <Button
-                variant="contained"
-                onClick={handleConfirmWriteOff}
-                disabled={!selectedRow || !writeOffDate}
-              >
-                Confirm Write-off
-              </Button>
-            </Box>
-          </LocalizationProvider>
-          {confirmMessage && (
-            <Typography variant="body2" color="success.main" sx={{ mt: 1.5, fontWeight: 700 }}>
-              {confirmMessage}
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
-
-      <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-        <DataGrid
-          rows={rows.map((row) => ({ ...row }))}
-          columns={[
-            { field: 'memberCode', headerName: 'Customer Code', flex: 1, minWidth: 120 },
-            { field: 'memberName', headerName: 'Member Name', flex: 1.2, minWidth: 140 },
-            { field: 'loanType', headerName: 'Loan Type', flex: 1, minWidth: 110 },
-            { field: 'loanAmount', headerName: 'Loan Amount', flex: 1, minWidth: 110 },
-            { field: 'approvalDate', headerName: 'Approval Date', flex: 1, minWidth: 120 },
-            { field: 'loanAccountNumber', headerName: 'Loan Account Number', flex: 1.2, minWidth: 150 },
-          ]}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-          density="compact"
-          onRowClick={(params) => setSelectedId(params.row.id)}
-          getRowClassName={(params) => params.row.id === selectedId ? 'selected-row' : ''}
-          sx={{
-            cursor: 'pointer',
-            '& .MuiDataGrid-columnHeader': {
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              fontWeight: 700,
-            },
-            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
-            '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
-            '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
-            '& .selected-row': { backgroundColor: '#cfe2ff !important', fontWeight: 700 },
-          }}
-        />
-      </Paper>
     </Box>
   );
 }
