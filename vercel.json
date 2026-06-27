@@ -115,6 +115,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/loanactivate"
     },
     {
+      "source": "/api/loans/writeoff",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/writeoff"
+    },
+    {
       "source": "/api/loan-details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
     },

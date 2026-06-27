@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export const useRecoveryWriteOffClients = () => {
+export const useRecoveryWriteOffClients = (refreshKey = 0) => {
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +45,7 @@ export const useRecoveryWriteOffClients = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   return { rows, isLoading, error };
 };
