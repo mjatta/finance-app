@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, CircularProgress, Paper, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
@@ -210,28 +210,50 @@ export default function LoanChangeOff() {
               },
             }}
           >
-            {detailItems.map((item) => (
-              <Box
-                key={item.label}
-                sx={{
-                  p: 1.25,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1.5,
-                  bgcolor: 'grey.50',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
-                  {item.label}
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  {item.value}
-                </Typography>
-              </Box>
-            ))}
+            {detailsLoading ? (
+              // Loading skeleton state
+              Array.from({ length: 7 }).map((_, index) => (
+                <Box
+                  key={`skeleton-${index}`}
+                  sx={{
+                    p: 1.25,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.5,
+                    bgcolor: 'grey.50',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                  }}
+                >
+                  <Skeleton variant="text" width="40%" />
+                  <Skeleton variant="text" width="35%" />
+                </Box>
+              ))
+            ) : (
+              detailItems.map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{
+                    p: 1.25,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.5,
+                    bgcolor: 'grey.50',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {item.value}
+                  </Typography>
+                </Box>
+              ))
+            )}
           </Box>
 
           {submitError && (
