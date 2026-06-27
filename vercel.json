@@ -107,6 +107,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/clients?chargeType=3"
     },
     {
+      "source": "/api/loans/chargeoff",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/chargeoff"
+    },
+    {
+      "source": "/api/loan-details",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
+    },
+    {
       "source": "/api/loan-setup/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-setup/:path*"
     },

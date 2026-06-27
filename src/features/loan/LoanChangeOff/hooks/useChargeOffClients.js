@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export const useChargeOffClients = () => {
+export const useChargeOffClients = (refreshKey = 0) => {
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +45,7 @@ export const useChargeOffClients = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   return { rows, isLoading, error };
 };

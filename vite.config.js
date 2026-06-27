@@ -2310,6 +2310,22 @@ export default defineConfig({
         secure: false,
         rewrite: () => '/api/loans/clients?chargeType=3',
       },
+      // Proxy loan charge-off confirmation endpoint
+      '/api/loans/chargeoff': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy loan details endpoint with ncompid fixed to 30
+      '/api/loan-details': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => {
+          const query = path.split('?')[1] || '';
+          return `/api/LoansDetails/getLoanDetails?ncompid=30&${query}`;
+        },
+      },
       // Proxy loan setup details endpoint
       '/api/loan-setup': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Card, CardContent, CircularProgress, Paper, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Paper, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
 import { useChargeOffClients } from './hooks/useChargeOffClients';
+import { useLoanDetails } from './hooks/useLoanDetails';
 
 export default function LoanChangeOff() {
-  const { rows, isLoading, error } = useChargeOffClients();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { rows, isLoading, error } = useChargeOffClients(refreshKey);
   const [selectedId, setSelectedId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const normalizedRows = useMemo(
     () => rows.map((row) => ({
@@ -32,17 +36,84 @@ export default function LoanChangeOff() {
   const selectedRow =
     normalizedRows.find((row) => row.id === selectedId) || normalizedRows[0] || null;
 
+  // Fetch detailed loan info when a row is selected
+  const { details: loanDetails, isLoading: detailsLoading } = useLoanDetails(
+    selectedRow?.customerCode,
+    selectedRow?.id,
+  );
+
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
+  // Parse principal amount from formatted string (e.g., "10,000.00" -> 10000)
+  const parsePrincipal = (val) => {
+    if (!val) return 0;
+    const str = String(val).replace(/,/g, '');
+    return Number(str) || 0;
+  };
+
+  // Build detail items, preferring fetched details if available
   const detailItems = [
-    { label: 'Initial Principal', value: money(selectedRow?.initialPrincipal) },
-    { label: 'Gross Interest', value: money(selectedRow?.grossInterest) },
-    { label: 'Total Amount', value: money(selectedRow?.totalAmount) },
-    { label: 'Loan Balance', value: money(selectedRow?.loanBalance) },
-    { label: 'Current Interest', value: money(selectedRow?.currentInterest) },
-    { label: 'Accured Interest', value: money(selectedRow?.accruedInterest) },
-    { label: 'Total Oustanding', value: money(selectedRow?.totalOutstanding) },
+    {
+      label: 'Initial Principal',
+      value: money(loanDetails?.PrincipalAmt ? parsePrincipal(loanDetails.PrincipalAmt) : selectedRow?.initialPrincipal),
+    },
+    {
+      label: 'Gross Interest',
+      value: money(loanDetails?.total_interest ? parsePrincipal(loanDetails.total_interest) : selectedRow?.grossInterest),
+    },
+    {
+      label: 'Total Amount',
+      value: money(
+        loanDetails?.PrincipalAmt && loanDetails?.total_interest
+          ? parsePrincipal(loanDetails.PrincipalAmt) + parsePrincipal(loanDetails.total_interest)
+          : selectedRow?.totalAmount,
+      ),
+    },
+    {
+      label: 'Loan Balance',
+      value: money(loanDetails?.savebal ? parsePrincipal(loanDetails.savebal) : selectedRow?.loanBalance),
+    },
+    {
+      label: 'Current Interest',
+      value: money(loanDetails?.total_interest ? parsePrincipal(loanDetails.total_interest) : selectedRow?.currentInterest),
+    },
+    {
+      label: 'Accured Interest',
+      value: money(selectedRow?.accruedInterest),
+    },
+    {
+      label: 'Total Oustanding',
+      value: money(selectedRow?.totalOutstanding),
+    },
   ];
+
+  const handleConfirmChargeOff = async () => {
+    if (!selectedRow?.id) {
+      setSubmitError('No loan selected');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch(`/api/loans/chargeoff?loanId=${encodeURIComponent(selectedRow.id)}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to confirm charge-off: ${response.status}`);
+      }
+
+      // Refresh the grid
+      setRefreshKey((prev) => prev + 1);
+      setSelectedId(null);
+    } catch (err) {
+      setSubmitError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Box p={3}>
@@ -161,6 +232,33 @@ export default function LoanChangeOff() {
                 </Typography>
               </Box>
             ))}
+          </Box>
+
+          {submitError && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ color: 'error.main' }}>
+                {submitError}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ mt: 2.5, display: 'flex', gap: 1.5 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={!selectedRow || isSubmitting}
+              onClick={handleConfirmChargeOff}
+              sx={{ fontWeight: 600 }}
+            >
+              {isSubmitting ? (
+                <>
+                  <CircularProgress size={16} sx={{ mr: 1 }} />
+                  Processing...
+                </>
+              ) : (
+                'Confirm Charge Off'
+              )}
+            </Button>
           </Box>
         </CardContent>
       </Card>
