@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
 import { useChargeOffClients } from './hooks/useChargeOffClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
+import { useUpdateInterestDate } from './hooks/useUpdateInterestDate';
 
 export default function LoanChangeOff() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -12,6 +13,7 @@ export default function LoanChangeOff() {
   const [selectedId, setSelectedId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const { updateInterestDate } = useUpdateInterestDate();
 
   const normalizedRows = useMemo(
     () => rows.map((row) => ({
@@ -97,6 +99,7 @@ export default function LoanChangeOff() {
     setSubmitError(null);
 
     try {
+      // Step 1: Confirm charge-off
       const response = await fetch(`/api/loans/chargeoff?loanId=${encodeURIComponent(selectedRow.id)}`, {
         method: 'POST',
       });
@@ -104,6 +107,9 @@ export default function LoanChangeOff() {
       if (!response.ok) {
         throw new Error(`Failed to confirm charge-off: ${response.status}`);
       }
+
+      // Step 2: Update interest date after successful charge-off
+      await updateInterestDate(selectedRow.loanNumber);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);

@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
 import { useActivateClients } from './hooks/useActivateClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
+import { useUpdateInterestDate } from './hooks/useUpdateInterestDate';
 
 export default function LoanActivate() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -12,6 +13,7 @@ export default function LoanActivate() {
   const [selectedId, setSelectedId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const { updateInterestDate } = useUpdateInterestDate();
 
   const normalizedRows = useMemo(
     () => rows.map((row) => ({
@@ -104,6 +106,9 @@ export default function LoanActivate() {
       if (!response.ok) {
         throw new Error(`Failed to confirm loan activation: ${response.status}`);
       }
+
+      // Update interest date after successful activation
+      await updateInterestDate(selectedRow.loanNumber);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);

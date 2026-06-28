@@ -119,6 +119,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/writeoff"
     },
     {
+      "source": "/api/loans/update-interest-date",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/update-interest-date"
+    },
+    {
       "source": "/api/loan-details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
     },
