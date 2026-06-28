@@ -2332,6 +2332,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/loan/membersavings': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/loan/membershares': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
       // Proxy loan details endpoint with ncompid fixed to 30
       '/api/loan-details': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

@@ -123,6 +123,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/update-interest-date"
     },
     {
+      "source": "/api/loan/membersavings",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/membersavings"
+    },
+    {
+      "source": "/api/loan/membershares",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/membershares"
+    },
+    {
       "source": "/api/loan-details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
     },

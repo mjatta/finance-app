@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
 import { useRecoveryWriteOffClients } from './hooks/useRecoveryWriteOffClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
+import { useMemberSavings } from './hooks/useMemberSavings';
+import { useMemberShares } from './hooks/useMemberShares';
 
 export default function RecoveryWriteOff() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -41,6 +43,10 @@ export default function RecoveryWriteOff() {
     selectedRow?.customerCode,
     selectedRow?.id,
   );
+
+  // Fetch member savings and shares
+  const { savings, isLoading: savingsLoading } = useMemberSavings(selectedRow?.customerCode);
+  const { shares, isLoading: sharesLoading } = useMemberShares(selectedRow?.customerCode);
 
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
@@ -84,6 +90,14 @@ export default function RecoveryWriteOff() {
     {
       label: 'Total Oustanding',
       value: money(selectedRow?.totalOutstanding),
+    },
+    {
+      label: 'Savings Balance',
+      value: savingsLoading ? <Skeleton width="100px" /> : money(savings?.SavingsBalance || savings?.savingsBalance || savings?.balance || 0),
+    },
+    {
+      label: 'Shares Balance',
+      value: sharesLoading ? <Skeleton width="100px" /> : money(shares?.SharesBalance || shares?.sharesBalance || shares?.balance || 0),
     },
   ];
 
