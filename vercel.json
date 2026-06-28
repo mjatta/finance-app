@@ -139,6 +139,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:path*"
     },
     {
+      "source": "/api/Withdrawal/BadDebt",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Withdrawal/BadDebt"
+    },
+    {
       "source": "/api/loan-details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
     },

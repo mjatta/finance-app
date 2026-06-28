@@ -9,6 +9,7 @@ import { useMemberSavings } from './hooks/useMemberSavings';
 import { useMemberShares } from './hooks/useMemberShares';
 import { useBadDebtExpenses } from './hooks/useBadDebtExpenses';
 import { useSavingsSharesDetails } from './hooks/useSavingsSharesDetails';
+import { useProcessBadDebt } from './hooks/useProcessBadDebt';
 
 export default function RecoveryWriteOff() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,6 +17,10 @@ export default function RecoveryWriteOff() {
   const [selectedId, setSelectedId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [isBadDebtSubmitting, setIsBadDebtSubmitting] = useState(false);
+  const [badDebtError, setBadDebtError] = useState(null);
+
+  const { processBadDebt } = useProcessBadDebt();
 
   const normalizedRows = useMemo(
     () => rows.map((row) => ({
@@ -143,6 +148,38 @@ export default function RecoveryWriteOff() {
       setSubmitError(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleProcessBadDebt = async () => {
+    if (!accountDetails?.AccountNumber || !badDebtExpenses?.LoansControlAccount) {
+      setBadDebtError('Missing required account details');
+      return;
+    }
+
+    setIsBadDebtSubmitting(true);
+    setBadDebtError(null);
+
+    try {
+      // Use Savings Balance and Shares Balance from loan details
+      const savingsBalance = savings?.SavingsBalance ? parsePrincipal(savings.SavingsBalance) : 0;
+      const sharesBalance = shares?.SharesBalance ? parsePrincipal(shares.SharesBalance) : 0;
+
+      await processBadDebt({
+        accountNumber: accountDetails.AccountNumber,
+        loansControlAccount: badDebtExpenses.LoansControlAccount,
+        productId: badDebtExpenses.ProductId,
+        savingsBalance,
+        sharesBalance,
+      });
+
+      // Refresh the grid
+      setRefreshKey((prev) => prev + 1);
+      setSelectedId(null);
+    } catch (err) {
+      setBadDebtError(err.message);
+    } finally {
+      setIsBadDebtSubmitting(false);
     }
   };
 
@@ -294,6 +331,14 @@ export default function RecoveryWriteOff() {
             </Box>
           )}
 
+          {badDebtError && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ color: 'error.main' }}>
+                {badDebtError}
+              </Typography>
+            </Box>
+          )}
+
           <Box sx={{ mt: 2.5, display: 'flex', gap: 1.5 }}>
             <Button
               variant="contained"
@@ -309,6 +354,22 @@ export default function RecoveryWriteOff() {
                 </>
               ) : (
                 'Confirm Loan Write Off'
+              )}
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              disabled={!selectedRow || isBadDebtSubmitting || !accountDetails || !badDebtExpenses}
+              onClick={handleProcessBadDebt}
+              sx={{ fontWeight: 600 }}
+            >
+              {isBadDebtSubmitting ? (
+                <>
+                  <CircularProgress size={16} sx={{ mr: 1 }} />
+                  Processing...
+                </>
+              ) : (
+                'Bad Debt'
               )}
             </Button>
           </Box>        </CardContent>
