@@ -9,6 +9,7 @@ import { useMemberSavings } from './hooks/useMemberSavings';
 import { useMemberShares } from './hooks/useMemberShares';
 import { useBadDebtExpenses } from './hooks/useBadDebtExpenses';
 import { useSavingsSharesDetails } from './hooks/useSavingsSharesDetails';
+import { useLoanBadDebtExpenses } from './hooks/useLoanBadDebtExpenses';
 import { useProcessBadDebt } from './hooks/useProcessBadDebt';
 
 export default function RecoveryWriteOff() {
@@ -164,7 +165,9 @@ export default function RecoveryWriteOff() {
       // Use Savings Balance and Shares Balance from loan details
       const savingsBalance = savings?.SavingsBalance ? parsePrincipal(savings.SavingsBalance) : 0;
       const sharesBalance = shares?.SharesBalance ? parsePrincipal(shares.SharesBalance) : 0;
+      const totalOutstanding = selectedRow?.totalOutstanding || 0;
 
+      // First, call the Withdrawal/BadDebt endpoint
       await processBadDebt({
         accountNumber: accountDetails.AccountNumber,
         loansControlAccount: badDebtExpenses.LoansControlAccount,
@@ -172,6 +175,21 @@ export default function RecoveryWriteOff() {
         savingsBalance,
         sharesBalance,
       });
+
+      // Then, call the Loan Repayment InsertLoanRepayment endpoint
+      const repaymentResult = await useLoanBadDebtExpenses(
+        accountDetails.AccountNumber,
+        badDebtExpenses.LoansControlAccount,
+        badDebtExpenses.BadDebtExpense,
+        badDebtExpenses.ProductId,
+        savingsBalance,
+        sharesBalance,
+        totalOutstanding
+      );
+
+      if (!repaymentResult.success) {
+        throw new Error(repaymentResult.error || 'Failed to insert loan repayment');
+      }
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);
@@ -335,6 +353,33 @@ export default function RecoveryWriteOff() {
             <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>
               <Typography variant="body2" sx={{ color: 'error.main' }}>
                 {badDebtError}
+              </Typography>
+            </Box>
+          )}
+
+          {selectedRow && (
+            <Box
+              sx={{
+                mt: 2.5,
+                p: 2,
+                bgcolor: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                border: '2px solid #ff5252',
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="body2" sx={{ color: 'white', mb: 0.5, fontWeight: 700 }}>
+                Loan Amount to be Written Off
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '1.75rem',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                }}
+              >
+                {money(Math.abs((selectedRow?.totalOutstanding || 0) - (savings?.SavingsBalance ? parsePrincipal(savings.SavingsBalance) : 0) - (shares?.SharesBalance ? parsePrincipal(shares.SharesBalance) : 0)))}
               </Typography>
             </Box>
           )}
