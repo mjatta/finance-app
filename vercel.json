@@ -131,6 +131,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/membershares"
     },
     {
+      "source": "/api/loans/accounts",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/accounts"
+    },
+    {
+      "source": "/api/account/details/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:path*"
+    },
+    {
       "source": "/api/loan-details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoansDetails/getLoanDetails?ncompid=30"
     },

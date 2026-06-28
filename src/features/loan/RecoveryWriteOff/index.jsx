@@ -7,6 +7,8 @@ import { useRecoveryWriteOffClients } from './hooks/useRecoveryWriteOffClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
 import { useMemberSavings } from './hooks/useMemberSavings';
 import { useMemberShares } from './hooks/useMemberShares';
+import { useBadDebtExpenses } from './hooks/useBadDebtExpenses';
+import { useSavingsSharesDetails } from './hooks/useSavingsSharesDetails';
 
 export default function RecoveryWriteOff() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -47,6 +49,15 @@ export default function RecoveryWriteOff() {
   // Fetch member savings and shares
   const { savings, isLoading: savingsLoading } = useMemberSavings(selectedRow?.customerCode);
   const { shares, isLoading: sharesLoading } = useMemberShares(selectedRow?.customerCode);
+
+  // Extract account number from savings or shares response for details fetch
+  const cacctnumb = savings?.cacctnumb || shares?.cacctnumb || null;
+
+  // Fetch bad debt expenses
+  const { badDebtExpenses, isLoading: badDebtLoading } = useBadDebtExpenses(selectedRow?.id);
+
+  // Fetch savings/shares account details
+  const { details: accountDetails, isLoading: accountDetailsLoading } = useSavingsSharesDetails(cacctnumb);
 
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
