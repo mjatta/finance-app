@@ -367,14 +367,14 @@ export default function RecoveryWriteOff() {
                 borderRadius: 2,
               }}
             >
-              <Typography variant="body2" sx={{ color: 'white', mb: 0.5, fontWeight: 700 }}>
+              <Typography variant="body2" sx={{ color: 'red', mb: 0.5, fontWeight: 600 }}>
                 Loan Amount to be Written Off
               </Typography>
               <Typography
-                variant="h5"
+                variant="h6"
                 sx={{
-                  color: 'white',
-                  fontWeight: 700,
+                  color: 'red',
+                  fontWeight: 500,
                   fontSize: '1.75rem',
                   textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
                 }}
