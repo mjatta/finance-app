@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, lazy, Suspense, useEffect, useState } from 'react';
+import { cloneElement, isValidElement, lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
@@ -292,7 +292,7 @@ function App() {
     navigate('/home');
   };
 
-  const handleLogout = (reason = 'manual') => {
+  const handleLogout = useCallback((reason = 'manual') => {
     setUser(null);
     setActiveCategoryOverride(null);
     // Clear Zustand stores + localStorage
@@ -308,7 +308,7 @@ function App() {
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
-  };
+  }, [navigate]);
 
   const handleOpenProfileMenu = (event) => {
     setProfileMenuAnchor(event.currentTarget);
@@ -376,7 +376,7 @@ function App() {
         window.removeEventListener(eventName, onActivity);
       });
     };
-  }, [user]);
+  }, [user, handleLogout]);
 
   // ensure we redirect based on auth state
   if (!user) {
@@ -436,7 +436,6 @@ function App() {
         { label: 'Loan Amortization', to: '/loan/amortization', icon: CalculateRoundedIcon },
         { label: 'Loan Application Reschedule', to: '/loan/application-reschedule', icon: ScheduleRoundedIcon },
         { label: 'Loan Application Top up', to: '/loan/application-top-up', icon: TrendingUpRoundedIcon },
-        { label: 'Loan Reporting', to: '/loan/reporting', icon: AssessmentRoundedIcon },
       ],
     },
     {

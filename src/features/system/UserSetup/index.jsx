@@ -139,7 +139,6 @@ const featurePageMap = {
     { path: '/loan/application-top-up', label: 'Loan Application Top Up' },
     { path: '/loan/change-off', label: 'Loan Change Off' },
     { path: '/loan/recovery', label: 'Recovery/Write-off' },
-    { path: '/loan/reporting', label: 'Loan Reporting' },
   ],
   accounting: [
     { path: '/accounting/cash-manager', label: 'Cash Manager' },

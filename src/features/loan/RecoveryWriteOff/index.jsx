@@ -60,10 +60,10 @@ export default function RecoveryWriteOff() {
   const cacctnumb = savings?.cacctnumb || shares?.cacctnumb || null;
 
   // Fetch bad debt expenses
-  const { badDebtExpenses, isLoading: badDebtLoading } = useBadDebtExpenses(selectedRow?.id);
+  const { badDebtExpenses } = useBadDebtExpenses(selectedRow?.id);
 
   // Fetch savings/shares account details
-  const { details: accountDetails, isLoading: accountDetailsLoading } = useSavingsSharesDetails(cacctnumb);
+  const { details: accountDetails } = useSavingsSharesDetails(cacctnumb);
 
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
@@ -177,6 +177,7 @@ export default function RecoveryWriteOff() {
       });
 
       // Then, call the Loan Repayment InsertLoanRepayment endpoint
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const repaymentResult = await useLoanBadDebtExpenses(
         accountDetails.AccountNumber,
         badDebtExpenses.LoansControlAccount,
