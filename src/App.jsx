@@ -415,11 +415,11 @@ function App() {
         { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
         { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
         { label: 'Account Activate', to: '/member/account-activate', icon: ToggleOnRoundedIcon },
+        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
+        { label: 'Account Closure', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
-        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
-        { label: 'Account Closure', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
       ],
     },
     {
