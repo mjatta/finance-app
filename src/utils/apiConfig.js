@@ -66,6 +66,11 @@ const ENDPOINT_MAP = {
     dev: '/api/member/enquiry',
     prod: '/api/member/enquiry',
   },
+  // Account Details (Member/Account Closure)
+  'account-details': {
+    dev: '/api/account/details',
+    prod: '/api/account/details',
+  },
   // Client
   'client-code': {
     dev: '/api/client/get-code',

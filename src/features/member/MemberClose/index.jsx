@@ -1,94 +1,87 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
-  FormControl,
+  CircularProgress,
   FormControlLabel,
   FormGroup,
+  Skeleton,
   TextField,
   Typography,
 } from '@mui/material';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useAccountDetails } from './hooks/useAccountDetails';
 
 export default function AccountClosure() {
+  const [accountNumber, setAccountNumber] = useState('');
   const [formData, setFormData] = useState({
-    accountNumber: '',
     accountName: '',
     accountBalance: '',
     status: [],
   });
-  const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const { accountData, isLoading, error: fetchError, fetchAccountDetails } = useAccountDetails();
 
   const statusOptions = ['Close', 'Inactive', 'Dormant', 'Frozen'];
 
-  const handleAccountNumberBlur = async () => {
-    if (!formData.accountNumber.trim()) {
+  const handleSearchAccount = async () => {
+    if (!accountNumber.trim()) {
+      setStatusMessage('Please enter an account number.');
+      setStatusError(true);
       return;
     }
 
-    setIsLoadingAccount(true);
     setStatusMessage('');
     setStatusError(false);
+    setHasSearched(true);
 
-    try {
-      // Fake endpoint call - simulating account lookup
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Mock data response
-      const mockAccounts = {
-        'ACC001': { name: 'John Doe Savings Account', balance: '25,500.00' },
-        'ACC002': { name: 'Jane Smith Checking Account', balance: '12,300.50' },
-        'ACC003': { name: 'Business Operating Account', balance: '45,200.75' },
-        'ACC004': { name: 'Emergency Fund Account', balance: '8,900.25' },
-      };
+    await fetchAccountDetails(accountNumber);
+  };
 
-      const accountData = mockAccounts[formData.accountNumber];
+  // Update formData when accountData is fetched
+  React.useEffect(() => {
+    if (accountData) {
+      setFormData({
+        accountName: accountData.accountName || '',
+        accountBalance: accountData.accountBalance || '',
+        status: [],
+      });
+      setStatusMessage('');
+      setStatusError(false);
+    }
+  }, [accountData]);
 
-      if (accountData) {
-        setFormData((prev) => ({
-          ...prev,
-          accountName: accountData.name,
-          accountBalance: accountData.balance,
-          status: [],
-        }));
-        setStatusMessage('Account details loaded successfully.');
-        setStatusError(false);
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          accountName: '',
-          accountBalance: '',
-          status: [],
-        }));
-        setStatusMessage('Account number not found.');
-        setStatusError(true);
-      }
-    } catch {
-      setStatusMessage('Failed to load account details.');
+  // Show error when fetch fails
+  React.useEffect(() => {
+    if (fetchError && hasSearched) {
+      setStatusMessage(fetchError);
       setStatusError(true);
-      setFormData((prev) => ({
-        ...prev,
+      setFormData({
         accountName: '',
         accountBalance: '',
         status: [],
-      }));
-    } finally {
-      setIsLoadingAccount(false);
+      });
     }
-  };
+  }, [fetchError, hasSearched]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleClear = () => {
+    setAccountNumber('');
+    setFormData({
+      accountName: '',
+      accountBalance: '',
+      status: [],
+    });
+    setStatusMessage('');
+    setStatusError(false);
+    setHasSearched(false);
   };
 
   const handleStatusChange = (event) => {
@@ -102,7 +95,7 @@ export default function AccountClosure() {
   };
 
   const handleSave = async () => {
-    if (!formData.accountNumber.trim() || !formData.accountName.trim() || formData.status.length === 0) {
+    if (!accountNumber.trim() || !formData.accountName.trim() || formData.status.length === 0) {
       setStatusMessage('Please fill in all required fields and select at least one status.');
       setStatusError(true);
       return;
@@ -115,19 +108,25 @@ export default function AccountClosure() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 800));
-      
-      setStatusMessage('Account closure saved successfully.');
+
+      const successMsg = `Account ${accountNumber} closure saved successfully.`;
+      setStatusMessage(successMsg);
       setStatusError(false);
       notifySaveSuccess({
-        page: 'Customer Administration / Account Closure',
+        page: 'Member / Account Closure',
         action: 'Save Account Closure',
-        message: 'Account closure saved successfully.',
+        message: successMsg,
       });
+
+      // Clear form after successful save
+      setTimeout(() => {
+        handleClear();
+      }, 2000);
     } catch (error) {
       setStatusMessage('Failed to save account closure.');
       setStatusError(true);
       notifySaveError({
-        page: 'Customer Administration / Account Closure',
+        page: 'Member / Account Closure',
         action: 'Save Account Closure',
         message: 'Failed to save account closure.',
         error,
@@ -139,86 +138,200 @@ export default function AccountClosure() {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
-        Account Closure
-      </Typography>
+      {/* Header Banner */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          color: 'white',
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+          Account Closure
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.95 }}>
+          Close or modify account status for members
+        </Typography>
+      </Box>
 
-      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 600 }}>
-        <CardContent>
-          <Box sx={{ display: 'grid', gap: 2 }}>
-            <TextField
-              label="Account Number"
-              name="accountNumber"
-              value={formData.accountNumber}
-              onChange={handleChange}
-              onBlur={handleAccountNumberBlur}
-              disabled={isLoadingAccount}
-              placeholder="e.g., ACC001"
-              helperText="Try: ACC001, ACC002, ACC003, or ACC004"
-            />
-
-            <FormControl>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-                Account Status
-              </Typography>
-              <FormGroup row>
-                {statusOptions.map((option) => (
-                  <FormControlLabel
-                    key={option}
-                    control={
-                      <Checkbox
-                        name={option}
-                        value={option}
-                        checked={formData.status.includes(option)}
-                        onChange={handleStatusChange}
-                      />
-                    }
-                    label={option}
-                  />
-                ))}
-              </FormGroup>
-            </FormControl>
-
-            <TextField
-              label="Account Name"
-              name="accountName"
-              value={formData.accountName}
-              InputProps={{ readOnly: true }}
-              disabled
-              sx={{ '& .MuiInputBase-input.Mui-disabled': { fontWeight: 700 } }}
-            />
-            <TextField
-              label="Account Balance"
-              name="accountBalance"
-              value={formData.accountBalance}
-              onChange={handleChange}
-            />
-          </Box>
-
-          {statusMessage && (
-            <Typography
-              sx={{
-                mt: 2,
-                p: 1.5,
-                borderRadius: 1,
-                bgcolor: statusError ? 'error.light' : 'success.light',
-                color: statusError ? 'error.dark' : 'success.dark',
-              }}
-            >
-              {statusMessage}
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+        {/* Search Card */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+              Search Account
             </Typography>
-          )}
 
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              <TextField
+                label="Account Number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchAccount()}
+                disabled={isLoading}
+                placeholder="e.g., ACC001"
+                fullWidth
+                size="small"
+                helperText="Enter the account number to search"
+              />
+
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSearchAccount}
+                  disabled={isLoading || !accountNumber.trim()}
+                  sx={{
+                    backgroundColor: '#667eea',
+                    '&:hover': { backgroundColor: '#5568d3' },
+                    fontWeight: 600,
+                    flex: 1,
+                    textTransform: 'none',
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <CircularProgress size={16} sx={{ mr: 1 }} />
+                      Searching...
+                    </>
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleClear}
+                  disabled={isLoading}
+                  sx={{
+                    fontWeight: 600,
+                    paddingX: 2,
+                    textTransform: 'none',
+                  }}
+                >
+                  Clear
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Account Details Card - Always visible */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+              Account Details
+            </Typography>
+
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              {/* Account Name */}
+              {isLoading ? (
+                <Skeleton variant="rectangular" height={40} />
+              ) : (
+                <TextField
+                  label="Account Name"
+                  value={formData.accountName}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                  fullWidth
+                  size="small"
+                  sx={{
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      fontWeight: 600,
+                      color: '#2c3e50',
+                    },
+                  }}
+                />
+              )}
+
+              {/* Account Balance */}
+              {isLoading ? (
+                <Skeleton variant="rectangular" height={40} />
+              ) : (
+                <TextField
+                  label="Account Balance"
+                  value={formData.accountBalance}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                  fullWidth
+                  size="small"
+                  sx={{
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      fontWeight: 600,
+                      color: '#2c3e50',
+                    },
+                  }}
+                />
+              )}
+
+              {/* Account Status Checkboxes */}
+              {!isLoading && formData.accountName && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                    Account Status
+                  </Typography>
+                  <FormGroup row>
+                    {statusOptions.map((option) => (
+                      <FormControlLabel
+                        key={option}
+                        control={
+                          <Checkbox
+                            value={option}
+                            checked={formData.status.includes(option)}
+                            onChange={handleStatusChange}
+                            size="small"
+                          />
+                        }
+                        label={option}
+                      />
+                    ))}
+                  </FormGroup>
+                </Box>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Status Message */}
+      {statusMessage && (
+        <Box sx={{ mt: 3 }}>
+          <Alert
+            severity={statusError ? 'error' : 'success'}
+            onClose={() => setStatusMessage('')}
+          >
+            {statusMessage}
+          </Alert>
+        </Box>
+      )}
+
+      {/* Save Button */}
+      {formData.accountName && (
+        <Box sx={{ mt: 3, display: 'flex', gap: 1.5 }}>
           <Button
             variant="contained"
             onClick={handleSave}
             disabled={isSaving || !formData.accountName.trim() || formData.status.length === 0}
-            sx={{ mt: 2 }}
+            sx={{
+              backgroundColor: '#667eea',
+              '&:hover': { backgroundColor: '#5568d3' },
+              fontWeight: 600,
+              paddingX: 3,
+              boxShadow: 'none',
+              textTransform: 'none',
+            }}
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? (
+              <>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                Saving...
+              </>
+            ) : (
+              '💾 Save Account Closure'
+            )}
           </Button>
-        </CardContent>
-      </Card>
+        </Box>
+      )}
     </Box>
   );
 }
