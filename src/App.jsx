@@ -63,6 +63,7 @@ const Reprint = lazy(() => import('./features/member/Reprint'));
 const CustomerRegistration = lazy(() => import('./features/member/CustomerRegistration'));
 const AddMemberAccount = lazy(() => import('./features/member/AddMemberAccount'));
 const MemberActivate = lazy(() => import('./features/member/MemberActivate'));
+const AccountActivate = lazy(() => import('./features/member/AccountActivate'));
 const MemberCloseAccount = lazy(() => import('./features/member/MemberCloseAccount'));
 const AccountActivation = lazy(() => import('./features/member/AccountActivation'));
 const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
@@ -413,6 +414,7 @@ function App() {
         { label: 'Account Enquiries', to: '/member/account-enquiries', icon: ManageSearchRoundedIcon },
         { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
         { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
+        { label: 'Account Activate', to: '/member/account-activate', icon: ToggleOnRoundedIcon },
         { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
         { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
         { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
@@ -841,6 +843,10 @@ function App() {
                     <Route
                       path="/member/member-activate"
                       element={renderWithAccess('member', <MemberActivate />)}
+                    />
+                    <Route
+                      path="/member/account-activate"
+                      element={renderWithAccess('member', <AccountActivate />)}
                     />
                     <Route
                       path="/member/member-close-account"

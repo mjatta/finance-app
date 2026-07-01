@@ -117,6 +117,7 @@ const featurePageMap = {
     { path: '/member/member-activation', label: 'Customer Activation' },
     { path: '/member/add-member-account', label: 'Add Member Account' },
     { path: '/member/member-activate', label: 'Member Activate' },
+    { path: '/member/account-activate', label: 'Account Activate' },
     { path: '/member/deposits', label: 'Deposits' },
     { path: '/member/account-enquiries', label: 'Account Enquiries' },
     { path: '/member/member-close-account', label: 'Member Close' },
