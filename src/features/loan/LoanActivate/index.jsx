@@ -199,61 +199,30 @@ export default function LoanActivate() {
         </div>
       </Paper>
 
-      <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Card sx={{ mt: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
         <CardContent>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 700 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
             Loan Details
           </Typography>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gap: 1.5,
-              gridTemplateColumns: {
-                xs: '1fr',
-                md: 'repeat(2, minmax(0, 1fr))',
-              },
-            }}
-          >
+          <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             {detailsLoading ? (
-              // Loading skeleton state
-              Array.from({ length: 7 }).map((_, index) => (
-                <Box
-                  key={`skeleton-${index}`}
-                  sx={{
-                    p: 1.25,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1.5,
-                    bgcolor: 'grey.50',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                  }}
-                >
-                  <Skeleton variant="text" width="40%" />
-                  <Skeleton variant="text" width="35%" />
-                </Box>
-              ))
+              <>
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+                <Skeleton variant="rounded" height={30} />
+              </>
             ) : (
               detailItems.map((item) => (
-                <Box
-                  key={item.label}
-                  sx={{
-                    p: 1.25,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1.5,
-                    bgcolor: 'grey.50',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
-                    {item.label}
+                <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                    {item.label}:
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
                     {item.value}
                   </Typography>
                 </Box>
@@ -272,10 +241,9 @@ export default function LoanActivate() {
           <Box sx={{ mt: 2.5, display: 'flex', gap: 1.5 }}>
             <Button
               variant="contained"
-              color="primary"
               disabled={!selectedRow || isSubmitting}
               onClick={handleConfirmActivate}
-              sx={{ fontWeight: 600 }}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, paddingX: 3, boxShadow: 'none', textTransform: 'none' }}
             >
               {isSubmitting ? (
                 <>
