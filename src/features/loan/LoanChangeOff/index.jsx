@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
+import { notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useChargeOffClients } from './hooks/useChargeOffClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
 import { useUpdateInterestDate } from './hooks/useUpdateInterestDate';
@@ -13,6 +14,7 @@ export default function LoanChangeOff() {
   const [selectedId, setSelectedId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const { updateInterestDate } = useUpdateInterestDate();
 
   const normalizedRows = useMemo(
@@ -97,6 +99,7 @@ export default function LoanChangeOff() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setSuccessMessage(null);
 
     try {
       // Step 1: Confirm charge-off
@@ -110,6 +113,18 @@ export default function LoanChangeOff() {
 
       // Step 2: Update interest date after successful charge-off
       await updateInterestDate(selectedRow.loanNumber);
+
+      // Show success message
+      const successMsg = `Loan ${selectedRow.loanNumber} has been successfully charged off.`;
+      setSuccessMessage(successMsg);
+      notifySaveSuccess({
+        page: 'Loan / Loan Change Off',
+        action: 'Confirm Charge Off',
+        message: successMsg,
+      });
+
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);
@@ -230,6 +245,14 @@ export default function LoanChangeOff() {
               ))
             )}
           </Box>
+
+          {successMessage && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: 1 }}>
+              <Alert severity="success" sx={{ mb: 0 }} onClose={() => setSuccessMessage(null)}>
+                {successMessage}
+              </Alert>
+            </Box>
+          )}
 
           {submitError && (
             <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>

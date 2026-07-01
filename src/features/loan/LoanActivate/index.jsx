@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
+import { notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useActivateClients } from './hooks/useActivateClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
 import { useUpdateInterestDate } from './hooks/useUpdateInterestDate';
@@ -13,6 +14,7 @@ export default function LoanActivate() {
   const [selectedId, setSelectedId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const { updateInterestDate } = useUpdateInterestDate();
 
   const normalizedRows = useMemo(
@@ -97,6 +99,7 @@ export default function LoanActivate() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setSuccessMessage(null);
 
     try {
       const response = await fetch(`/api/loans/loanactivate?loanId=${encodeURIComponent(selectedRow.id)}`, {
@@ -109,6 +112,18 @@ export default function LoanActivate() {
 
       // Update interest date after successful activation
       await updateInterestDate(selectedRow.loanNumber);
+
+      // Show success message
+      const successMsg = `Loan ${selectedRow.loanNumber} has been successfully activated.`;
+      setSuccessMessage(successMsg);
+      notifySaveSuccess({
+        page: 'Loan / Loan Activate',
+        action: 'Confirm Activation',
+        message: successMsg,
+      });
+
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);
@@ -229,6 +244,14 @@ export default function LoanActivate() {
               ))
             )}
           </Box>
+
+          {successMessage && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: 1 }}>
+              <Alert severity="success" sx={{ mb: 0 }} onClose={() => setSuccessMessage(null)}>
+                {successMessage}
+              </Alert>
+            </Box>
+          )}
 
           {submitError && (
             <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>

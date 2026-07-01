@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
+import { notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useRecoveryWriteOffClients } from './hooks/useRecoveryWriteOffClients';
 import { useLoanDetails } from './hooks/useLoanDetails';
 import { useMemberSavings } from './hooks/useMemberSavings';
@@ -20,6 +21,7 @@ export default function RecoveryWriteOff() {
   const [submitError, setSubmitError] = useState(null);
   const [isBadDebtSubmitting, setIsBadDebtSubmitting] = useState(false);
   const [badDebtError, setBadDebtError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const { processBadDebt } = useProcessBadDebt();
 
@@ -126,6 +128,7 @@ export default function RecoveryWriteOff() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setSuccessMessage(null);
 
     try {
       const response = await fetch('/api/loans/writeoff', {
@@ -141,6 +144,18 @@ export default function RecoveryWriteOff() {
       if (!response.ok) {
         throw new Error(`Failed to confirm write-off: ${response.status}`);
       }
+
+      // Show success message
+      const successMsg = `Loan ${selectedRow.loanNumber} has been successfully written off.`;
+      setSuccessMessage(successMsg);
+      notifySaveSuccess({
+        page: 'Loan / Loan Recovery & Write-off',
+        action: 'Confirm Write Off',
+        message: successMsg,
+      });
+
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);
@@ -160,6 +175,7 @@ export default function RecoveryWriteOff() {
 
     setIsBadDebtSubmitting(true);
     setBadDebtError(null);
+    setSuccessMessage(null);
 
     try {
       // Use Savings Balance and Shares Balance from loan details
@@ -191,6 +207,18 @@ export default function RecoveryWriteOff() {
       if (!repaymentResult.success) {
         throw new Error(repaymentResult.error || 'Failed to insert loan repayment');
       }
+
+      // Show success message
+      const successMsg = `Bad debt for loan ${selectedRow.loanNumber} has been processed successfully.`;
+      setSuccessMessage(successMsg);
+      notifySaveSuccess({
+        page: 'Loan / Loan Recovery & Write-off',
+        action: 'Process Bad Debt',
+        message: successMsg,
+      });
+
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
 
       // Refresh the grid
       setRefreshKey((prev) => prev + 1);
@@ -313,6 +341,14 @@ export default function RecoveryWriteOff() {
               ))
             )}
           </Box>
+          {successMessage && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: 1 }}>
+              <Alert severity="success" sx={{ mb: 0 }} onClose={() => setSuccessMessage(null)}>
+                {successMessage}
+              </Alert>
+            </Box>
+          )}
+
           {submitError && (
             <Box sx={{ mt: 2, p: 1.5, bgcolor: '#fee', border: '1px solid #fcc', borderRadius: 1 }}>
               <Typography variant="body2" sx={{ color: 'error.main' }}>
