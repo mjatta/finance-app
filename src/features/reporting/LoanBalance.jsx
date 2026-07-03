@@ -16,6 +16,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import useGetLoanBalancePrint from './LoanBalance/hooks/useGetLoanBalancePrint';
 import { buildLoanBalancePrintHtml } from './LoanBalance/printSetup';
 
@@ -79,10 +80,12 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function LoanBalance() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
   const [branch, setBranch] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [productType, setProductType] = useState('');
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
@@ -133,6 +136,11 @@ export default function LoanBalance() {
 
     loadProducts();
   }, []);
+
+  // Load loan officers on mount
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
 
   const branchOptions = useMemo(
     () => {
@@ -197,8 +205,9 @@ export default function LoanBalance() {
       CustType2: customerType.corporate ? '3' : '',
       GenderMale: gender.male ? 1 : '',
       GenderFemale: gender.female ? 2 : '',
+      GenderOther: customerType.group || customerType.corporate ? '3' : '',
       TransactionDate: date,
-      ByLoanOfficer: '',
+      ByLoanOfficer: loanOfficer || '',
     };
 
     try {
@@ -332,8 +341,8 @@ export default function LoanBalance() {
             />
           </Box>
 
-          {/* Row 2: Products */}
-          <Box sx={{ mb: 3 }}>
+          {/* Row 2: Products and Loan Officer */}
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
               label="Products"
@@ -358,6 +367,36 @@ export default function LoanBalance() {
                 Select a product
               </MenuItem>
               {productOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Loan Officer"
+              value={loanOfficer}
+              onChange={(e) => setLoanOfficer(e.target.value)}
+              size="small"
+              fullWidth
+              disabled={officersLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select a loan officer';
+                  }
+
+                  const option = officers.find((item) => String(item.value) === String(selected));
+                  return option?.label || selected;
+                },
+              }}
+            >
+              <MenuItem value="">
+                All Loan Officers
+              </MenuItem>
+              {officers.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
                 </MenuItem>
