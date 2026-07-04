@@ -17,6 +17,7 @@ import ManRoundedIcon from '@mui/icons-material/ManRounded';
 import WomanRoundedIcon from '@mui/icons-material/WomanRounded';
 import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
 import { getFullApiUrl } from '../../utils/apiConfig';
+import Skeleton from '@mui/material/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 
 const categories = [
@@ -61,13 +62,6 @@ const categories = [
 // Use relative path so Vite proxy can intercept and handle CORS
 const DASHBOARD_SUMMARY_URL = getFullApiUrl('/api/dashboard/summary?compId=30');
 
-const defaultMembersSummary = {
-  male: 2025,
-  female: 580,
-  group: 421,
-  total: 3026,
-};
-
 const toCount = (value) => {
   if (typeof value === 'number') return value;
   const parsed = Number(String(value ?? '0').replace(/,/g, ''));
@@ -82,19 +76,29 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
     .split(' ')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
-  const [membersSummary, setMembersSummary] = useState(defaultMembersSummary);
+  const [membersSummary, setMembersSummary] = useState(null);
+  const [membersLoading, setMembersLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadSummary = async () => {
       try {
+        setMembersLoading(true);
         const response = await fetch(DASHBOARD_SUMMARY_URL);
-        if (!response.ok || !isMounted) return;
+        if (!response.ok || !isMounted) {
+          setMembersSummary({ male: 0, female: 0, group: 0, total: 0 });
+          setMembersLoading(false);
+          return;
+        }
 
         const payload = await response.json();
         const members = payload?.data?.members;
-        if (!members || !isMounted) return;
+        if (!members || !isMounted) {
+          setMembersSummary({ male: 0, female: 0, group: 0, total: 0 });
+          setMembersLoading(false);
+          return;
+        }
 
         setMembersSummary({
           male: toCount(members.male),
@@ -102,8 +106,10 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
           group: toCount(members.group),
           total: toCount(members.total),
         });
+        setMembersLoading(false);
       } catch {
-        // keep fallback values if endpoint is unavailable
+        setMembersSummary({ male: 0, female: 0, group: 0, total: 0 });
+        setMembersLoading(false);
       }
     };
 
@@ -122,28 +128,28 @@ export default function Landing({ onSelectCategory, allowedFeatures = [] }) {
   const dashboardStats = [
     {
       label: 'Active Members',
-      value: formatCount(membersSummary.total),
+      value: (membersLoading || membersSummary === null) ? <Skeleton variant="text" width={80} /> : formatCount(membersSummary?.total || 0),
       helper: 'Total members',
       accent: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
       icon: <Groups2RoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
     },
     {
       label: 'Male',
-      value: formatCount(membersSummary.male),
+      value: (membersLoading || membersSummary === null) ? <Skeleton variant="text" width={60} /> : formatCount(membersSummary?.male || 0),
       helper: 'Male members',
       accent: 'linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)',
       icon: <ManRoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
     },
     {
       label: 'Female',
-      value: formatCount(membersSummary.female),
+      value: (membersLoading || membersSummary === null) ? <Skeleton variant="text" width={60} /> : formatCount(membersSummary?.female || 0),
       helper: 'Female members',
       accent: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
       icon: <WomanRoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
     },
     {
       label: 'Group',
-      value: formatCount(membersSummary.group),
+      value: (membersLoading || membersSummary === null) ? <Skeleton variant="text" width={60} /> : formatCount(membersSummary?.group || 0),
       helper: 'Group members',
       accent: 'linear-gradient(135deg, #7c2d12 0%, #f97316 100%)',
       icon: <Diversity3RoundedIcon sx={{ color: 'white', fontSize: 26 }} />,
