@@ -24,6 +24,7 @@ import useGetAgingRanges from './hooks/useGetAgingRanges';
 import useGetAgingProducts from './hooks/useGetAgingProducts';
 import useGetAgingCategories from './hooks/useGetAgingCategories';
 import useGenerateAgingReport from './hooks/useGenerateAgingReport';
+import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { buildDetailedAgingPrintHtml } from './printSetup';
 
 const FALLBACK_ROWS = [
@@ -68,6 +69,8 @@ export default function DetailedAging() {
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
   const [category, setCategory] = useState('');
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [date, setDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [savingRanges, setSavingRanges] = useState(false);
@@ -80,6 +83,11 @@ export default function DetailedAging() {
       setRangesInitialized(true);
     }
   }, [ranges, rangesLoading, rangesInitialized]);
+
+  // load loan officers
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
 
   const convertToCSV = (rows) => {
     const headers = ['Days From', 'Days To', 'Percentage (%)'];
@@ -129,7 +137,7 @@ export default function DetailedAging() {
       ToDate: date.format('YYYY-MM-DD'),
       Product: Number(product) || 0,
       Category: category ? Number(category) || 0 : 0,
-      ByLoanOfficer: '',
+      ByLoanOfficer: loanOfficer || '',
     };
 
     const response = await generateReport(payload);
@@ -401,17 +409,40 @@ export default function DetailedAging() {
               ))}
             </TextField>
 
-            <DatePicker
-              label="Date"
-              value={date}
-              onChange={(value) => setDate(value)}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  fullWidth: true,
-                },
-              }}
-            />
+              <TextField
+                select
+                label="Loan Officer"
+                value={loanOfficer}
+                onChange={(e) => setLoanOfficer(e.target.value)}
+                size="small"
+                fullWidth
+                disabled={officersLoading}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (!selected) return 'All Loan Officers';
+                    const option = officers.find((o) => String(o.value) === String(selected));
+                    return option?.label || selected;
+                  },
+                }}
+              >
+                <MenuItem value="">All Loan Officers</MenuItem>
+                {officers.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
+              </TextField>
+
+              <DatePicker
+                label="Date"
+                value={date}
+                onChange={(value) => setDate(value)}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    fullWidth: true,
+                  },
+                }}
+              />
           </Box>
 
           {/* Actions */}
