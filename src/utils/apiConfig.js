@@ -251,6 +251,10 @@ const ENDPOINT_MAP = {
     dev: '/api/loanbalances/loanofficers',
     prod: '/api/loanbalances/loanofficers',
   },
+  'getmemberdetails': {
+    dev: '/api/getmemberdetails',
+    prod: '/api/getmemberdetails',
+  },
   'transaction-users': {
     dev: '/api/users/list',
     prod: '/api/users/list',

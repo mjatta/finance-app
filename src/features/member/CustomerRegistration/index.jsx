@@ -25,6 +25,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
+import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCities } from './hooks/useCities';
 import { initialForm } from './constants/initialFormData';
@@ -144,6 +145,7 @@ export default function CustomerRegistration(props) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [institutionBranches, setInstitutionBranches] = useState([]);
   const [countries, setCountries] = useState([]);
+  const { fetchMemberDetails, loading: loadingMemberDetails } = useMemberDetails();
 
   // Fetch institution branches for branch dropdowns
   useEffect(() => {
@@ -192,6 +194,180 @@ export default function CustomerRegistration(props) {
     };
     loadCountries();
   }, []);
+
+  const [searchCode, setSearchCode] = useState('');
+
+  const handleFillFromMember = async () => {
+    if (!searchCode) return setStatusMessage('Enter member code to search');
+    setStatusMessage('');
+    try {
+      // If the user entered only digits, pad to 6 characters with leading zeros (e.g., 1 -> 000001)
+      const codeToUse = String(searchCode || '').trim();
+      const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
+      const resp = await fetchMemberDetails(paddedCode);
+      if (!resp.success) {
+        setStatusError(true);
+        setStatusMessage(resp.error || 'Member not found');
+        return;
+      }
+
+      const m = resp.data;
+      if (!m) {
+        setStatusError(true);
+        setStatusMessage('Member not found');
+        return;
+      }
+
+      // Map response fields to formData keys (best-effort, follow payload builders)
+      const mapped = {
+        // Institution fields
+        institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
+        institutionName: m.CustName || m.custname || '',
+        institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
+        institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
+        institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
+        institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
+        institutionTIN: m.Tin || m.tin || m.tinno || '',
+        institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
+        institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
+        institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
+        institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
+        institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+        institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
+
+        // Individual / common fields
+        firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
+        middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
+        surname: (m.ccustlname || m.LName || m.surname || '').trim(),
+        memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
+        branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
+        memberEmployed: m.Employed === 1 || m.Employed === true || !!m.memberEmployed,
+        sendSms: !!m.sendSms,
+        registerMobileWallet: !!m.registerMobileWallet,
+        title: m.ccusttitle || m.Title || '',
+        nationality: m.cou_id ? String(m.cou_id) : (m.NatCode ? String(m.NatCode) : (m.Country || '')),
+        tribe: m.tribe || '',
+        levelOfEducation: m.levelOfEducation || '',
+        dateOfBirth: m.ddatebirth && m.ddatebirth !== '1900-01-01T00:00:00' ? (String(m.ddatebirth).split('T')[0]) : (m.DOB || ''),
+        dateJoined: m.datejoin || m.DateJoin || '',
+        gender: (typeof m.gender === 'boolean') ? (m.gender ? '1' : '2') : (m.gender ? String(m.gender) : ''),
+        maritalStatus: m.Marital ? String(m.Marital) : (m.marital ? String(m.marital) : ''),
+        idType: m.IDType ? String(m.IDType) : (m.idtype ? String(m.idtype) : ''),
+        idNumber: m.IDNumber || m.cpassno || m.idNumber || '',
+        placeIssue: m.PlaceIssued || m.cplacissue || '',
+        dateIssued: m.DateIssue && m.DateIssue !== '1900-01-01T00:00:00' ? String(m.DateIssue).split('T')[0] : (m.ddateissue && m.ddateissue !== '1900-01-01T00:00:00' ? String(m.ddateissue).split('T')[0] : ''),
+        expiryDate: m.DateExpire && m.DateExpire !== '1900-01-01T00:00:00' ? String(m.DateExpire).split('T')[0] : (m.ddateexpire && m.ddateexpire !== '1900-01-01T00:00:00' ? String(m.ddateexpire).split('T')[0] : ''),
+        povertyLevel: m.povertyLevel || '',
+        region: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
+        district: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
+        ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+        country: m.Country || (m.cou_id ? String(m.cou_id) : ''),
+        city: m.City || m.city || '',
+        address: m.caddr1 || m.Street || m.address || '',
+        mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
+        emailAddress: m.cemail || m.Email || '',
+
+        // Referees and next of kin
+        refereeName: m.cname1 || m.Ref1Name || '',
+        refereeAddress: m.caddr1 || m.Ref1Address || '',
+        refereeMobilePhone: m.cmobile1 || m.Ref1Tel || '',
+        refereeEmailAddress: m.cemail1 || m.Ref1Mail || '',
+        nextOfKinName: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].name || m.nextOfKins[0].Name)) || m.NokName || m.Nok || '',
+        nextOfKinAddress: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].address || '')) || '',
+        nextOfKinRelationship: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].relationship || '')) || '',
+        nextOfKinMobilePhone: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].mobilePhone || '')) || '',
+
+        // Employment
+        employer: m.nEmployer || m.Employer || '',
+        employmentCountry: m.employmentCountry || '',
+        employmentCity: m.employmentCity || m.employment_city || '',
+        employmentAddress: m.employmentAddress || '',
+        employmentMobilePhone: m.employmentMobilePhone || '',
+        employmentEmailAddress: m.employmentEmailAddress || '',
+        employmentNumber: m.payroll_id || m.StaffNo || m.employmentNumber || '',
+        designation: m.designation || '',
+        department: m.department || '',
+        yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || '',
+        currentSalary: m.Salary || m.currentSalary || '',
+
+        // Biometric / files
+        biometricPhotoName: m.MemberPictureName || m.biometricPhotoName || '',
+        biometricSignatureName: m.MemberSignatureName || m.biometricSignatureName || '',
+
+        // Financial / membership
+        registrationFee: m.RegFee || m.registrationFee || '',
+        contributionAccountNumber: m.contributionAccountNumber || '',
+        contributionAccountName: m.contributionAccountName || '',
+        sharePrice: m.SharePrice || m.sharePrice || '',
+        sharesPurchase: m.Shares || m.sharesPurchase || '',
+        shareValue: m.shareValue || '',
+        savingMode: m.SaveType ? (m.SaveType ? 'fixed' : '') : (m.savingMode || ''),
+        savingAmount: m.SaveAmount || m.savingAmount || '',
+        accountSignatory: !!m.accountSignatory,
+        deductedFromSourcePayroll: !!m.deductedFromSourcePayroll,
+        residency: (m.Residents === true || m.residency) ? 'resident' : '',
+
+        // Institution officers / signatories
+        chairName: m.ChairName || m.chairName || '',
+        chairTIN: m.ChairTin || m.chairTIN || '',
+        chairMobilePhone: m.ChairTel || m.chairMobilePhone || '',
+        chairEmailAddress: m.ChairMail || m.chairEmailAddress || '',
+        chairAccountSignatory: !!m.ChairSign || !!m.chairAccountSignatory,
+        viceChairName: m.ViceName || m.viceChairName || '',
+        viceChairTIN: m.ViceTin || m.viceChairTIN || '',
+        viceChairMobilePhone: m.ViceTel || m.viceChairMobilePhone || '',
+        viceChairEmailAddress: m.ViceMail || m.viceChairEmailAddress || '',
+        viceChairAccountSignatory: !!m.ViceSign || !!m.viceChairAccountSignatory,
+        treasurerName: m.TreasurerName || m.treasurerName || '',
+        treasurerTIN: m.TreasurerTin || m.treasurerTIN || '',
+        treasurerMobilePhone: m.TreasurerTel || m.treasurerMobilePhone || '',
+        treasurerEmailAddress: m.TreasurerMail || m.treasurerEmailAddress || '',
+        treasurerAccountSignatory: !!m.TreasurerSign || !!m.treasurerAccountSignatory,
+        secretaryName: m.SecName || m.secretaryName || '',
+        secretaryTIN: m.SecTin || m.secretaryTIN || '',
+        secretaryMobilePhone: m.SecTel || m.secretaryMobilePhone || '',
+        secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
+        secretaryAccountSignatory: !!m.SecSign || !!m.secretaryAccountSignatory,
+
+        // References
+        referenceDetailsName: m.Ref1Name || m.referenceDetailsName || '',
+        referenceDetailsAddress: m.Ref1Address || m.referenceDetailsAddress || '',
+        referenceDetailsMobilePhone: m.Ref1Tel || m.referenceDetailsMobilePhone || '',
+        referenceDetailsEmailAddress: m.Ref1Mail || m.referenceDetailsEmailAddress || '',
+
+        // Signatories / defaults
+        signatory1: m.Sign1 || m.signatory1 || '',
+        signatory3: m.Sign3 || m.signatory3 || '',
+        defaultBatch: m.BatId || m.defaultBatch || '',
+      };
+
+      setFormData((prev) => ({ ...prev, ...mapped }));
+      // Populate additional next-of-kins and references if present in response
+      if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
+        setAdditionalNextOfKins(m.nextOfKins.map((k, idx) => ({
+          id: Date.now() + idx,
+          name: k.name || k.Name || '',
+          address: k.address || '',
+          relationship: k.relationship || '',
+          mobilePhone: k.mobilePhone || k.mobile || '',
+        })));
+      }
+      if (Array.isArray(m.references) && m.references.length > 0) {
+        setAdditionalReferences(m.references.map((r, idx) => ({
+          id: Date.now() + idx,
+          name: r.name || r.Name || '',
+          address: r.address || '',
+          mobilePhone: r.mobilePhone || r.mobile || '',
+          emailAddress: r.email || r.emailAddress || '',
+        })));
+      }
+      setStatusError(false);
+      setStatusMessage('Member data loaded. Edit fields as needed.');
+    } catch (err) {
+      setStatusError(true);
+      setStatusMessage(err.message || 'Failed to load member details');
+    }
+  };
 
 // Helper to format row for DataGrid
 function formatRecentMemberRow(row, institutionBranches = []) {
@@ -705,6 +881,23 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         <Typography variant="body1" sx={{ fontWeight: 400 }}>
           Register new members to the microfinance system
         </Typography>
+      </Box>
+
+      {/* Find customer search */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', maxWidth: 840 }}>
+        <TextField
+          label="Find Customer"
+          placeholder="Enter member code"
+          size="small"
+          value={searchCode}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />
+        <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !searchCode} sx={{ backgroundColor: '#667eea' }}>
+          {loadingMemberDetails ? 'Searching...' : 'Search'}
+        </Button>
+        <Button variant="outlined" onClick={() => { setSearchCode(''); setStatusMessage(''); }}>
+          Clear
+        </Button>
       </Box>
 
       {statusMessage && (

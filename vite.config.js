@@ -1334,6 +1334,50 @@ const remoteMemberDetailsApiPlugin = () => ({
   },
 })
 
+// Direct Get Member Details API Plugin (dev server middleware)
+const getMemberDetailsApiPlugin = () => ({
+  name: 'get-member-details-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/getmemberdetails', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Preserve path and query after /api/getmemberdetails
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/getmemberdetails${req.url.replace('/api/getmemberdetails', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process getmemberdetails.' }))
+      }
+    })
+  },
+})
+
 const saveLoanGuarantorApiPlugin = () => ({
   name: 'save-loan-guarantor-api-plugin',
   configureServer(server) {
@@ -2225,6 +2269,7 @@ export default defineConfig({
     loanOfficersApiPlugin(),
     usersApiPlugin(),
     remoteMemberDetailsApiPlugin(),
+    getMemberDetailsApiPlugin(),
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),
     trialBalanceApiPlugin(),
@@ -2285,6 +2330,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-member-details/, '/api/getmemberdetails'),
+      },
+      '/api/getmemberdetails': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/getmemberdetails/, '/api/getmemberdetails'),
       },
       '/api/remote-member-activate': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
