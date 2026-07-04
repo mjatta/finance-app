@@ -225,6 +225,27 @@ export default function CustomerRegistration(props) {
       }
 
       // Map response fields to formData keys (best-effort, follow payload builders)
+      // Map backend idtype numeric codes to UI option values
+      const mapIdTypeToOption = (val) => {
+        const v = String(val ?? '').trim();
+        if (!v) return '';
+        if (v === '1' || v.toLowerCase() === 'national-id' || v === 'nat') return 'national-id';
+        if (v === '2' || v.toLowerCase() === 'passport') return 'passport';
+        if (v === '3' || v.toLowerCase() === 'driver-license' || v === 'driver') return 'driver-license';
+        return v;
+      };
+
+      // Map numeric city id to city name using loaded `cities` list when available
+      const mapCityById = (val) => {
+        if (val === undefined || val === null || val === '') return '';
+        const numeric = Number(val);
+        if (!Number.isNaN(numeric) && Array.isArray(cities) && cities.length > 0) {
+          const found = cities.find((c) => Number(c.id) === numeric || String(c.id) === String(val));
+          if (found) return found.name;
+        }
+        return String(val);
+      };
+
       const mapped = {
         // Institution fields
         institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
@@ -253,22 +274,22 @@ export default function CustomerRegistration(props) {
         title: m.ccusttitle || m.Title || '',
         nationality: m.cou_id ? String(m.cou_id) : (m.NatCode ? String(m.NatCode) : (m.Country || '')),
         tribe: m.tribe || '',
-        levelOfEducation: m.levelOfEducation || '',
+        levelOfEducation: m.levelOfEducation || m.levelofedu || '',
         dateOfBirth: m.ddatebirth && m.ddatebirth !== '1900-01-01T00:00:00' ? (String(m.ddatebirth).split('T')[0]) : (m.DOB || ''),
         dateJoined: m.datejoin || m.DateJoin || '',
         gender: (typeof m.gender === 'boolean') ? (m.gender ? '1' : '2') : (m.gender ? String(m.gender) : ''),
         maritalStatus: m.Marital ? String(m.Marital) : (m.marital ? String(m.marital) : ''),
-        idType: m.IDType ? String(m.IDType) : (m.idtype ? String(m.idtype) : ''),
+        idType: mapIdTypeToOption(m.IDType ?? m.idtype),
         idNumber: m.IDNumber || m.cpassno || m.idNumber || '',
         placeIssue: m.PlaceIssued || m.cplacissue || '',
         dateIssued: m.DateIssue && m.DateIssue !== '1900-01-01T00:00:00' ? String(m.DateIssue).split('T')[0] : (m.ddateissue && m.ddateissue !== '1900-01-01T00:00:00' ? String(m.ddateissue).split('T')[0] : ''),
         expiryDate: m.DateExpire && m.DateExpire !== '1900-01-01T00:00:00' ? String(m.DateExpire).split('T')[0] : (m.ddateexpire && m.ddateexpire !== '1900-01-01T00:00:00' ? String(m.ddateexpire).split('T')[0] : ''),
         povertyLevel: m.povertyLevel || '',
-        region: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
-        district: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
-        ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+        region: m.Region ? String(m.Region) : (m.region ? String(m.region) : (m.nregion ? String(m.nregion) : '')),
+        district: m.District ? String(m.District) : (m.district ? String(m.district) : (m.ndist ? String(m.ndist) : '')),
+        ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : (m.nward ? String(m.nward) : '')),
         country: m.Country || (m.cou_id ? String(m.cou_id) : ''),
-        city: m.City || m.city || '',
+        city: m.City || m.city || mapCityById(m.ncity) || '',
         address: m.caddr1 || m.Street || m.address || '',
         mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
         emailAddress: m.cemail || m.Email || '',
@@ -291,27 +312,27 @@ export default function CustomerRegistration(props) {
         employmentMobilePhone: m.employmentMobilePhone || '',
         employmentEmailAddress: m.employmentEmailAddress || '',
         employmentNumber: m.payroll_id || m.StaffNo || m.employmentNumber || '',
-        designation: m.designation || '',
-        department: m.department || '',
-        yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || '',
-        currentSalary: m.Salary || m.currentSalary || '',
+        designation: m.designation || m.nDesig || '',
+        department: m.department || m.ndept || '',
+        yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || m.nyears || '',
+        currentSalary: m.Salary || m.nSal || m.currentSalary || '',
 
         // Biometric / files
-        biometricPhotoName: m.MemberPictureName || m.biometricPhotoName || '',
-        biometricSignatureName: m.MemberSignatureName || m.biometricSignatureName || '',
+        biometricPhotoName: m.MemberPictureName || m.biometricPhotoName || m.memPict || m.memPictName || '',
+        biometricSignatureName: m.MemberSignatureName || m.biometricSignatureName || m.memsign || m.memSign || '',
 
         // Financial / membership
         registrationFee: m.RegFee || m.registrationFee || '',
         contributionAccountNumber: m.contributionAccountNumber || '',
         contributionAccountName: m.contributionAccountName || '',
-        sharePrice: m.SharePrice || m.sharePrice || '',
+        sharePrice: m.SharePrice || m.nSharePrice || m.sharePrice || '',
         sharesPurchase: m.Shares || m.sharesPurchase || '',
         shareValue: m.shareValue || '',
         savingMode: m.SaveType ? (m.SaveType ? 'fixed' : '') : (m.savingMode || ''),
-        savingAmount: m.SaveAmount || m.savingAmount || '',
+        savingAmount: m.SaveAmount || m.nSaveAmt || m.savingAmount || '',
         accountSignatory: !!m.accountSignatory,
         deductedFromSourcePayroll: !!m.deductedFromSourcePayroll,
-        residency: (m.Residents === true || m.residency) ? 'resident' : '',
+        residency: (m.Residents === true || m.residents === true || m.residency) ? 'resident' : '',
 
         // Institution officers / signatories
         chairName: m.ChairName || m.chairName || '',
@@ -342,12 +363,28 @@ export default function CustomerRegistration(props) {
         referenceDetailsEmailAddress: m.Ref1Mail || m.referenceDetailsEmailAddress || '',
 
         // Signatories / defaults
-        signatory1: m.Sign1 || m.signatory1 || '',
+        signatory1: m.cSignatory || m.Sign1 || m.signatory1 || '',
         signatory3: m.Sign3 || m.signatory3 || '',
         defaultBatch: m.BatId || m.defaultBatch || '',
       };
 
+      // If backend returned inline base64 in the biometric name fields, don't put that huge string
+      // into the file-name form fields — replace with a friendly placeholder and set preview separately.
+      if (isLikelyBase64Image(mapped.biometricPhotoName)) mapped.biometricPhotoName = 'server-photo.jpg';
+      if (isLikelyBase64Image(mapped.biometricSignatureName)) mapped.biometricSignatureName = 'server-signature.png';
+
       setFormData((prev) => ({ ...prev, ...mapped }));
+      // If backend returned inline base64 images (or data URLs), convert and set previews
+      try {
+        const maybePhoto = m.memPict || m.MemberPicture || mapped.biometricPhotoName || '';
+        const maybeSign = m.memsign || m.MemberSignature || mapped.biometricSignatureName || '';
+        const photoUrl = toDataUrl(maybePhoto);
+        const signUrl = toDataUrl(maybeSign);
+        if (photoUrl) setPhotoPreviewUrl(photoUrl);
+        if (signUrl) setSignaturePreviewUrl(signUrl);
+      } catch {
+        // ignore preview generation errors
+      }
       setIsExistingMember(true);
       // Populate additional next-of-kins and references if present in response
       if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
@@ -442,7 +479,23 @@ export default function CustomerRegistration(props) {
         secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
         secretaryAccountSignatory: !!(m.SecSign || m.secretaryAccountSignatory),
       };
+
+      // Sanitize any inline base64 images from the institution response so they don't appear as text
+      if (isLikelyBase64Image(mappedInstitution.biometricPhotoName)) mappedInstitution.biometricPhotoName = 'server-photo.jpg';
+      if (isLikelyBase64Image(mappedInstitution.biometricSignatureName)) mappedInstitution.biometricSignatureName = 'server-signature.png';
+
       setFormData((prev) => ({ ...prev, ...mappedInstitution }));
+      // If backend returned inline base64 images (or data URLs), convert and set previews
+      try {
+        const maybePhoto = m.memPict || m.MemberPicture || mappedInstitution.biometricPhotoName || '';
+        const maybeSign = m.memsign || m.MemberSignature || mappedInstitution.biometricSignatureName || '';
+        const photoUrl = toDataUrl(maybePhoto);
+        const signUrl = toDataUrl(maybeSign);
+        if (photoUrl) setPhotoPreviewUrl(photoUrl);
+        if (signUrl) setSignaturePreviewUrl(signUrl);
+      } catch {
+        // ignore preview generation errors
+      }
       setIsExistingMember(true);
       setStatusError(false);
       setStatusMessage('Institution data loaded. Edit fields as needed.');
@@ -464,6 +517,33 @@ export default function CustomerRegistration(props) {
         'viceChairName','viceChairTIN','viceChairMobilePhone','viceChairEmailAddress','viceChairAccountSignatory',
         'treasurerName','treasurerTIN','treasurerMobilePhone','treasurerEmailAddress','treasurerAccountSignatory',
         'secretaryName','secretaryTIN','secretaryMobilePhone','secretaryEmailAddress','secretaryAccountSignatory'
+      ];
+      const next = { ...prev };
+      keysToReset.forEach((k) => {
+        next[k] = initialForm[k] !== undefined ? initialForm[k] : '';
+      });
+      return next;
+    });
+    // Also clear any individual form fields when clearing institution search
+    clearIndividualFields();
+  };
+
+  const clearIndividualFields = () => {
+    setIndividualSearchCode('');
+    setStatusMessage('');
+    setIsExistingMember(false);
+    setFormData((prev) => {
+      const keysToReset = [
+        'firstName','middleName','surname','memberCode','branch','institutionBranch','memberEmployed','sendSms','registerMobileWallet',
+        'title','nationality','tribe','levelOfEducation','dateOfBirth','dateJoined','gender','maritalStatus','idType',
+        'idNumber','placeIssue','dateIssued','expiryDate','povertyLevel','region','district','ward','country','city','address',
+        'mobilePhoneNumber','emailAddress','refereeName','refereeAddress','refereeMobilePhone','refereeEmailAddress',
+        'nextOfKinName','nextOfKinAddress','nextOfKinRelationship','nextOfKinMobilePhone','employer','employmentCountry',
+        'employmentCity','employmentAddress','employmentMobilePhone','employmentEmailAddress','employmentNumber','designation',
+        'department','yearsWithCurrentEmployment','currentSalary','biometricPhotoName','biometricSignatureName','registrationFee',
+        'contributionAccountNumber','contributionAccountName','sharePrice','sharesPurchase','shareValue','savingMode','savingAmount',
+        'accountSignatory','deductedFromSourcePayroll','residency','referenceDetailsName','referenceDetailsAddress','referenceDetailsMobilePhone',
+        'referenceDetailsEmailAddress','signatory1','signatory3','defaultBatch','printReceipt'
       ];
       const next = { ...prev };
       keysToReset.forEach((k) => {
@@ -517,6 +597,34 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       row.memberCode || row.clientCode || row.ccustcode || row.custcode || Math.random(),
   };
 }
+
+  // Convert raw base64 (or data URL) into a safe data URL for <img src>
+  const toDataUrl = (base64) => {
+    if (!base64) return '';
+    let s = String(base64).trim();
+    if (!s) return '';
+    if (s.startsWith('data:')) return s;
+    // Strip any accidental data: prefix
+    s = s.replace(/^data:.*;base64,/, '');
+    const prefix = s.slice(0, 4);
+    let mime = 'image/jpeg';
+    if (prefix === 'iVBO' || prefix === 'iVBOR') mime = 'image/png';
+    else if (prefix === '/9j/' || prefix === '/9j') mime = 'image/jpeg';
+    else if (prefix === 'R0lG') mime = 'image/gif';
+    return `data:${mime};base64,${s}`;
+  };
+
+  // Heuristic to detect inline base64 image payloads so we don't show them as "file names" in the UI
+  const isLikelyBase64Image = (val) => {
+    if (!val) return false;
+    const s = String(val).trim();
+    if (s.length < 30) return false;
+    // JPEG, PNG, GIF signatures or long base64-like strings
+    if (s.startsWith('/9j') || s.startsWith('iVBOR') || s.startsWith('R0lG')) return true;
+    // If the string is long and contains only base64 chars (plus padding), treat it as base64
+    const t = s.replace(/\s+/g, '');
+    return t.length > 100 && /^[A-Za-z0-9+/=]+$/.test(t);
+  };
 
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
@@ -1271,7 +1379,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !individualSearchCode} sx={{ backgroundColor: '#667eea' }}>
                         {loadingMemberDetails ? 'Searching...' : 'Search'}
                       </Button>
-                      <Button variant="outlined" onClick={() => { setIndividualSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
+                      <Button variant="outlined" onClick={clearIndividualFields}>
                         Clear
                       </Button>
                     </Box>
