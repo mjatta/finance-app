@@ -1378,6 +1378,55 @@ const getMemberDetailsApiPlugin = () => ({
   },
 })
 
+// Update Member Details API Plugin (dev server middleware)
+const updateMemberDetailsApiPlugin = () => ({
+  name: 'update-member-details-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/UpdateMemberDeatails/update', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST') {
+          // Read body
+          let body = ''
+          req.on('data', (chunk) => { body += chunk.toString() })
+          req.on('end', async () => {
+            try {
+              const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/UpdateMemberDeatails/update'
+              const backendRes = await fetch(backendUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: body,
+              })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+          })
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process update member details.' }))
+      }
+    })
+  },
+})
+
 const saveLoanGuarantorApiPlugin = () => ({
   name: 'save-loan-guarantor-api-plugin',
   configureServer(server) {
@@ -2270,6 +2319,7 @@ export default defineConfig({
     usersApiPlugin(),
     remoteMemberDetailsApiPlugin(),
     getMemberDetailsApiPlugin(),
+    updateMemberDetailsApiPlugin(),
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),
     trialBalanceApiPlugin(),
@@ -2336,6 +2386,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/getmemberdetails/, '/api/getmemberdetails'),
+      },
+      '/api/UpdateMemberDeatails/update': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/UpdateMemberDeatails\/update/, '/api/UpdateMemberDeatails/update'),
       },
       '/api/remote-member-activate': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

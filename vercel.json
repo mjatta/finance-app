@@ -67,6 +67,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/getmemberdetails/:path*"
     },
     {
+      "source": "/api/UpdateMemberDeatails/update",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/UpdateMemberDeatails/update"
+    },
+    {
       "source": "/api/remote-member-activate",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Member4Activate/GetMember4Activate"
     },

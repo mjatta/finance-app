@@ -196,6 +196,7 @@ export default function CustomerRegistration(props) {
   }, []);
 
   const [searchCode, setSearchCode] = useState('');
+  const [isExistingMember, setIsExistingMember] = useState(false);
 
   const handleFillFromMember = async () => {
     if (!searchCode) return setStatusMessage('Enter member code to search');
@@ -342,6 +343,7 @@ export default function CustomerRegistration(props) {
       };
 
       setFormData((prev) => ({ ...prev, ...mapped }));
+      setIsExistingMember(true);
       // Populate additional next-of-kins and references if present in response
       if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
         setAdditionalNextOfKins(m.nextOfKins.map((k, idx) => ({
@@ -774,6 +776,183 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }
   };
 
+  const handleUpdateCustomer = async () => {
+    if (!isExistingMember || isSaving) return;
+
+    // Similar to save: validate minimal fields then build payload and POST to update endpoint
+    setIsSaving(true);
+    setFieldErrors({});
+    setStatusMessage('');
+    setStatusError(false);
+
+    // Convert uploaded images to base64
+    const fileToBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
+    const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+
+    try {
+      const payload = mainTab === 0
+        ? buildIndividualPayload(formData, countries, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId })
+        : buildInstitutionPayload(formData, institutionBranches, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId });
+
+      payload.MemberPicture = pictureBase64;
+      payload.MemberSignature = signatureBase64;
+      // Add EditedBy: current user
+      payload.EditedBy = useAuthStore.getState().user?.username || (typeof document !== 'undefined' ? (document.cookie.split('; ').find(c=>c.startsWith('user=')) ? JSON.parse(decodeURIComponent(document.cookie.split('; ').find(c=>c.startsWith('user=')).split('=')[1])).username : '') : '');
+
+      // Transform payload to backend expected shape
+      const toBool = (v) => (v === true || v === 'true' || v === 1 || v === '1');
+      const ensureDateTime = (d) => {
+        if (!d) return '';
+        if (String(d).includes('T')) return d;
+        return `${d}T00:00:00`;
+      };
+
+      const updatePayload = {
+        ccustcode: formData.memberCode || payload.memberCode || '',
+        ccustfname: formData.firstName || payload.FName || '',
+        ccustmname: formData.middleName || payload.MName || '',
+        ccustlname: formData.surname || payload.LName || '',
+
+        employed: !!payload.Employed,
+
+        ccusttitle: Number(payload.Title) || 0,
+        natcode: Number(payload.NatCode) || (formData.country || 0),
+
+        ddatebirth: ensureDateTime(payload.DOB || formData.dateOfBirth),
+        datejoin: ensureDateTime(payload.DateJoin || formData.dateJoined),
+
+        gender: toBool(formData.gender) || toBool(payload.gender),
+        marital: Number(payload.Marital) || Number(formData.maritalStatus) || 0,
+
+        idtype: Number(payload.IDType) || Number(formData.idType) || 0,
+        cpassno: payload.IDNumber || formData.idNumber || '',
+        cplacissue: payload.PlaceIssued || formData.placeIssue || '',
+
+        ddateissue: ensureDateTime(payload.DateIssue || formData.dateIssued),
+        ddateexpire: ensureDateTime(payload.DateExpire || formData.expiryDate),
+
+        nregion: Number(payload.Region) || Number(formData.region) || 0,
+        ndist: Number(payload.District) || Number(formData.district) || 0,
+        nward: Number(payload.Ward) || Number(formData.ward) || 0,
+
+        residents: !!payload.Residents,
+        cust_type: payload.CustType || 'C',
+
+        cou_id: Number(formData.country) || Number(payload.Country) || 0,
+        ncity: Number(payload.City) || 0,
+
+        cstreet: payload.Street || formData.address || '',
+        ctel: payload.Tel || formData.mobilePhoneNumber || '',
+        ctel1: payload.Tel1 || formData.tel1 || '',
+        cemail: payload.Email || formData.emailAddress || '',
+
+        cname1: formData.refereeName || payload.RefName || '',
+        caddr1: formData.refereeAddress || payload.RefAddress || '',
+        cMobile1: formData.refereeMobilePhone || payload.RefMobile || '',
+        cEmail1: formData.refereeEmailAddress || payload.RefEmail || '',
+
+        cName2: formData.nextOfKinName || '',
+        cAddr2: formData.nextOfKinAddress || '',
+        nRel: formData.nextOfKinRelationship || '',
+        cMobile2: formData.nextOfKinMobilePhone || '',
+
+        nEmployer: Number(formData.employer) || Number(payload.Employer) || 0,
+        cstaffno: formData.employmentNumber || payload.StaffNo || '',
+
+        nDesig: Number(formData.designation) || 0,
+        nDept: Number(formData.department) || 0,
+
+        nYears: Number(formData.yearsWithCurrentEmployment) || 0,
+        nSal: Number(formData.currentSalary) || 0,
+
+        nRegFee: Number(payload.RegFee) || Number(formData.registrationFee) || 0,
+        nSharePrice: Number(payload.SharePrice) || Number(formData.sharePrice) || 0,
+
+        nShares: Number(payload.Shares) || Number(formData.sharesPurchase) || 0,
+
+        nSaveAmt: Number(payload.SaveAmount) || Number(formData.savingAmount) || 0,
+        nSaveType: !!payload.SaveType,
+
+        cSignatory: payload.Signatory || formData.signatory1 || '',
+
+        modepay: !!formData.deductedFromSourcePayroll,
+
+        branch_id: Number(formData.institutionBranch) || useAuthStore.getState().user?.BranchId || 0,
+        bat_id: Number(payload.BatId) || 0,
+
+        memPict: pictureBase64 || null,
+        memsign: signatureBase64 || null,
+
+        levelofedu: Number(formData.levelOfEducation) || 0,
+        tribe: Number(formData.tribe) || 0,
+        povertylevel: Number(formData.povertyLevel) || 0,
+
+        EditedBy: payload.EditedBy || (useAuthStore.getState().user?.username || ''),
+      };
+
+      const url = getFullApiUrl('/api/UpdateMemberDeatails/update');
+      // Log payload for debugging (inspect in browser console / server logs)
+      // eslint-disable-next-line no-console
+      console.log('UpdateMemberDeatails payload:', updatePayload, 'url:', url);
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload),
+      });
+
+      // Capture response text for better error reporting and debugging
+      const resText = await res.text().catch(() => '');
+      // eslint-disable-next-line no-console
+      console.log('UpdateMemberDeatails response status:', res.status, 'body:', resText);
+
+      if (!res.ok) {
+        let parsed = {};
+        try {
+          parsed = JSON.parse(resText || '{}');
+        } catch (e) {
+          // ignore parse error
+        }
+        throw new Error(parsed.message || `Update failed (${res.status}) - ${resText}`);
+      }
+
+      let result = {};
+      try {
+        result = JSON.parse(resText || '{}');
+      } catch (e) {
+        result = {};
+      }
+
+      setStatusMessage('Customer updated successfully.');
+      setStatusError(false);
+      notifySaveSuccess({ page: 'Customer Administration / Registration', action: 'Update Customer', message: 'Customer updated successfully.', metadata: updatePayload });
+
+      // Update recent member data for printing if available
+      if (result) {
+        const memberData = formatRecentMemberRow(result, institutionBranches);
+        setRecentMember({ ...result, ...memberData });
+      }
+
+    } catch (err) {
+      setStatusMessage(err.message || 'Failed to update customer');
+      setStatusError(true);
+      notifySaveError({ page: 'Customer Administration / Registration', action: 'Update Customer', message: 'Failed to update customer', error: err, metadata: null });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handlePrintReceipt = () => {
     if (!recentMember) {
       setStatusMessage('Please save a registration before printing receipt.');
@@ -895,7 +1074,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !searchCode} sx={{ backgroundColor: '#667eea' }}>
           {loadingMemberDetails ? 'Searching...' : 'Search'}
         </Button>
-        <Button variant="outlined" onClick={() => { setSearchCode(''); setStatusMessage(''); }}>
+        <Button variant="outlined" onClick={() => { setSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
           Clear
         </Button>
       </Box>
@@ -2297,7 +2476,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             <Button
               variant="contained"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || isExistingMember}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },
@@ -2309,6 +2488,17 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             >
               {isSaving ? 'Saving...' : '💾 Save'}
             </Button>
+            {isExistingMember && (
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleUpdateCustomer}
+                disabled={isSaving}
+                sx={{ backgroundColor: '#2e7d32', '&:hover': { backgroundColor: '#276c2a' }, fontWeight: 600, paddingX: 3 }}
+              >
+                {isSaving ? 'Updating...' : '🔄 Update Customer'}
+              </Button>
+            )}
             <Button variant="outlined" onClick={handlePrintReceipt}>
               🖨️ Print Receipt
             </Button>
