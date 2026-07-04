@@ -225,15 +225,7 @@ export default function CustomerRegistration(props) {
       }
 
       // Map response fields to formData keys (best-effort, follow payload builders)
-      // Map backend idtype numeric codes to UI option values
-      const mapIdTypeToOption = (val) => {
-        const v = String(val ?? '').trim();
-        if (!v) return '';
-        if (v === '1' || v.toLowerCase() === 'national-id' || v === 'nat') return 'national-id';
-        if (v === '2' || v.toLowerCase() === 'passport') return 'passport';
-        if (v === '3' || v.toLowerCase() === 'driver-license' || v === 'driver') return 'driver-license';
-        return v;
-      };
+      
 
       // Map numeric city id to city name using loaded `cities` list when available
       const mapCityById = (val) => {
@@ -244,6 +236,42 @@ export default function CustomerRegistration(props) {
           if (found) return found.name;
         }
         return String(val);
+      };
+
+      const mapDesignationCode = (val) => {
+        if (val === undefined || val === null || val === '') return '';
+        const n = Number(val);
+        if (Number.isNaN(n)) return String(val);
+        switch (n) {
+          case 1:
+            return 'manager';
+          case 2:
+            return 'supervisor';
+          case 3:
+            return 'officer';
+          case 4:
+            return 'assistant';
+          default:
+            return String(val);
+        }
+      };
+
+      const mapDepartmentCode = (val) => {
+        if (val === undefined || val === null || val === '') return '';
+        const n = Number(val);
+        if (Number.isNaN(n)) return String(val);
+        switch (n) {
+          case 1:
+            return 'finance';
+          case 2:
+            return 'operations';
+          case 3:
+            return 'hr';
+          case 4:
+            return 'it';
+          default:
+            return String(val);
+        }
       };
 
       const mapped = {
@@ -312,8 +340,9 @@ export default function CustomerRegistration(props) {
         employmentMobilePhone: m.employmentMobilePhone || '',
         employmentEmailAddress: m.employmentEmailAddress || '',
         employmentNumber: m.payroll_id || m.StaffNo || m.employmentNumber || '',
-        designation: m.designation || m.nDesig || '',
-        department: m.department || m.ndept || '',
+        // Prefer legacy numeric fields from backend: nDesig maps to designation, ndept maps to department
+        designation: mapDesignationCode(m.nDesig ?? m.designation),
+        department: mapDepartmentCode(m.ndept ?? m.department),
         yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || m.nyears || '',
         currentSalary: m.Salary || m.nSal || m.currentSalary || '',
 
@@ -437,47 +466,64 @@ export default function CustomerRegistration(props) {
         institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
         // Prefer backend `ccustname` when present, fall back to other name fields
         institutionName: m.ccustname || m.CustName || m.custname || '',
-        institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
+        // Biz category / nature
+        institutionNature: m.BizCategory || m.bizcategory || m.bizcat || m.institutionNature || '',
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
         institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
-        institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
-        institutionTIN: m.Tin || m.tin || m.tinno || '',
+        // Incorporation number/code and date (legacy INCORPC / INCORPD)
+        institutionIncoporationNumber: m.IncorporationNo || m.incoporationNo || m.INCORPC || m.INCORP || '',
+        institutionTIN: m.Tin || m.tin || m.tinno || m.tin || '',
         // Map backend INCORPD (legacy) to incorporation date if provided
-        institutionIncoporationDate: m.INCORPD || m.IncorporationDate || m.incorporationDate || '',
+        institutionIncoporationDate: m.INCORPD || m.INCORPD || m.IncorporationDate || m.incorporationDate || '',
         institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
-        institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
-        institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
-        institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+        // Prefer numeric legacy fields nregion / ndist / nward
+        institutionRegion: m.nregion ? String(m.nregion) : (m.Region ? String(m.Region) : (m.region ? String(m.region) : '')),
+        institutionDistrict: m.ndist ? String(m.ndist) : (m.District ? String(m.District) : (m.district ? String(m.district) : '')),
+        institutionWard: m.nward ? String(m.nward) : (m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : '')),
         institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
         // Common contact/address mappings
         address: m.cstreet || m.Street || m.caddr1 || m.caddr || m.address || '',
         mobilePhoneNumber: m.ctel || m.cmobile1 || m.cmobile || m.Tel || '',
         tel1: m.ctel1 || m.Tel1 || '',
         emailAddress: m.cemail || m.cemail1 || m.Email || m.Mail || '',
+        // Primary referee / reference mapping (ref1)
+        referenceDetailsName: m.ref1name || m.Ref1Name || m.ref1Name || '',
+        referenceDetailsAddress: m.ref1addr || m.Ref1Addr || m.ref1Addr || m.ref1address || '',
+        referenceDetailsMobilePhone: m.ref1tel || m.Ref1Tel || m.ref1tel || '',
+        referenceDetailsEmailAddress: m.ref1mail || m.Ref1Mail || '',
         // Signatories and administrative fields
-        signatory1: m.cSignatory || m.Sign1 || m.signatory1 || '',
+        signatory1: m.sign1 || m.cSignatory || m.Sign1 || m.signatory1 || '',
+        signatory2: m.sign2 || m.Sign2 || '',
+        signatory3: m.sign3 || m.Sign3 || m.signatory3 || '',
+        signatory4: m.sign4 || m.Sign4 || '',
         defaultBatch: m.BatId || m.bat_id || m.defaultBatch || '',
         // Institution officer mappings (if present)
-        chairName: m.ChairName || m.chairName || '',
-        chairTIN: m.ChairTin || m.chairTIN || m.ChairTIN || '',
-        chairMobilePhone: m.ChairTel || m.chairMobilePhone || '',
-        chairEmailAddress: m.ChairMail || m.chairEmailAddress || '',
+        chairName: m.chairname || m.ChairName || m.chairName || '',
+        chairTIN: m.chairtin || m.ChairTin || m.chairTIN || '',
+        chairMobilePhone: m.chairtel || m.ChairTel || m.chairMobilePhone || '',
+        chairEmailAddress: m.chairmail || m.ChairMail || m.chairEmailAddress || '',
         chairAccountSignatory: !!(m.ChairSign || m.chairAccountSignatory),
-        viceChairName: m.ViceName || m.viceChairName || '',
-        viceChairTIN: m.ViceTin || m.viceChairTIN || '',
-        viceChairMobilePhone: m.ViceTel || m.viceChairMobilePhone || '',
-        viceChairEmailAddress: m.ViceMail || m.viceChairEmailAddress || '',
-        viceChairAccountSignatory: !!(m.ViceSign || m.viceChairAccountSignatory),
-        treasurerName: m.TreasurerName || m.treasurerName || '',
-        treasurerTIN: m.TreasurerTin || m.treasurerTIN || '',
-        treasurerMobilePhone: m.TreasurerTel || m.treasurerMobilePhone || '',
-        treasurerEmailAddress: m.TreasurerMail || m.treasurerEmailAddress || '',
+        viceChairName: m.vcname || m.ViceName || m.viceChairName || '',
+        viceChairTIN: m.vctin || m.ViceTin || m.viceChairTIN || '',
+        viceChairMobilePhone: m.vctel || m.ViceTel || m.viceChairMobilePhone || '',
+        viceChairEmailAddress: m.vcmail || m.ViceMail || m.viceChairEmailAddress || '',
+        viceChairAccountSignatory: !!(m.ViceSign || m.vcsign || m.viceChairAccountSignatory),
+        treasurerName: m.treaname || m.TreasurerName || m.treasurerName || '',
+        treasurerTIN: m.treatin || m.TreasurerTin || m.treasurerTIN || '',
+        treasurerMobilePhone: m.treatel || m.TreasurerTel || m.treasurerMobilePhone || '',
+        treasurerEmailAddress: m.treamail || m.TreasurerMail || m.treasurerEmailAddress || '',
         treasurerAccountSignatory: !!(m.TreasurerSign || m.treasurerAccountSignatory),
-        secretaryName: m.SecName || m.secretaryName || '',
-        secretaryTIN: m.SecTin || m.secretaryTIN || '',
-        secretaryMobilePhone: m.SecTel || m.secretaryMobilePhone || '',
-        secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
+        secretaryName: m.secname || m.SecName || m.secretaryName || '',
+        secretaryTIN: m.sectin || m.SecTin || m.secretaryTIN || '',
+        secretaryMobilePhone: m.sectel || m.SecTel || m.secretaryMobilePhone || '',
+        secretaryEmailAddress: m.secmail || m.SecMail || m.secretaryEmailAddress || '',
         secretaryAccountSignatory: !!(m.SecSign || m.secretaryAccountSignatory),
+        // Financial/membership defaults
+        registrationFee: m.nRegFee || m.RegFee || 0,
+        savingAmount: m.nSaveAmt || m.nSaveAmt || 0,
+        savingMode: m.nSaveType ? 'fixed' : (m.nSaveType === false ? '' : (m.nSaveType || m.savingMode || '')),
+        sharePrice: m.nSharePrice || m.nSharePrice || 0,
+        sharesPurchase: m.nShares || m.nShares || 0,
       };
 
       // Sanitize any inline base64 images from the institution response so they don't appear as text
@@ -485,6 +531,39 @@ export default function CustomerRegistration(props) {
       if (isLikelyBase64Image(mappedInstitution.biometricSignatureName)) mappedInstitution.biometricSignatureName = 'server-signature.png';
 
       setFormData((prev) => ({ ...prev, ...mappedInstitution }));
+      // Populate additionalReferences from legacy ref1..ref4 fields when present
+      try {
+        const refs = [];
+        for (let i = 1; i <= 4; i += 1) {
+          const name = (m[`ref${i}name`] || m[`Ref${i}Name`] || m[`ref${i}Name`] || '').toString().trim();
+          const address = (m[`ref${i}addr`] || m[`ref${i}address`] || m[`Ref${i}Addr`] || '').toString().trim();
+          const email = (m[`ref${i}mail`] || m[`Ref${i}Mail`] || '').toString().trim();
+          const phone = (m[`ref${i}tel`] || m[`Ref${i}Tel`] || '').toString().trim();
+          if (name || address || email || phone) {
+            refs.push({ id: Date.now() + i, name, address, mobilePhone: phone, emailAddress: email });
+          }
+        }
+        if (refs.length > 0) setAdditionalReferences(refs);
+      } catch {
+        // ignore
+      }
+
+        // Populate Group Members if returned by backend (common legacy key: GroupMembers)
+        try {
+          const gmRaw = m.GroupMembers || m.groupMembers || m.GroupMember || m.groupMember || null;
+          if (Array.isArray(gmRaw) && gmRaw.length > 0) {
+            const mappedGm = gmRaw.map((g, idx) => ({
+              id: Date.now() + idx,
+              firstName: (g.MemFname || g.firstName || g.fname || '').toString().trim(),
+              middleName: (g.MemMname || g.middleName || g.mname || '').toString().trim(),
+              lastName: (g.MemLname || g.lastName || g.lname || '').toString().trim(),
+              phoneNumber: (g.PhoneNumber || g.phone || g.tel || '').toString().trim(),
+            }));
+            if (mappedGm.length > 0) setGroupMembers(mappedGm);
+          }
+        } catch {
+          // ignore
+        }
       // If backend returned inline base64 images (or data URLs), convert and set previews
       try {
         const maybePhoto = m.memPict || m.MemberPicture || mappedInstitution.biometricPhotoName || '';
@@ -624,6 +703,30 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     // If the string is long and contains only base64 chars (plus padding), treat it as base64
     const t = s.replace(/\s+/g, '');
     return t.length > 100 && /^[A-Za-z0-9+/=]+$/.test(t);
+  };
+
+  // Map backend idtype numeric codes to UI option values
+  const mapIdTypeToOption = (val) => {
+    if (val === undefined || val === null) return '';
+    if (Number(val) === 0) return '';
+    const v = String(val).trim();
+    if (!v) return '';
+    if (v === '1' || v.toLowerCase() === 'national-id' || v === 'nat') return 'national-id';
+    if (v === '2' || v.toLowerCase() === 'passport') return 'passport';
+    if (v === '3' || v.toLowerCase() === 'driver-license' || v === 'driver') return 'driver-license';
+    return v;
+  };
+
+  // Map UI option values back to numeric codes for backend payloads
+  const mapOptionToIdType = (val) => {
+    if (val === undefined || val === null || val === '') return 0;
+    const n = Number(val);
+    if (!Number.isNaN(n) && n > 0) return n;
+    const s = String(val).trim().toLowerCase();
+    if (s === 'national-id' || s === 'nat') return 1;
+    if (s === 'passport') return 2;
+    if (s === 'driver-license' || s === 'driver') return 3;
+    return 0;
   };
 
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
@@ -1045,7 +1148,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         gender: toBool(formData.gender) || toBool(payload.gender),
         marital: Number(payload.Marital) || Number(formData.maritalStatus) || 0,
 
-        idtype: Number(payload.IDType) || Number(formData.idType) || 0,
+        // Convert UI `idType` (e.g. 'national-id') back to numeric code expected by backend
+        idtype: mapOptionToIdType(payload.IDType ?? formData.idType),
         cpassno: payload.IDNumber || formData.idNumber || '',
         cplacissue: payload.PlaceIssued || formData.placeIssue || '',
 
@@ -2425,7 +2529,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             <MenuItem value="officer">Officer</MenuItem>
                             <MenuItem value="assistant">Assistant</MenuItem>
                           </TextField>
-                          <TextField select label="Deparment" name="department" value={formData.department} onChange={handleChange}>
+                          <TextField select label="Department" name="department" value={formData.department} onChange={handleChange}>
                             <MenuItem value="">Select department</MenuItem>
                             <MenuItem value="finance">Finance</MenuItem>
                             <MenuItem value="operations">Operations</MenuItem>
