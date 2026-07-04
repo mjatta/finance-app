@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Alert,
   Backdrop,
@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
+import { useUsers } from '../../hooks/useUsers';
 import { buildTransactionListingPrintHtml } from './TransactionListing/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -103,6 +104,11 @@ const formatDate = (value) => {
 };
 
 const fullNameOf = (row) => {
+  // Try ccustname first, fall back to combination of fname/mname/lname
+  const custName = String(row?.ccustname ?? '').trim();
+  if (custName) {
+    return custName;
+  }
   const first = String(row?.ccustfname ?? '').trim();
   const middle = String(row?.ccustmname ?? '').trim();
   const last = String(row?.ccustlname ?? '').trim();
@@ -123,6 +129,7 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function TransactionListing() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { users, isLoading: usersLoading, fetchUsers } = useUsers();
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
@@ -136,6 +143,11 @@ export default function TransactionListing() {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
+
+  // Load users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const branchOptions = useMemo(
     () => {
@@ -198,7 +210,7 @@ export default function TransactionListing() {
     UserID: user || '',
     Deposit: types.deposit ? '01' : '',
     Withdrawal: types.withdrawal ? '02' : '',
-    LoanIssued: sources.loanDisbursement ? '06' : '',
+    LoanIssued: types.loanDisbursement ? '06' : '',
     LoanRepayment: sources.batchLoanRepayment ? '07' : '',
     InterestCharged: types.interestCharged ? '17' : '',
     InterestPaid: types.interestPaid ? '05' : '',
@@ -385,13 +397,34 @@ export default function TransactionListing() {
               </TextField>
 
               <TextField
+                select
                 label="User"
                 value={user}
                 onChange={(e) => setUser(e.target.value)}
                 size="small"
                 fullWidth
-                placeholder="Enter username"
-              />
+                disabled={usersLoading}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (!selected) {
+                      return 'Select a user';
+                    }
+
+                    const option = users.find((item) => item.value === selected);
+                    return option?.label || selected;
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  All Users
+                </MenuItem>
+                {users.map((item) => (
+                  <MenuItem key={item.value} value={item.value}>
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Box>
 
             <Box sx={{ mb: 2 }}>

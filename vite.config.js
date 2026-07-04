@@ -1653,6 +1653,49 @@ const loanOfficersApiPlugin = () => ({
   },
 })
 
+// Users API Plugin (dev server middleware, backend only)
+const usersApiPlugin = () => ({
+  name: 'users-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/users/list', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend only
+        if (req.method === 'GET') {
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/users/list', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch users.' }))
+      }
+    })
+  },
+})
+
 const trialBalanceApiPlugin = () => ({
   name: 'trial-balance-api-plugin',
   configureServer(server) {
@@ -2180,6 +2223,7 @@ export default defineConfig({
     loanDisbursementApiPlugin(),
     loanDisburseApiPlugin(),
     loanOfficersApiPlugin(),
+    usersApiPlugin(),
     remoteMemberDetailsApiPlugin(),
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),

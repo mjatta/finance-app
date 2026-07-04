@@ -27,6 +27,11 @@ export const buildTransactionListingPrintHtml = (data) => {
   };
 
   const getFullName = (record) => {
+    // Try ccustname first, fall back to combination of fname/mname/lname
+    const custName = record.ccustname?.trim() || '';
+    if (custName) {
+      return custName;
+    }
     const fname = record.ccustfname?.trim() || '';
     const mname = record.ccustmname?.trim() || '';
     const lname = record.ccustlname?.trim() || '';
