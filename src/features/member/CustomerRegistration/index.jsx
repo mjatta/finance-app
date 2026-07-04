@@ -26,6 +26,7 @@ import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
+import { useInstitutionDetails } from './hooks/useInstitutionDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCities } from './hooks/useCities';
 import { initialForm } from './constants/initialFormData';
@@ -195,15 +196,17 @@ export default function CustomerRegistration(props) {
     loadCountries();
   }, []);
 
-  const [searchCode, setSearchCode] = useState('');
+  const [individualSearchCode, setIndividualSearchCode] = useState('');
+  const [institutionSearchCode, setInstitutionSearchCode] = useState('');
   const [isExistingMember, setIsExistingMember] = useState(false);
+  const { fetchInstitutionDetails, loading: loadingInstitutionDetails } = useInstitutionDetails();
 
   const handleFillFromMember = async () => {
-    if (!searchCode) return setStatusMessage('Enter member code to search');
+    if (!individualSearchCode) return setStatusMessage('Enter member code to search');
     setStatusMessage('');
     try {
       // If the user entered only digits, pad to 6 characters with leading zeros (e.g., 1 -> 000001)
-      const codeToUse = String(searchCode || '').trim();
+      const codeToUse = String(individualSearchCode || '').trim();
       const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
       const resp = await fetchMemberDetails(paddedCode);
       if (!resp.success) {
@@ -368,6 +371,51 @@ export default function CustomerRegistration(props) {
     } catch (err) {
       setStatusError(true);
       setStatusMessage(err.message || 'Failed to load member details');
+    }
+  };
+
+  const handleFillFromInstitution = async () => {
+    if (!institutionSearchCode) return setStatusMessage('Enter institution code to search');
+    setStatusMessage('');
+    try {
+      const codeToUse = String(institutionSearchCode || '').trim();
+      const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
+      const resp = await fetchInstitutionDetails(paddedCode);
+      if (!resp.success) {
+        setStatusError(true);
+        setStatusMessage(resp.error || 'Institution not found');
+        return;
+      }
+      const m = resp.data;
+      if (!m) {
+        setStatusError(true);
+        setStatusMessage('Institution not found');
+        return;
+      }
+
+      // Map institution response fields into formData (reuse existing mapping approach)
+      const mappedInstitution = {
+        institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
+        institutionName: m.CustName || m.custname || '',
+        institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
+        institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
+        institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
+        institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
+        institutionTIN: m.Tin || m.tin || m.tinno || '',
+        institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
+        institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
+        institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
+        institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
+        institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+        institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
+      };
+      setFormData((prev) => ({ ...prev, ...mappedInstitution }));
+      setIsExistingMember(true);
+      setStatusError(false);
+      setStatusMessage('Institution data loaded. Edit fields as needed.');
+    } catch (err) {
+      setStatusError(true);
+      setStatusMessage(err.message || 'Failed to load institution details');
     }
   };
 
@@ -1063,21 +1111,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       </Box>
 
       {/* Find customer search */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', maxWidth: 840 }}>
-        <TextField
-          label="Find Customer"
-          placeholder="Enter member code"
-          size="small"
-          value={searchCode}
-          onChange={(e) => setSearchCode(e.target.value)}
-        />
-        <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !searchCode} sx={{ backgroundColor: '#667eea' }}>
-          {loadingMemberDetails ? 'Searching...' : 'Search'}
-        </Button>
-        <Button variant="outlined" onClick={() => { setSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
-          Clear
-        </Button>
-      </Box>
+      {/* Top-level search moved inside each tab */}
 
       {statusMessage && (
         <Alert
@@ -1127,6 +1161,22 @@ function formatRecentMemberRow(row, institutionBranches = []) {
               {mainTab === 0 ? (
                 <>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+                    {/* Individual tab: Find Customer */}
+                    <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <TextField
+                        label="Find Customer"
+                        placeholder="Enter member code"
+                        size="small"
+                        value={individualSearchCode}
+                        onChange={(e) => setIndividualSearchCode(e.target.value)}
+                      />
+                      <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !individualSearchCode} sx={{ backgroundColor: '#667eea' }}>
+                        {loadingMemberDetails ? 'Searching...' : 'Search'}
+                      </Button>
+                      <Button variant="outlined" onClick={() => { setIndividualSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
+                        Clear
+                      </Button>
+                    </Box>
                     <TextField
                       required
                       label="First Name"
@@ -1210,6 +1260,22 @@ function formatRecentMemberRow(row, institutionBranches = []) {
               ) : (
                 <Box sx={{ display: 'grid', gap: 2 }}>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                      {/* Institution tab: Find Customer (institution) */}
+                      <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <TextField
+                          label="Find Institution"
+                          placeholder="Enter institution code"
+                          size="small"
+                          value={institutionSearchCode}
+                          onChange={(e) => setInstitutionSearchCode(e.target.value)}
+                        />
+                        <Button variant="contained" onClick={handleFillFromInstitution} disabled={loadingInstitutionDetails || !institutionSearchCode} sx={{ backgroundColor: '#667eea' }}>
+                          {loadingInstitutionDetails ? 'Searching...' : 'Search'}
+                        </Button>
+                        <Button variant="outlined" onClick={() => { setInstitutionSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
+                          Clear
+                        </Button>
+                      </Box>
                     <TextField
                       select
                       required

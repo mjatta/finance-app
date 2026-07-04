@@ -1378,6 +1378,50 @@ const getMemberDetailsApiPlugin = () => ({
   },
 })
 
+// Direct Get Member (institution) API Plugin (dev server middleware)
+const getMemberApiPlugin = () => ({
+  name: 'get-member-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/getmember', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Preserve path and query after /api/getmember
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/getmember${req.url.replace('/api/getmember', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process getmember.' }))
+      }
+    })
+  },
+})
+
 // Update Member Details API Plugin (dev server middleware)
 const updateMemberDetailsApiPlugin = () => ({
   name: 'update-member-details-api-plugin',
@@ -2319,6 +2363,7 @@ export default defineConfig({
     usersApiPlugin(),
     remoteMemberDetailsApiPlugin(),
     getMemberDetailsApiPlugin(),
+    getMemberApiPlugin(),
     updateMemberDetailsApiPlugin(),
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),

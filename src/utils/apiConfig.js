@@ -255,6 +255,10 @@ const ENDPOINT_MAP = {
     dev: '/api/getmemberdetails',
     prod: '/api/getmemberdetails',
   },
+  'getmember': {
+    dev: '/api/getmember',
+    prod: '/api/getmember',
+  },
   'update-member-details': {
     dev: '/api/UpdateMemberDeatails/update',
     prod: '/api/UpdateMemberDeatails/update',
