@@ -31,6 +31,7 @@ import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotificat
 import { useCities } from './hooks/useCities';
 import { initialForm } from './constants/initialFormData';
 import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
+import { useUpdateInstitution } from './hooks/useUpdateInstitution';
 import { useAuthStore } from '../../../store/authStore';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
@@ -200,6 +201,7 @@ export default function CustomerRegistration(props) {
   const [institutionSearchCode, setInstitutionSearchCode] = useState('');
   const [isExistingMember, setIsExistingMember] = useState(false);
   const { fetchInstitutionDetails, loading: loadingInstitutionDetails } = useInstitutionDetails();
+  const { updateInstitution } = useUpdateInstitution();
 
   const handleFillFromMember = async () => {
     if (!individualSearchCode) return setStatusMessage('Enter member code to search');
@@ -396,18 +398,49 @@ export default function CustomerRegistration(props) {
       // Map institution response fields into formData (reuse existing mapping approach)
       const mappedInstitution = {
         institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
-        institutionName: m.CustName || m.custname || '',
+        // Prefer backend `ccustname` when present, fall back to other name fields
+        institutionName: m.ccustname || m.CustName || m.custname || '',
         institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
         institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
         institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
         institutionTIN: m.Tin || m.tin || m.tinno || '',
-        institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
+        // Map backend INCORPD (legacy) to incorporation date if provided
+        institutionIncoporationDate: m.INCORPD || m.IncorporationDate || m.incorporationDate || '',
         institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
         institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
         institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
         institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
         institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
+        // Common contact/address mappings
+        address: m.cstreet || m.Street || m.caddr1 || m.caddr || m.address || '',
+        mobilePhoneNumber: m.ctel || m.cmobile1 || m.cmobile || m.Tel || '',
+        tel1: m.ctel1 || m.Tel1 || '',
+        emailAddress: m.cemail || m.cemail1 || m.Email || m.Mail || '',
+        // Signatories and administrative fields
+        signatory1: m.cSignatory || m.Sign1 || m.signatory1 || '',
+        defaultBatch: m.BatId || m.bat_id || m.defaultBatch || '',
+        // Institution officer mappings (if present)
+        chairName: m.ChairName || m.chairName || '',
+        chairTIN: m.ChairTin || m.chairTIN || m.ChairTIN || '',
+        chairMobilePhone: m.ChairTel || m.chairMobilePhone || '',
+        chairEmailAddress: m.ChairMail || m.chairEmailAddress || '',
+        chairAccountSignatory: !!(m.ChairSign || m.chairAccountSignatory),
+        viceChairName: m.ViceName || m.viceChairName || '',
+        viceChairTIN: m.ViceTin || m.viceChairTIN || '',
+        viceChairMobilePhone: m.ViceTel || m.viceChairMobilePhone || '',
+        viceChairEmailAddress: m.ViceMail || m.viceChairEmailAddress || '',
+        viceChairAccountSignatory: !!(m.ViceSign || m.viceChairAccountSignatory),
+        treasurerName: m.TreasurerName || m.treasurerName || '',
+        treasurerTIN: m.TreasurerTin || m.treasurerTIN || '',
+        treasurerMobilePhone: m.TreasurerTel || m.treasurerMobilePhone || '',
+        treasurerEmailAddress: m.TreasurerMail || m.treasurerEmailAddress || '',
+        treasurerAccountSignatory: !!(m.TreasurerSign || m.treasurerAccountSignatory),
+        secretaryName: m.SecName || m.secretaryName || '',
+        secretaryTIN: m.SecTin || m.secretaryTIN || '',
+        secretaryMobilePhone: m.SecTel || m.secretaryMobilePhone || '',
+        secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
+        secretaryAccountSignatory: !!(m.SecSign || m.secretaryAccountSignatory),
       };
       setFormData((prev) => ({ ...prev, ...mappedInstitution }));
       setIsExistingMember(true);
@@ -417,6 +450,27 @@ export default function CustomerRegistration(props) {
       setStatusError(true);
       setStatusMessage(err.message || 'Failed to load institution details');
     }
+  };
+
+  const clearInstitutionFields = () => {
+    setInstitutionSearchCode('');
+    setStatusMessage('');
+    setIsExistingMember(false);
+    setFormData((prev) => {
+      const keysToReset = [
+        'institutionType','institutionName','institutionNature','institutionMemberCode','institutionBranch','institutionIncoporationNumber','institutionTIN','institutionIncoporationDate','institutionDateJoined','institutionRegion','institutionDistrict','institutionWard','institutionResidency',
+        'address','mobilePhoneNumber','tel1','emailAddress','signatory1','defaultBatch',
+        'chairName','chairTIN','chairMobilePhone','chairEmailAddress','chairAccountSignatory',
+        'viceChairName','viceChairTIN','viceChairMobilePhone','viceChairEmailAddress','viceChairAccountSignatory',
+        'treasurerName','treasurerTIN','treasurerMobilePhone','treasurerEmailAddress','treasurerAccountSignatory',
+        'secretaryName','secretaryTIN','secretaryMobilePhone','secretaryEmailAddress','secretaryAccountSignatory'
+      ];
+      const next = { ...prev };
+      keysToReset.forEach((k) => {
+        next[k] = initialForm[k] !== undefined ? initialForm[k] : '';
+      });
+      return next;
+    });
   };
 
 // Helper to format row for DataGrid
@@ -951,7 +1005,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
       const url = getFullApiUrl('/api/UpdateMemberDeatails/update');
       // Log payload for debugging (inspect in browser console / server logs)
-      // eslint-disable-next-line no-console
       console.log('UpdateMemberDeatails payload:', updatePayload, 'url:', url);
 
       const res = await fetch(url, {
@@ -962,14 +1015,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
       // Capture response text for better error reporting and debugging
       const resText = await res.text().catch(() => '');
-      // eslint-disable-next-line no-console
       console.log('UpdateMemberDeatails response status:', res.status, 'body:', resText);
 
       if (!res.ok) {
         let parsed = {};
         try {
           parsed = JSON.parse(resText || '{}');
-        } catch (e) {
+        } catch {
           // ignore parse error
         }
         throw new Error(parsed.message || `Update failed (${res.status}) - ${resText}`);
@@ -978,7 +1030,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       let result = {};
       try {
         result = JSON.parse(resText || '{}');
-      } catch (e) {
+      } catch {
         result = {};
       }
 
@@ -996,6 +1048,52 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       setStatusMessage(err.message || 'Failed to update customer');
       setStatusError(true);
       notifySaveError({ page: 'Customer Administration / Registration', action: 'Update Customer', message: 'Failed to update customer', error: err, metadata: null });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateInstitution = async () => {
+    if (!isExistingMember || isSaving) return;
+    setIsSaving(true);
+    setFieldErrors({});
+    setStatusMessage('');
+    setStatusError(false);
+
+    // Convert uploaded images to base64
+    const fileToBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
+    const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+
+    try {
+      const payload = buildInstitutionPayload(formData, institutionBranches, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId });
+      payload.MemberPicture = pictureBase64;
+      payload.MemberSignature = signatureBase64;
+      payload.EditedBy = useAuthStore.getState().user?.username || '';
+
+      // Call feature-scoped hook to update institution
+      const result = await updateInstitution(payload);
+      setStatusMessage('Institution updated successfully.');
+      setStatusError(false);
+      notifySaveSuccess({ page: 'Customer Administration / Registration', action: 'Update Institution', message: 'Institution updated successfully.', metadata: payload });
+      if (result) {
+        const memberData = formatRecentMemberRow(result, institutionBranches);
+        setRecentMember({ ...result, ...memberData });
+      }
+    } catch (err) {
+      setStatusMessage(err.message || 'Failed to update institution');
+      setStatusError(true);
+      notifySaveError({ page: 'Customer Administration / Registration', action: 'Update Institution', message: 'Failed to update institution', error: err, metadata: null });
     } finally {
       setIsSaving(false);
     }
@@ -1272,7 +1370,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         <Button variant="contained" onClick={handleFillFromInstitution} disabled={loadingInstitutionDetails || !institutionSearchCode} sx={{ backgroundColor: '#667eea' }}>
                           {loadingInstitutionDetails ? 'Searching...' : 'Search'}
                         </Button>
-                        <Button variant="outlined" onClick={() => { setInstitutionSearchCode(''); setStatusMessage(''); setIsExistingMember(false); }}>
+                        <Button variant="outlined" onClick={clearInstitutionFields}>
                           Clear
                         </Button>
                       </Box>
@@ -2554,7 +2652,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             >
               {isSaving ? 'Saving...' : '💾 Save'}
             </Button>
-            {isExistingMember && (
+            {isExistingMember && mainTab === 0 && (
               <Button
                 variant="contained"
                 color="secondary"
@@ -2562,7 +2660,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 disabled={isSaving}
                 sx={{ backgroundColor: '#2e7d32', '&:hover': { backgroundColor: '#276c2a' }, fontWeight: 600, paddingX: 3 }}
               >
-                {isSaving ? 'Updating...' : '🔄 Update Customer'}
+                {isSaving ? (mainTab === 0 ? 'Updating...' : 'Updating...') : '🔄 Update Customer'}
+              </Button>
+            )}
+            {isExistingMember && mainTab === 1 && (
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleUpdateInstitution}
+                disabled={isSaving}
+                sx={{ backgroundColor: '#2e7d32', '&:hover': { backgroundColor: '#276c2a' }, fontWeight: 600, paddingX: 3 }}
+              >
+                {isSaving ? 'Updating...' : '🔄 Update Institution'}
               </Button>
             )}
             <Button variant="outlined" onClick={handlePrintReceipt}>

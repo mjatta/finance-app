@@ -1471,6 +1471,55 @@ const updateMemberDetailsApiPlugin = () => ({
   },
 })
 
+// Update Institution Member API Plugin (dev server middleware)
+const updateInstitutionApiPlugin = () => ({
+  name: 'update-institution-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/member/updateInstitutionMember', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'PUT') {
+          // Read body
+          let body = ''
+          req.on('data', (chunk) => { body += chunk.toString() })
+          req.on('end', async () => {
+            try {
+              const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/member/updateInstitutionMember'
+              const backendRes = await fetch(backendUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: body,
+              })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+          })
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process updateInstitutionMember.' }))
+      }
+    })
+  },
+})
+
 const saveLoanGuarantorApiPlugin = () => ({
   name: 'save-loan-guarantor-api-plugin',
   configureServer(server) {
@@ -2365,6 +2414,7 @@ export default defineConfig({
     getMemberDetailsApiPlugin(),
     getMemberApiPlugin(),
     updateMemberDetailsApiPlugin(),
+    updateInstitutionApiPlugin(),
     remoteMemberValidateApiPlugin(),
     loanRepaymentAccountApiPlugin(),
     trialBalanceApiPlugin(),
@@ -2431,6 +2481,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/getmemberdetails/, '/api/getmemberdetails'),
+      },
+      '/api/member/updateInstitutionMember': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/member\/updateInstitutionMember/, '/api/member/updateInstitutionMember'),
       },
       '/api/UpdateMemberDeatails/update': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

@@ -259,6 +259,10 @@ const ENDPOINT_MAP = {
     dev: '/api/getmember',
     prod: '/api/getmember',
   },
+  'update-institution-member': {
+    dev: '/api/member/updateInstitutionMember',
+    prod: '/api/member/updateInstitutionMember',
+  },
   'update-member-details': {
     dev: '/api/UpdateMemberDeatails/update',
     prod: '/api/UpdateMemberDeatails/update',
