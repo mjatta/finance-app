@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   FormControlLabel,
+  Tooltip,
   Checkbox,
   CircularProgress,
   MenuItem,
@@ -258,6 +259,10 @@ export default function LoanBalance() {
       ...prev,
       [name]: checked,
     }));
+    // If 'individual' was unchecked, clear and disable gender selections
+    if (name === 'individual' && !checked) {
+      setGender({ male: false, female: false });
+    }
   };
 
   const handleGenderChange = (event) => {
@@ -478,26 +483,35 @@ export default function LoanBalance() {
               Gender
             </Typography>
             <Box sx={{ display: 'flex', gap: 3 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={gender.male}
-                    onChange={handleGenderChange}
-                    name="male"
-                  />
-                }
-                label="Male"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={gender.female}
-                    onChange={handleGenderChange}
-                    name="female"
-                  />
-                }
-                label="Female"
-              />
+              <Tooltip title={!customerType.individual ? 'Gender applies only when Customer Type is Individual' : ''}>
+                <FormControlLabel
+                  sx={{ opacity: customerType.individual ? 1 : 0.65 }}
+                  control={
+                    <Checkbox
+                      checked={gender.male}
+                      onChange={handleGenderChange}
+                      name="male"
+                      disabled={!customerType.individual}
+                    />
+                  }
+                  label="Male"
+                />
+              </Tooltip>
+
+              <Tooltip title={!customerType.individual ? 'Gender applies only when Customer Type is Individual' : ''}>
+                <FormControlLabel
+                  sx={{ opacity: customerType.individual ? 1 : 0.65 }}
+                  control={
+                    <Checkbox
+                      checked={gender.female}
+                      onChange={handleGenderChange}
+                      name="female"
+                      disabled={!customerType.individual}
+                    />
+                  }
+                  label="Female"
+                />
+              </Tooltip>
             </Box>
           </Box>
 
