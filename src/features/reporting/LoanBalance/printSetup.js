@@ -48,20 +48,22 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
   const email = String(firstRow?.email ?? '').trim();
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-  const totals = rows.reduce((acc, row) => ({
-    loanBalance: acc.loanBalance + toNumber(row?.LoanBalance ?? row?.nbookbal),
-  }), {
+  const totals = rows.reduce((acc, row) => {
+    const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
+    return { loanBalance: acc.loanBalance + bal };
+  }, {
     loanBalance: 0,
   });
 
   const tableRows = rows.length > 0
     ? rows.map((row) => {
       const age = (row?.nage ?? row?.age ?? row?.days_outstanding ?? '0').toString().trim();
+      const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
       return `
         <tr>
           <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
           <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
-          <td class="amt">${formatAmount(row?.LoanBalance ?? row?.nbookbal)}</td>
+          <td class="amt">${formatAmount(bal)}</td>
           <td class="num">${escapeHtml(age)}</td>
         </tr>
       `;
