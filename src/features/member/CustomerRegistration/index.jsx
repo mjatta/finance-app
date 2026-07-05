@@ -135,6 +135,30 @@ export default function CustomerRegistration(props) {
   const { registerInstitution } = useRegisterInstitution();
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
+  // Map numeric city id (or legacy ncity) to the city id string that the UI dropdown expects
+  const mapCityById = (val) => {
+    if (val === undefined || val === null || val === '') return '';
+    const numeric = Number(val);
+    if (!Number.isNaN(numeric)) {
+      // If cities list is available and contains this id, return the id as string
+      if (Array.isArray(cities) && cities.length > 0) {
+        const found = cities.find((c) => Number(c.id) === numeric || String(c.id) === String(val));
+        if (found) return String(found.name || found.id);
+        // If numeric doesn't match any city id, treat it as a 1-based index into the cities list
+        if (numeric > 0 && numeric <= cities.length) {
+          const byIndex = cities[numeric - 1];
+          if (byIndex && (byIndex.name || byIndex.name === '')) return String(byIndex.name);
+        }
+      }
+      return String(numeric);
+    }
+    // If not numeric, try matching by name and return the matching id
+    if (Array.isArray(cities) && cities.length > 0) {
+      const foundByName = cities.find((c) => (c.name || '').toLowerCase() === String(val).toLowerCase());
+      if (foundByName) return String(foundByName.name);
+    }
+    return String(val);
+  };
   // If you need user, get it from props.user, else remove
   const user = props.user;
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
@@ -227,16 +251,7 @@ export default function CustomerRegistration(props) {
       // Map response fields to formData keys (best-effort, follow payload builders)
       
 
-      // Map numeric city id to city name using loaded `cities` list when available
-      const mapCityById = (val) => {
-        if (val === undefined || val === null || val === '') return '';
-        const numeric = Number(val);
-        if (!Number.isNaN(numeric) && Array.isArray(cities) && cities.length > 0) {
-          const found = cities.find((c) => Number(c.id) === numeric || String(c.id) === String(val));
-          if (found) return found.name;
-        }
-        return String(val);
-      };
+      
 
       const mapDesignationCode = (val) => {
         if (val === undefined || val === null || val === '') return '';
@@ -316,8 +331,8 @@ export default function CustomerRegistration(props) {
         region: m.Region ? String(m.Region) : (m.region ? String(m.region) : (m.nregion ? String(m.nregion) : '')),
         district: m.District ? String(m.District) : (m.district ? String(m.district) : (m.ndist ? String(m.ndist) : '')),
         ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : (m.nward ? String(m.nward) : '')),
-        country: m.Country || (m.cou_id ? String(m.cou_id) : ''),
-        city: m.City || m.city || mapCityById(m.ncity) || '',
+        country: m.cou_id ? String(m.cou_id) : (m.Country || ''),
+        city: mapCityById(m.ncity) || (m.City || m.city || ''),
         address: m.caddr1 || m.Street || m.address || '',
         mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
         emailAddress: m.cemail || m.Email || '',
@@ -482,6 +497,19 @@ export default function CustomerRegistration(props) {
         institutionWard: m.nward ? String(m.nward) : (m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : '')),
         institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
         // Common contact/address mappings
+        // Ensure dropdown-friendly IDs for country and city are set when available
+        country: m.cou_id ? String(m.cou_id) : (m.Country || ''),
+        city: (function () {
+          const raw = m.ncity ?? m.City ?? m.city ?? '';
+          const num = Number(raw);
+          if (!Number.isNaN(num) && num > 0) {
+            if (Array.isArray(cities) && cities.length > 0) return mapCityById(num);
+            // mark pending so an effect can apply when cities load
+            setPendingNcity(num);
+            return String(num);
+          }
+          return mapCityById(raw) || (m.City ? String(m.City) : '');
+        })(),
         address: m.cstreet || m.Street || m.caddr1 || m.caddr || m.address || '',
         mobilePhoneNumber: m.ctel || m.cmobile1 || m.cmobile || m.Tel || '',
         tel1: m.ctel1 || m.Tel1 || '',
@@ -736,6 +764,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
   const [touched, setTouched] = useState({});
+  const [pendingNcity, setPendingNcity] = useState(null);
 
   const [formData, setFormData] = useState(initialForm);
 
@@ -749,6 +778,23 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     if (typeof value === 'string') return !value.trim();
     return !value;
   };
+
+  // If a legacy numeric `ncity` was provided before `cities` loaded, apply it
+  // as a 1-based index into the `cities` array once cities are available.
+  useEffect(() => {
+    if (!pendingNcity) return;
+    if (!Array.isArray(cities) || cities.length === 0) return;
+    const idx = Number(pendingNcity);
+    if (Number.isNaN(idx) || idx <= 0) {
+      setPendingNcity(null);
+      return;
+    }
+    const cityObj = cities[idx - 1];
+    if (cityObj && (cityObj.name || cityObj.name === '')) {
+      setFormData((prev) => ({ ...prev, city: String(cityObj.name) }));
+    }
+    setPendingNcity(null);
+  }, [cities, pendingNcity]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
