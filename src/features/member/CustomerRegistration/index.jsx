@@ -159,6 +159,28 @@ export default function CustomerRegistration(props) {
     }
     return String(val);
   };
+  // Map numeric country id (cou_id) to country name for the nationality dropdown
+  const mapCountryById = (val) => {
+    if (val === undefined || val === null || val === '') return '';
+    const numeric = Number(val);
+    if (!Number.isNaN(numeric)) {
+      if (Array.isArray(countries) && countries.length > 0) {
+        const found = countries.find((c) => Number(c.id) === numeric || String(c.id) === String(val));
+        if (found) return String(found.name);
+        // If numeric doesn't match any id, treat as 1-based index into countries
+        if (numeric > 0 && numeric <= countries.length) {
+          const byIndex = countries[numeric - 1];
+          if (byIndex && byIndex.name) return String(byIndex.name);
+        }
+      }
+      return String(numeric);
+    }
+    if (Array.isArray(countries) && countries.length > 0) {
+      const foundByName = countries.find((c) => (c.name || '').toLowerCase() === String(val).toLowerCase());
+      if (foundByName) return String(foundByName.name);
+    }
+    return String(val);
+  };
   // If you need user, get it from props.user, else remove
   const user = props.user;
   const isReadOnlyRole = Boolean(user?.access?.readOnly);
@@ -271,6 +293,24 @@ export default function CustomerRegistration(props) {
         }
       };
 
+      const mapMaritalCode = (val) => {
+        if (val === undefined || val === null || val === '') return '';
+        const n = Number(val);
+        if (Number.isNaN(n)) return String(val).toLowerCase();
+        switch (n) {
+          case 1:
+            return 'single';
+          case 2:
+            return 'married';
+          case 3:
+            return 'divorced';
+          case 4:
+            return 'widowed';
+          default:
+            return '';
+        }
+      };
+
       const mapDepartmentCode = (val) => {
         if (val === undefined || val === null || val === '') return '';
         const n = Number(val);
@@ -295,7 +335,19 @@ export default function CustomerRegistration(props) {
         institutionName: m.CustName || m.custname || '',
         institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
-        institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
+        institutionBranch: (function () {
+          const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
+          const num = Number(raw);
+          if (!Number.isNaN(num) && num > 0) {
+            if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
+              const byIndex = institutionBranches[num - 1];
+              if (byIndex) return byIndex;
+            }
+            setPendingBranchId(num);
+            return String(num);
+          }
+          return String(raw || '');
+        })(),
         institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
         institutionTIN: m.Tin || m.tin || m.tinno || '',
         institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
@@ -315,13 +367,26 @@ export default function CustomerRegistration(props) {
         sendSms: !!m.sendSms,
         registerMobileWallet: !!m.registerMobileWallet,
         title: m.ccusttitle || m.Title || '',
-        nationality: m.cou_id ? String(m.cou_id) : (m.NatCode ? String(m.NatCode) : (m.Country || '')),
+        nationality: (function () {
+          const raw = m.cou_id ?? m.NatCode ?? m.Country ?? '';
+          const num = Number(raw);
+          if (!Number.isNaN(num) && num > 0) {
+            if (Array.isArray(countries) && countries.length > 0) {
+              const found = countries.find((c) => Number(c.id) === num || String(c.id) === String(raw));
+              if (found) return String(found.name);
+              if (num > 0 && num <= countries.length) return String(countries[num - 1].name);
+            }
+            setPendingCouId(num);
+            return String(num);
+          }
+          return mapCountryById(raw) || (m.Country || '');
+        })(),
         tribe: m.tribe || '',
         levelOfEducation: m.levelOfEducation || m.levelofedu || '',
         dateOfBirth: m.ddatebirth && m.ddatebirth !== '1900-01-01T00:00:00' ? (String(m.ddatebirth).split('T')[0]) : (m.DOB || ''),
         dateJoined: m.datejoin || m.DateJoin || '',
         gender: (typeof m.gender === 'boolean') ? (m.gender ? '1' : '2') : (m.gender ? String(m.gender) : ''),
-        maritalStatus: m.Marital ? String(m.Marital) : (m.marital ? String(m.marital) : ''),
+        maritalStatus: mapMaritalCode(m.Marital ?? m.marital),
         idType: mapIdTypeToOption(m.IDType ?? m.idtype),
         idNumber: m.IDNumber || m.cpassno || m.idNumber || '',
         placeIssue: m.PlaceIssued || m.cplacissue || '',
@@ -484,7 +549,19 @@ export default function CustomerRegistration(props) {
         // Biz category / nature
         institutionNature: m.BizCategory || m.bizcategory || m.bizcat || m.institutionNature || '',
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
-        institutionBranch: m.branch_id ? String(m.branch_id) : (m.branchid ? String(m.branchid) : (m.branch || '')),
+        institutionBranch: (function () {
+          const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
+          const num = Number(raw);
+          if (!Number.isNaN(num) && num > 0) {
+            if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
+              const byIndex = institutionBranches[num - 1];
+              if (byIndex) return byIndex;
+            }
+            setPendingBranchId(num);
+            return String(num);
+          }
+          return String(raw || '');
+        })(),
         // Incorporation number/code and date (legacy INCORPC / INCORPD)
         institutionIncoporationNumber: m.IncorporationNo || m.incoporationNo || m.INCORPC || m.INCORP || '',
         institutionTIN: m.Tin || m.tin || m.tinno || m.tin || '',
@@ -765,6 +842,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
   const [touched, setTouched] = useState({});
   const [pendingNcity, setPendingNcity] = useState(null);
+  const [pendingBranchId, setPendingBranchId] = useState(null);
+  const [pendingCouId, setPendingCouId] = useState(null);
 
   const [formData, setFormData] = useState(initialForm);
 
@@ -795,6 +874,36 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }
     setPendingNcity(null);
   }, [cities, pendingNcity]);
+
+  useEffect(() => {
+    if (!pendingBranchId) return;
+    if (!Array.isArray(institutionBranches) || institutionBranches.length === 0) return;
+    const idx = Number(pendingBranchId);
+    if (Number.isNaN(idx) || idx <= 0) {
+      setPendingBranchId(null);
+      return;
+    }
+    const branchName = institutionBranches[idx - 1];
+    if (branchName) {
+      setFormData((prev) => ({ ...prev, institutionBranch: branchName }));
+    }
+    setPendingBranchId(null);
+  }, [institutionBranches, pendingBranchId]);
+
+  useEffect(() => {
+    if (!pendingCouId) return;
+    if (!Array.isArray(countries) || countries.length === 0) return;
+    const idx = Number(pendingCouId);
+    if (Number.isNaN(idx) || idx <= 0) {
+      setPendingCouId(null);
+      return;
+    }
+    const countryObj = countries[idx - 1];
+    if (countryObj && countryObj.name) {
+      setFormData((prev) => ({ ...prev, nationality: String(countryObj.name) }));
+    }
+    setPendingCouId(null);
+  }, [countries, pendingCouId]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
