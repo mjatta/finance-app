@@ -1292,9 +1292,138 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
       payload.EditedBy = useAuthStore.getState().user?.username || '';
+      // Populate additional references (Ref2..Ref4) from `additionalReferences` state
+      try {
+        if (Array.isArray(additionalReferences) && additionalReferences.length > 0) {
+          // Ref1 is already set from form field; fill subsequent refs from the array
+          const refs = additionalReferences.slice(0, 4);
+          // Ensure each ref maps to expected backend keys
+          refs.forEach((r, idx) => {
+            const i = idx + 1; // 1-based
+            payload[`Ref${i}Name`] = r.name || payload[`Ref${i}Name`] || '';
+            payload[`Ref${i}Address`] = r.address || r.address || payload[`Ref${i}Address`] || '';
+            payload[`Ref${i}Tel`] = r.mobilePhone || r.mobilePhone || payload[`Ref${i}Tel`] || '';
+            payload[`Ref${i}Mail`] = r.emailAddress || r.emailAddress || payload[`Ref${i}Mail`] || '';
+          });
+        }
+      } catch {
+        // ignore
+      }
+      // Batch ID and MemType mapping from form fields when available
+      try {
+        payload.BatId = Number(formData.defaultBatch) || Number(payload.BatId) || 0;
+      } catch {
+        payload.BatId = Number(payload.BatId) || 0;
+      }
+      // MemType may be provided as a numeric selection; default to 0 if not set
+      payload.MemType = Number(formData.memType) || Number(payload.MemType) || 0;
 
-      // Call feature-scoped hook to update institution
-      const result = await updateInstitution(payload);
+      // Ensure MemCode is present (institution code / ccustcode)
+      try {
+        payload.MemCode = String(formData.institutionMemberCode || payload.MemCode || '').trim();
+      } catch {
+        payload.MemCode = payload.MemCode || '';
+      }
+
+      // Build API-compatible update payload (backend expects specific field names)
+      const ensureDateOnly = (d) => {
+        if (!d) return '';
+        const s = String(d);
+        return s.includes('T') ? s.split('T')[0] : s;
+      };
+
+      const updatePayload = {
+        MemCode: String(payload.MemCode || formData.institutionMemberCode || '').trim(),
+        CustName: payload.CustName || formData.institutionName || '',
+        BizCat: Number(payload.BizCategory || payload.BizCat || Number(formData.institutionNature) || 0) || 0,
+
+        CountryId: Number(payload.Country || payload.CountryId || 0) || 0,
+        CityId: Number(payload.City || payload.CityId || 0) || 0,
+        Street: payload.Street || formData.address || '',
+        Tel: payload.Tel || formData.mobilePhoneNumber || '',
+        Tel1: payload.Tel1 || formData.tel1 || '',
+        Email: payload.Email || formData.emailAddress || '',
+
+        IncorporationNo: payload.IncorporationNo || formData.institutionIncoporationNumber || '',
+        TIN: payload.Tin || formData.institutionTIN || '',
+        IncorporationDate: ensureDateOnly(payload.IncorporationDate || payload.institutionIncoporationDate || ''),
+        DateJoin: ensureDateOnly(payload.DateJoin || payload.institutionDateJoined || ''),
+
+        Region: Number(payload.Region || payload.institutionRegion) || 0,
+        District: Number(payload.District || payload.institutionDistrict) || 0,
+        Ward: Number(payload.Ward || payload.institutionWard) || 0,
+        Resident: !!(payload.Residents || payload.Resident),
+        CustomerType: payload.CustType || payload.CustomerType || 'C',
+
+        ChairName: payload.ChairName || payload.chairName || formData.chairName || '',
+        ChairTin: payload.ChairTin || payload.chairTIN || formData.chairTIN || '',
+        ChairTel: payload.ChairTel || payload.chairMobilePhone || formData.chairMobilePhone || '',
+        ChairMail: payload.ChairMail || payload.chairEmailAddress || formData.chairEmailAddress || '',
+        ChairSign: !!(payload.ChairSign || payload.chairAccountSignatory || formData.chairAccountSignatory),
+
+        VCName: payload.ViceName || payload.vcname || formData.viceChairName || '',
+        VCTin: payload.ViceTin || payload.vctin || formData.viceChairTIN || '',
+        VCTel: payload.ViceTel || payload.vctel || formData.viceChairMobilePhone || '',
+        VCMail: payload.ViceMail || payload.vcMail || formData.viceChairEmailAddress || '',
+        VCSign: !!(payload.ViceSign || payload.vcsign || formData.viceChairAccountSignatory),
+
+        TreaName: payload.TreasurerName || payload.treaname || formData.treasurerName || '',
+        TreaTin: payload.TreasurerTin || payload.treatin || formData.treasurerTIN || '',
+        TreaTel: payload.TreasurerTel || payload.treatel || formData.treasurerMobilePhone || '',
+        TreaMail: payload.TreasurerMail || payload.treamail || formData.treasurerEmailAddress || '',
+        TreaSign: !!(payload.TreasurerSign || payload.treaSign || formData.treasurerAccountSignatory),
+
+        SecName: payload.SecName || payload.secname || formData.secretaryName || '',
+        SecTin: payload.SecTin || payload.sectin || formData.secretaryTIN || '',
+        SecTel: payload.SecTel || payload.sectel || formData.secretaryMobilePhone || '',
+        SecMail: payload.SecMail || payload.secmail || formData.secretaryEmailAddress || '',
+        SecSign: !!(payload.SecSign || payload.secSign || formData.secretaryAccountSignatory),
+
+        Ref1Name: payload.Ref1Name || formData.referenceDetailsName || '',
+        Ref1Addr: payload.Ref1Address || formData.referenceDetailsAddress || '',
+        Ref1Tel: payload.Ref1Tel || formData.referenceDetailsMobilePhone || '',
+        Ref1Mail: payload.Ref1Mail || formData.referenceDetailsEmailAddress || '',
+
+        Ref2Name: payload.Ref2Name || '',
+        Ref2Addr: payload.Ref2Address || '',
+        Ref2Tel: payload.Ref2Tel || '',
+        Ref2Mail: payload.Ref2Mail || '',
+
+        Ref3Name: payload.Ref3Name || '',
+        Ref3Addr: payload.Ref3Address || '',
+        Ref3Tel: payload.Ref3Tel || '',
+        Ref3Mail: payload.Ref3Mail || '',
+
+        Ref4Name: payload.Ref4Name || '',
+        Ref4Addr: payload.Ref4Address || '',
+        Ref4Tel: payload.Ref4Tel || '',
+        Ref4Mail: payload.Ref4Mail || '',
+
+        RegFee: Number(payload.RegFee || payload.nRegFee || 0) || 0,
+        SharePrice: Number(payload.SharePrice || payload.nSharePrice || 0) || 0,
+        Shares: Number(payload.Shares || payload.nShares || 0) || 0,
+        SaveAmount: Number(payload.SaveAmount || payload.nSaveAmt || 0) || 0,
+        SaveType: !!(payload.SaveType || payload.nSaveType),
+
+        Sign1: payload.Sign1 || payload.signatory1 || '',
+        Sign2: payload.Sign2 || payload.signatory2 || '',
+        Sign3: payload.Sign3 || payload.signatory3 || '',
+        Sign4: payload.Sign4 || payload.signatory4 || '',
+
+        CompId: Number(payload.CompanyId || useAuthStore.getState().user?.CompId || 0) || 0,
+        BranchId: Number(payload.BranchId || useAuthStore.getState().user?.BranchId || 0) || 0,
+        BatchId: Number(payload.BatId || payload.BatchId || 0) || 0,
+        MemType: Number(payload.MemType || 0) || 0,
+
+        // Some backend SPs expect these parameters to be supplied (empty string if no image)
+        MemPicture: pictureBase64 || payload.MemberPicture || payload.MemPicture || '',
+        MemSignature: signatureBase64 || payload.MemberSignature || payload.MemSignature || '',
+
+        EditedBy: payload.EditedBy || useAuthStore.getState().user?.username || '',
+      };
+
+      // Call feature-scoped hook to update institution with API-shaped payload
+      const result = await updateInstitution(updatePayload);
       setStatusMessage('Institution updated successfully.');
       setStatusError(false);
       notifySaveSuccess({ page: 'Customer Administration / Registration', action: 'Update Institution', message: 'Institution updated successfully.', metadata: payload });
