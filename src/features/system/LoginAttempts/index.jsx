@@ -108,13 +108,12 @@ export default function LoginAttempts() {
 
     load();
 
-    const intervalId = setInterval(load, 8000);
     const onStorage = (evt) => {
       if (evt.key === 'loginAttempts:fallback') load();
     };
     window.addEventListener('storage', onStorage);
 
-    return () => { mounted = false; clearInterval(intervalId); window.removeEventListener('storage', onStorage); };
+    return () => { mounted = false; window.removeEventListener('storage', onStorage); };
   }, []);
 
   return (

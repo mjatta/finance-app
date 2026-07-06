@@ -79,16 +79,35 @@ export default async function handler(req, res) {
     }
 
     // Copy status and headers
+    // For GET requests, if backend is missing (404) or not OK, serve local persisted attempts
+    const text = await fetchRes.text();
+    const contentType = fetchRes.headers.get('content-type') || '';
+    if (req.method === 'GET' && (!fetchRes.ok || fetchRes.status === 404)) {
+      try {
+        const fileRaw = await fs.readFile(attemptsFilePath, 'utf-8').catch(() => null);
+        if (fileRaw) {
+          const parsed = JSON.parse(fileRaw);
+          // normalize to an array
+          const arr = Array.isArray(parsed) ? parsed : (parsed.rows || parsed.items || []);
+          res.status(200).json(arr);
+          return;
+        }
+        // if in-memory fallback exists, return it
+        if (Array.isArray(fallbackAttempts) && fallbackAttempts.length > 0) {
+          res.status(200).json(fallbackAttempts);
+          return;
+        }
+      } catch (e) {
+        // fall through to returning backend response
+      }
+    }
+
     res.status(fetchRes.status);
     fetchRes.headers.forEach((v, k) => {
       // don't overwrite CORS headers
       if (['access-control-allow-origin','access-control-allow-methods','access-control-allow-headers'].includes(k.toLowerCase())) return;
       res.setHeader(k, v);
     });
-
-    const text = await fetchRes.text();
-    // Try to send JSON when possible
-    const contentType = fetchRes.headers.get('content-type') || '';
     // If backend returned 404 or not ok for POST, persist locally (dev) or in-memory (prod)
     if ((req.method === 'POST' || req.method === 'PUT') && (fetchRes.status === 404 || fetchRes.status >= 400)) {
       try {
