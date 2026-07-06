@@ -1,5 +1,10 @@
 const BACKEND_BASE = process.env.VITE_API_BASE_URL || 'https://alakuyateh-001-site10.atempurl.com'
 import https from 'https';
+import fs from 'fs/promises';
+import path from 'path';
+
+const attemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json');
+let fallbackAttempts = [];
 
 function copyHeaders(src) {
   const out = {};
@@ -84,6 +89,27 @@ export default async function handler(req, res) {
     const text = await fetchRes.text();
     // Try to send JSON when possible
     const contentType = fetchRes.headers.get('content-type') || '';
+    // If backend returned 404 or not ok for POST, persist locally (dev) or in-memory (prod)
+    if ((req.method === 'POST' || req.method === 'PUT') && (fetchRes.status === 404 || fetchRes.status >= 400)) {
+      try {
+        const parsed = body && body.length ? JSON.parse(body) : { raw: body };
+        const entry = { ...parsed, timestamp: new Date().toISOString() };
+        if (!process.env.VERCEL) {
+          // local dev: append to file
+          const existing = await fs.readFile(attemptsFilePath, 'utf-8').then(JSON.parse).catch(() => []);
+          existing.push(entry);
+          await fs.writeFile(attemptsFilePath, JSON.stringify(existing, null, 2), 'utf-8');
+        } else {
+          // production: keep in-memory fallback (ephemeral)
+          fallbackAttempts.push(entry);
+        }
+        // return created
+        res.status(201).json({ saved: true, entry });
+        return;
+      } catch (e) {
+        // ignore persistence errors and fall through to proxy response
+      }
+    }
     if (contentType.includes('application/json')) {
       try {
         const json = JSON.parse(text);
