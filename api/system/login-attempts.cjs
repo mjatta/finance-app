@@ -70,22 +70,18 @@ module.exports = async function (req, res) {
         const parsed = body && body.length ? JSON.parse(body) : { raw: body };
         const entry = { ...parsed, timestamp: new Date().toISOString() };
         try {
-          // try writing to file in dev (not available in serverless prod)
           const fs = require('fs').promises;
           const path = require('path');
-          if (!process.env.VERCEL) {
-            const attemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json');
-            const existing = await fs.readFile(attemptsFilePath, 'utf-8').then(JSON.parse).catch(() => []);
-            existing.push(entry);
-            await fs.writeFile(attemptsFilePath, JSON.stringify(existing, null, 2), 'utf-8');
-            return res.status(201).json({ saved: true, entry });
-          }
+          const attemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json');
+          const existing = await fs.readFile(attemptsFilePath, 'utf-8').then(JSON.parse).catch(() => []);
+          existing.push(entry);
+          await fs.writeFile(attemptsFilePath, JSON.stringify(existing, null, 2), 'utf-8');
+          return res.status(201).json({ saved: true, entry });
         } catch (e) {
-          // ignore file write errors
+          // fallback: in-memory push
+          fallbackAttempts.push(entry);
+          return res.status(201).json({ saved: true, entry });
         }
-        // fallback: in-memory push
-        fallbackAttempts.push(entry);
-        return res.status(201).json({ saved: true, entry });
       } catch (e) {}
     }
     if (contentType.includes('application/json')) {

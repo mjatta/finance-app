@@ -94,13 +94,13 @@ export default async function handler(req, res) {
       try {
         const parsed = body && body.length ? JSON.parse(body) : { raw: body };
         const entry = { ...parsed, timestamp: new Date().toISOString() };
-        if (!process.env.VERCEL) {
-          // local dev: append to file
+        // Attempt to persist to the repo file (may succeed on some deployments)
+        try {
           const existing = await fs.readFile(attemptsFilePath, 'utf-8').then(JSON.parse).catch(() => []);
           existing.push(entry);
           await fs.writeFile(attemptsFilePath, JSON.stringify(existing, null, 2), 'utf-8');
-        } else {
-          // production: keep in-memory fallback (ephemeral)
+        } catch (fileErr) {
+          // If file write fails (readonly FS), keep in-memory fallback
           fallbackAttempts.push(entry);
         }
         // return created
