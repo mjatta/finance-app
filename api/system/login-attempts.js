@@ -31,6 +31,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Ensure we have a working fetch implementation on Vercel Node runtimes
+    const fetchFn = (typeof fetch !== 'undefined') ? fetch : (await import('node-fetch')).default;
     const backendUrl = new URL(BACKEND_BASE.replace(/\/$/, ''));
     // ensure path ends with our target path
     backendUrl.pathname = '/api/system/login-attempts';
@@ -45,7 +47,7 @@ export default async function handler(req, res) {
       body = await readRawBody(req);
     }
 
-    const fetchRes = await fetch(backendUrl.toString(), {
+    const fetchRes = await fetchFn(backendUrl.toString(), {
       method: req.method,
       headers,
       body: body && body.length ? body : undefined,

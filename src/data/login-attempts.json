@@ -266,6 +266,34 @@
       "status": "success",
       "reason": "",
       "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T14:09:09.673Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T14:09:22.534Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
     }
   ]
 }
