@@ -396,7 +396,7 @@ export default function CustomerRegistration(props) {
         region: m.Region ? String(m.Region) : (m.region ? String(m.region) : (m.nregion ? String(m.nregion) : '')),
         district: m.District ? String(m.District) : (m.district ? String(m.district) : (m.ndist ? String(m.ndist) : '')),
         ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : (m.nward ? String(m.nward) : '')),
-        country: m.cou_id ? String(m.cou_id) : (m.Country || ''),
+        country: m.cou_id ? Number(m.cou_id) : (m.Country || ''),
         city: mapCityById(m.ncity) || (m.City || m.city || ''),
         address: m.caddr1 || m.Street || m.address || '',
         mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
@@ -575,7 +575,7 @@ export default function CustomerRegistration(props) {
         institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
         // Common contact/address mappings
         // Ensure dropdown-friendly IDs for country and city are set when available
-        country: m.cou_id ? String(m.cou_id) : (m.Country || ''),
+        country: m.cou_id ? Number(m.cou_id) : (m.Country || ''),
         city: (function () {
           const raw = m.ncity ?? m.City ?? m.city ?? '';
           const num = Number(raw);
