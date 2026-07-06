@@ -1,0 +1,271 @@
+{
+  "rows": [
+    {
+      "timestamp": "2026-07-06T00:42:29.343Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:42:33.157Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:49:14.136Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "device": "Macintosh",
+      "os": "Mac OS",
+      "browser": "Chrome",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:49:31.692Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "device": "Macintosh",
+      "os": "Mac OS",
+      "browser": "Chrome",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "HTTP 500 {\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 0 - The wait operation timed out.)\",\"ExceptionType\":\"System.Data.SqlClient.SqlException\",\"StackTrace\":\"   at System.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, DbConnectionPool pool, String accessToken, Boolean applyTransientFaultHandling, SqlAuthenticationProviderManager sqlAuthProviderManager)\\r\\n   at System.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(DbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.Open()\\r\\n   at CUSystemAPI.Controllers.AuthController.LoginUser(LoginRequest request) in C:\\\\SoftwareSolutions\\\\NACCUG\\\\CUSystemAPI\\\\CUSystemAPI\\\\Controllers\\\\GetUsersController.cs:line 30\\r\\n   at lambda_method(Closure , Object , Object[] )\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.<>c__DisplayClass10.<GetExecutor>b__9(Object instance, Object[] methodParameters)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.Execute(Object instance, Object[] arguments)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ExecuteAsync(HttpControllerContext controllerContext, IDictionary`2 arguments, CancellationToken cancellationToken)\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__2.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.AuthenticationFilterResult.<ExecuteAsync>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Dispatcher.HttpControllerDispatcher.<SendAsync>d__1.MoveNext()\",\"InnerException\":{\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"The wait operation timed out\",\"ExceptionType\":\"System.ComponentModel.Win32Exception\",\"StackTrace\":null}}",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:49:31.693Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "device": "Macintosh",
+      "os": "Mac OS",
+      "browser": "Chrome",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "Invalid username or password",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:50:35.221Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "device": "Macintosh",
+      "os": "Mac OS",
+      "browser": "Chrome",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "HTTP 500 {\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 0 - The wait operation timed out.)\",\"ExceptionType\":\"System.Data.SqlClient.SqlException\",\"StackTrace\":\"   at System.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, DbConnectionPool pool, String accessToken, Boolean applyTransientFaultHandling, SqlAuthenticationProviderManager sqlAuthProviderManager)\\r\\n   at System.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(DbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.Open()\\r\\n   at CUSystemAPI.Controllers.AuthController.LoginUser(LoginRequest request) in C:\\\\SoftwareSolutions\\\\NACCUG\\\\CUSystemAPI\\\\CUSystemAPI\\\\Controllers\\\\GetUsersController.cs:line 30\\r\\n   at lambda_method(Closure , Object , Object[] )\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.<>c__DisplayClass10.<GetExecutor>b__9(Object instance, Object[] methodParameters)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.Execute(Object instance, Object[] arguments)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ExecuteAsync(HttpControllerContext controllerContext, IDictionary`2 arguments, CancellationToken cancellationToken)\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__2.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.AuthenticationFilterResult.<ExecuteAsync>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Dispatcher.HttpControllerDispatcher.<SendAsync>d__1.MoveNext()\",\"InnerException\":{\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"The wait operation timed out\",\"ExceptionType\":\"System.ComponentModel.Win32Exception\",\"StackTrace\":null}}",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:50:35.222Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "device": "Macintosh",
+      "os": "Mac OS",
+      "browser": "Chrome",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "Invalid username or password",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:51:55.426Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "HTTP 500 {\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 0 - The wait operation timed out.)\",\"ExceptionType\":\"System.Data.SqlClient.SqlException\",\"StackTrace\":\"   at System.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, DbConnectionPool pool, String accessToken, Boolean applyTransientFaultHandling, SqlAuthenticationProviderManager sqlAuthProviderManager)\\r\\n   at System.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(DbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)\\r\\n   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry)\\r\\n   at System.Data.SqlClient.SqlConnection.Open()\\r\\n   at CUSystemAPI.Controllers.AuthController.LoginUser(LoginRequest request) in C:\\\\SoftwareSolutions\\\\NACCUG\\\\CUSystemAPI\\\\CUSystemAPI\\\\Controllers\\\\GetUsersController.cs:line 30\\r\\n   at lambda_method(Closure , Object , Object[] )\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.<>c__DisplayClass10.<GetExecutor>b__9(Object instance, Object[] methodParameters)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ActionExecutor.Execute(Object instance, Object[] arguments)\\r\\n   at System.Web.Http.Controllers.ReflectedHttpActionDescriptor.ExecuteAsync(HttpControllerContext controllerContext, IDictionary`2 arguments, CancellationToken cancellationToken)\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__2.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Controllers.AuthenticationFilterResult.<ExecuteAsync>d__0.MoveNext()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at System.Web.Http.Dispatcher.HttpControllerDispatcher.<SendAsync>d__1.MoveNext()\",\"InnerException\":{\"Message\":\"An error has occurred.\",\"ExceptionMessage\":\"The wait operation timed out\",\"ExceptionType\":\"System.ComponentModel.Win32Exception\",\"StackTrace\":null}}",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T00:51:55.427Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "failure",
+      "reason": "Invalid username or password",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T11:23:39.567Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:45:03.676Z",
+      "username": "SUPER",
+      "ipAddress": "",
+      "location": "",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "idle",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:47:05.906Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:48:00.126Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:48:08.655Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:52:40.854Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:52:46.605Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:54:34.784Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-06T13:54:40.300Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Auburn Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    }
+  ]
+}

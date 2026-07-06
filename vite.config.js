@@ -107,6 +107,7 @@ const securitySettingsFilePath = path.resolve(process.cwd(), 'src/data/security-
 const productDefinitionFilePath = path.resolve(process.cwd(), 'src/data/product-definition.json')
 const periodicProcessingFilePath = path.resolve(process.cwd(), 'src/data/periodic-processing.json')
 const customerRegistrationFilePath = path.resolve(process.cwd(), 'src/data/customer-registration.json')
+const loginAttemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json')
 
 const parseRequestBody = async (req) => {
   const chunks = []
@@ -305,6 +306,23 @@ const readCustomerRegistrationFile = async () => {
 const writeCustomerRegistrationFile = async (rows) => {
   const payload = JSON.stringify({ rows }, null, 2)
   await fs.writeFile(customerRegistrationFilePath, payload, 'utf8')
+}
+
+const readLoginAttemptsFile = async () => {
+  try {
+    const raw = await fs.readFile(loginAttemptsFilePath, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed
+    return Array.isArray(parsed?.rows) ? parsed.rows : []
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+const writeLoginAttemptsFile = async (rows) => {
+  const payload = JSON.stringify({ rows }, null, 2)
+  await fs.writeFile(loginAttemptsFilePath, payload, 'utf8')
 }
 
 const memberActivatePlugin = () => ({
@@ -2384,6 +2402,55 @@ const memberReportApiPlugin = () => ({
   },
 })
 
+// Dev middleware: persist login attempts to local JSON file
+const loginAttemptsApiPlugin = () => ({
+  name: 'login-attempts-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/system/login-attempts', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          if (!body || typeof body !== 'object') {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Invalid payload.' }))
+            return
+          }
+
+          const rows = await readLoginAttemptsFile()
+          rows.push(body)
+          await writeLoginAttemptsFile(rows)
+          res.statusCode = 201
+          res.end(JSON.stringify({ rows }))
+          return
+        }
+
+        if (req.method === 'GET') {
+          const rows = await readLoginAttemptsFile()
+          res.statusCode = 200
+          res.end(JSON.stringify({ items: rows }))
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process login attempts.', error: err.message }))
+      }
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -2402,6 +2469,7 @@ export default defineConfig({
     loanRepaymentInsertApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
+    loginAttemptsApiPlugin(),
     guarantorLoadApiPlugin(),
     saveLoanGuarantorApiPlugin(),
     guaranteeHistoryApiPlugin(),

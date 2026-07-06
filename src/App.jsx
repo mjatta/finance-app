@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, lazy, Suspense, useCallback, useEffect, u
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
+import { useLoginLogger } from './hooks/useLoginLogger';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -98,6 +99,7 @@ const AccountReconciliation = lazy(() => import('./features/accounting/Reconcili
 
 const UserSecurity = lazy(() => import('./features/system/UserSecurity'));
 const UserSetup = lazy(() => import('./features/system/UserSetup'));
+const LoginAttempts = lazy(() => import('./features/system/LoginAttempts'));
 const EndOfYear = lazy(() => import('./features/system/EndOfYear'));
 const RunningBalanceFix = lazy(() => import('./features/system/RunningBalanceFix'));
 const AccessControlGroups = lazy(() => import('./features/system/AccessControlGroups'));
@@ -293,7 +295,13 @@ function App() {
     navigate('/home');
   };
 
+  const { logAttempt } = useLoginLogger();
+
   const handleLogout = useCallback((reason = 'manual') => {
+    const username = user?.username || '';
+    // log logout event (best-effort)
+    try { logAttempt({ username, status: 'logout', reason }); } catch { /* ignore */ }
+
     setUser(null);
     setActiveCategoryOverride(null);
     // Clear Zustand stores + localStorage
@@ -309,7 +317,7 @@ function App() {
     // remove cookie by setting past expiration
     document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
-  }, [navigate]);
+  }, [navigate, user, logAttempt]);
 
   const handleOpenProfileMenu = (event) => {
     setProfileMenuAnchor(event.currentTarget);
@@ -469,6 +477,7 @@ function App() {
       children: [
         { label: 'Product Setup', to: '/system/product', icon: Inventory2RoundedIcon },
         { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
+        { label: 'Login Attempts', to: '/system/login-attempts', icon: LockResetRoundedIcon },
         { label: 'Access Control Groups', to: '/system/access-control-groups', icon: GroupWorkRoundedIcon },
         { label: 'Security', to: '/system/security', icon: SecurityRoundedIcon },
         { label: 'Save Logs', to: '/system/save-logs', icon: ListAltRoundedIcon },
@@ -980,6 +989,10 @@ function App() {
                     <Route
                       path="/system/user-setup"
                       element={renderWithAccess('system', <UserSetup user={user} />)}
+                    />
+                    <Route
+                      path="/system/login-attempts"
+                      element={renderWithAccess('system', <LoginAttempts />)}
                     />
                     <Route
                       path="/system/access-control-groups"
