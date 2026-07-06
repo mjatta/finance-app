@@ -47,6 +47,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
     },
     {
+      "source": "/api/system/login-attempts",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/system/login-attempts"
+    },
+    {
       "source": "/api/remote-cities/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
     },
