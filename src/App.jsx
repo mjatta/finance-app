@@ -53,7 +53,7 @@ import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import logo from './assets/company-logo.jpg';
+// Use logo from public folder
 import './App.css';
 
 // feature pages (lazy-loaded)
@@ -659,7 +659,7 @@ function App() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <img src={logo} alt="Company logo" style={{ height: 36, borderRadius: 6 }} />
+                <img src="/logo.png" alt="Company logo" style={{ height: 36, borderRadius: 6 }} />
                 <Chip
                   label={companyName}
                   sx={{
