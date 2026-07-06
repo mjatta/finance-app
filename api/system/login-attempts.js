@@ -1,4 +1,5 @@
 const BACKEND_BASE = process.env.VITE_API_BASE_URL || 'https://alakuyateh-001-site10.atempurl.com'
+import https from 'https';
 
 function copyHeaders(src) {
   const out = {};
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
   try {
     // Ensure we have a working fetch implementation on Vercel Node runtimes
     const fetchFn = (typeof fetch !== 'undefined') ? fetch : (await import('node-fetch')).default;
+    const nodeFetchModule = await import('node-fetch').catch(() => null);
     const backendUrl = new URL(BACKEND_BASE.replace(/\/$/, ''));
     // ensure path ends with our target path
     backendUrl.pathname = '/api/system/login-attempts';
@@ -47,12 +49,29 @@ export default async function handler(req, res) {
       body = await readRawBody(req);
     }
 
-    const fetchRes = await fetchFn(backendUrl.toString(), {
-      method: req.method,
-      headers,
-      body: body && body.length ? body : undefined,
-      redirect: 'follow'
-    });
+    let fetchRes;
+    try {
+      fetchRes = await fetchFn(backendUrl.toString(), {
+        method: req.method,
+        headers,
+        body: body && body.length ? body : undefined,
+        redirect: 'follow'
+      });
+    } catch (err) {
+      // Retry with insecure TLS agent if node-fetch is available (handles self-signed certs)
+      if (nodeFetchModule) {
+        const insecureAgent = new https.Agent({ rejectUnauthorized: false });
+        fetchRes = await nodeFetchModule.default(backendUrl.toString(), {
+          method: req.method,
+          headers,
+          body: body && body.length ? body : undefined,
+          redirect: 'follow',
+          agent: insecureAgent
+        });
+      } else {
+        throw err;
+      }
+    }
 
     // Copy status and headers
     res.status(fetchRes.status);
