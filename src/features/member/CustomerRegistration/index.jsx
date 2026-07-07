@@ -270,6 +270,17 @@ export default function CustomerRegistration(props) {
         return;
       }
 
+      // If backend returned an entry whose name fields are empty or whitespace-only,
+      // it is likely an institution record — don't refill individual form.
+      const _first = String(m.ccustfname || '');
+      const _middle = String(m.ccustmname || '');
+      const _last = String(m.ccustlname || '');
+      if (_first.trim() === '' && _middle.trim() === '' && _last.trim() === '') {
+        setStatusError(true);
+        setStatusMessage('The customer code you entered appears to be for an institution, not an individual.');
+        return;
+      }
+
       // Map response fields to formData keys (best-effort, follow payload builders)
       
 
