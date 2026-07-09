@@ -75,7 +75,7 @@ export default function DetailedAging() {
   const [statusMessage, setStatusMessage] = useState('');
   const [savingRanges, setSavingRanges] = useState(false);
   const [rangesInitialized, setRangesInitialized] = useState(false);
-  const isExportDisabled = !product || printLoading;
+  const isExportDisabled = printLoading;
 
   useEffect(() => {
     if (!rangesLoading && ranges.length > 0 && !rangesInitialized) {
@@ -123,10 +123,6 @@ export default function DetailedAging() {
   };
 
   const handleFetchAndExport = async (exportType) => {
-    if (!product) {
-      setStatusMessage('Please select a product before exporting.');
-      return;
-    }
 
     if (!date) {
       setStatusMessage('Please select a date before exporting.');
@@ -136,7 +132,7 @@ export default function DetailedAging() {
     const payload = {
       ToDate: date.format('YYYY-MM-DD'),
       Product: Number(product) || 0,
-      Category: category ? Number(category) || 0 : 0,
+      Category: Number(category) || 0,
       ByLoanOfficer: loanOfficer || '',
     };
 
@@ -361,7 +357,7 @@ export default function DetailedAging() {
                 displayEmpty: true,
                 renderValue: (selected) => {
                   if (!selected) {
-                    return productLoading ? 'Loading...' : 'Select product';
+                    return productLoading ? 'Loading...' : 'All products';
                   }
 
                   const option = productOptions.find((item) => item.value === selected);
@@ -369,9 +365,7 @@ export default function DetailedAging() {
                 },
               }}
             >
-              <MenuItem value="" disabled>
-                Select product
-              </MenuItem>
+              <MenuItem value="">All products</MenuItem>
               {productOptions.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
@@ -390,7 +384,7 @@ export default function DetailedAging() {
                 displayEmpty: true,
                 renderValue: (selected) => {
                   if (!selected) {
-                    return categoryLoading ? 'Loading...' : 'Select category';
+                    return categoryLoading ? 'Loading...' : 'All categories';
                   }
 
                   const option = categoryOptions.find((item) => item.value === selected);
@@ -399,9 +393,7 @@ export default function DetailedAging() {
               }}
               disabled={categoryLoading}
             >
-              <MenuItem value="" disabled>
-                Select category
-              </MenuItem>
+              <MenuItem value="">All categories</MenuItem>
               {categoryOptions.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
