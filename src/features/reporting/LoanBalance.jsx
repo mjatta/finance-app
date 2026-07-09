@@ -198,6 +198,12 @@ export default function LoanBalance() {
 
     setStatusMessage('');
 
+    // Ensure ByLoanOfficer uses the officer `oprcode` (preferred) rather than `usernumb` value
+    const selectedOfficer = officers.find((o) => String(o.value) === String(loanOfficer));
+    const byLoanOfficerValue = (selectedOfficer && selectedOfficer.rawData && (selectedOfficer.rawData.oprcode || selectedOfficer.rawData.oprcode === 0))
+      ? String(selectedOfficer.rawData.oprcode)
+      : (loanOfficer || '');
+
     const payload = {
       BranchID: branch === '0' ? 0 : Number(branch),
       ProductType: Number(productType) || 0,
@@ -208,7 +214,7 @@ export default function LoanBalance() {
       GenderFemale: gender.female ? 2 : '',
       GenderOther: customerType.group || customerType.corporate ? '3' : '',
       TransactionDate: date,
-      ByLoanOfficer: loanOfficer || '',
+      ByLoanOfficer: byLoanOfficerValue,
     };
 
     try {
