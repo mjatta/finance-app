@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import {
   Alert,
   Backdrop,
@@ -134,9 +135,9 @@ export default function TransactionListing() {
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
   const [transDateFrom, setTransDateFrom] = useState(null);
-  const [transDateTo, setTransDateTo] = useState(null);
-  const [postDateFrom, setPostDateFrom] = useState(null);
-  const [postDateTo, setPostDateTo] = useState(null);
+  const [transDateTo, setTransDateTo] = useState(() => dayjs());
+  const [postDateFrom, setPostDateFrom] = useState(() => dayjs('1960-01-01'));
+  const [postDateTo, setPostDateTo] = useState(() => dayjs('2089-12-31'));
   const [sources, setSources] = useState(initCheckboxState(TRANSACTION_SOURCES));
   const [types, setTypes] = useState(initCheckboxState(TRANSACTION_TYPES));
   const [selectedBatch, setSelectedBatch] = useState('');
@@ -185,9 +186,9 @@ export default function TransactionListing() {
     setUser('');
     setTransactionRange('');
     setTransDateFrom(null);
-    setTransDateTo(null);
-    setPostDateFrom(null);
-    setPostDateTo(null);
+    setTransDateTo(dayjs());
+    setPostDateFrom(dayjs('1960-01-01'));
+    setPostDateTo(dayjs('2089-12-31'));
     setSources(initCheckboxState(TRANSACTION_SOURCES));
     setTypes(initCheckboxState(TRANSACTION_TYPES));
     setSelectedBatch('');
@@ -236,8 +237,8 @@ export default function TransactionListing() {
     AnnualShares: sources.annualShares ? '18' : '',
     TranFromDate: formatDateTime(transDateFrom, '1900-01-01'),
     TranToDate: formatDateTime(transDateTo, '2100-12-31', true),
-    PostFromDate: formatDateTime(postDateFrom, '1900-01-01'),
-    PostToDate: formatDateTime(postDateTo, '2100-12-31', true),
+    PostFromDate: formatDateTime(postDateFrom, '1960-01-01'),
+    PostToDate: formatDateTime(postDateTo, '2089-12-31', true),
   });
 
   const fetchTransactionData = async () => {
