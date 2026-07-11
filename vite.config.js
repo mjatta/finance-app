@@ -94,6 +94,48 @@ const accountDetailsApiPlugin = () => ({
   },
 })
 
+// ID Types API Plugin (dev server middleware) - forwards to backend lookup for id types
+const idTypesApiPlugin = () => ({
+  name: 'id-types-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/remote-id-types', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/lookups/idtypes', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch id types.' }))
+      }
+    })
+  },
+})
+
 // The atempurl.com host redirects HTTP to HTTPS but uses a certificate whose
 // common-name doesn't match.  Disabling TLS verification here is safe because
 // this only affects the Vite dev-server proxy, not production.
@@ -2457,7 +2499,8 @@ export default defineConfig({
   plugins: [
     react(),
     journalPostApiPlugin(),
-    accountDetailsApiPlugin(),
+  accountDetailsApiPlugin(),
+  idTypesApiPlugin(),
     glTransactionsApiPlugin(),
     memberActivatePlugin(),
     depositsApiPlugin(),
@@ -2589,6 +2632,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-cities/, '/api/lookups'),
+      },
+      '/api/remote-id-types': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/remote-id-types/, '/api/lookups/idtypes'),
       },
       // Proxy /api/client for get-code endpoint to avoid CORS
       '/api/client': {

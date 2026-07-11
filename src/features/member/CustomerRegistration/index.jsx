@@ -25,6 +25,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
+import { useIdTypes } from './hooks/useIdTypes';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
@@ -821,29 +822,23 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     return t.length > 100 && /^[A-Za-z0-9+/=]+$/.test(t);
   };
 
-  // Map backend idtype numeric codes to UI option values
+  // Map backend idtype numeric codes to UI option values (we store numeric idtype strings)
   const mapIdTypeToOption = (val) => {
     if (val === undefined || val === null) return '';
-    if (Number(val) === 0) return '';
-    const v = String(val).trim();
-    if (!v) return '';
-    if (v === '1' || v.toLowerCase() === 'national-id' || v === 'nat') return 'national-id';
-    if (v === '2' || v.toLowerCase() === 'passport') return 'passport';
-    if (v === '3' || v.toLowerCase() === 'driver-license' || v === 'driver') return 'driver-license';
-    return v;
+    const n = Number(val);
+    if (Number.isNaN(n) || n <= 0) return '';
+    return String(n);
   };
 
-  // Map UI option values back to numeric codes for backend payloads
+  // Map UI option value back to numeric code
   const mapOptionToIdType = (val) => {
-    if (val === undefined || val === null || val === '') return 0;
     const n = Number(val);
     if (!Number.isNaN(n) && n > 0) return n;
-    const s = String(val).trim().toLowerCase();
-    if (s === 'national-id' || s === 'nat') return 1;
-    if (s === 'passport') return 2;
-    if (s === 'driver-license' || s === 'driver') return 3;
     return 0;
   };
+
+  // Load id types for dropdown
+  const { options: idTypeOptions, isLoading: idTypesLoading } = useIdTypes();
 
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
@@ -2270,9 +2265,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             error={isFieldInvalid('idType')}
                             helperText={isFieldInvalid('idType') ? 'ID Type is required' : ''}
                           >
-                            <MenuItem value="national-id">National ID</MenuItem>
-                            <MenuItem value="passport">Passport</MenuItem>
-                            <MenuItem value="driver-license">Driver License</MenuItem>
+                            {idTypesLoading ? (
+                              <MenuItem value="">Loading...</MenuItem>
+                            ) : (
+                              idTypeOptions.map((opt) => (
+                                <MenuItem key={opt.idtype} value={String(opt.idtype)}>
+                                  {opt.id_name?.trim() || String(opt.idtype)}
+                                </MenuItem>
+                              ))
+                            )}
                           </TextField>
                           <TextField
                             required
