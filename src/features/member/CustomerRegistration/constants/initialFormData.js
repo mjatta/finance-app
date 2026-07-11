@@ -1,5 +1,5 @@
 export const initialForm = {
-  institutionType: 'corporate',
+  institutionType: '',
   institutionName: '',
   institutionNature: '',
   institutionMemberCode: '',

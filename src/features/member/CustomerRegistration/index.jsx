@@ -743,6 +743,7 @@ export default function CustomerRegistration(props) {
       return next;
     });
     // Also clear any individual form fields when clearing institution search
+    setTouched({});
     clearIndividualFields();
   };
 
@@ -769,6 +770,7 @@ export default function CustomerRegistration(props) {
       });
       return next;
     });
+    setTouched({});
   };
 
 // Helper to format row for DataGrid
@@ -1908,6 +1910,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       onBlur={() => handleBlur('institutionType')}
                       error={isFieldInvalid('institutionType')}
                       helperText={isFieldInvalid('institutionType') ? 'Institution Type is required' : ''}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select institution type',
+                      }}
                       sx={{
                         '& .MuiFormLabel-root.Mui-required::after': {
                           color: '#fff',
@@ -1915,8 +1921,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         },
                       }}
                     >
-                      <MenuItem value="corporate">Corporate</MenuItem>
+                      <MenuItem value="" disabled>
+                        Select institution type
+                      </MenuItem>
                       <MenuItem value="group">Group</MenuItem>
+                      <MenuItem value="corporate">Corporate</MenuItem>
                     </TextField>
                     <TextField
                       required

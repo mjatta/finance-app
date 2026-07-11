@@ -126,7 +126,14 @@ export function buildInstitutionPayload(formData, institutionBranches = [], citi
     CompanyId: compId,
     BranchId: branchId,
     BatId: 0,
-    MemType: 0, // Mandatory (should be mapped from dropdown)
+    // Map UI institutionType to backend MemType numeric codes
+    // group -> 2, corporate -> 3, default 0
+    MemType: (function () {
+      const t = (formData.institutionType || '').toString().toLowerCase();
+      if (t === 'group') return 2;
+      if (t === 'corporate') return 3;
+      return 0;
+    })(), // Mandatory (mapped from dropdown)
     gender: Number(formData.gender) || 0, // Mandatory
     Region: Number(formData.institutionRegion) || 0,
     District: Number(formData.institutionDistrict) || 0,
