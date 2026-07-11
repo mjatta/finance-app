@@ -489,12 +489,23 @@ export default function CustomerRegistration(props) {
         defaultBatch: m.BatId || m.defaultBatch || '',
       };
 
+      // Trim all top-level string fields returned from backend before setting form data
+      const trimAllStrings = (obj) => {
+        const out = {};
+        if (!obj || typeof obj !== 'object') return out;
+        Object.keys(obj).forEach((k) => {
+          const v = obj[k];
+          out[k] = (typeof v === 'string') ? v.trim() : v;
+        });
+        return out;
+      };
+
       // If backend returned inline base64 in the biometric name fields, don't put that huge string
       // into the file-name form fields — replace with a friendly placeholder and set preview separately.
       if (isLikelyBase64Image(mapped.biometricPhotoName)) mapped.biometricPhotoName = 'server-photo.jpg';
       if (isLikelyBase64Image(mapped.biometricSignatureName)) mapped.biometricSignatureName = 'server-signature.png';
 
-      setFormData((prev) => ({ ...prev, ...mapped }));
+      setFormData((prev) => ({ ...prev, ...trimAllStrings(mapped) }));
       // If backend returned inline base64 images (or data URLs), convert and set previews
       try {
         const maybePhoto = m.memPict || m.MemberPicture || mapped.biometricPhotoName || '';
@@ -511,19 +522,19 @@ export default function CustomerRegistration(props) {
       if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
         setAdditionalNextOfKins(m.nextOfKins.map((k, idx) => ({
           id: Date.now() + idx,
-          name: k.name || k.Name || '',
-          address: k.address || '',
-          relationship: k.relationship || '',
-          mobilePhone: k.mobilePhone || k.mobile || '',
+          name: (k.name || k.Name || '').toString().trim(),
+          address: (k.address || '').toString().trim(),
+          relationship: (k.relationship || '').toString().trim(),
+          mobilePhone: (k.mobilePhone || k.mobile || '').toString().trim(),
         })));
       }
       if (Array.isArray(m.references) && m.references.length > 0) {
         setAdditionalReferences(m.references.map((r, idx) => ({
           id: Date.now() + idx,
-          name: r.name || r.Name || '',
-          address: r.address || '',
-          mobilePhone: r.mobilePhone || r.mobile || '',
-          emailAddress: r.email || r.emailAddress || '',
+          name: (r.name || r.Name || '').toString().trim(),
+          address: (r.address || '').toString().trim(),
+          mobilePhone: (r.mobilePhone || r.mobile || '').toString().trim(),
+          emailAddress: (r.email || r.emailAddress || '').toString().trim(),
         })));
       }
       setStatusError(false);
@@ -647,7 +658,18 @@ export default function CustomerRegistration(props) {
       if (isLikelyBase64Image(mappedInstitution.biometricPhotoName)) mappedInstitution.biometricPhotoName = 'server-photo.jpg';
       if (isLikelyBase64Image(mappedInstitution.biometricSignatureName)) mappedInstitution.biometricSignatureName = 'server-signature.png';
 
-      setFormData((prev) => ({ ...prev, ...mappedInstitution }));
+      // Trim all top-level string fields before setting form data
+      const trimAllStringsLocal = (obj) => {
+        const out = {};
+        if (!obj || typeof obj !== 'object') return out;
+        Object.keys(obj).forEach((k) => {
+          const v = obj[k];
+          out[k] = (typeof v === 'string') ? v.trim() : v;
+        });
+        return out;
+      };
+
+      setFormData((prev) => ({ ...prev, ...trimAllStringsLocal(mappedInstitution) }));
       // Populate additionalReferences from legacy ref1..ref4 fields when present
       try {
         const refs = [];
