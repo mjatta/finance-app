@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import dayjs from 'dayjs';
 
 export const useProcessBadDebt = () => {
@@ -6,7 +6,8 @@ export const useProcessBadDebt = () => {
   const [error, setError] = useState(null);
 
   const processBadDebt = async ({
-    accountNumber,
+    savingsAccountNumber,
+    sharesAccountNumber,
     loansControlAccount,
     productId,
     savingsBalance,
@@ -25,36 +26,35 @@ export const useProcessBadDebt = () => {
 
       const today = dayjs().format('YYYY-MM-DDTHH:mm:ss');
 
-      // Payload for savings
+      // Payload for savings (tcAcctNumb included, tnTranAmt negative, tnContAmt positive)
       const savingsPayload = {
         ncompid: compId,
-        tcAcctNumb: accountNumber,
-        gcContraAcct: '',
+        tcAcctNumb: savingsAccountNumber || '',
+        gcContraAcct: loansControlAccount || '',
         gcControlAcct: loansControlAccount,
-        tnTranAmt: savingsBalance,
-        tnContAmt: savingsBalance,
-        tcChqno: '0001',
+        tnTranAmt: -Math.abs(Number(savingsBalance) || 0),
+        tnContAmt: Math.abs(Number(savingsBalance) || 0),
+        tcChqno: '',
         gcUserid: userName,
         gnBranchid: branchId,
         lnServID: productId,
         dTranDate: today,
       };
 
-      // Payload for shares
+      // Payload for shares (tcAcctNumb included, tnTranAmt negative, tnContAmt positive)
       const sharesPayload = {
         ncompid: compId,
-        tcAcctNumb: accountNumber,
-        gcContraAcct: '',
+        tcAcctNumb: sharesAccountNumber || '',
+        gcContraAcct: loansControlAccount || '',
         gcControlAcct: loansControlAccount,
-        tnTranAmt: sharesBalance,
-        tnContAmt: sharesBalance,
-        tcChqno: '0001',
+        tnTranAmt: -Math.abs(Number(sharesBalance) || 0),
+        tnContAmt: Math.abs(Number(sharesBalance) || 0),
+        tcChqno: '',
         gcUserid: userName,
         gnBranchid: branchId,
         lnServID: productId,
         dTranDate: today,
       };
-
       // Call savings bad debt endpoint
       const savingsResponse = await fetch('/api/Withdrawal/BadDebt', {
         method: 'POST',

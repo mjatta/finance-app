@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 
-export const useLoanBadDebtExpenses = async (
+export const insertLoanBadDebtExpenses = async (
   accountNumber,
   loansControlAccount,
   badDebtExpense,
@@ -60,6 +60,7 @@ export const useLoanBadDebtExpenses = async (
     };
   
     // Make first API call
+    // Proceed with API calls
     const response1 = await fetch('/api/loanRepayment/InsertLoanRepayment', {
       method: 'POST',
       headers: {

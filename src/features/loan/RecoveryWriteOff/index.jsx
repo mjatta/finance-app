@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Alert, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
+import { Alert, Backdrop, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import { CURRENCY_SYMBOL, formatCurrency } from '../../../utils/currencyFormatter';
@@ -10,7 +10,7 @@ import { useMemberSavings } from './hooks/useMemberSavings';
 import { useMemberShares } from './hooks/useMemberShares';
 import { useBadDebtExpenses } from './hooks/useBadDebtExpenses';
 import { useSavingsSharesDetails } from './hooks/useSavingsSharesDetails';
-import { useLoanBadDebtExpenses } from './hooks/useLoanBadDebtExpenses';
+import { insertLoanBadDebtExpenses } from './hooks/useLoanBadDebtExpenses';
 import { useProcessBadDebt } from './hooks/useProcessBadDebt';
 
 export default function RecoveryWriteOff() {
@@ -47,7 +47,6 @@ export default function RecoveryWriteOff() {
 
   // Debug: inspect rows and normalizedRows to see why selectedRow is missing
   useEffect(() => {
-    console.debug('rows debug', { rowsLength: rows?.length, firstRow: rows?.[0] || null, normalizedFirst: normalizedRows?.[0] || null, selectedId });
   }, [rows, normalizedRows, selectedId]);
 
 
@@ -58,7 +57,6 @@ export default function RecoveryWriteOff() {
   useEffect(() => {
     if (!selectedId && normalizedRows && normalizedRows.length > 0) {
       const firstId = normalizedRows[0].id;
-      console.debug('Auto-selecting first row', { firstId, normalizedFirst: normalizedRows[0] });
       setSelectedId(firstId);
     }
   }, [normalizedRows, selectedId]);
@@ -75,7 +73,6 @@ export default function RecoveryWriteOff() {
 
   // Debug: inspect savings and shares payloads
   useEffect(() => {
-    console.debug('savings/shares debug', { savings, shares });
   }, [savings, shares]);
 
   // Extract account number from savings or shares response for details fetch
@@ -89,13 +86,6 @@ export default function RecoveryWriteOff() {
 
   // Debug: log the values that control Bad Debt button enablement
   useEffect(() => {
-    console.debug('BadDebt button state', {
-      selectedRowPresent: !!selectedRow,
-      isBadDebtSubmitting,
-      hasAccountDetails: !!accountDetails?.AccountNumber,
-      hasBadDebtExpenses: !!badDebtExpenses?.LoansControlAccount,
-      cacctnumb,
-    });
   }, [selectedRow, isBadDebtSubmitting, accountDetails, badDebtExpenses, cacctnumb]);
 
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
@@ -176,7 +166,7 @@ export default function RecoveryWriteOff() {
         throw new Error(`Failed to confirm write-off: ${response.status}`);
       }
 
-      // Show success message
+      // Show success message for write-off
       const successMsg = `Loan ${selectedRow.loanNumber} has been successfully written off.`;
       setSuccessMessage(successMsg);
       notifySaveSuccess({
@@ -185,12 +175,55 @@ export default function RecoveryWriteOff() {
         message: successMsg,
       });
 
-      // Auto-clear success message after 5 seconds
-      setTimeout(() => setSuccessMessage(null), 5000);
+      // Keep the spinner showing while we attempt automatic bad-debt flows
+      try {
+        // Prepare balances
+        const savingsBalance = savings?.SavingsBalance ? parsePrincipal(savings.SavingsBalance) : 0;
+        const sharesBalance = shares?.SharesBalance ? parsePrincipal(shares.SharesBalance) : 0;
+        const totalOutstanding = selectedRow?.totalOutstanding || 0;
 
-      // Refresh the grid
-      setRefreshKey((prev) => prev + 1);
-      setSelectedId(null);
+        // First, insert loan repayment entries
+        const repaymentResult = await insertLoanBadDebtExpenses(
+          selectedRow?.loanNumber,
+          badDebtExpenses?.LoansControlAccount,
+          badDebtExpenses?.BadDebtExpense,
+          badDebtExpenses?.ProductId,
+          savingsBalance,
+          sharesBalance,
+          totalOutstanding
+        );
+
+        if (!repaymentResult || !repaymentResult.success) {
+          throw new Error(repaymentResult?.error || 'Failed to insert loan repayment entries');
+        }
+
+        // Then, process bad debt (withdrawal) using the processBadDebt helper
+          const savingsAcct = savings?.cacctnumb || '';
+          const sharesAcct = shares?.cacctnumb || '';
+          await processBadDebt({
+            savingsAccountNumber: savingsAcct,
+            sharesAccountNumber: sharesAcct,
+            loansControlAccount: badDebtExpenses?.LoansControlAccount,
+            productId: badDebtExpenses?.ProductId,
+            savingsBalance,
+            sharesBalance,
+          });
+
+        const bdMsg = `Bad debt for loan ${selectedRow.loanNumber} processed.`;
+        setSuccessMessage((prev) => `${prev} ${bdMsg}`);
+        notifySaveSuccess({
+          page: 'Loan / Loan Recovery & Write-off',
+          action: 'Auto Process Bad Debt',
+          message: bdMsg,
+        });
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } catch (flowErr) {
+        setBadDebtError(flowErr.message || String(flowErr));
+      } finally {
+        // Refresh the grid regardless of bad-debt flow outcome
+        setRefreshKey((prev) => prev + 1);
+        setSelectedId(null);
+      }
     } catch (err) {
       setSubmitError(err.message);
     } finally {
@@ -199,8 +232,10 @@ export default function RecoveryWriteOff() {
   };
 
   const handleProcessBadDebt = async () => {
-    if (!accountDetails?.AccountNumber || !badDebtExpenses?.LoansControlAccount) {
-      setBadDebtError('Missing required account details');
+    const savingsAcct = savings?.cacctnumb || '';
+    const sharesAcct = shares?.cacctnumb || '';
+    if (!badDebtExpenses?.LoansControlAccount || (!savingsAcct && !sharesAcct && !accountDetails?.AccountNumber)) {
+      setBadDebtError('Missing required account details or bad-debt configuration');
       return;
     }
 
@@ -214,9 +249,10 @@ export default function RecoveryWriteOff() {
       const sharesBalance = shares?.SharesBalance ? parsePrincipal(shares.SharesBalance) : 0;
       const totalOutstanding = selectedRow?.totalOutstanding || 0;
 
-      // First, call the Withdrawal/BadDebt endpoint
+      // First, call the Withdrawal/BadDebt endpoint (use savings/shares cacctnumb when available)
       await processBadDebt({
-        accountNumber: accountDetails.AccountNumber,
+        savingsAccountNumber: savingsAcct || accountDetails?.AccountNumber || '',
+        sharesAccountNumber: sharesAcct || accountDetails?.AccountNumber || '',
         loansControlAccount: badDebtExpenses.LoansControlAccount,
         productId: badDebtExpenses.ProductId,
         savingsBalance,
@@ -224,9 +260,8 @@ export default function RecoveryWriteOff() {
       });
 
       // Then, call the Loan Repayment InsertLoanRepayment endpoint
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const repaymentResult = await useLoanBadDebtExpenses(
-        accountDetails.AccountNumber,
+        const repaymentResult = await insertLoanBadDebtExpenses(
+          selectedRow?.loanNumber,
         badDebtExpenses.LoansControlAccount,
         badDebtExpenses.BadDebtExpense,
         badDebtExpenses.ProductId,
@@ -263,6 +298,17 @@ export default function RecoveryWriteOff() {
 
   return (
     <Box p={3}>
+      <Backdrop
+        open={isSubmitting || isBadDebtSubmitting}
+        sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1300, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.75)' }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={96} thickness={5} />
+          <Typography variant="h6" fontWeight={800}>
+            {isSubmitting ? 'Processing write off...' : 'Processing bad debt...'}
+          </Typography>
+        </Box>
+      </Backdrop>
       <Box
         sx={{
           mb: 3,
