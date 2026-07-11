@@ -58,7 +58,7 @@ export const useLoanBadDebtExpenses = async (
       lbranchid: branchId,
       llcBank: 0,
     };
-
+  
     // Make first API call
     const response1 = await fetch('/api/loanRepayment/InsertLoanRepayment', {
       method: 'POST',
@@ -71,7 +71,6 @@ export const useLoanBadDebtExpenses = async (
     if (!response1.ok) {
       throw new Error(`Failed to insert loan repayment (1st call): ${response1.status}`);
     }
-
     // Make second API call
     const response2 = await fetch('/api/loanRepayment/InsertLoanRepayment', {
       method: 'POST',

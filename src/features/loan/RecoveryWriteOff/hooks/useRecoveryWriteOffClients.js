@@ -14,11 +14,19 @@ export const useRecoveryWriteOffClients = (refreshKey = 0) => {
 
       try {
         const response = await fetch('/api/loan-recovery-write-off-clients');
+        console.debug('useRecoveryWriteOffClients: fetched', { status: response.status, ok: response.ok });
         if (!response.ok) {
+          const text = await response.text().catch(() => null);
+          console.debug('useRecoveryWriteOffClients: non-ok response body', { text });
           throw new Error(`Failed to fetch recovery/write-off clients: ${response.status}`);
         }
 
-        const payload = await response.json();
+        const payload = await response.json().catch(async (err) => {
+          const txt = await response.text().catch(() => null);
+          console.debug('useRecoveryWriteOffClients: invalid json response', { err, text: txt });
+          throw err;
+        });
+        console.debug('useRecoveryWriteOffClients: payload', { type: typeof payload, sample: Array.isArray(payload) ? payload.slice(0,3) : payload?.rows?.slice?.(0,3) });
         const records = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.rows)

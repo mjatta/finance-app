@@ -16,7 +16,6 @@ export const useBadDebtExpenses = (loanId) => {
 
       setIsLoading(true);
       setError(null);
-
       try {
         const response = await fetch(`/api/loans/accounts?loanId=${encodeURIComponent(loanId)}`);
         if (!response.ok) {

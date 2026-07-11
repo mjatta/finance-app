@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Paper, Skeleton, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
@@ -45,8 +45,23 @@ export default function RecoveryWriteOff() {
     [rows],
   );
 
+  // Debug: inspect rows and normalizedRows to see why selectedRow is missing
+  useEffect(() => {
+    console.debug('rows debug', { rowsLength: rows?.length, firstRow: rows?.[0] || null, normalizedFirst: normalizedRows?.[0] || null, selectedId });
+  }, [rows, normalizedRows, selectedId]);
+
+
   const selectedRow =
     normalizedRows.find((row) => row.id === selectedId) || normalizedRows[0] || null;
+
+  // Ensure a row is selected when rows first load
+  useEffect(() => {
+    if (!selectedId && normalizedRows && normalizedRows.length > 0) {
+      const firstId = normalizedRows[0].id;
+      console.debug('Auto-selecting first row', { firstId, normalizedFirst: normalizedRows[0] });
+      setSelectedId(firstId);
+    }
+  }, [normalizedRows, selectedId]);
 
   // Fetch detailed loan info when a row is selected
   const { details: loanDetails, isLoading: detailsLoading } = useLoanDetails(
@@ -58,6 +73,11 @@ export default function RecoveryWriteOff() {
   const { savings, isLoading: savingsLoading } = useMemberSavings(selectedRow?.customerCode);
   const { shares, isLoading: sharesLoading } = useMemberShares(selectedRow?.customerCode);
 
+  // Debug: inspect savings and shares payloads
+  useEffect(() => {
+    console.debug('savings/shares debug', { savings, shares });
+  }, [savings, shares]);
+
   // Extract account number from savings or shares response for details fetch
   const cacctnumb = savings?.cacctnumb || shares?.cacctnumb || null;
 
@@ -66,6 +86,17 @@ export default function RecoveryWriteOff() {
 
   // Fetch savings/shares account details
   const { details: accountDetails } = useSavingsSharesDetails(cacctnumb);
+
+  // Debug: log the values that control Bad Debt button enablement
+  useEffect(() => {
+    console.debug('BadDebt button state', {
+      selectedRowPresent: !!selectedRow,
+      isBadDebtSubmitting,
+      hasAccountDetails: !!accountDetails?.AccountNumber,
+      hasBadDebtExpenses: !!badDebtExpenses?.LoansControlAccount,
+      cacctnumb,
+    });
+  }, [selectedRow, isBadDebtSubmitting, accountDetails, badDebtExpenses, cacctnumb]);
 
   const money = (value) => `${CURRENCY_SYMBOL} ${formatCurrency(Number(value || 0).toFixed(2))}`;
 
