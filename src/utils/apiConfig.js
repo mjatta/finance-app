@@ -66,6 +66,15 @@ const ENDPOINT_MAP = {
     dev: '/api/member/enquiry',
     prod: '/api/member/enquiry',
   },
+  // Explicit keys for corporate and group fallbacks (use same backend path with memberType query)
+  'member-enquiry-corporate': {
+    dev: '/api/member/enquiry',
+    prod: '/api/member/enquiry',
+  },
+  'member-enquiry-group': {
+    dev: '/api/member/enquiry',
+    prod: '/api/member/enquiry',
+  },
   // Account Details (Member/Account Closure)
   'account-details': {
     dev: '/api/account/details',

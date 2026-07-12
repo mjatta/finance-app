@@ -15,21 +15,24 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const apiUrl = buildApiUrl('member-enquiry', {
-        ncompid: '30',
-        custCode: memberCode.trim().padStart(6, '0'),
-        memberType: 'individual',
-        acctStatus: 'A',
-      });
+      // Try primary enquiry (individual), then fallback to corporate, then group
+      const custCode = memberCode.trim().padStart(6, '0');
 
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const callEnquiry = async (memberType) => {
+        const url = buildApiUrl('member-enquiry', {
+          ncompid: '30',
+          custCode,
+          memberType,
+          acctStatus: 'A',
+        });
+        const res = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        return res;
+      };
 
-      console.log(response, 'Raw response from member details API');
+      // Primary: individual
+      let response = await callEnquiry('individual');
+
+      console.log(response, 'Raw response from member details API (individual)');
 
       // Handle 404 errors - member not found
       if (response.status === 404) {
@@ -51,6 +54,43 @@ export function useGetMemberDetails() {
         console.warn('Failed to parse member details response as JSON:', jsonError);
         setError('Invalid response format');
         return null;
+      }
+
+      // If no accounts returned, try corporate then group fallbacks
+      const hasAccounts = Array.isArray(payload?.Accounts) && payload.Accounts.length > 0;
+      if (!hasAccounts) {
+        console.log('No accounts returned for individual; trying corporate endpoint');
+        try {
+          response = await callEnquiry('corporate');
+          console.log(response, 'Raw response from member details API (corporate)');
+          if (response.ok) {
+            const corpPayload = await response.json();
+            if (Array.isArray(corpPayload?.Accounts) && corpPayload.Accounts.length > 0) {
+              setError(null);
+              return corpPayload;
+            }
+          }
+        } catch (errCorp) {
+          console.warn('Corporate enquiry failed:', errCorp);
+        }
+
+        // Try group
+        console.log('Trying group endpoint as final fallback');
+        try {
+          response = await callEnquiry('group');
+          console.log(response, 'Raw response from member details API (group)');
+          if (response.ok) {
+            const groupPayload = await response.json();
+            if (Array.isArray(groupPayload?.Accounts) && groupPayload.Accounts.length > 0) {
+              setError(null);
+              return groupPayload;
+            }
+          }
+        } catch (errGroup) {
+          console.warn('Group enquiry failed:', errGroup);
+        }
+
+        // No fallback returned accounts; continue to return original payload (may be empty)
       }
 
       // Validate response structure

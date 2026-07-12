@@ -184,6 +184,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-setup/:path*"
     },
     {
+      "source": "/api/member/enquiry",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry"
+    },
+    {
       "source": "/api/loan/save-guarantor",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan/save-guarantor"
     },
