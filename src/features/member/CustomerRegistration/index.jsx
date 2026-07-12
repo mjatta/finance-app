@@ -343,7 +343,12 @@ export default function CustomerRegistration(props) {
 
       const mapped = {
         // Institution fields
-        institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
+        institutionType: (function () {
+          const mem = Number(m.mem_type ?? m.MemType ?? m.memtype ?? m.Memtype ?? NaN);
+          if (mem === 2) return 'Group';
+          if (mem === 3) return 'Corporate / Institution';
+          return '';
+        })(),
         institutionName: m.CustName || m.custname || '',
         institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
@@ -566,7 +571,12 @@ export default function CustomerRegistration(props) {
 
       // Map institution response fields into formData (reuse existing mapping approach)
       const mappedInstitution = {
-        institutionType: (m.CustType === 'C' || m.custtype === 'corporate') ? 'corporate' : (m.custtype || 'corporate'),
+        institutionType: (function () {
+          const mem = Number(m.mem_type ?? m.MemType ?? m.memtype ?? m.Memtype ?? NaN);
+          if (mem === 2) return 'group';
+          if (mem === 3) return 'corporate';
+          return '';
+        })(),
         // Prefer backend `ccustname` when present, fall back to other name fields
         institutionName: m.ccustname || m.CustName || m.custname || '',
         // Biz category / nature
@@ -1925,7 +1935,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         Select institution type
                       </MenuItem>
                       <MenuItem value="group">Group</MenuItem>
-                      <MenuItem value="corporate">Corporate</MenuItem>
+                      <MenuItem value="corporate">Corporate / Institution</MenuItem>
                     </TextField>
                     <TextField
                       required
