@@ -15,10 +15,12 @@ import {
   FormControlLabel,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useBranches } from '../../../hooks/useBranches';
-import { useUsers } from '../../../hooks/useUsers';
-import { useLoanReasons } from '../../../hooks/useLoanReasons';
-import { useAuthStore } from '../../../store/authStore';
+
+import { useLoanReportProducts } from './hooks/useLoanReportProducts';
+import { useLoanReportBranches } from './hooks/useLoanReportBranches';
+import { useLoanReportLoanReasons } from './hooks/useLoanReportLoanReasons';
+import { useLoanReportUsers } from './hooks/useLoanReportUsers';
+import { useLoanReportCurrencies } from './hooks/useLoanReportCurrencies';
 
 const ALL_BRANCHES_VALUE = 'ALL';
 
@@ -34,10 +36,11 @@ const CHECKS = [
 const initChecks = () => CHECKS.reduce((acc, c) => ({ ...acc, [c.name]: false }), {});
 
 export default function LoanReports() {
-  const { branches } = useBranches();
-  const { users, fetchUsers } = useUsers();
-  const { loanReasons, fetchLoanReasons } = useLoanReasons();
-  const loanProducts = useAuthStore((s) => s.loanProducts || []);
+  const { branches, fetchBranches } = useLoanReportBranches();
+  const { users, fetchUsers } = useLoanReportUsers();
+  const { loanReasons, fetchLoanReasons } = useLoanReportLoanReasons();
+  const { products, fetchProducts } = useLoanReportProducts();
+  const { currencies, fetchCurrencies } = useLoanReportCurrencies();
 
   const [product, setProduct] = useState('');
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
@@ -52,17 +55,19 @@ export default function LoanReports() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
   useEffect(() => { fetchLoanReasons(); }, [fetchLoanReasons]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => { fetchBranches(); }, [fetchBranches]);
+  useEffect(() => { fetchCurrencies(); }, [fetchCurrencies]);
 
-  const branchOptions = useMemo(() => (Array.isArray(branches) ? branches : []).map((b) => ({
-    id: String(b.br_id ?? b.branchid ?? b.id ?? ''),
-    name: String(b.br_name || b.branchName || b.name || b.branch || ''),
-  })), [branches]);
+  const branchOptions = useMemo(() => (Array.isArray(branches) ? branches : []).map((b) => ({ id: b.id, name: b.name })), [branches]);
 
-  const productOptions = useMemo(() => (Array.isArray(loanProducts) ? loanProducts : []).map((p) => ({ id: p.id || p.ProductId || p.prodId || p.prod_id || String(p), name: p.name || p.ProductName || p.prodName || String(p) })), [loanProducts]);
+  const productOptions = useMemo(() => (Array.isArray(products) ? products : []).map((p) => ({ id: p.id, name: p.name })), [products]);
 
   const loanReasonOptions = useMemo(() => (Array.isArray(loanReasons) ? loanReasons : []).map((r) => ({ id: r.id, name: r.name })), [loanReasons]);
 
-  const userOptions = useMemo(() => (Array.isArray(users) ? users : []).map((u) => ({ id: u.id || u.userId || u.username || u.username, name: u.username || u.fullName || u.name || u.user || String(u) })), [users]);
+  const userOptions = useMemo(() => (Array.isArray(users) ? users : []).map((u) => ({ id: u.id, name: u.name })), [users]);
+
+  const currencyOptions = useMemo(() => (Array.isArray(currencies) ? currencies : []).map((c) => ({ id: c.id, name: c.name })), [currencies]);
 
   const handleCheckChange = (e) => {
     const { name, checked } = e.target;
@@ -183,9 +188,15 @@ export default function LoanReports() {
             </Box>
             <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
               <TextField select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} size="small">
-                <MenuItem value="GMD">GMD</MenuItem>
-                <MenuItem value="USD">USD</MenuItem>
-                <MenuItem value="EUR">EUR</MenuItem>
+                {currencyOptions && currencyOptions.length > 0 ? (
+                  currencyOptions.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)
+                ) : (
+                  <>
+                    <MenuItem value="GMD">GMD</MenuItem>
+                    <MenuItem value="USD">USD</MenuItem>
+                    <MenuItem value="EUR">EUR</MenuItem>
+                  </>
+                )}
               </TextField>
               <Button variant="outlined" onClick={handleClear}>Clear</Button>
             </Box>

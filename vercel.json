@@ -28,6 +28,10 @@
         ]
       }
     ],
+          {
+            "source": "/api/loan-report/:path*",
+            "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-report/:path*"
+          },
     "rewrites": [
           {
             "source": "/api/GLTransactions/transactions/:accountNumber",

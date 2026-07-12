@@ -2633,6 +2633,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-cities/, '/api/lookups'),
       },
+      // Proxy for loan-report endpoints (products, branches, loan-reasons, users, currencies)
+      '/api/loan-report': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/loan-report/, '/api/loan-report'),
+      },
       '/api/remote-id-types': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
