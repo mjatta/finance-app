@@ -821,8 +821,6 @@ const memberEnquiryApiPlugin = () => ({
           })
         },
       })
-  },
-})
 
 const withdrawalsApiPlugin = () => ({
   name: 'withdrawals-api-plugin',
