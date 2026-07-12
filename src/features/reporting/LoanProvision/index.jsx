@@ -81,7 +81,7 @@ export default function LoanProvision() {
     }
   }, [ranges, rangesLoading, rangesInitialized]);
 
-  const canRunAction = Boolean(product && runDate);
+  const canRunAction = Boolean(runDate);
 
   const convertToCSV = (data) => {
     const groupedData = {};
@@ -184,11 +184,6 @@ export default function LoanProvision() {
   };
 
   const handleFetchAndExport = async (exportType) => {
-    if (!product) {
-      setStatusMessage('Please select a product before exporting.');
-      return;
-    }
-
     if (!runDate) {
       setStatusMessage('Please select a run date before exporting.');
       return;
@@ -197,7 +192,7 @@ export default function LoanProvision() {
     setStatusMessage('');
     const response = await fetchDetails({
       toDate: runDate.format('YYYY-MM-DD'),
-      productId: product,
+      productId: product ? product : 0,
       categoryId: category ? Number(category) || 0 : 0,
     });
 
@@ -406,7 +401,7 @@ export default function LoanProvision() {
                 displayEmpty: true,
                 renderValue: (selected) => {
                   if (!selected) {
-                    return productLoading ? 'Loading...' : 'Select product';
+                    return productLoading ? 'Loading...' : 'All Products';
                   }
 
                   const option = productOptions.find((item) => item.value === selected);
@@ -414,9 +409,7 @@ export default function LoanProvision() {
                 },
               }}
             >
-              <MenuItem value="" disabled>
-                Select product
-              </MenuItem>
+              <MenuItem value="">All Products</MenuItem>
               {productOptions.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
