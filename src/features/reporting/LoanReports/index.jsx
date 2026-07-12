@@ -21,6 +21,8 @@ import { useLoanReportBranches } from './hooks/useLoanReportBranches';
 import { useLoanReportLoanReasons } from './hooks/useLoanReportLoanReasons';
 import { useLoanReportUsers } from './hooks/useLoanReportUsers';
 import { useLoanReportCurrencies } from './hooks/useLoanReportCurrencies';
+import { useLoanReportPrintView } from './hooks/useLoanReportPrintView';
+import { buildLoanReportPrintHtml } from './printSetup';
 
 const ALL_BRANCHES_VALUE = 'ALL';
 
@@ -52,6 +54,9 @@ export default function LoanReports() {
   const [tranTo, setTranTo] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  
+
+  const { generateReport } = useLoanReportPrintView();
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
   useEffect(() => { fetchLoanReasons(); }, [fetchLoanReasons]);
@@ -98,16 +103,97 @@ export default function LoanReports() {
     Format: format,
   });
 
+      // Helper to download a file
+      const downloadFile = (content, filename, mimeType) => {
+        const blob = new Blob([content], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      };
+
+      const escapeCSV = (value) => {
+        const str = String(value ?? '');
+        return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+      };
+
+      const formatDate = (v) => {
+        if (!v) return '';
+        try {
+          const d = new Date(v);
+          if (isNaN(d.getTime())) return String(v).slice(0, 10);
+          return d.toISOString().slice(0, 10);
+        } catch {
+          return String(v).slice(0, 10);
+        }
+      };
+
+      const convertToCSV = (rowsData) => {
+        const headers = ['Loan No', 'Client Code', 'Client Name', 'Product', 'Principal', 'Repayment', 'Applied', 'Approved', 'Issued', 'Maturity', 'Branch', 'Total Balance'];
+        const csvRows = (rowsData || []).map((r) => [
+          String(r?.LOAN_NUMBER ?? '').trim(),
+          String(r?.ccustcode ?? '').trim(),
+          `${String(r?.ccustfname ?? '').trim()} ${String(r?.ccustmname ?? '').trim()} ${String(r?.ccustlname ?? '').trim()}`.trim(),
+          String(r?.prd_name ?? '').trim(),
+          Number(r?.PRINCIPAL_AMT ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          Number(r?.REPAYMENT_AMT ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          formatDate(r?.loan_appl_date),
+          formatDate(r?.loan_appr_date),
+          r?.ISSUED_DATE && r.ISSUED_DATE !== '1900-01-01T00:00:00' ? formatDate(r.ISSUED_DATE) : '',
+          formatDate(r?.MATURITY_DATE),
+          String(r?.br_name ?? '').trim(),
+          Number(r?.TOTALBALANCE ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        ]);
+
+        return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+      };
+
   const handleExport = async (format) => {
     setIsExporting(true);
     setStatusMessage('Preparing export...');
     try {
-      const payload = buildPayload(format);
-      // For now, just log payload and simulate export
-      console.log('LoanReports export payload:', payload);
-      // Simulate delay
-      await new Promise((r) => setTimeout(r, 700));
-      setStatusMessage(`Export (${format}) ready — downloaded.`);
+      const uiPayload = buildPayload(format);
+      const payload = {
+        BranchID: uiPayload.Branch || 0,
+        ProductType: uiPayload.Product || 0,
+        LoanReason: uiPayload.LoanReason || 0,
+        UserID: uiPayload.User || '',
+        LApply: checks.loanApplication ? 1 : 0,
+        LApproved: checks.loanApproval ? 1 : 0,
+        LIssued: checks.loanIssued ? 1 : 0,
+        Rejected: checks.loanRejected ? 1 : 0,
+        LoanWriteOff: checks.loanWriteOff ? 1 : 0,
+        LoanChargeOff: checks.loanChargeOff ? 1 : 0,
+        FromDate: uiPayload.TranFrom || '',
+        ToDate: uiPayload.TranTo || '',
+      };
+
+      const rows = await generateReport(payload) || [];
+
+      if (format === 'CSV') {
+        const csv = convertToCSV(rows);
+        const filename = `loan-report-${new Date().toISOString().slice(0, 10)}.csv`;
+        downloadFile(csv, filename, 'text/csv');
+        setStatusMessage(`CSV (${filename}) downloaded.`);
+      } else if (format === 'Excel') {
+        const csv = convertToCSV(rows);
+        const filename = `loan-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        downloadFile(csv, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        setStatusMessage(`Excel (${filename}) downloaded.`);
+      } else {
+        const html = buildLoanReportPrintHtml(rows, { subTitle: `From: ${uiPayload.TranFrom || ''} To: ${uiPayload.TranTo || ''}` });
+        const w = window.open('', '_blank');
+        if (w) {
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+        }
+      }
     } catch (err) {
       console.error('Export error:', err);
       setStatusMessage('Export failed');
@@ -242,6 +328,7 @@ export default function LoanReports() {
           Clear
         </Button>
       </Box>
+      
     </Box>
   );
 }

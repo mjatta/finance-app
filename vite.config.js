@@ -50,6 +50,50 @@ const journalPostApiPlugin = () => ({
   },
 })
 
+// Loan Report API Plugin (dev server middleware, backend only)
+const loanReportApiPlugin = () => ({
+  name: 'loan-report-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/loan-report/report', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/loan-report/report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process loan report request.', error: err.message }))
+      }
+    })
+  },
+})
+
 // Account Details API Plugin (dev server middleware, backend only)
 const accountDetailsApiPlugin = () => ({
   name: 'account-details-api-plugin',
@@ -2510,6 +2554,7 @@ export default defineConfig({
     securitySettingsApiPlugin(),
     productDefinitionApiPlugin(),
     loanRepaymentInsertApiPlugin(),
+    loanReportApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
     loginAttemptsApiPlugin(),

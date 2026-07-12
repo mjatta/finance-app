@@ -38,6 +38,10 @@
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-report/:path*"
       },
       {
+        "source": "/api/loan-report/report",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/loan-report/report"
+      },
+      {
         "source": "/api/remote-branches/:path*",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/:path*"
       },
