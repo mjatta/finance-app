@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
 import { buildCustomerEnquiriesPrintHtml } from './CustomerEnquiries/printSetup';
 
@@ -113,11 +114,11 @@ export default function CustomerEnquiries() {
   const [activeAccount, setActiveAccount] = useState(false);
   const [closedAccount, setClosedAccount] = useState(false);
 
-  // Date ranges
-  const [openDateFrom, setOpenDateFrom] = useState(null);
-  const [openDateTo, setOpenDateTo] = useState(null);
-  const [closeDateFrom, setCloseDateFrom] = useState(null);
-  const [closeDateTo, setCloseDateTo] = useState(null);
+  // Date ranges (provide sensible defaults)
+  const [openDateFrom, setOpenDateFrom] = useState(() => dayjs('1900-01-01'));
+  const [openDateTo, setOpenDateTo] = useState(() => dayjs('2089-12-31'));
+  const [closeDateFrom, setCloseDateFrom] = useState(() => dayjs('1900-01-01'));
+  const [closeDateTo, setCloseDateTo] = useState(() => dayjs('2089-12-31'));
 
   // Customer type
   const [customerType, setCustomerType] = useState({
@@ -126,9 +127,9 @@ export default function CustomerEnquiries() {
     corporate: false,
   });
 
-  // Age range
-  const [ageFrom, setAgeFrom] = useState('');
-  const [ageTo, setAgeTo] = useState('');
+  // Age range (defaults)
+  const [ageFrom, setAgeFrom] = useState(0);
+  const [ageTo, setAgeTo] = useState(999);
 
   // Gender
   const [gender, setGender] = useState({
@@ -169,9 +170,6 @@ export default function CustomerEnquiries() {
   };
 
   const fetchReportData = async () => {
-    if (!branch) {
-      throw new Error('Please select a branch before exporting.');
-    }
 
     const matchedBranch = (Array.isArray(branches) ? branches : []).find(
       (item) => normalizeBranchName(item) === branch,
@@ -190,11 +188,13 @@ export default function CustomerEnquiries() {
       GenderMale: gender.male ? 1 : 0,
       GenderFemale: gender.female ? 2 : 0,
       GenderCode: gender.male && gender.female ? '3' : gender.male ? '1' : gender.female ? '2' : '',
-      BranchID: branch === ALL_BRANCHES_VALUE ? 0 : normalizeBranchId(matchedBranch),
+      BranchID: branch === ALL_BRANCHES_VALUE || !branch ? 0 : normalizeBranchId(matchedBranch),
+      AgeFrom: Number(ageFrom) || 0,
+      AgeTo: Number(ageTo) || 999,
       OpenFromDate: formatDate(openDateFrom, '1900-01-01'),
-      OpenToDate: formatDate(openDateTo, '2100-12-31'),
+      OpenToDate: formatDate(openDateTo, '2089-12-31'),
       ClosedFromDate: formatDate(closeDateFrom, '1900-01-01'),
-      ClosedToDate: formatDate(closeDateTo, '2100-12-31'),
+      ClosedToDate: formatDate(closeDateTo, '2089-12-31'),
     };
 
     const response = await fetch('/api/memberreport/get', {
@@ -288,13 +288,13 @@ export default function CustomerEnquiries() {
     setEducationalLevel('');
     setActiveAccount(false);
     setClosedAccount(false);
-    setOpenDateFrom(null);
-    setOpenDateTo(null);
-    setCloseDateFrom(null);
-    setCloseDateTo(null);
+    setOpenDateFrom(dayjs('1900-01-01'));
+    setOpenDateTo(dayjs('2089-12-31'));
+    setCloseDateFrom(dayjs('1900-01-01'));
+    setCloseDateTo(dayjs('2089-12-31'));
     setCustomerType({ individual: false, group: false, corporate: false });
-    setAgeFrom('');
-    setAgeTo('');
+    setAgeFrom(0);
+    setAgeTo(999);
     setGender({ male: false, female: false });
     setStatusMessage('');
   };
@@ -338,13 +338,13 @@ export default function CustomerEnquiries() {
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (v) => {
-                    if (!v) return 'Select a branch';
+                    if (!v) return 'All Branches';
                     if (v === ALL_BRANCHES_VALUE) return 'All Branches';
                     return v;
                   },
                 }}
               >
-                <MenuItem value="" disabled>Select a branch</MenuItem>
+                <MenuItem value="">All Branches</MenuItem>
                 <MenuItem value={ALL_BRANCHES_VALUE}>All Branches</MenuItem>
                 {branchOptions.map((item) => (
                   <MenuItem key={item} value={item}>{item}</MenuItem>
@@ -513,20 +513,20 @@ export default function CustomerEnquiries() {
                 label="Age From"
                 type="number"
                 value={ageFrom}
-                onChange={(e) => setAgeFrom(e.target.value)}
+                onChange={(e) => setAgeFrom(Number(e.target.value))}
                 size="small"
                 fullWidth
-                inputProps={{ min: 0, max: 120 }}
+                inputProps={{ min: 0, max: 999 }}
                 placeholder="e.g. 18"
               />
               <TextField
                 label="Age To"
                 type="number"
                 value={ageTo}
-                onChange={(e) => setAgeTo(e.target.value)}
+                onChange={(e) => setAgeTo(Number(e.target.value))}
                 size="small"
                 fullWidth
-                inputProps={{ min: 0, max: 120 }}
+                inputProps={{ min: 0, max: 999 }}
                 placeholder="e.g. 60"
               />
             </Box>
@@ -556,7 +556,7 @@ export default function CustomerEnquiries() {
         <Button
           variant="contained"
           onClick={() => handleExport('pdf')}
-          disabled={!branch || branchesLoading || isPrinting}
+          disabled={isPrinting}
           sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 4 }}
         >
           PDF
@@ -564,7 +564,7 @@ export default function CustomerEnquiries() {
         <Button
           variant="contained"
           onClick={() => handleExport('excel')}
-          disabled={!branch || branchesLoading || isPrinting}
+          disabled={isPrinting}
           sx={{ backgroundColor: '#16a34a', '&:hover': { backgroundColor: '#15803d' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           Excel
@@ -572,7 +572,7 @@ export default function CustomerEnquiries() {
         <Button
           variant="contained"
           onClick={() => handleExport('csv')}
-          disabled={!branch || branchesLoading || isPrinting}
+          disabled={isPrinting}
           sx={{ backgroundColor: '#0ea5e9', '&:hover': { backgroundColor: '#0284c7' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           CSV
