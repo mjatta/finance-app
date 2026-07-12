@@ -731,6 +731,8 @@ const memberEnquiryApiPlugin = () => ({
         res.end(JSON.stringify({ message: 'Failed to process member enquiry.', error: err.message }))
       }
     })
+  },
+})
 
       // Loans Top-up API Plugin (dev server middleware, backend GET passthrough)
       const loansTopupApiPlugin = () => ({

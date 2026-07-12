@@ -326,10 +326,14 @@ export default function LoanApplication() {
     const errors = [];
     
     if (!formData.startDate) errors.push('Start Date is required');
-    // If top-up or reschedule, require New Principal instead of Principal Amount
-    const isTopup = formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details'
-    if (isTopup) {
+    // Top-up vs Reschedule validation
+    const isTopupReschedule = formData.transactionType === 'topup_reschedule'
+    const isReschedule = formData.transactionType === 'topup_details'
+    if (isTopupReschedule) {
       if (!formData.newPrincipal) errors.push('New Principal is required');
+    } else if (isReschedule) {
+      // For reschedule, principalAmount may come from currentLoanBalance so allow that
+      if (!formData.principalAmount && !formData.currentLoanBalance) errors.push('Principal Amount is required');
     } else {
       if (!formData.principalAmount) errors.push('Principal Amount is required');
     }
@@ -459,6 +463,8 @@ export default function LoanApplication() {
                 loanProduct: candidate.prd_id ?? prev.loanProduct,
                 interestRate: candidate.intrate ?? prev.interestRate,
                 // Do NOT overwrite loanDuration for top-up/reschedule
+                // If this transaction type is Rescheduled Loan, set newPrincipal to 0 and keep it readonly
+                newPrincipal: txType === 'topup_details' ? '0' : prev.newPrincipal,
               }));
 
               if (loanId) {
@@ -500,6 +506,7 @@ export default function LoanApplication() {
           interestMethod: '',
           interestRate: '',
           loanLimit: '',
+          newPrincipal: '',
         }));
       }
     } catch {
@@ -1030,7 +1037,8 @@ export default function LoanApplication() {
                         onChange={handleNewPrincipalChange}
                         size="small"
                         fullWidth
-                        required
+                        required={formData.transactionType === 'topup_reschedule'}
+                        disabled={formData.transactionType === 'topup_details'}
                         inputProps={{
                           inputMode: 'numeric',
                           pattern: '[0-9.]*',
