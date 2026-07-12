@@ -124,6 +124,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/:path*"
     },
     {
+      "source": "/api/loans/topup",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/topup"
+    },
+    {
+      "source": "/api/loans/details",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/details"
+    },
+    {
       "source": "/api/loan-change-off-clients",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/clients?chargeType=1"
     },

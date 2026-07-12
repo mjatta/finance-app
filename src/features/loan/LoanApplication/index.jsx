@@ -32,6 +32,8 @@ import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useLoanSetupDetails } from './hooks/useLoanSetupDetails';
 import { useLoanCalculate } from './hooks/useLoanCalculate';
 import { useLoanSave } from './hooks/useLoanSave';
+import { useTopupLoans } from './hooks/useTopupLoans';
+import { useLoanDetails } from './hooks/useLoanDetails';
 import { useLoanReasons } from '../../../hooks/useLoanReasons';
 
 const todayIso = new Date().toISOString().split('T')[0];
@@ -43,6 +45,7 @@ const initialFormData = {
   currentLoanBalance: '',
   loanProduct: '',
   principalAmount: '',
+  newPrincipal: '',
   interestMethod: '',
   interestRate: '',
   interestScope: '',
@@ -126,6 +129,8 @@ export default function LoanApplication() {
   const { fetchLoanSetupDetails } = useLoanSetupDetails();
   const { calculateLoan } = useLoanCalculate();
   const { saveLoan } = useLoanSave();
+  const { fetchTopupLoans } = useTopupLoans();
+  const { fetchLoanDetails } = useLoanDetails();
   const { loanReasons, fetchLoanReasons } = useLoanReasons();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
@@ -304,6 +309,12 @@ export default function LoanApplication() {
     setFormData((prev) => ({ ...prev, principalAmount: cleanValue }));
   };
 
+  const handleNewPrincipalChange = (e) => {
+    const { value } = e.target;
+    const cleanValue = cleanNumericInput(value);
+    setFormData((prev) => ({ ...prev, newPrincipal: cleanValue }));
+  };
+
   // Handle loan purpose selection
   const handleLoanPurposeChange = (e) => {
     const { value } = e.target;
@@ -315,7 +326,13 @@ export default function LoanApplication() {
     const errors = [];
     
     if (!formData.startDate) errors.push('Start Date is required');
-    if (!formData.principalAmount) errors.push('Principal Amount is required');
+    // If top-up or reschedule, require New Principal instead of Principal Amount
+    const isTopup = formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details'
+    if (isTopup) {
+      if (!formData.newPrincipal) errors.push('New Principal is required');
+    } else {
+      if (!formData.principalAmount) errors.push('Principal Amount is required');
+    }
     if (!formData.interestRate) errors.push('Interest Rate is required');
     if (!formData.loanDuration) errors.push('Loan Duration is required');
     if (!formData.yearlyFrequency) errors.push('Yearly Frequency is required');
@@ -335,9 +352,15 @@ export default function LoanApplication() {
 
     try {
       // Build payload with mapped field names
+      const isTopup = formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details'
+      // If principalAmount wasn't prefilled, fall back to currentLoanBalance for existing principal
+      const existingPrincipal = parseFloat(formData.principalAmount) || parseFloat(formData.currentLoanBalance) || 0
       const payload = {
         StartDate: new Date(formData.startDate).toISOString(),
-        Principal: parseFloat(formData.principalAmount) || 0,
+        // For top-up/reschedule: Principal = existing loan balance + newPrincipal
+        Principal: isTopup
+          ? (existingPrincipal + (parseFloat(formData.newPrincipal) || 0))
+          : (parseFloat(formData.principalAmount) || 0),
         InterestRate: parseFloat(formData.interestRate) || 0,
         Duration: parseFloat(formData.loanDuration) || 0,
         FrequencyValue: parseFloat(formData.yearlyFrequency) || 0,
@@ -360,7 +383,8 @@ export default function LoanApplication() {
         // Map the returned calculated fields to formData
         setFormData((prev) => ({
           ...prev,
-          principalAmount: parseStringValue(result.data.principal || result.data.Principal || prev.principalAmount),
+          // Map calculated principal from response.principal (preferred) into the principalAmount field.
+          principalAmount: parseStringValue(result.data?.principal ?? result.data?.Principal ?? result.data?.principalAmount ?? prev.principalAmount),
           firstPaymentDate: result.data.startDate || '',
           finalPaymentDate: result.data.endDate || '',
           calculatedInterestRate: parseStringValue(result.data.interestRate || result.data.InterestRate || ''),
@@ -416,6 +440,56 @@ export default function LoanApplication() {
                 loanLimit: loanLimitVal || prev.loanLimit,
               }));
             }
+          }
+        }
+      } else if (txType === 'topup_reschedule' || txType === 'topup_details') {
+        // For Top-up Loan, call topup endpoint then fetch loan details for the selected/top candidate
+        setLoanProductDetails(null);
+        const memberCode = resolveGroupCode();
+        if (memberCode) {
+          try {
+            const topupPayload = await fetchTopupLoans(memberCode);
+              if (topupPayload && Array.isArray(topupPayload.loans) && topupPayload.loans.length > 0) {
+              const candidate = topupPayload.loans[0];
+              const loanId = candidate.loan_id || candidate.loanId || candidate.id;
+              // Map basic candidate fields into form. Do NOT prefill calculated Principal here — keep currentLoanBalance separate.
+              setFormData((prev) => ({
+                ...prev,
+                currentLoanBalance: candidate.loanBal ?? prev.currentLoanBalance,
+                loanProduct: candidate.prd_id ?? prev.loanProduct,
+                interestRate: candidate.intrate ?? prev.interestRate,
+                // Do NOT overwrite loanDuration for top-up/reschedule
+              }));
+
+              if (loanId) {
+                try {
+                  const detailsPayload = await fetchLoanDetails(memberCode, loanId);
+                  // If detailsPayload contains richer data, try to map known fields
+                  const details = detailsPayload && (detailsPayload.data || detailsPayload)
+                  if (details) {
+                    // Map a few likely fields safely. Keep existing loanDuration unchanged.
+                    const loanRec = Array.isArray(details.loans) && details.loans.length ? details.loans[0] : details
+                    // Pick loan balance from common field names and normalize comma-formatted numbers
+                    const pickPrincipal = (val) => {
+                      if (val === null || val === undefined) return null
+                      const str = String(val)
+                      return str.replace(/,/g, '')
+                    }
+                    const loanBalanceValue = pickPrincipal(loanRec.loanBal ?? loanRec.LoanBalance ?? loanRec.loanBalance ?? loanRec.loanamt ?? loanRec.loanAmt ?? loanRec.Principal ?? loanRec.principal)
+                    setFormData((prev) => ({
+                      ...prev,
+                      currentLoanBalance: loanRec.loanBal ?? loanRec.LoanBalance ?? prev.currentLoanBalance,
+                      interestRate: loanRec.intrate ?? loanRec.interestRate ?? prev.interestRate,
+                      principalAmount: loanBalanceValue ?? prev.principalAmount,
+                    }));
+                  }
+                } catch (err) {
+                  console.error('Failed to fetch loan details for top-up:', err)
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Top-up lookup failed:', err)
           }
         }
       } else {
@@ -591,7 +665,10 @@ export default function LoanApplication() {
         lNET_SAVINGS: parseInt(formData.savingBalance) || 0, // Convert to number, not empty string
         gnPrdId: parseInt(formData.loanProduct) || 0,
         lLOAN_INTEREST: parseFloat(formData.calculatedInterestRate) || parseFloat(formData.interestRate) || 0,
-        lPRINCIPAL_AMT: parseFloat(formData.principalAmount) || 0,
+        // Use `newPrincipal` for top-up/reschedule flows, otherwise use principalAmount
+        lPRINCIPAL_AMT: (formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details')
+          ? parseFloat(formData.newPrincipal) || 0
+          : parseFloat(formData.principalAmount) || 0,
         lLDURATION_NUM: parseInt(formData.loanDuration) || 0,
         lPROFIT_AMT: formData.interestScope === 3 ? (parseFloat(formData.profitAmount) || 0) : 0,
         txtStartDate: dayjs(formData.startDate).isValid() ? dayjs(formData.startDate).format('YYYY-MM-DD') : formData.startDate,
@@ -611,7 +688,8 @@ export default function LoanApplication() {
         gnCompid: parseInt(user?.CompId) || 3,
         glTopup: formData.topup === true || formData.topup === 'true' || false,
         glResched: formData.reschedule === true || formData.reschedule === 'true' || false,
-        dPrinPay: parseFloat(formData.principalAmount * 0.9) || 0,
+        // dPrinPay based on the chosen principal (newPrincipal for top-up/reschedule)
+        dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
       };
 
       console.log('Saving loan application with payload:', payload);
@@ -929,6 +1007,7 @@ export default function LoanApplication() {
                       onChange={handlePrincipalAmountChange}
                       size="small"
                       fullWidth
+                      disabled={formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details'}
                       required
                       inputProps={{
                         inputMode: 'numeric',
@@ -941,6 +1020,29 @@ export default function LoanApplication() {
                         ),
                       }}
                     />
+
+                    {/* New Principal - only relevant for Top-up / Reschedule transactions */}
+                    {(formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') && (
+                      <TextField
+                        label="New Principal"
+                        name="newPrincipal"
+                        value={formatCurrency(formData.newPrincipal)}
+                        onChange={handleNewPrincipalChange}
+                        size="small"
+                        fullWidth
+                        required
+                        inputProps={{
+                          inputMode: 'numeric',
+                          pattern: '[0-9.]*',
+                          placeholder: '0',
+                        }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
 
                     {/* Loan Duration */}
                     <TextField
@@ -988,7 +1090,7 @@ export default function LoanApplication() {
                     </Box>
 
                     {/* Current Loan Amount - only show if Top-up Loan */}
-                    {formData.transactionType === 'topup_reschedule' && (
+                    {(formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
                           Current Loan Amount:

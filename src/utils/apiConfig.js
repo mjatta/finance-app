@@ -168,6 +168,16 @@ const ENDPOINT_MAP = {
     dev: '/api/LoansDetails/getLoanDetails',
     prod: '/api/LoansDetails/getLoanDetails',
   },
+  // Top-up checks: returns available loans for top-up for a member
+  'loans-topup': {
+    dev: '/api/loans/topup',
+    prod: '/api/loans/topup',
+  },
+  // Loan details (alternate endpoint used by top-up flow)
+  'loans-details': {
+    dev: '/api/loans/details',
+    prod: '/api/loans/details',
+  },
   // Loan Approval - Approve Loan
   'loan-approval-approve': {
     dev: '/api/loanapproval/approve',
