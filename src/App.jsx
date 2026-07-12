@@ -115,6 +115,7 @@ const LoanBalance = lazy(() => import('./features/reporting/LoanBalance'));
 const LoanSchedule = lazy(() => import('./features/reporting/LoanSchedule'));
 const DetailedAging = lazy(() => import('./features/reporting/DetailedAging'));
 const LoanProvision = lazy(() => import('./features/reporting/LoanProvision'));
+const LoanReports = lazy(() => import('./features/reporting/LoanReports/index.jsx'));
 const TransactionListing = lazy(() => import('./features/reporting/TransactionListing'));
 const CustomerEnquiries = lazy(() => import('./features/reporting/CustomerEnquiries'));
 const Landing = lazy(() => import('./features/home/Landing'));
@@ -498,6 +499,7 @@ function App() {
         { label: 'Detailed Aging', to: '/reporting/detailed-aging', icon: AssessmentRoundedIcon },
         { label: 'Loan Provision', to: '/reporting/loan-provision', icon: AssessmentRoundedIcon },
         { label: 'Transaction Listing', to: '/reporting/transaction-listing', icon: AssessmentRoundedIcon },
+        { label: 'Loan Reports', to: '/reporting/loan-reports', icon: AssessmentRoundedIcon },
         { label: 'Customer Enquiries', to: '/reporting/customer-enquiries', icon: AssessmentRoundedIcon },
       ],
     },
@@ -1054,6 +1056,10 @@ function App() {
                     <Route
                       path="/reporting/transaction-listing"
                       element={renderWithAccess('reporting', <TransactionListing />)}
+                    />
+                    <Route
+                      path="/reporting/loan-reports"
+                      element={renderWithAccess('reporting', <LoanReports />)}
                     />
                     <Route
                       path="/reporting/customer-enquiries"
