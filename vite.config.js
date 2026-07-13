@@ -822,6 +822,50 @@ const memberEnquiryApiPlugin = () => ({
         },
       })
 
+      // Loans Update API Plugin (dev server middleware, backend POST passthrough)
+      const loansUpdateApiPlugin = () => ({
+        name: 'loans-update-api-plugin',
+        configureServer(server) {
+          server.middlewares.use('/api/loans/update', async (req, res, next) => {
+            try {
+              res.setHeader('Access-Control-Allow-Origin', '*')
+              res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+              res.setHeader('Content-Type', 'application/json')
+
+              if (req.method === 'OPTIONS') {
+                res.statusCode = 204
+                res.end()
+                return
+              }
+
+              if (req.method === 'POST') {
+                const body = await parseRequestBody(req)
+                try {
+                  const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/loans/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                  })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
+              next()
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ message: 'Failed to process loans update request.', error: err.message }))
+            }
+          })
+        },
+      })
+
 const withdrawalsApiPlugin = () => ({
   name: 'withdrawals-api-plugin',
   configureServer(server) {
@@ -2688,6 +2732,7 @@ export default defineConfig({
     loanReportApiPlugin(),
     loansTopupApiPlugin(),
     loansDetailsApiPlugin(),
+    loansUpdateApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
     loginAttemptsApiPlugin(),

@@ -34,6 +34,7 @@ import { useLoanCalculate } from './hooks/useLoanCalculate';
 import { useLoanSave } from './hooks/useLoanSave';
 import { useTopupLoans } from './hooks/useTopupLoans';
 import { useLoanDetails } from './hooks/useLoanDetails';
+import { useUpdateLoan } from './hooks/useUpdateLoan';
 import { useLoanReasons } from '../../../hooks/useLoanReasons';
 
 const todayIso = new Date().toISOString().split('T')[0];
@@ -45,6 +46,7 @@ const initialFormData = {
   currentLoanBalance: '',
   loanProduct: '',
   principalAmount: '',
+  loanId: '',
   newPrincipal: '',
   interestMethod: '',
   interestRate: '',
@@ -131,6 +133,7 @@ export default function LoanApplication() {
   const { saveLoan } = useLoanSave();
   const { fetchTopupLoans } = useTopupLoans();
   const { fetchLoanDetails } = useLoanDetails();
+  const { updateLoan } = useUpdateLoan();
   const { loanReasons, fetchLoanReasons } = useLoanReasons();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
@@ -459,6 +462,7 @@ export default function LoanApplication() {
               // Map basic candidate fields into form. Do NOT prefill calculated Principal here — keep currentLoanBalance separate.
               setFormData((prev) => ({
                 ...prev,
+                loanId: loanId || prev.loanId,
                 currentLoanBalance: candidate.loanBal ?? prev.currentLoanBalance,
                 loanProduct: candidate.prd_id ?? prev.loanProduct,
                 interestRate: candidate.intrate ?? prev.interestRate,
@@ -664,7 +668,87 @@ export default function LoanApplication() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
+
+      // If top-up or reschedule transaction, call the loans update endpoint instead of the standard save
+      const isTopupSave = formData.transactionType === 'topup_reschedule'
+      const isRescheduleSave = formData.transactionType === 'topup_details'
+      if (isTopupSave || isRescheduleSave) {
+        const LoanId = parseInt(formData.loanId) || 0
+        const newPrincipalVal = parseFloat(formData.newPrincipal) || 0
+        const existingLoanBalanceVal = parseFloat(formData.currentLoanBalance) || parseFloat(formData.principalAmount) || 0
+        const Principal = newPrincipalVal + existingLoanBalanceVal
+        const LoanBalance = existingLoanBalanceVal
+        const InterestAmount = parseFloat(formData.totalInterest) || 0
+        const Duration = parseInt(formData.loanDuration) || 0
+        const StartDate = dayjs(formData.startDate).isValid() ? dayjs(formData.startDate).format('YYYY-MM-DDT00:00:00') : formData.startDate
+        const MaturityDate = dayjs(formData.finalPaymentDate).isValid() ? dayjs(formData.finalPaymentDate).format('YYYY-MM-DDT00:00:00') : formData.finalPaymentDate
+        const PaymentPerPeriod = parseFloat(formData.periodicPayment) || (parseFloat(formData.totalPayment) / (parseFloat(formData.totalDuration) || 1)) || 0
+        const FrequencyValue = parseInt(formData.yearlyFrequency) || parseInt(formData.paymentFrequency) || 12
+        const TotalInterest = parseFloat(formData.totalInterest) || 0
+        const TotalBalance = parseFloat(formData.totalPayment) || (Principal + TotalInterest)
+        const UserId = user?.username || user?.userId || 'SYSTEM'
+        const BranchId = parseInt(branchId) || 1
+        const EconomicSectorId = parseInt(formData.economicSector) || 0
+        const LoanPurposeId = parseInt(formData.loanPurpose) || 0
+        const MemberSourceFundsId = parseInt(formData.sourceOfFunds) || 0
+        const GuaSourceFundsId = parseInt(formData.guarantorSourceOfFunds) || 0
+        const GracePeriod = parseInt(formData.gracePeriod) || 0
+        const GracePeriodInterest = parseInt(formData.gracePeriodInterest) || 0
+
+        const updatePayload = {
+          LoanId,
+          IsTopup: isTopupSave,
+          IsReschedule: isRescheduleSave,
+          Principal,
+          LoanBalance,
+          InterestAmount,
+          Duration,
+          StartDate,
+          MaturityDate,
+          PaymentPerPeriod,
+          FrequencyValue,
+          TotalInterest,
+          TotalBalance,
+          UserId,
+          BranchId,
+          EconomicSectorId,
+          LoanPurposeId,
+          MemberSourceFundsId,
+          GuaSourceFundsId,
+          GracePeriod,
+          GracePeriodInterest,
+        }
+
+        console.log('Calling loans update with payload:', updatePayload)
+        try {
+          const updateResult = await updateLoan(updatePayload)
+          console.log('Update result:', updateResult)
+          const messageContent = (updateResult?.message || updateResult?.Message || updateResult?.msg || JSON.stringify(updateResult) || '').toLowerCase()
+          const isSuccess = updateResult && (updateResult.success === true || updateResult.status === 'success' || messageContent.includes('success') || updateResult.data)
+          if (isSuccess) {
+            setStatusMessage('✓ Loan update saved successfully! Resetting form...')
+            setStatusError(false)
+            setTimeout(() => {
+              setFormData(initialFormData)
+              setMemberDetails(null)
+              setSearchMemberCode('')
+              setStatusMessage('')
+            }, 4000)
+          } else {
+            setStatusMessage('Error updating loan: Invalid response from server')
+            setStatusError(true)
+          }
+        } catch (err) {
+          console.error('Error calling loans update:', err)
+          setStatusMessage('❌ Error updating loan: ' + (err.message || 'Unknown error'))
+          setStatusError(true)
+        } finally {
+          setIsSaving(false)
+        }
+
+        return
+      }
+
       // Build the payload according to backend requirements
       const payload = {
         gnNewLoanID: '',
@@ -814,7 +898,7 @@ export default function LoanApplication() {
                   value={searchMemberCode}
                   onChange={(e) => setSearchMemberCode(e.target.value)}
                   placeholder="Enter customer code"
-                  helperText="Enter customer code and press Tab to load member details."
+                  //helperText="Enter customer code and press Tab to load member details."
                   FormHelperTextProps={{
                     sx: {
                       fontWeight: 800,

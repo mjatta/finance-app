@@ -178,6 +178,11 @@ const ENDPOINT_MAP = {
     dev: '/api/loans/details',
     prod: '/api/loans/details',
   },
+  // Loan Update (Top-up / Reschedule)
+  'loans-update': {
+    dev: '/api/loans/update',
+    prod: '/api/loans/update',
+  },
   // Loan Approval - Approve Loan
   'loan-approval-approve': {
     dev: '/api/loanapproval/approve',
