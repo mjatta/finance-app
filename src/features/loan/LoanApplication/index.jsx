@@ -687,7 +687,7 @@ export default function LoanApplication() {
         const TotalInterest = parseFloat(formData.totalInterest) || 0
         const TotalBalance = parseFloat(formData.totalPayment) || (Principal + TotalInterest)
         const UserId = user?.username || user?.userId || 'SYSTEM'
-        const BranchId = parseInt(branchId) || 1
+        const BranchId = 16
         const EconomicSectorId = parseInt(formData.economicSector) || 0
         const LoanPurposeId = parseInt(formData.loanPurpose) || 0
         const MemberSourceFundsId = parseInt(formData.sourceOfFunds) || 0
