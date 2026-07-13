@@ -103,8 +103,6 @@ export default function CustomerEnquiries() {
   // Location filters
   const [branch, setBranch] = useState('');
   const [region, setRegion] = useState('');
-  const [district, setDistrict] = useState('');
-  const [ward, setWard] = useState('');
 
   // Profile filters
   const [maritalStatus, setMaritalStatus] = useState('');
@@ -178,8 +176,6 @@ export default function CustomerEnquiries() {
     const formatDate = (value, fallback) => (value?.format ? value.format('YYYY-MM-DD') : fallback);
 
     const payload = {
-      FromMemberNo: '0001',
-      ToMemberNo: '9999',
       CustType: customerType.individual ? 1 : 0,
       CustType1: customerType.group ? 2 : 0,
       CustType2: customerType.corporate ? 3 : 0,
@@ -189,8 +185,8 @@ export default function CustomerEnquiries() {
       GenderFemale: gender.female ? 2 : 0,
       GenderCode: gender.male && gender.female ? '3' : gender.male ? '1' : gender.female ? '2' : '',
       BranchID: branch === ALL_BRANCHES_VALUE || !branch ? 0 : normalizeBranchId(matchedBranch),
-      AgeFrom: Number(ageFrom) || 0,
-      AgeTo: Number(ageTo) || 999,
+      FromMemberNo: String(Number(ageFrom) || 0),
+      ToMemberNo: String(Number(ageTo) || 999),
       OpenFromDate: formatDate(openDateFrom, '1900-01-01'),
       OpenToDate: formatDate(openDateTo, '2089-12-31'),
       ClosedFromDate: formatDate(closeDateFrom, '1900-01-01'),
@@ -282,8 +278,7 @@ export default function CustomerEnquiries() {
   const handleClear = () => {
     setBranch('');
     setRegion('');
-    setDistrict('');
-    setWard('');
+    // District and Ward removed
     setMaritalStatus('');
     setEducationalLevel('');
     setActiveAccount(false);
@@ -366,23 +361,7 @@ export default function CustomerEnquiries() {
                 ))}
               </TextField>
 
-              <TextField
-                label="District"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                size="small"
-                fullWidth
-                placeholder="Enter district"
-              />
-
-              <TextField
-                label="Ward"
-                value={ward}
-                onChange={(e) => setWard(e.target.value)}
-                size="small"
-                fullWidth
-                placeholder="Enter ward"
-              />
+              {/* District and Ward fields hidden for now */}
 
               <TextField
                 select
