@@ -26,6 +26,7 @@ import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../uti
 import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
 import { useLoanDetails } from './Hooks/useLoanDetails';
 import { useLoanApprovalSubmit } from './Hooks/useLoanApprovalSubmit';
+import { useCheckTopup } from './Hooks/useCheckTopup';
 import { useRejectReasons } from './Hooks/useRejectReasons';
 import { useSaveRejectedLoan } from './Hooks/useSaveRejectedLoan';
 import { useUsersStore } from '../../../store/useUsersStore';
@@ -137,6 +138,7 @@ export default function LoanApproval() {
   const { fetchUsersList } = useUsersStore();
   const { fetchLoanDetails } = useLoanDetails();
   const { submitLoanApproval } = useLoanApprovalSubmit();
+  const { fetchCheckTopup } = useCheckTopup();
   const { reasons: rejectReasons, fetchRejectReasons } = useRejectReasons();
   const { saveRejectedLoan } = useSaveRejectedLoan();
   const authUser = useAuthStore((state) => state.user);
@@ -256,6 +258,13 @@ export default function LoanApproval() {
           );
 
           if (loanDetails) {
+                // After fetching detailed loan info, check top-up eligibility
+                try {
+                  const topupCheck = await fetchCheckTopup(selectedLoan.id)
+                  setApprovalDetails((prev) => ({ ...prev, topupCheck }))
+                } catch (err) {
+                  console.warn('Topup check failed:', err)
+                }
             // Map API response to form fields
             setApprovalDetails({
               savingBalance: loanDetails.savebal || '',

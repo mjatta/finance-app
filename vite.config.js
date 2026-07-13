@@ -866,6 +866,50 @@ const memberEnquiryApiPlugin = () => ({
         },
       })
 
+      // Loan Check Topup API Plugin (dev server middleware, backend GET passthrough)
+      const loanCheckTopupApiPlugin = () => ({
+        name: 'loan-check-topup-api-plugin',
+        configureServer(server) {
+          server.middlewares.use('/api/Checkloan/check-topup', async (req, res, next) => {
+            try {
+              res.setHeader('Access-Control-Allow-Origin', '*')
+              res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+              res.setHeader('Content-Type', 'application/json')
+
+              if (req.method === 'OPTIONS') {
+                res.statusCode = 204
+                res.end()
+                return
+              }
+
+              if (req.method === 'GET') {
+                // Preserve query string and path
+                const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/Checkloan/check-topup${req.url.replace('/api/Checkloan/check-topup', '')}`
+                try {
+                  const backendRes = await fetch(backendUrl, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
+              next()
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ message: 'Failed to process loan check-topup request.', error: err.message }))
+            }
+          })
+        },
+      })
+
 const withdrawalsApiPlugin = () => ({
   name: 'withdrawals-api-plugin',
   configureServer(server) {
@@ -2733,6 +2777,7 @@ export default defineConfig({
     loansTopupApiPlugin(),
     loansDetailsApiPlugin(),
     loansUpdateApiPlugin(),
+    loanCheckTopupApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
     loginAttemptsApiPlugin(),

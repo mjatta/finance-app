@@ -168,6 +168,11 @@ const ENDPOINT_MAP = {
     dev: '/api/LoansDetails/getLoanDetails',
     prod: '/api/LoansDetails/getLoanDetails',
   },
+  // Loan check top-up
+  'loan-check-topup': {
+    dev: '/api/Checkloan/check-topup',
+    prod: '/api/Checkloan/check-topup',
+  },
   // Top-up checks: returns available loans for top-up for a member
   'loans-topup': {
     dev: '/api/loans/topup',

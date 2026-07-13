@@ -132,6 +132,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/update"
     },
     {
+      "source": "/api/Checkloan/check-topup",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Checkloan/check-topup"
+    },
+    {
       "source": "/api/loans/details",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/details"
     },
