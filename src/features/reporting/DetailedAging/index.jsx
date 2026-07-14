@@ -95,16 +95,49 @@ export default function DetailedAging() {
     return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
   };
 
-  const convertReportRowsToCSV = (rows) => {
-    const headers = ['Account Number', 'Account Name', 'Amount Issued', 'Book Balance', 'Prepaid'];
-    const csvRows = rows.map((r) => {
-      const acct = r?.cacctnumb ?? '';
-      const name = r?.cacctname ?? '';
-      const amountIssued = Math.abs(Number(r?.PRINCIPAL_AMT ?? 0)) || 0;
-      const bookBal = Math.abs(Number(r?.nbookbal ?? 0)) || 0;
-      const prepaid = Math.abs(Number(r?.nnewbal ?? 0)) || 0;
-      return [acct, name, amountIssued.toFixed(2), bookBal.toFixed(2), prepaid.toFixed(2)];
+  const convertReportRowsToCSV = (data) => {
+    // Group by days range / age category like Loan Provision
+    const grouped = {};
+    const ranges = [];
+
+    data.forEach((row) => {
+      const key = `${row.DaysFrom || 'N/A'}-${row.DaysTo || 'N/A'}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          daysFrom: row.DaysFrom,
+          daysTo: row.DaysTo,
+          ageCategory: row.LoanAgeCategory || '',
+          amountIssued: 0,
+          bookBalance: 0,
+          prepaid: 0,
+        };
+        ranges.push(key);
+      }
+
+      grouped[key].amountIssued += Number(row.PRINCIPAL_AMT ?? 0);
+      grouped[key].bookBalance += Number(row.nbookbal ?? 0);
+      grouped[key].prepaid += Number(row.nnewbal ?? 0);
     });
+
+    let totalAmount = 0;
+    let totalBook = 0;
+    let totalPrepaid = 0;
+
+    Object.values(grouped).forEach((g) => {
+      totalAmount += g.amountIssued;
+      totalBook += g.bookBalance;
+      totalPrepaid += g.prepaid;
+    });
+
+    const headers = ['Days (from - to)', 'Amount Issued', 'Book Balance', 'Prepaid'];
+    const csvRows = ranges.map((key) => {
+      const g = grouped[key];
+      const daysLabel = g.ageCategory || `${g.daysFrom || 'N/A'}-${g.daysTo || 'N/A'}`;
+      return [daysLabel, Math.abs(g.amountIssued).toFixed(2), Math.abs(g.bookBalance).toFixed(2), Math.abs(g.prepaid).toFixed(2)];
+    });
+
+    csvRows.push(['TOTAL', Math.abs(totalAmount).toFixed(2), Math.abs(totalBook).toFixed(2), Math.abs(totalPrepaid).toFixed(2)]);
+
     return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
   };
 

@@ -57,29 +57,53 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
   const reportDateLabel = formatDate(reportDate);
 
-  const totals = rows.reduce((acc, row) => ({
-    amountIssued: acc.amountIssued + toNumber(row?.PRINCIPAL_AMT),
-    bookBalance: acc.bookBalance + toNumber(row?.nbookbal),
-    prepaid: acc.prepaid + toNumber(row?.nnewbal),
-  }), {
-    amountIssued: 0,
-    bookBalance: 0,
-    prepaid: 0,
+  // Group rows by days range / age category (like Loan Provision)
+  const grouped = {};
+  const ageKeys = [];
+
+  rows.forEach((row) => {
+    const key = `${row.DaysFrom || 'N/A'}-${row.DaysTo || 'N/A'}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        daysFrom: row.DaysFrom,
+        daysTo: row.DaysTo,
+        ageCategory: row.LoanAgeCategory || '',
+        amountIssued: 0,
+        bookBalance: 0,
+        prepaid: 0,
+      };
+      ageKeys.push(key);
+    }
+
+    grouped[key].amountIssued += toNumber(row?.PRINCIPAL_AMT);
+    grouped[key].bookBalance += toNumber(row?.nbookbal);
+    grouped[key].prepaid += toNumber(row?.nnewbal);
   });
 
-  const tableRows = rows.length > 0
-    ? rows.map((row) => `
-      <tr>
-        <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
-        <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
-        <td class="amt">${formatAmountAbsolute(row?.PRINCIPAL_AMT)}</td>
-        <td class="amt">${formatAmountAbsolute(row?.nbookbal)}</td>
-        <td class="amt">${formatAmountAbsolute(row?.nnewbal)}</td>
-      </tr>
-    `).join('')
+  const totals = ageKeys.reduce((acc, key) => {
+    const g = grouped[key];
+    acc.amountIssued += g.amountIssued;
+    acc.bookBalance += g.bookBalance;
+    acc.prepaid += g.prepaid;
+    return acc;
+  }, { amountIssued: 0, bookBalance: 0, prepaid: 0 });
+
+  const tableRows = ageKeys.length > 0
+    ? ageKeys.map((key) => {
+      const g = grouped[key];
+      const daysLabel = g.ageCategory || `${g.daysFrom || 'N/A'}-${g.daysTo || 'N/A'}`;
+      return `
+        <tr>
+          <td>${escapeHtml(daysLabel)}</td>
+          <td class="amt">${formatAmountAbsolute(g.amountIssued)}</td>
+          <td class="amt">${formatAmountAbsolute(g.bookBalance)}</td>
+          <td class="amt">${formatAmountAbsolute(g.prepaid)}</td>
+        </tr>
+      `;
+    }).join('')
     : `
       <tr>
-        <td colspan="5" class="no-data">No detailed aging data found.</td>
+        <td colspan="4" class="no-data">No detailed aging data found.</td>
       </tr>
     `;
 
@@ -208,8 +232,7 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
         <table>
           <thead>
             <tr>
-              <th>Account Number</th>
-              <th>Account Name</th>
+              <th>Days (from - to)</th>
               <th>Amount Issued</th>
               <th>Book Balance</th>
               <th>Prepaid</th>
@@ -220,7 +243,7 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="2">Total</td>
+              <td>TOTAL</td>
               <td class="amt">${formatAmountAbsolute(totals.amountIssued)}</td>
               <td class="amt">${formatAmountAbsolute(totals.bookBalance)}</td>
               <td class="amt">${formatAmountAbsolute(totals.prepaid)}</td>
