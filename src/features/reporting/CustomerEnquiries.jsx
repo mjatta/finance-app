@@ -156,6 +156,18 @@ export default function CustomerEnquiries() {
     setCustomerType((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const handleActiveAccountChange = (e) => {
+    const checked = e.target.checked;
+    setActiveAccount(checked);
+    if (checked) setClosedAccount(false);
+  };
+
+  const handleClosedAccountChange = (e) => {
+    const checked = e.target.checked;
+    setClosedAccount(checked);
+    if (checked) setActiveAccount(false);
+  };
+
   const handleGenderChange = (e) => {
     const { name, checked } = e.target;
     setGender((prev) => ({ ...prev, [name]: checked }));
@@ -414,12 +426,13 @@ export default function CustomerEnquiries() {
             {/* Account status checkboxes */}
             <Box sx={{ display: 'flex', gap: 4, mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
               <FormControlLabel
-                control={<Checkbox checked={activeAccount} onChange={(e) => setActiveAccount(e.target.checked)} />}
+                control={<Checkbox checked={activeAccount} onChange={handleActiveAccountChange} disabled={closedAccount} />}
                 label="Active Customer Account"
               />
               <FormControlLabel
-                control={<Checkbox checked={closedAccount} onChange={(e) => setClosedAccount(e.target.checked)} />}
+                control={<Checkbox checked={closedAccount} onChange={handleClosedAccountChange} />}
                 label="Closed Customer Account"
+                disabled={activeAccount}
               />
             </Box>
 
