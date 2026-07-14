@@ -35,7 +35,8 @@ const FALLBACK_ROWS = [
 const formatAmount = (value) => {
   const amount = Number(value ?? 0);
   if (Number.isNaN(amount)) return '0.00';
-  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const abs = Math.abs(amount);
+  return abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const escapeCSV = (value) => {
@@ -128,7 +129,7 @@ export default function LoanProvision() {
       const group = groupedData[key];
       const daysLabel = group.ageCategory || `${group.daysFrom || 'N/A'}-${group.daysTo || 'N/A'}`;
       const percentage = group.loanBalance !== 0 && group.provisioningAmount !== 0
-        ? ((group.provisioningAmount / Math.abs(group.loanBalance)) * 100).toFixed(2)
+        ? ((Math.abs(group.provisioningAmount) / Math.abs(group.loanBalance)) * 100).toFixed(2)
         : '0.00';
 
       return [
@@ -142,7 +143,7 @@ export default function LoanProvision() {
     });
 
     const totalPercentageCalc = totalLoanBalance !== 0 && totalProvisioningAmount !== 0
-      ? ((totalProvisioningAmount / Math.abs(totalLoanBalance)) * 100).toFixed(2)
+      ? ((Math.abs(totalProvisioningAmount) / Math.abs(totalLoanBalance)) * 100).toFixed(2)
       : '0.00';
 
     csvRows.push([

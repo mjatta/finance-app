@@ -17,6 +17,15 @@ const formatAmount = (value) => toNumber(value).toLocaleString('en-US', {
   maximumFractionDigits: 2,
 });
 
+const formatAmountAbsolute = (value) => {
+  const num = toNumber(value) || 0;
+  const abs = Math.abs(num);
+  return abs.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 const formatDate = (value) => {
   const parsed = dayjs(value);
   return parsed.isValid() ? parsed.format('YYYY-MM-DD') : String(value || '');
@@ -63,9 +72,9 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
       <tr>
         <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
         <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
-        <td class="amt">${formatAmount(row?.PRINCIPAL_AMT)}</td>
-        <td class="amt">${formatAmount(row?.nbookbal)}</td>
-        <td class="amt">${formatAmount(row?.nnewbal)}</td>
+        <td class="amt">${formatAmountAbsolute(row?.PRINCIPAL_AMT)}</td>
+        <td class="amt">${formatAmountAbsolute(row?.nbookbal)}</td>
+        <td class="amt">${formatAmountAbsolute(row?.nnewbal)}</td>
       </tr>
     `).join('')
     : `
@@ -212,9 +221,9 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
           <tfoot>
             <tr>
               <td colspan="2">Total</td>
-              <td class="amt">${formatAmount(totals.amountIssued)}</td>
-              <td class="amt">${formatAmount(totals.bookBalance)}</td>
-              <td class="amt">${formatAmount(totals.prepaid)}</td>
+              <td class="amt">${formatAmountAbsolute(totals.amountIssued)}</td>
+              <td class="amt">${formatAmountAbsolute(totals.bookBalance)}</td>
+              <td class="amt">${formatAmountAbsolute(totals.prepaid)}</td>
             </tr>
           </tfoot>
         </table>

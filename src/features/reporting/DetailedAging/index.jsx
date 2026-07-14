@@ -89,9 +89,22 @@ export default function DetailedAging() {
     fetchLoanOfficers();
   }, [fetchLoanOfficers]);
 
-  const convertToCSV = (rows) => {
+  const convertBandsToCSV = (rows) => {
     const headers = ['Days From', 'Days To', 'Percentage (%)'];
     const csvRows = rows.map((row) => [row.daysFrom || '', row.daysTo || '', row.percentage || '']);
+    return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  };
+
+  const convertReportRowsToCSV = (rows) => {
+    const headers = ['Account Number', 'Account Name', 'Amount Issued', 'Book Balance', 'Prepaid'];
+    const csvRows = rows.map((r) => {
+      const acct = r?.cacctnumb ?? '';
+      const name = r?.cacctname ?? '';
+      const amountIssued = Math.abs(Number(r?.PRINCIPAL_AMT ?? 0)) || 0;
+      const bookBal = Math.abs(Number(r?.nbookbal ?? 0)) || 0;
+      const prepaid = Math.abs(Number(r?.nnewbal ?? 0)) || 0;
+      return [acct, name, amountIssued.toFixed(2), bookBal.toFixed(2), prepaid.toFixed(2)];
+    });
     return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
   };
 
@@ -111,13 +124,13 @@ export default function DetailedAging() {
   };
 
   const handleExportCSV = (data) => {
-    const csvContent = convertToCSV(data);
+    const csvContent = convertReportRowsToCSV(data);
     const filename = `detailed-aging-${date.format('YYYY-MM-DD')}.csv`;
     downloadFile(csvContent, filename, 'text/csv');
   };
 
   const handleExportExcel = (data) => {
-    const csvContent = convertToCSV(data);
+    const csvContent = convertReportRowsToCSV(data);
     const filename = `detailed-aging-${date.format('YYYY-MM-DD')}.xlsx`;
     downloadFile(csvContent, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   };

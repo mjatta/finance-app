@@ -13,7 +13,8 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
   const formatAmount = (value) => {
     const amount = Number(value ?? 0);
     if (Number.isNaN(amount)) return '0.00';
-    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const abs = Math.abs(amount);
+    return abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   // Group data by days range
@@ -63,8 +64,8 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
     .map((key) => {
       const group = groupedData[key];
       const daysLabel = group.ageCategory || `${group.daysFrom || 'N/A'}-${group.daysTo || 'N/A'}`;
-      const percentage = group.loanBalance !== 0 && group.provisioningAmount !== 0 
-        ? ((group.provisioningAmount / Math.abs(group.loanBalance)) * 100).toFixed(2)
+      const percentage = group.loanBalance !== 0 && group.provisioningAmount !== 0
+        ? ((Math.abs(group.provisioningAmount) / Math.abs(group.loanBalance)) * 100).toFixed(2)
         : '0.00';
 
       return `
@@ -81,7 +82,7 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
     .join('');
 
   const totalPercentageCalc = totalLoanBalance !== 0 && totalProvisioningAmount !== 0
-    ? ((totalProvisioningAmount / Math.abs(totalLoanBalance)) * 100).toFixed(2)
+    ? ((Math.abs(totalProvisioningAmount) / Math.abs(totalLoanBalance)) * 100).toFixed(2)
     : '0.00';
 
   const html = `
