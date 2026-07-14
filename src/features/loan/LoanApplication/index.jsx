@@ -211,7 +211,6 @@ export default function LoanApplication() {
           );
           if (response.ok) {
             const result = await response.json();
-            console.log('API Response:', result);
             
             if (result.status === 'success' && result.data) {
               // Store in Zustand store
@@ -234,8 +233,6 @@ export default function LoanApplication() {
                 'compound': 'compound',
               };
               intMethod = interestMethodMap[intMethod] || intMethod;
-              
-              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal, 'InterestScope:', intScope);
               
               // Apply mappings to form fields
               setFormData((prev) => ({
@@ -373,13 +370,10 @@ export default function LoanApplication() {
         FrequencyValue: parseFloat(formData.yearlyFrequency) || 0,
         PaymentsPerYear: 12, // Hard coded to 12
       };
-
-      console.log('Calling loan calculation with payload:', payload);
       
       const result = await calculateLoan(payload);
       
       if (result && result.data) {
-        console.log('Loan calculation result:', result.data);
         
         // Helper function to parse string values with commas
         const parseStringValue = (value) => {
@@ -719,10 +713,8 @@ export default function LoanApplication() {
           GracePeriodInterest,
         }
 
-        console.log('Calling loans update with payload:', updatePayload)
         try {
           const updateResult = await updateLoan(updatePayload)
-          console.log('Update result:', updateResult)
           const messageContent = (updateResult?.message || updateResult?.Message || updateResult?.msg || JSON.stringify(updateResult) || '').toLowerCase()
           const isSuccess = updateResult && (updateResult.success === true || updateResult.status === 'success' || messageContent.includes('success') || updateResult.data)
           if (isSuccess) {
@@ -739,7 +731,6 @@ export default function LoanApplication() {
             setStatusError(true)
           }
         } catch (err) {
-          console.error('Error calling loans update:', err)
           setStatusMessage('❌ Error updating loan: ' + (err.message || 'Unknown error'))
           setStatusError(true)
         } finally {
@@ -783,18 +774,9 @@ export default function LoanApplication() {
         dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
       };
 
-      console.log('Saving loan application with payload:', payload);
+
       
       const result = await saveLoan(payload);
-      console.log('Save result (full object):', result);
-      console.log('Save result (stringified):', JSON.stringify(result, null, 2));
-      console.log('Save result keys:', Object.keys(result || {}));
-      console.log('Save result.message:', result?.message);
-      console.log('Save result.Message:', result?.Message);
-      console.log('Save result.status:', result?.status);
-      console.log('Save result.Status:', result?.Status);
-      console.log('Save result.code:', result?.code);
-      console.log('Save result.text:', result?.text);
       
       // Check if response indicates success
       // Look in multiple possible message fields and check for success keywords
@@ -813,11 +795,6 @@ export default function LoanApplication() {
         result.data
       );
       
-      console.log('Is Success (based on checks):', isSuccess);
-      console.log('Message content:', messageContent);
-      console.log('Result object:', result);
-      console.log('Result statusCode:', result?.statusCode);
-      
       if (isSuccess) {
         setStatusMessage('✓ Loan application saved successfully! Resetting form...');
         setStatusError(false);
@@ -834,7 +811,6 @@ export default function LoanApplication() {
         setStatusError(true);
       }
     } catch (error) {
-      console.error('Error saving loan application:', error);
       setStatusMessage('❌ Error saving loan application: ' + (error.message || 'Unknown error'));
       setStatusError(true);
       // Do NOT reset the form on error - keep it for user to correct and retry
@@ -1219,7 +1195,9 @@ export default function LoanApplication() {
                         Saving Balance:
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
-                        {formData.savingBalance || 'N/A'}
+                        {(formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details')
+                          ? 'N/A'
+                          : (formData.savingBalance || 'N/A')}
                       </Typography>
                     </Box>
 

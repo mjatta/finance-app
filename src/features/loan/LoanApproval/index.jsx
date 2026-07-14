@@ -449,6 +449,18 @@ export default function LoanApproval() {
       const loanTypeNum = parseInt(selectedLoan.productId || selectedLoan.prd_id, 10) || 0;
       const loanIdNum = parseInt(selectedLoan.id || selectedLoan.loan_id || 0, 10);
 
+      // Check top-up/reschedule status before approval
+      let isTopUpFlag = false
+      let isRescheduledFlag = false
+      try {
+        const check = await fetchCheckTopup(loanIdNum)
+        // Support multiple casing/field names
+        isTopUpFlag = Boolean(check?.isTopUp ?? check?.isTopup ?? check?.is_topup ?? check?.IsTopUp ?? check?.IsTopup)
+        isRescheduledFlag = Boolean(check?.isRescheduled ?? check?.isReschedule ?? check?.is_rescheduled ?? check?.IsRescheduled ?? check?.IsReschedule)
+      } catch (err) {
+        console.warn('Failed to fetch check-topup before approval:', err)
+      }
+
       const payload = {
         loanid: loanIdNum,
         loanAmount: approveAmountNum,
@@ -462,8 +474,8 @@ export default function LoanApproval() {
         compid: compidNum,
         loanType: loanTypeNum,
         interestRate: interestRateNum,
-        glTopUp: false,
-        glResched: false,
+        glTopUp: isTopUpFlag,
+        glResched: isRescheduledFlag,
       };
 
       console.log('Submitting loan approval payload:', payload);
