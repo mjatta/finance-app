@@ -19,6 +19,7 @@ const formatGender = (row) => {
   const raw = normalizeText(row?.gender || row?.cgender || row?.sex || row?.genderCode);
   if (!raw) return '';
   const upper = raw.toUpperCase();
+  if (upper === '3' || upper === 'OTHER' || upper === 'O') return 'Other';
   if (upper === 'M' || upper === '1' || upper === 'MALE') return 'Male';
   if (upper === 'F' || upper === '2' || upper === 'FEMALE') return 'Female';
   return raw;
