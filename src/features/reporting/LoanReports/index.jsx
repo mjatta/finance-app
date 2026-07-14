@@ -42,7 +42,7 @@ export default function LoanReports() {
   const { users, fetchUsers } = useLoanReportUsers();
   const { loanReasons, fetchLoanReasons } = useLoanReportLoanReasons();
   const { products, fetchProducts } = useLoanReportProducts();
-  const { currencies, fetchCurrencies } = useLoanReportCurrencies();
+  const { fetchCurrencies } = useLoanReportCurrencies();
 
   const [product, setProduct] = useState('');
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
@@ -50,7 +50,7 @@ export default function LoanReports() {
   const [user, setUser] = useState('');
   const [currency, setCurrency] = useState('GMD');
   const [checks, setChecks] = useState(initChecks());
-  const [tranFrom, setTranFrom] = useState(null);
+  const [tranFrom, setTranFrom] = useState(() => dayjs('1980-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -72,7 +72,7 @@ export default function LoanReports() {
 
   const userOptions = useMemo(() => (Array.isArray(users) ? users : []).map((u) => ({ id: u.id, name: u.name })), [users]);
 
-  const currencyOptions = useMemo(() => (Array.isArray(currencies) ? currencies : []).map((c) => ({ id: c.id, name: c.name })), [currencies]);
+  
 
   const handleCheckChange = (e) => {
     const { name, checked } = e.target;
@@ -86,7 +86,7 @@ export default function LoanReports() {
     setUser('');
     setCurrency('GMD');
     setChecks(initChecks());
-    setTranFrom(null);
+    setTranFrom(dayjs('1980-01-01'));
     setTranTo(dayjs());
     setStatusMessage('');
   };
@@ -273,17 +273,6 @@ export default function LoanReports() {
               ))}
             </Box>
             <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
-              <TextField select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} size="small">
-                {currencyOptions && currencyOptions.length > 0 ? (
-                  currencyOptions.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)
-                ) : (
-                  <>
-                    <MenuItem value="GMD">GMD</MenuItem>
-                    <MenuItem value="USD">USD</MenuItem>
-                    <MenuItem value="EUR">EUR</MenuItem>
-                  </>
-                )}
-              </TextField>
               <Button variant="outlined" onClick={handleClear}>Clear</Button>
             </Box>
           </CardContent>
