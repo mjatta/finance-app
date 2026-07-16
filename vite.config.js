@@ -135,6 +135,50 @@ const accountDetailsApiPlugin = () => ({
         res.end(JSON.stringify({ message: 'Failed to fetch account details.' }))
       }
     })
+
+      // Group Members API Plugin (dev server middleware, backend only)
+      const groupMembersApiPlugin = () => ({
+        name: 'group-members-api-plugin',
+        configureServer(server) {
+          server.middlewares.use('/api/groupmembers/', async (req, res, next) => {
+            try {
+              res.setHeader('Access-Control-Allow-Origin', '*')
+              res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+              res.setHeader('Content-Type', 'application/json')
+
+              if (req.method === 'OPTIONS') {
+                res.statusCode = 204
+                res.end()
+                return
+              }
+
+              if (req.method === 'GET') {
+                const parts = req.url.split('/')
+                const groupCode = parts[parts.length - 1]
+                try {
+                  const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/groupmembers/${groupCode}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
+              next()
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ message: 'Failed to fetch group members.', error: err.message }))
+            }
+          })
+        },
+      })
   },
 })
 

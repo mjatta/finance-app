@@ -124,6 +124,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/:path*"
     },
     {
+      "source": "/api/groupmembers/:groupcode",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/groupmembers/:groupcode"
+    },
+    {
       "source": "/api/loans/topup",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/topup"
     },
