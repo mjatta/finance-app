@@ -57,55 +57,81 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
   const reportDateLabel = formatDate(reportDate);
 
-  // Group rows by days range / age category (like Loan Provision)
-  const grouped = {};
-  const ageKeys = [];
-
-  rows.forEach((row) => {
-    const key = `${row.DaysFrom || 'N/A'}-${row.DaysTo || 'N/A'}`;
-    if (!grouped[key]) {
-      grouped[key] = {
-        daysFrom: row.DaysFrom,
-        daysTo: row.DaysTo,
-        ageCategory: row.LoanAgeCategory || '',
-        amountIssued: 0,
-        bookBalance: 0,
-        prepaid: 0,
-      };
-      ageKeys.push(key);
+  // If payload is an array of groups (child arrays), render each group as its own table.
+  // If payload is a flat array of row objects, group them by `LoanAgeCategory` (fallback
+  // to `DaysFrom-DaysTo`) so we render one table per age bucket like the PDF expects.
+  let groups = [];
+  if (Array.isArray(rows) && rows.length > 0) {
+    if (Array.isArray(rows[0])) {
+      groups = rows;
+    } else if (typeof rows[0] === 'object' && rows[0] !== null) {
+      const map = {};
+      const order = [];
+      rows.forEach((r) => {
+        const hasDays = (r?.DaysFrom != null) || (r?.DaysTo != null);
+        const key = hasDays
+          ? `${r?.DaysFrom ?? 'N/A'}-${r?.DaysTo ?? 'N/A'}`
+          : (r?.LoanAgeCategory || 'Ungrouped');
+        if (!map[key]) {
+          map[key] = [];
+          order.push(key);
+        }
+        map[key].push(r);
+      });
+      groups = order.map((k) => map[k]);
+    } else {
+      groups = [rows];
     }
+  } else {
+    groups = [rows];
+  }
 
-    grouped[key].amountIssued += toNumber(row?.PRINCIPAL_AMT);
-    grouped[key].bookBalance += toNumber(row?.nbookbal);
-    grouped[key].prepaid += toNumber(row?.nnewbal);
-  });
+  const tablesHtml = groups.map((groupRows) => {
+    const safeGroup = Array.isArray(groupRows) ? groupRows : [];
+    const first = safeGroup[0] ?? {};
+    const groupLabel = (first?.DaysFrom != null || first?.DaysTo != null)
+      ? `${first?.DaysFrom ?? 'N/A'}-${first?.DaysTo ?? 'N/A'}`
+      : (first?.LoanAgeCategory || '');
 
-  const totals = ageKeys.reduce((acc, key) => {
-    const g = grouped[key];
-    acc.amountIssued += g.amountIssued;
-    acc.bookBalance += g.bookBalance;
-    acc.prepaid += g.prepaid;
-    return acc;
-  }, { amountIssued: 0, bookBalance: 0, prepaid: 0 });
-
-  const tableRows = ageKeys.length > 0
-    ? ageKeys.map((key) => {
-      const g = grouped[key];
-      const daysLabel = g.ageCategory || `${g.daysFrom || 'N/A'}-${g.daysTo || 'N/A'}`;
-      return `
+    const body = safeGroup.length > 0
+      ? safeGroup.map((row) => `
         <tr>
-          <td>${escapeHtml(daysLabel)}</td>
-          <td class="amt">${formatAmountAbsolute(g.amountIssued)}</td>
-          <td class="amt">${formatAmountAbsolute(g.bookBalance)}</td>
-          <td class="amt">${formatAmountAbsolute(g.prepaid)}</td>
+          <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
+          <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
+          <td class="amt">${formatAmountAbsolute(row?.PRINCIPAL_AMT)}</td>
+          <td class="amt">${formatAmountAbsolute(row?.nbookbal)}</td>
+          <td class="amt">${formatAmountAbsolute(row?.nnewbal)}</td>
+        </tr>
+      `).join('')
+      : `
+        <tr>
+          <td colspan="5" class="no-data">No detailed aging data found for this group.</td>
         </tr>
       `;
-    }).join('')
-    : `
-      <tr>
-        <td colspan="4" class="no-data">No detailed aging data found.</td>
-      </tr>
+
+    const totalPrepaid = safeGroup.reduce((s, r) => s + toNumber(r?.nnewbal), 0);
+
+    // Place the category label inside the table header for a cleaner look (e.g. "181 to 360").
+    return `
+      <div style="margin-top:18px;">
+        <table>
+          <thead>
+            ${groupLabel ? `<tr class="group-header"><th colspan="5" style="text-align:left; font-weight:700; font-size:14px; padding:8px 10px;">${escapeHtml(String(groupLabel).replace('-', ' to '))}</th></tr>` : ''}
+            <tr>
+              <th>Account Number</th>
+              <th>Account Name</th>
+              <th>Amount Issued</th>
+              <th>Book Balance</th>
+              <th>Prepaid</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${body}
+          </tbody>
+        </table>
+      </div>
     `;
+  }).join('\n');
 
   return `
     <!DOCTYPE html>
@@ -135,86 +161,21 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
           max-width: 1050px;
           margin: 0 auto;
         }
-        .header {
-          position: relative;
-          text-align: center;
-          margin-bottom: 18px;
-        }
-        .meta-right {
-          position: absolute;
-          right: 0;
-          top: 0;
-          text-align: right;
-          font-size: 12px;
-          color: var(--muted);
-        }
-        .company {
-          font-size: 22px;
-          font-weight: 800;
-          letter-spacing: 0.3px;
-          margin-bottom: 4px;
-        }
-        .line {
-          font-size: 13px;
-          color: var(--muted);
-          margin: 2px 0;
-        }
-        .title {
-          margin-top: 14px;
-          font-size: 19px;
-          font-weight: 700;
-          text-transform: uppercase;
-        }
-        .sub-title {
-          margin-top: 2px;
-          font-size: 12px;
-          color: var(--muted);
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 14px;
-          font-size: 12.5px;
-        }
-        thead th {
-          background: var(--header-bg);
-          border: 1px solid var(--line);
-          padding: 8px 10px;
-          text-align: left;
-          font-weight: 700;
-        }
-        tbody td, tfoot td {
-          border: 1px solid var(--line);
-          padding: 7px 10px;
-          vertical-align: top;
-        }
-        tbody tr:nth-child(even) {
-          background: var(--stripe);
-        }
-        .num {
-          width: 170px;
-          white-space: nowrap;
-        }
-        .amt {
-          width: 150px;
-          text-align: right;
-          white-space: nowrap;
-          font-variant-numeric: tabular-nums;
-        }
-        tfoot td {
-          font-weight: 700;
-          background: #f1f5f9;
-        }
-        .no-data {
-          text-align: center;
-          color: var(--muted);
-        }
-
-        @media print {
-          body { padding: 8mm; }
-          .report { max-width: none; }
-          .meta-right { right: 0; }
-        }
+        .header { position: relative; margin-bottom: 6px; text-align: center; }
+        .meta-right { position: absolute; right: 0; top: 0; color: var(--muted); font-size: 12px; }
+        .company { font-size: 18px; font-weight: 700; margin-top: 6px; }
+        .line { font-size: 12px; color: var(--muted); }
+        .title { margin-top: 14px; font-size: 19px; font-weight: 700; text-transform: uppercase; }
+        .sub-title { margin-top: 2px; font-size: 12px; color: var(--muted); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12.5px; }
+        thead th { background: var(--header-bg); border: 1px solid var(--line); padding: 8px 10px; text-align: left; font-weight: 700; }
+        tbody td, tfoot td { border: 1px solid var(--line); padding: 7px 10px; vertical-align: top; }
+        tbody tr:nth-child(even) { background: var(--stripe); }
+        .num { width: 170px; white-space: nowrap; }
+        .amt { width: 150px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        tfoot td { font-weight: 700; background: #f1f5f9; }
+        .no-data { text-align: center; color: var(--muted); }
+        @media print { body { padding: 8mm; } .report { max-width: none; } .meta-right { right: 0; } }
       </style>
     </head>
     <body>
@@ -229,27 +190,7 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
           <div class="sub-title">To Date: ${escapeHtml(reportDateLabel)}</div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Days (from - to)</th>
-              <th>Amount Issued</th>
-              <th>Book Balance</th>
-              <th>Prepaid</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td>TOTAL</td>
-              <td class="amt">${formatAmountAbsolute(totals.amountIssued)}</td>
-              <td class="amt">${formatAmountAbsolute(totals.bookBalance)}</td>
-              <td class="amt">${formatAmountAbsolute(totals.prepaid)}</td>
-            </tr>
-          </tfoot>
-        </table>
+        ${tablesHtml}
       </div>
     </body>
     </html>
