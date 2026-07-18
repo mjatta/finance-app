@@ -212,7 +212,7 @@ export default function TransactionListing() {
     Deposit: types.deposit ? '01' : '',
     Withdrawal: types.withdrawal ? '02' : '',
     LoanIssued: types.loanDisbursement ? '06' : '',
-    LoanRepayment: sources.batchLoanRepayment ? '07' : '',
+    LoanRepayment: types.loanRepayment ? '07' : '',
     InterestCharged: types.interestCharged ? '17' : '',
     InterestPaid: types.interestPaid ? '05' : '',
     SavingsInterest: sources.savingInterest ? '04' : '',
