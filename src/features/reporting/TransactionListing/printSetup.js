@@ -58,10 +58,14 @@ export const buildTransactionListingPrintHtml = (data) => {
       const credit = amount > 0 ? formatAmount(amount) : '';
       const debit = amount < 0 ? formatAmount(Math.abs(amount)) : '';
 
+      const userValue = (row?.cuserid || row?.gcUserid || row?.cUserID || row?.username || row?.oprcode || '').toString().trim();
+      const name = getFullName(row);
+      const nameHtml = userValue ? `${name}<div style="font-size:10px;color:#666;margin-top:4px;">User: ${userValue}</div>` : name;
+
       return `
         <tr style="border-bottom: 1px solid #ddd;">
           <td style="padding: 8px; font-size: 11px;">${row.cacctnumb?.trim() || ''}</td>
-          <td style="padding: 8px; font-size: 11px;">${getFullName(row)}</td>
+          <td style="padding: 8px; font-size: 11px;">${nameHtml}</td>
           <td style="padding: 8px; font-size: 11px; text-align: center;">${formatDate(row.dtrandate)}</td>
           <td style="padding: 8px; font-size: 11px; text-align: right;">${credit}</td>
           <td style="padding: 8px; font-size: 11px; text-align: right;">${debit}</td>
@@ -206,7 +210,8 @@ export const buildTransactionListingPrintHtml = (data) => {
             <tr>
               <th>Account Number</th>
               <th>Full Name</th>
-              <th style="text-align: center;">Transaction Date</th>
+                <th>User</th>
+                <th style="text-align: center;">Transaction Date</th>
               <th style="text-align: right;">Credit</th>
               <th style="text-align: right;">Debit</th>
               <th>Description</th>

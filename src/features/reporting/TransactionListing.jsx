@@ -209,6 +209,7 @@ export default function TransactionListing() {
     BatchID: selectedBatch ? parseInt(selectedBatch.replace('batch-', '')) || 0 : 0,
     ProductID: 0,
     UserID: user || '',
+    cUserID: user || '',
     Deposit: types.deposit ? '01' : '',
     Withdrawal: types.withdrawal ? '02' : '',
     LoanIssued: types.loanDisbursement ? '06' : '',
@@ -299,9 +300,13 @@ export default function TransactionListing() {
       const credit = amount > 0 ? formatAmount(amount) : '';
       const debit = amount < 0 ? formatAmount(Math.abs(amount)) : '';
 
+      const userValue = (row?.cuserid || row?.gcUserid || row?.cUserID || row?.username || row?.oprcode || '').toString().trim();
+      const name = fullNameOf(row);
+      const displayName = userValue ? `${name} (User: ${userValue})` : name;
+
       return [
         String(row?.cacctnumb ?? '').trim(),
-        fullNameOf(row),
+        displayName,
         formatDate(row?.dtrandate),
         credit,
         debit,
