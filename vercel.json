@@ -300,6 +300,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loans/LoanApplication"
     },
     {
+      "source": "/api/loanamortization/clients/:from/:to",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/:from/:to"
+    },
+    {
       "source": "/api/user-setup/password-change",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
     },

@@ -532,6 +532,90 @@
       "status": "success",
       "reason": "",
       "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-16T16:03:25.949Z",
+      "username": "SUPER",
+      "ipAddress": "",
+      "location": "",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "absolute",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-16T16:05:40.601Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Bloomfield Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-17T03:21:57.592Z",
+      "username": "SUPER",
+      "ipAddress": "",
+      "location": "",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "absolute",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-17T16:39:24.050Z",
+      "username": "SUPER",
+      "ipAddress": "209.160.200.182",
+      "location": "Bloomfield Hills, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-18T21:53:37.090Z",
+      "username": "SUPER",
+      "ipAddress": "",
+      "location": "",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "absolute",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-18T22:03:21.120Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
     }
   ]
 }

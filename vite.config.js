@@ -135,6 +135,8 @@ const accountDetailsApiPlugin = () => ({
         res.end(JSON.stringify({ message: 'Failed to fetch account details.' }))
       }
     })
+  },
+})
 
       // Group Members API Plugin (dev server middleware, backend only)
       const groupMembersApiPlugin = () => ({
@@ -178,9 +180,61 @@ const accountDetailsApiPlugin = () => ({
             }
           })
         },
+        })
+      // Loan Amortization API Plugin (dev server middleware, backend only)
+      const loanAmortizationApiPlugin = () => ({
+        name: 'loan-amortization-api-plugin',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            try {
+              // Only handle the amortization clients path
+              if (!req.url || !req.url.startsWith('/api/loanamortization/clients')) {
+                return next()
+              }
+
+              // Add CORS and JSON response header
+              res.setHeader('Access-Control-Allow-Origin', '*')
+              res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+              res.setHeader('Content-Type', 'application/json')
+
+              if (req.method === 'OPTIONS') {
+                res.statusCode = 204
+                res.end()
+                return
+              }
+
+              if (req.method === 'GET') {
+                // extract from/to using regex to ignore query strings
+                const m = req.url.match(/^\/api\/loanamortization\/clients\/([^\/\?]+)\/([^\/\?]+)/)
+                const from = m && m[1] ? m[1] : '1'
+                const to = m && m[2] ? m[2] : '30'
+                // debug log for dev
+                // eslint-disable-next-line no-console
+                console.debug('[dev-middleware] loanamortization request', { url: req.url, from, to })
+                try {
+                  const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/${from}/${to}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
+              return next()
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ message: 'Failed to fetch loan amortization.', error: err.message }))
+            }
+          })
+        },
       })
-  },
-})
 
 // ID Types API Plugin (dev server middleware) - forwards to backend lookup for id types
 const idTypesApiPlugin = () => ({
@@ -2845,6 +2899,7 @@ export default defineConfig({
     incomeStatementApiPlugin(),
     balanceSheetApiPlugin(),
     loanScheduleApiPlugin(),
+    loanAmortizationApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
@@ -3296,5 +3351,4 @@ export default defineConfig({
         },
     },
   },
-// (duplicate plugins array removed)
 })
