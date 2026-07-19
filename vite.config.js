@@ -365,6 +365,68 @@ const accountDetailsApiPlugin = () => ({
               res.end(JSON.stringify({ message: 'Failed to proxy endofyear request', error: err.message }))
             }
           })
+
+            // Reconcile API Plugin (dev server middleware, backend only)
+            const reconcileApiPlugin = () => ({
+              name: 'reconcile-api-plugin',
+              configureServer(server) {
+                server.middlewares.use(async (req, res, next) => {
+                  try {
+                    if (!req.url || !req.url.startsWith('/api/reconcile')) return next()
+
+                    res.setHeader('Access-Control-Allow-Origin', '*')
+                    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+                    res.setHeader('Content-Type', 'application/json')
+
+                    if (req.method === 'OPTIONS') {
+                      res.statusCode = 204
+                      res.end()
+                      return
+                    }
+
+                    if (req.method === 'GET') {
+                      // GET /api/reconcile/bankaccounts/30
+                      if (req.url.startsWith('/api/reconcile/bankaccounts')) {
+                        try {
+                          const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                          const data = await backendRes.text()
+                          res.statusCode = backendRes.status
+                          res.end(data)
+                        } catch (err) {
+                          res.statusCode = 502
+                          res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                        }
+                        return
+                      }
+
+                      // GET /api/reconcile/transactions/30/{AccountNumber}
+                      const txMatch = req.url.match(/^\/api\/reconcile\/transactions\/30\/([^\/?]+)/)
+                      if (txMatch) {
+                        const acc = txMatch[1]
+                        try {
+                          const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/reconcile/transactions/30/${acc}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                          const data = await backendRes.text()
+                          res.statusCode = backendRes.status
+                          res.end(data)
+                        } catch (err) {
+                          res.statusCode = 502
+                          res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                        }
+                        return
+                      }
+
+                      return next()
+                    }
+
+                    return next()
+                  } catch (err) {
+                    res.statusCode = 500
+                    res.end(JSON.stringify({ message: 'Failed to proxy reconcile request', error: err.message }))
+                  }
+                })
+              }
+            })
         },
       })
 
@@ -3033,6 +3095,7 @@ export default defineConfig({
     loanScheduleApiPlugin(),
     loanAmortizationApiPlugin(),
     endOfYearApiPlugin(),
+    reconcileApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
