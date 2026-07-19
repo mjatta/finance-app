@@ -101,6 +101,7 @@ const UserSecurity = lazy(() => import('./features/system/UserSecurity'));
 const UserSetup = lazy(() => import('./features/system/UserSetup'));
 const LoginAttempts = lazy(() => import('./features/system/LoginAttempts'));
 const EndOfYear = lazy(() => import('./features/system/EndOfYear'));
+const EndOfYearAccounting = lazy(() => import('./features/accounting/EndOfYear'));
 const RunningBalanceFix = lazy(() => import('./features/system/RunningBalanceFix'));
 const AccessControlGroups = lazy(() => import('./features/system/AccessControlGroups'));
 const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
@@ -464,6 +465,7 @@ function App() {
         { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
         { label: 'General Ledger', to: '/accounting/general-ledger', icon: AccountBalanceRoundedIcon },
         { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
+        { label: 'End of Year', to: '/accounting/end-of-year', icon: DateRangeRoundedIcon },
       ],
     },
     {
@@ -964,6 +966,10 @@ function App() {
                     <Route
                       path="/accounting/account-reconciliation"
                       element={renderWithAccess('accounting', <AccountReconciliation />)}
+                    />
+                    <Route
+                      path="/accounting/end-of-year"
+                      element={renderWithAccess('accounting', <EndOfYearAccounting />)}
                     />
                     <Route
                       path="/accounting/periodic/subscription"

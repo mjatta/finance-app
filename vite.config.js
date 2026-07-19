@@ -296,6 +296,78 @@ const accountDetailsApiPlugin = () => ({
         },
       })
 
+      // End Of Year API Plugin (dev server middleware)
+      const endOfYearApiPlugin = () => ({
+        name: 'end-of-year-api-plugin',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            try {
+              if (!req.url || !req.url.startsWith('/api/endofyear')) return next()
+
+              res.setHeader('Access-Control-Allow-Origin', '*')
+              res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+              res.setHeader('Content-Type', 'application/json')
+
+              if (req.method === 'OPTIONS') {
+                res.statusCode = 204
+                res.end()
+                return
+              }
+
+              // GET /api/endofyear/accounts
+              if (req.method === 'GET' && req.url.startsWith('/api/endofyear/accounts')) {
+                try {
+                  const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/endofyear/accounts', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
+              // POST handlers: /api/endofyear/data and /api/endofyear/process
+              if (req.method === 'POST') {
+                const body = await parseRequestBody(req)
+                if (req.url.startsWith('/api/endofyear/data')) {
+                  try {
+                    const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/endofyear/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
+                }
+
+                if (req.url.startsWith('/api/endofyear/process')) {
+                  try {
+                    const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/endofyear/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
+                }
+              }
+
+              return next()
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ message: 'Failed to proxy endofyear request', error: err.message }))
+            }
+          })
+        },
+      })
+
 // ID Types API Plugin (dev server middleware) - forwards to backend lookup for id types
 const idTypesApiPlugin = () => ({
   name: 'id-types-api-plugin',
@@ -2960,6 +3032,7 @@ export default defineConfig({
     balanceSheetApiPlugin(),
     loanScheduleApiPlugin(),
     loanAmortizationApiPlugin(),
+    endOfYearApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
@@ -3156,6 +3229,19 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/transaction/, '/api/transaction'),
+      },
+      // Proxy End Of Year endpoints
+      '/api/endofyear/accounts': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/endofyear\/accounts/, '/api/endofyear/accounts'),
+      },
+      '/api/endofyear/data': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/endofyear\/data/, '/api/endofyear/data'),
       },
       // Proxy member activation endpoints to avoid CORS
       '/api/member/activate': {

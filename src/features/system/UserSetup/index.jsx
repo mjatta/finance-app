@@ -150,6 +150,7 @@ const featurePageMap = {
     { path: '/accounting/account-enquiry', label: 'GL Account Enquiry' },
     { path: '/accounting/general-ledger', label: 'General Ledger' },
     { path: '/accounting/account-reconciliation', label: 'Account Reconciliation' },
+    { path: '/accounting/end-of-year', label: 'End of Year' },
   ],
   processing: [
     { path: '/processing/subscription', label: 'Periodic Subscription Processing' },

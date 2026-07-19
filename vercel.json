@@ -316,6 +316,18 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/generate/:loanId"
     },
     {
+      "source": "/api/endofyear/accounts",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/accounts"
+    },
+    {
+      "source": "/api/endofyear/data",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/data"
+    },
+    {
+      "source": "/api/endofyear/process",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/process"
+    },
+    {
       "source": "/api/user-setup/password-change",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
     },
