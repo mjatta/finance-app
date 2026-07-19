@@ -187,8 +187,8 @@ const accountDetailsApiPlugin = () => ({
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
             try {
-              // Only handle the amortization clients path
-              if (!req.url || !req.url.startsWith('/api/loanamortization/clients')) {
+              // Only handle loanamortization subpaths
+              if (!req.url || !req.url.startsWith('/api/loanamortization')) {
                 return next()
               }
 
@@ -205,29 +205,89 @@ const accountDetailsApiPlugin = () => ({
               }
 
               if (req.method === 'GET') {
-                // extract from/to using regex to ignore query strings
-                const m = req.url.match(/^\/api\/loanamortization\/clients\/([^\/\?]+)\/([^\/\?]+)/)
-                const from = m && m[1] ? m[1] : '1'
-                const to = m && m[2] ? m[2] : '30'
-                // debug log for dev
-                // eslint-disable-next-line no-console
-                console.debug('[dev-middleware] loanamortization request', { url: req.url, from, to })
-                try {
-                  const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/${from}/${to}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                  })
-                  const data = await backendRes.text()
-                  res.statusCode = backendRes.status
-                  res.end(data)
-                } catch (err) {
-                  res.statusCode = 502
-                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                // Clients list: /api/loanamortization/clients/:from/:to
+                const clientsMatch = req.url.match(/^\/api\/loanamortization\/clients\/([^\/\?]+)\/([^\/\?]+)/)
+                if (clientsMatch) {
+                  const from = clientsMatch[1] || '1'
+                  const to = clientsMatch[2] || '30'
+                  // eslint-disable-next-line no-console
+                  console.debug('[dev-middleware] loanamortization clients request', { url: req.url, from, to })
+                  try {
+                    const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/${from}/${to}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
                 }
-                return
+
+                // Check amortization: /api/loanamortization/check/:loanId
+                const checkMatch = req.url.match(/^\/api\/loanamortization\/check\/([^\/\?]+)/)
+                if (checkMatch) {
+                  const loanId = checkMatch[1]
+                  // eslint-disable-next-line no-console
+                  console.debug('[dev-middleware] loanamortization check request', { url: req.url, loanId })
+                  try {
+                    const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/check/${loanId}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
+                }
+
+                // Display amortization: /api/loanamortization/display/:loanId
+                const displayMatch = req.url.match(/^\/api\/loanamortization\/display\/([^\/\?]+)/)
+                if (displayMatch) {
+                  const loanId = displayMatch[1]
+                  // eslint-disable-next-line no-console
+                  console.debug('[dev-middleware] loanamortization display request', { url: req.url, loanId })
+                  try {
+                    const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/display/${loanId}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
+                }
+
+                // Unknown GET subpath; let other middleware or proxy handle
+                return next()
               }
 
-              return next()
+              // POST handlers for loanamortization
+              if (req.method === 'POST') {
+                // Generate amortization: POST /api/loanamortization/generate/:loanId
+                const generateMatch = req.url.match(/^\/api\/loanamortization\/generate\/([^\/\?]+)/)
+                if (generateMatch) {
+                  const loanId = generateMatch[1]
+                  // eslint-disable-next-line no-console
+                  console.debug('[dev-middleware] loanamortization generate request', { url: req.url, loanId })
+                  try {
+                    const body = await parseRequestBody(req)
+                    const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/generate/${loanId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+                    const data = await backendRes.text()
+                    res.statusCode = backendRes.status
+                    res.end(data)
+                  } catch (err) {
+                    res.statusCode = 502
+                    res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                  }
+                  return
+                }
+
+                // Unknown POST subpath; let other middleware handle
+                return next()
+              }
             } catch (err) {
               res.statusCode = 500
               res.end(JSON.stringify({ message: 'Failed to fetch loan amortization.', error: err.message }))

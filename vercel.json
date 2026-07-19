@@ -304,6 +304,18 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/:from/:to"
     },
     {
+      "source": "/api/loanamortization/check/:loanId",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/check/:loanId"
+    },
+    {
+      "source": "/api/loanamortization/display/:loanId",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/display/:loanId"
+    },
+    {
+      "source": "/api/loanamortization/generate/:loanId",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanamortization/generate/:loanId"
+    },
+    {
       "source": "/api/user-setup/password-change",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/user-setup/password-change"
     },

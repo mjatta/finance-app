@@ -4,10 +4,10 @@
  * @returns {string} - Formatted currency string with commas
  */
 export const formatCurrency = (value) => {
-  if (!value && value !== 0) return '';
-  const numValue = String(value).replace(/,/g, '');
-  if (isNaN(numValue)) return '';
-  return numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (value === null || value === undefined || value === '') return '';
+  const numValue = Number(String(value).replace(/,/g, ''));
+  if (Number.isNaN(numValue)) return '';
+  return numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 /**
