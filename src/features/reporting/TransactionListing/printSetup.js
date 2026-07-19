@@ -210,8 +210,7 @@ export const buildTransactionListingPrintHtml = (data) => {
             <tr>
               <th>Account Number</th>
               <th>Full Name</th>
-                <th>User</th>
-                <th style="text-align: center;">Transaction Date</th>
+              <th style="text-align: center;">Transaction Date</th>
               <th style="text-align: right;">Credit</th>
               <th style="text-align: right;">Debit</th>
               <th>Description</th>

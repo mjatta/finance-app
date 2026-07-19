@@ -134,7 +134,7 @@ export default function TransactionListing() {
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
-  const [transDateFrom, setTransDateFrom] = useState(null);
+  const [transDateFrom, setTransDateFrom] = useState(() => dayjs('1960-01-01'));
   const [transDateTo, setTransDateTo] = useState(() => dayjs());
   const [postDateFrom, setPostDateFrom] = useState(() => dayjs('1960-01-01'));
   const [postDateTo, setPostDateTo] = useState(() => dayjs('2089-12-31'));
@@ -185,7 +185,7 @@ export default function TransactionListing() {
     setBranch(ALL_BRANCHES_VALUE);
     setUser('');
     setTransactionRange('');
-    setTransDateFrom(null);
+    setTransDateFrom(dayjs('1960-01-01'));
     setTransDateTo(dayjs());
     setPostDateFrom(dayjs('1960-01-01'));
     setPostDateTo(dayjs('2089-12-31'));
