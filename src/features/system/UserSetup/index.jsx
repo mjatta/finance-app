@@ -176,6 +176,7 @@ const featurePageMap = {
     { path: '/reporting/detailed-aging', label: 'Detailed Aging' },
     { path: '/reporting/loan-provision', label: 'Loan Provision' },
     { path: '/reporting/transaction-listing', label: 'Transaction Listing' },
+    { path: '/reporting/journal-report', label: 'Journal Report' },
     { path: '/reporting/loan-reports', label: 'Loan Reports' },
     { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
   ],
