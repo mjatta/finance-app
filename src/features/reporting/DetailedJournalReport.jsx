@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { downloadFile } from '../../utils/downloadFile';
+import useGlAccount from './DetailedJournalReport/hooks/useGlAccount';
+import useGlStatement from './DetailedJournalReport/hooks/useGlStatement';
 
 const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
 
@@ -20,6 +22,9 @@ export default function DetailedJournalReport() {
   const [tranFrom, setTranFrom] = useState(() => dayjs('1990-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
   const [isPrinting, setIsPrinting] = useState(false);
+
+  const { fetchAccount } = useGlAccount();
+  const { fetchStatement } = useGlStatement();
 
   const buildPayload = () => ({
     accountNumber: accountNumber || '',
@@ -41,9 +46,11 @@ export default function DetailedJournalReport() {
   const handleExportCSV = async () => {
     setIsPrinting(true);
     try {
-      const rows = await fetchData();
-      const headers = ['Account Number', 'Member Name', 'Date', 'Description', 'Debit', 'Credit'];
-      const csvRows = rows.map((r) => [r.cacctnumb || '', r.ccustname || '', r.dtrandate || '', r.ctrandesc || '', r.debit ?? '', r.credit ?? '']);
+      // Use GL statement API for exports when accountNumber provided
+      const payload = await fetchStatement(accountNumber, formatDate(tranFrom), formatDate(tranTo));
+      const rows = Array.isArray(payload) ? payload : (payload?.rows || payload?.data || []);
+      const headers = ['Account Number', 'Account Name', 'Date', 'Description', 'Debit', 'Credit'];
+      const csvRows = rows.map((r) => [r.AccountNumber || r.accountNumber || '', r.AccountName || r.accountName || '', r.Date || r.TransactionDate || r.dtrandate || '', r.Description || r.ctrandesc || '', r.Debit ?? r.debit ?? '', r.Credit ?? r.credit ?? '']);
       const csv = [headers, ...csvRows].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       downloadFile(csv, `detailed-journal-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
@@ -61,21 +68,23 @@ export default function DetailedJournalReport() {
   const handleExportPDF = async () => {
     setIsPrinting(true);
     try {
-      const rows = await fetchData();
+      // Use GL statement API for print view
+      const payload = await fetchStatement(accountNumber, formatDate(tranFrom), formatDate(tranTo));
+      const rows = Array.isArray(payload) ? payload : (payload?.rows || payload?.data || []);
       const title = 'Detailed Journal Report';
       const printedDate = new Date().toISOString().slice(0,19).replace('T', ' ');
       const tableRows = rows.map((r) => `
         <tr>
-          <td style="padding:6px">${r.cacctnumb || ''}</td>
-          <td style="padding:6px">${r.ccustname || ''}</td>
-          <td style="padding:6px">${r.dtrandate || ''}</td>
-          <td style="padding:6px">${r.ctrandesc || ''}</td>
-          <td style="padding:6px; text-align:right">${r.debit ?? ''}</td>
-          <td style="padding:6px; text-align:right">${r.credit ?? ''}</td>
+          <td style="padding:6px">${r.AccountNumber || r.accountNumber || ''}</td>
+          <td style="padding:6px">${r.AccountName || r.accountName || ''}</td>
+          <td style="padding:6px">${r.Date || r.dtrandate || ''}</td>
+          <td style="padding:6px">${r.Description || r.ctrandesc || ''}</td>
+          <td style="padding:6px; text-align:right">${r.Debit ?? r.debit ?? ''}</td>
+          <td style="padding:6px; text-align:right">${r.Credit ?? r.credit ?? ''}</td>
         </tr>
       `).join('');
 
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,Helvetica,sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd}</style></head><body><h2>${title}</h2><div>Printed: ${printedDate}</div><table><thead><tr><th>Account Number</th><th>Member Name</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,Helvetica,sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd}</style></head><body><h2>${title}</h2><div>Printed: ${printedDate}</div><table><thead><tr><th>Account Number</th><th>Account Name</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
@@ -103,7 +112,21 @@ export default function DetailedJournalReport() {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#667eea' }}>Filters</Typography>
 
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, mb: 2 }}>
-            <TextField label="Account Number" size="small" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} fullWidth />
+            <TextField
+              label="Account Number"
+              size="small"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              onBlur={async (e) => {
+                const acc = String(e.target.value || '').trim()
+                if (!acc) return
+                const data = await fetchAccount(acc)
+                if (data && data.AccountName) {
+                  setMemberName(String(data.AccountName).trim())
+                }
+              }}
+              fullWidth
+            />
             <TextField label="Member Name" size="small" value={memberName} onChange={(e) => setMemberName(e.target.value)} fullWidth />
           </Box>
 

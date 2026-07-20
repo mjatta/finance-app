@@ -332,6 +332,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/journalenquiry/users"
     },
     {
+      "source": "/api/glstatement/account/:accountNumber",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/glstatement/account/:accountNumber"
+    },
+    {
+      "source": "/api/glstatement/statement",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/glstatement/statement"
+    },
+    {
       "source": "/api/reconcile/bankaccounts/30",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30"
     },

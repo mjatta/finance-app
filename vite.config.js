@@ -3211,6 +3211,67 @@ const reconcileApiPlugin = () => ({
   }
 })
 
+// GL Statement API Plugin (dev server middleware)
+const glStatementApiPlugin = () => ({
+  name: 'gl-statement-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/glstatement')) return next()
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // GET /api/glstatement/account/{accountNumber}
+          const accMatch = req.url.match(/^\/api\/glstatement\/account\/([^\/?]+)/)
+          if (accMatch) {
+            const acc = accMatch[1]
+            try {
+              const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/glstatement/account/${acc}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // GET /api/glstatement/statement?accountNo=...&fromDate=...&toDate=...
+          if (req.url.startsWith('/api/glstatement/statement')) {
+            try {
+              const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+              const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to proxy glstatement request', error: err.message }))
+      }
+    })
+  }
+})
+
 export default defineConfig({
   base: '/',
   plugins: [
@@ -3260,6 +3321,7 @@ export default defineConfig({
     reconcileApiPlugin(),
     bankReconciliationReportApiPlugin(),
     journalEnquiryApiPlugin(),
+    glStatementApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
