@@ -672,6 +672,62 @@
       "status": "success",
       "reason": "",
       "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-20T00:21:18.574Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "idle",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-20T03:14:36.285Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-20T03:24:48.453Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "manual",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-20T03:24:55.766Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
     }
   ]
 }

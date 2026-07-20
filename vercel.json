@@ -324,6 +324,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/data"
     },
     {
+      "source": "/api/journalenquiry/report",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/journalenquiry/report"
+    },
+    {
+      "source": "/api/journalenquiry/users",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/journalenquiry/users"
+    },
+    {
       "source": "/api/reconcile/bankaccounts/30",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30"
     },

@@ -138,49 +138,49 @@ const accountDetailsApiPlugin = () => ({
   },
 })
 
-      // Group Members API Plugin (dev server middleware, backend only)
-      const groupMembersApiPlugin = () => ({
-        name: 'group-members-api-plugin',
-        configureServer(server) {
-          server.middlewares.use('/api/groupmembers/', async (req, res, next) => {
-            try {
-              res.setHeader('Access-Control-Allow-Origin', '*')
-              res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-              res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-              res.setHeader('Content-Type', 'application/json')
+      // // Group Members API Plugin (dev server middleware, backend only)
+      // const groupMembersApiPlugin = () => ({
+      //   name: 'group-members-api-plugin',
+      //   configureServer(server) {
+      //     server.middlewares.use('/api/groupmembers/', async (req, res, next) => {
+      //       try {
+      //         res.setHeader('Access-Control-Allow-Origin', '*')
+      //         res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+      //         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      //         res.setHeader('Content-Type', 'application/json')
 
-              if (req.method === 'OPTIONS') {
-                res.statusCode = 204
-                res.end()
-                return
-              }
+      //         if (req.method === 'OPTIONS') {
+      //           res.statusCode = 204
+      //           res.end()
+      //           return
+      //         }
 
-              if (req.method === 'GET') {
-                const parts = req.url.split('/')
-                const groupCode = parts[parts.length - 1]
-                try {
-                  const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/groupmembers/${groupCode}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                  })
-                  const data = await backendRes.text()
-                  res.statusCode = backendRes.status
-                  res.end(data)
-                } catch (err) {
-                  res.statusCode = 502
-                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
-                }
-                return
-              }
+      //         if (req.method === 'GET') {
+      //           const parts = req.url.split('/')
+      //           const groupCode = parts[parts.length - 1]
+      //           try {
+      //             const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/groupmembers/${groupCode}`, {
+      //               method: 'GET',
+      //               headers: { 'Content-Type': 'application/json' },
+      //             })
+      //             const data = await backendRes.text()
+      //             res.statusCode = backendRes.status
+      //             res.end(data)
+      //           } catch (err) {
+      //             res.statusCode = 502
+      //             res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+      //           }
+      //           return
+      //         }
 
-              next()
-            } catch (err) {
-              res.statusCode = 500
-              res.end(JSON.stringify({ message: 'Failed to fetch group members.', error: err.message }))
-            }
-          })
-        },
-        })
+      //         next()
+      //       } catch (err) {
+      //         res.statusCode = 500
+      //         res.end(JSON.stringify({ message: 'Failed to fetch group members.', error: err.message }))
+      //       }
+      //     })
+      //   },
+      //   })
       // Loan Amortization API Plugin (dev server middleware, backend only)
       const loanAmortizationApiPlugin = () => ({
         name: 'loan-amortization-api-plugin',
@@ -3093,6 +3093,66 @@ const bankReconciliationReportApiPlugin = () => ({
   }
 })
 
+// Journal Enquiry API Plugin (dev server middleware)
+const journalEnquiryApiPlugin = () => ({
+  name: 'journal-enquiry-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/journalenquiry')) return next()
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Forward /api/journalenquiry/report (keep query string)
+          if (req.url.startsWith('/api/journalenquiry/report')) {
+            try {
+              const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+              const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // Forward /api/journalenquiry/users (keep query string)
+          if (req.url.startsWith('/api/journalenquiry/users')) {
+            try {
+              const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+              const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to proxy journalenquiry request', error: err.message }))
+      }
+    })
+  }
+})
+
 // Reconcile API Plugin (dev server middleware, backend only)
 const reconcileApiPlugin = () => ({
   name: 'reconcile-api-plugin',
@@ -3199,6 +3259,7 @@ export default defineConfig({
     endOfYearApiPlugin(),
     reconcileApiPlugin(),
     bankReconciliationReportApiPlugin(),
+    journalEnquiryApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),

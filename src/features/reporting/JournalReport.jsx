@@ -12,7 +12,9 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
-import { useUsers } from '../../hooks/useUsers';
+import useJournalEnquiryUsers from './JournalReport/hooks/useJournalEnquiryUsers';
+import { useAuthStore } from '../../store/authStore';
+import buildJournalReportPrintHtml from './JournalReport/printSetup';
 
 const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
 
@@ -30,7 +32,8 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function JournalReport() {
   const { branches, loading: branchesLoading } = useBranches();
-  const { users, isLoading: usersLoading, fetchUsers } = useUsers();
+  const { users, loading: usersLoading } = useJournalEnquiryUsers();
+  const authUser = useAuthStore((s) => s.user);
   const [company, setCompany] = useState('');
   const [branch, setBranch] = useState('');
   const [user, setUser] = useState('');
@@ -38,7 +41,7 @@ export default function JournalReport() {
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
   const [isPrinting, setIsPrinting] = useState(false);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  // users are loaded by useJournalEnquiryUsers hook
 
   const branchOptions = useMemo(() => (Array.isArray(branches) ? branches : []), [branches]);
 
@@ -51,6 +54,7 @@ export default function JournalReport() {
   });
 
   const fetchData = async () => {
+    // Keep existing local endpoint but also useful for internal fetches
     const url = '/api/journalreport/get';
     const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buildPayload()) });
     if (!resp.ok) {
@@ -64,9 +68,20 @@ export default function JournalReport() {
   const handleExportCSV = async () => {
     setIsPrinting(true);
     try {
-      const rows = await fetchData();
+      // Call the remote journal enquiry report API (returns array of { Fields: { ... } })
+      const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+      const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || userObj?.compid || '';
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch || ''), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const endpoint = `/api/journalenquiry/report?${params.toString()}`;
+      const resp = await fetch(endpoint);
+      if (!resp.ok) throw new Error(`Report API ${resp.status}`);
+      const payload = await resp.json();
+      const rows = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || []);
       const headers = ['Date', 'Account', 'Description', 'Debit', 'Credit', 'User', 'Branch'];
-      const csvRows = rows.map((r) => [r.dtrandate || '', r.account || r.cacctnumb || '', r.ctrandesc || '', r.debit ?? '', r.credit ?? '', r.username || r.oprcode || '', r.br_name || '']);
+      const csvRows = rows.map((r) => {
+        const f = r.Fields || r;
+        return [f.dtrandate || '', f.cacctnumb || '', (f.ctrandesc || '').trim(), f.ndebit ?? f.ntranamnt ?? '', f.ncredit ?? '', f.cuserid || '', f.br_name || ''];
+      });
       const csv = [headers, ...csvRows].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       downloadFile(csv, `journal-report-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
@@ -85,22 +100,16 @@ export default function JournalReport() {
   const handleExportPDF = async () => {
     setIsPrinting(true);
     try {
-      const rows = await fetchData();
-      const title = 'Journal Report';
-      const printedDate = new Date().toISOString().slice(0,19).replace('T', ' ');
-      const tableRows = rows.map((r) => `
-        <tr>
-          <td style="padding:6px">${r.dtrandate || ''}</td>
-          <td style="padding:6px">${r.cacctnumb || ''}</td>
-          <td style="padding:6px">${r.ctrandesc || ''}</td>
-          <td style="padding:6px; text-align:right">${r.debit ?? ''}</td>
-          <td style="padding:6px; text-align:right">${r.credit ?? ''}</td>
-          <td style="padding:6px">${r.username || r.oprcode || ''}</td>
-          <td style="padding:6px">${r.br_name || ''}</td>
-        </tr>
-      `).join('');
-
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,Helvetica,sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd}</style></head><body><h2>${title}</h2><div>Printed: ${printedDate}</div><table><thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Debit</th><th>Credit</th><th>User</th><th>Branch</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+      // Call remote report API and build print view
+      const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+      const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || '';
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch || ''), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const endpoint = `/api/journalenquiry/report?${params.toString()}`;
+      const resp = await fetch(endpoint);
+      if (!resp.ok) throw new Error(`Report API ${resp.status}`);
+      const payload = await resp.json();
+      const rows = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || []);
+      const html = buildJournalReportPrintHtml(rows, 'Journal Report', { fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
@@ -128,14 +137,18 @@ export default function JournalReport() {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#667eea' }}>Filters</Typography>
 
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, mb: 2 }}>
-            <TextField label="Company" size="small" value={company} onChange={(e) => setCompany(e.target.value)} fullWidth />
+            <TextField label="Company" size="small" value={company} onChange={(e) => setCompany(e.target.value)} fullWidth sx={{ display: 'none' }} />
             <TextField select label="Branch" size="small" value={branch} onChange={(e) => setBranch(e.target.value)} fullWidth disabled={branchesLoading}>
               <MenuItem value="">All Branches</MenuItem>
               {branchOptions.map((b) => (<MenuItem key={b.br_id || b.id || b.branchid || b.br_id} value={b.br_id || b.id || b.branchid || b.br_id}>{b.branchName || b.br_name || b.branch || b.name}</MenuItem>))}
             </TextField>
             <TextField select label="User" size="small" value={user} onChange={(e) => setUser(e.target.value)} fullWidth disabled={usersLoading}>
               <MenuItem value="">All Users</MenuItem>
-              {Array.isArray(users) && users.map((u) => (<MenuItem key={u.id || u.UserId || u.userId} value={u.username || u.UserId || u.oprcode}>{u.username || u.oprcode}</MenuItem>))}
+              {Array.isArray(users) && users.map((u) => {
+                const idVal = (u.UserID || u.UserId || u.userId || u.id || u.UserID)?.toString().trim();
+                const label = (u.username || u.oprcode || u.UserID || u.UserId || idVal || '').toString().trim();
+                return (<MenuItem key={idVal || label} value={idVal || label}>{label}</MenuItem>)
+              })}
             </TextField>
           </Box>
 
