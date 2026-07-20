@@ -1,28 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, MenuItem, TextField, Button } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid } from '@mui/x-data-grid';
 import useBankAccounts from './hooks/useBankAccounts';
-import dayjs from 'dayjs';
-import { formatCurrency } from '../../../utils/currencyFormatter';
+import buildBankReconciliationPrintHtml from './printSetup';
+import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
 
 export default function BankReconciliationReport() {
   const { accounts, loading: accountsLoading } = useBankAccounts();
   const [selected, setSelected] = useState(null);
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
+  const { data: creditUnion } = useCreditUnionLookup();
 
   useEffect(() => {
     if (!selected) return;
     // default dates could be set here if desired
   }, [selected]);
 
-  const handleExport = (type) => {
-    // Placeholder: integrate with backend export endpoints when available
-    console.debug('export', type, { account: selected, fromDate, toDate });
-    // For now, print (PDF) or log
-    if (type === 'pdf') window.print();
-    if (type === 'csv') alert('CSV export not yet implemented');
-    if (type === 'excel') alert('Excel export not yet implemented');
+  const handleExport = async (type) => {
+    if (!selected) return alert('Please select an account');
+    const acct = selected.AccountNumber || selected.AccountNo || '';
+    if (!acct) return alert('Selected account missing account number');
+    setTimeout(() => {}, 0)
+    try {
+      const params = new URLSearchParams({ accountNo: String(acct), fromDate: formatDate(fromDate), toDate: formatDate(toDate) });
+      const endpoint = `/api/bankreconciliationreport/report?${params.toString()}`;
+      const resp = await fetch(endpoint);
+      if (!resp.ok) throw new Error(`Report API ${resp.status}`);
+      const payload = await resp.json();
+      const rows = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || []);
+
+      if (type === 'csv' || type === 'excel') {
+        const headers = ['Date', 'Reference', 'Description', 'Debit', 'Credit', 'Balance'];
+        const csvRows = rows.map((r) => {
+          const f = r.Fields || r || {};
+          return [f.dtrandate || f.trandate || f.date || '', f.cbankref || f.creference || f.reference || '', (f.cdesc || f.description || f.ctrandesc || '').trim(), f.ndebit ?? '', f.ncredit ?? '', f.nbal ?? f.nbalance ?? ''];
+        });
+        const csv = [headers, ...csvRows].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""') }"`).join(',')).join('\n');
+        const name = `bank-reconciliation-${new Date().toISOString().slice(0,10)}.${type === 'excel' ? 'xlsx' : 'csv'}`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        return;
+      }
+
+      // PDF / print
+      const headerMeta = {
+        companyName: creditUnion?.com_name || creditUnion?.CompanyName || '',
+        address: creditUnion?.caddress || creditUnion?.address || '',
+        telephone: creditUnion?.tel || creditUnion?.telephone || '',
+        email: creditUnion?.email || creditUnion?.Email || '',
+        fromDate: formatDate(fromDate),
+        toDate: formatDate(toDate),
+      };
+      const html = buildBankReconciliationPrintHtml(rows, 'Bank Reconciliation Report', headerMeta);
+      const w = window.open('', '_blank', 'width=1000,height=800');
+      if (!w) throw new Error('Popup blocked');
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export report');
+    }
   };
 
   return (
@@ -61,8 +111,18 @@ export default function BankReconciliationReport() {
 
               <TextField label="Account Name" value={selected?.AccountName ? String(selected.AccountName).trim() : ''} size="small" InputProps={{ readOnly: true }} sx={{ minWidth: 360 }} />
 
-              <TextField label="Transaction Date From" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} InputLabelProps={{ shrink: true }} size="small" />
-              <TextField label="Transaction Date To" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} InputLabelProps={{ shrink: true }} size="small" />
+              <DatePicker
+                label="Transaction Date From"
+                value={fromDate}
+                onChange={(v) => setFromDate(v)}
+                renderInput={(params) => <TextField {...params} size="small" />}
+              />
+              <DatePicker
+                label="Transaction Date To"
+                value={toDate}
+                onChange={(v) => setToDate(v)}
+                renderInput={(params) => <TextField {...params} size="small" />}
+              />
 
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button variant="contained" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleExport('pdf')}>PDF</Button>

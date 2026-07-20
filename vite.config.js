@@ -3082,6 +3082,20 @@ const bankReconciliationReportApiPlugin = () => ({
             }
             return
           }
+          // GET /api/bankreconciliationreport/report?accountNo=...&fromDate=...&toDate=...
+          if (req.url.startsWith('/api/bankreconciliationreport/report')) {
+            try {
+              const backendUrl = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+              const backendRes = await fetch(backendUrl, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
         }
 
         return next()
