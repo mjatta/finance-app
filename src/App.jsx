@@ -118,6 +118,7 @@ const GroupReport = lazy(() => import('./features/reporting/GroupReport'));
 const DetailedAging = lazy(() => import('./features/reporting/DetailedAging'));
 const LoanProvision = lazy(() => import('./features/reporting/LoanProvision'));
 const LoanReports = lazy(() => import('./features/reporting/LoanReports/index.jsx'));
+const BankReconciliationReport = lazy(() => import('./features/reporting/BankReconciliationReport'));
 const TransactionListing = lazy(() => import('./features/reporting/TransactionListing'));
 const CustomerEnquiries = lazy(() => import('./features/reporting/CustomerEnquiries'));
 const DetailedJournalReport = lazy(() => import('./features/reporting/DetailedJournalReport'));
@@ -460,12 +461,12 @@ function App() {
         { label: 'Journals', to: '/accounting/journals', icon: BookRoundedIcon },
         { label: 'Verification', to: '/accounting/verification', icon: VerifiedRoundedIcon },
         { label: 'GL Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
+        { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
+        { label: 'End of Year', to: '/accounting/end-of-year', icon: DateRangeRoundedIcon },
         { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
         { label: 'Transaction Update', to: '/accounting/transaction-update', icon: SyncAltRoundedIcon },
         { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
         { label: 'General Ledger', to: '/accounting/general-ledger', icon: AccountBalanceRoundedIcon },
-        { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
-        { label: 'End of Year', to: '/accounting/end-of-year', icon: DateRangeRoundedIcon },
       ],
     },
     {
@@ -503,6 +504,7 @@ function App() {
         { label: 'Loan Schedule', to: '/reporting/loan-schedule', icon: AssessmentRoundedIcon },
         { label: 'Group Report', to: '/reporting/group-report', icon: AssessmentRoundedIcon },
         { label: 'Detailed Aging', to: '/reporting/detailed-aging', icon: AssessmentRoundedIcon },
+        { label: 'Bank Reconciliation Report', to: '/reporting/bank-reconciliation-report', icon: AssessmentRoundedIcon },
         { label: 'Loan Provision', to: '/reporting/loan-provision', icon: AssessmentRoundedIcon },
         { label: 'Transaction Listing', to: '/reporting/transaction-listing', icon: AssessmentRoundedIcon },
         { label: 'Journal Report', to: '/reporting/journal-report', icon: AssessmentRoundedIcon },
@@ -1064,6 +1066,10 @@ function App() {
                     <Route
                       path="/reporting/detailed-aging"
                       element={renderWithAccess('reporting', <DetailedAging />)}
+                    />
+                    <Route
+                      path="/reporting/bank-reconciliation-report"
+                      element={renderWithAccess('reporting', <BankReconciliationReport />)}
                     />
                     <Route
                       path="/reporting/loan-provision"

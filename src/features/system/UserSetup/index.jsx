@@ -179,6 +179,7 @@ const featurePageMap = {
     { path: '/reporting/detailed-journal-report', label: 'Detailed Journal Report' },
     { path: '/reporting/transaction-listing', label: 'Transaction Listing' },
     { path: '/reporting/journal-report', label: 'Journal Report' },
+    { path: '/reporting/bank-reconciliation-report', label: 'Bank Reconciliation Report' },
     { path: '/reporting/loan-reports', label: 'Loan Reports' },
     { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
   ],

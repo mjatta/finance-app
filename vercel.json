@@ -328,6 +328,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30"
     },
     {
+      "source": "/api/bankreconciliationreport/bankaccounts/30",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/bankreconciliationreport/bankaccounts/30"
+    },
+    {
       "source": "/api/reconcile/transactions/30/:accountNumber",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/transactions/30/:accountNumber"
     },
