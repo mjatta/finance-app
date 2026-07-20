@@ -15,6 +15,7 @@ import { useBranches } from '../../hooks/useBranches';
 import useJournalEnquiryUsers from './JournalReport/hooks/useJournalEnquiryUsers';
 import { useAuthStore } from '../../store/authStore';
 import buildJournalReportPrintHtml from './JournalReport/printSetup';
+import useCreditUnionLookup from '../../hooks/useCreditUnionLookup';
 
 const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
 
@@ -34,6 +35,7 @@ export default function JournalReport() {
   const { branches, loading: branchesLoading } = useBranches();
   const { users, loading: usersLoading } = useJournalEnquiryUsers();
   const authUser = useAuthStore((s) => s.user);
+  const { data: creditUnion, loading: creditUnionLoading } = useCreditUnionLookup(authUser?.CompId || 30);
   const [company, setCompany] = useState('');
   const [branch, setBranch] = useState('');
   const [user, setUser] = useState('');
@@ -109,7 +111,15 @@ export default function JournalReport() {
       if (!resp.ok) throw new Error(`Report API ${resp.status}`);
       const payload = await resp.json();
       const rows = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || []);
-      const html = buildJournalReportPrintHtml(rows, 'Journal Report', { fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const headerMeta = {
+        companyName: creditUnion?.com_name || creditUnion?.com_name?.trim?.() || creditUnion?.comName || '',
+        address: creditUnion?.caddress || creditUnion?.address || '',
+        telephone: creditUnion?.tel || creditUnion?.telephone || '',
+        email: creditUnion?.email || creditUnion?.Email || '',
+        fromDate: formatDate(tranFrom),
+        toDate: formatDate(tranTo),
+      }
+      const html = buildJournalReportPrintHtml(rows, 'Journal Report', headerMeta);
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
