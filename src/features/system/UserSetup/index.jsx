@@ -182,6 +182,7 @@ const featurePageMap = {
     { path: '/reporting/bank-reconciliation-report', label: 'Bank Reconciliation Report' },
     { path: '/reporting/loan-reports', label: 'Loan Reports' },
     { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
+    { path: '/reporting/audit-trail-report', label: 'Audit Trail Report' },
   ],
 };
 

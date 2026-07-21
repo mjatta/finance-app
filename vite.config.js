@@ -3358,6 +3358,12 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/lookups/, '/api/lookups'),
       },
+      '/api/audittrail': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/audittrail/, '/api/audittrail'),
+      },
       // Proxy for getmember endpoint to avoid CORS
       '/api/getmember': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

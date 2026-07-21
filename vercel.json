@@ -352,6 +352,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/bankreconciliationreport/report"
     },
     {
+      "source": "/api/audittrail/types",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/audittrail/types"
+    },
+    {
+      "source": "/api/audittrail/report",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/audittrail/report"
+    },
+    {
       "source": "/api/reconcile/transactions/30/:accountNumber",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/transactions/30/:accountNumber"
     },
