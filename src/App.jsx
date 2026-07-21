@@ -124,6 +124,7 @@ const TransactionListing = lazy(() => import('./features/reporting/TransactionLi
 const CustomerEnquiries = lazy(() => import('./features/reporting/CustomerEnquiries'));
 const DetailedJournalReport = lazy(() => import('./features/reporting/DetailedJournalReport'));
 const JournalReport = lazy(() => import('./features/reporting/JournalReport'));
+const ReportingHub = lazy(() => import('./features/reporting/ReportingHub'));
 const Landing = lazy(() => import('./features/home/Landing'));
 const Login = lazy(() => import('./features/auth/Login'));
 const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
@@ -497,22 +498,7 @@ function App() {
       key: 'reporting',
       label: 'Reporting & Analytics',
       children: [
-        { label: 'Trial Balance', to: '/reporting/trial-balance', icon: BalanceRoundedIcon },
-        { label: 'Income Statement', to: '/reporting/income-statement', icon: AssessmentRoundedIcon },
-        { label: 'Balance Sheet', to: '/reporting/balance-sheet', icon: BalanceRoundedIcon },
-        { label: 'Savings Balance', to: '/reporting/savings-balance', icon: AssessmentRoundedIcon },
-        { label: 'Loan Balance', to: '/reporting/loan-balance', icon: AssessmentRoundedIcon },
-        { label: 'Loan Schedule', to: '/reporting/loan-schedule', icon: AssessmentRoundedIcon },
-        { label: 'Group Report', to: '/reporting/group-report', icon: AssessmentRoundedIcon },
-        { label: 'Detailed Aging', to: '/reporting/detailed-aging', icon: AssessmentRoundedIcon },
-        { label: 'Bank Reconciliation Report', to: '/reporting/bank-reconciliation-report', icon: AssessmentRoundedIcon },
-        { label: 'Loan Provision', to: '/reporting/loan-provision', icon: AssessmentRoundedIcon },
-        { label: 'Transaction Listing', to: '/reporting/transaction-listing', icon: AssessmentRoundedIcon },
-        { label: 'Journal Report', to: '/reporting/journal-report', icon: AssessmentRoundedIcon },
-        { label: 'Loan Reports', to: '/reporting/loan-reports', icon: AssessmentRoundedIcon },
-        { label: 'Customer Enquiries', to: '/reporting/customer-enquiries', icon: AssessmentRoundedIcon },
-        { label: 'Detailed Journal Report', to: '/reporting/detailed-journal-report', icon: AssessmentRoundedIcon },
-        { label: 'Audit Trail Report', to: '/reporting/audit-trail-report', icon: InsightsRoundedIcon },
+        { label: 'Reports Hub', to: '/reporting', icon: AssessmentRoundedIcon },
       ],
     },
   ];
@@ -1037,6 +1023,10 @@ function App() {
                       element={renderWithAccess('system', <RunningBalanceFix />)}
                     />
 
+                    <Route
+                      path="/reporting"
+                      element={renderWithAccess('reporting', <ReportingHub />)}
+                    />
                     <Route
                       path="/reporting/trial-balance"
                       element={renderWithAccess('reporting', <TrialBalance />)}
