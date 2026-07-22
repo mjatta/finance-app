@@ -180,68 +180,48 @@ export default function AccountActivate() {
               Account Details
             </Typography>
 
-            <Box sx={{ display: 'grid', gap: 2 }}>
+            <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
               {/* Account Name */}
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={40} />
-              ) : (
-                <TextField
-                  label="Account Name"
-                  value={accountData?.accountName || ''}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  fullWidth
-                  size="small"
-                  sx={{
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      fontWeight: 600,
-                      color: '#2c3e50',
-                    },
-                  }}
-                />
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
+                  Account Name:
+                </Typography>
+                {isLoading ? (
+                  <Skeleton variant="text" width="100%" />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    {accountData?.accountName || 'n/a'}
+                  </Typography>
+                )}
+              </Box>
 
               {/* Account Balance */}
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={40} />
-              ) : (
-                <TextField
-                  label="Account Balance"
-                  value={accountData?.accountBalance || ''}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  fullWidth
-                  size="small"
-                  sx={{
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      fontWeight: 600,
-                      color: '#2c3e50',
-                    },
-                  }}
-                />
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
+                  Account Balance:
+                </Typography>
+                {isLoading ? (
+                  <Skeleton variant="text" width="100%" />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    {accountData?.accountBalance || 'n/a'}
+                  </Typography>
+                )}
+              </Box>
 
               {/* Customer Code */}
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={40} />
-              ) : (
-                accountData?.custCode && (
-                  <TextField
-                    label="Customer Code"
-                    value={accountData.custCode}
-                    InputProps={{ readOnly: true }}
-                    disabled
-                    fullWidth
-                    size="small"
-                    sx={{
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        fontWeight: 600,
-                        color: '#2c3e50',
-                      },
-                    }}
-                  />
-                )
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
+                  Customer Code:
+                </Typography>
+                {isLoading ? (
+                  <Skeleton variant="text" width="100%" />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    {accountData?.custCode || 'n/a'}
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </CardContent>
         </Card>
