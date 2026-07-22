@@ -81,8 +81,6 @@ const LoanApplication = lazy(() => import('./features/loan/LoanApplication'));
 const LoanApproval = lazy(() => import('./features/loan/LoanApproval'));
 const LoanDisbursement = lazy(() => import('./features/loan/LoanDisbursement'));
 const LoanGuarantor = lazy(() => import('./features/loan/LoanGuarantor'));
-const LoanApplicationReschedule = lazy(() => import('./features/loan/LoanApplicationReschedule'));
-const LoanApplicationTopUp = lazy(() => import('./features/loan/LoanApplicationTopUp'));
 const LoanAccountEnquires = lazy(() => import('./features/loan/LoanAccountEnquires'));
 
 const SubscriptionProcessing = lazy(() => import('./features/accounting/PeriodicProcessing/SubscriptionProcessing'));
@@ -452,8 +450,6 @@ function App() {
         { label: 'Loan Activate', to: '/loan/activate', icon: TaskAltRoundedIcon },
         { label: 'Recovery/Write-off', to: '/loan/recovery', icon: AssignmentReturnRoundedIcon },
         { label: 'Loan Amortization', to: '/loan/amortization', icon: CalculateRoundedIcon },
-        { label: 'Loan Application Reschedule', to: '/loan/application-reschedule', icon: ScheduleRoundedIcon },
-        { label: 'Loan Application Top up', to: '/loan/application-top-up', icon: TrendingUpRoundedIcon },
       ],
     },
     {
@@ -911,14 +907,6 @@ function App() {
                     <Route
                       path="/loan/guarantor"
                       element={renderWithAccess('loan', <LoanGuarantor />)}
-                    />
-                    <Route
-                      path="/loan/application-reschedule"
-                      element={renderWithAccess('loan', <LoanApplicationReschedule />)}
-                    />
-                    <Route
-                      path="/loan/application-top-up"
-                      element={renderWithAccess('loan', <LoanApplicationTopUp />)}
                     />
 
                     <Route
