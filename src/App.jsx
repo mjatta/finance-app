@@ -57,6 +57,7 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import './App.css';
 
 // feature pages (lazy-loaded)
+const CustomerAdministrationHub = lazy(() => import('./features/member/CustomerAdministrationHub'));
 const DepositManagement = lazy(() => import('./features/member/DepositManagement'));
 const AccountEnquiries = lazy(() => import('./features/member/AccountEnquiries'));
 const MemberTransfer = lazy(() => import('./features/member/MemberTransfer'));
@@ -421,19 +422,7 @@ function App() {
       key: 'member',
       label: 'Customer Administration',
       children: [
-        { label: 'Registration', to: '/member/customer-registration', icon: HowToRegRoundedIcon },
-        { label: 'Customer Activation', to: '/member/member-activation', icon: ToggleOnRoundedIcon },
-        { label: 'Deposits', to: '/member/deposits', icon: SavingsRoundedIcon },
-        { label: 'Withdrawal', to: '/member/withdrawal', icon: PaymentsRoundedIcon },
-        { label: 'Account Enquiries', to: '/member/account-enquiries', icon: ManageSearchRoundedIcon },
-        { label: 'Add Member Account', to: '/member/add-member-account', icon: PersonAddRoundedIcon },
-        { label: 'Member Activate', to: '/member/member-activate', icon: ToggleOnRoundedIcon },
-        { label: 'Account Activate', to: '/member/account-activate', icon: ToggleOnRoundedIcon },
-        { label: 'Member Close', to: '/member/member-close-account', icon: PersonRemoveRoundedIcon },
-        { label: 'Account Closure', to: '/member/member-close', icon: PersonRemoveRoundedIcon },
-        { label: 'Member Transfer', to: '/member/transfer', icon: SwapHorizRoundedIcon },
-        { label: 'Member Payroll Management', to: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon },
-        { label: 'Reprint', to: '/member/reprint', icon: PrintRoundedIcon },
+        { label: 'Dashboard', to: '/member', icon: HowToRegRoundedIcon },
       ],
     },
     {
@@ -816,6 +805,10 @@ function App() {
                     <Route
                       path="/"
                       element={<Navigate to="/home" replace />}
+                    />
+                    <Route
+                      path="/member"
+                      element={renderWithAccess('member', <CustomerAdministrationHub />)}
                     />
                     <Route
                       path="/member/deposits"
