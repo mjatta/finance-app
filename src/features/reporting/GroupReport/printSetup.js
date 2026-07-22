@@ -13,13 +13,12 @@ const formatAmount = (value) => {
   return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-export const buildGroupReportPrintHtml = (rows, reportDate) => {
+export const buildGroupReportPrintHtml = (rows, reportDate, creditUnion = {}) => {
   const safeRows = Array.isArray(rows) ? rows : [];
-  const firstRow = safeRows[0] ?? {};
-  const companyName = (firstRow.com_name ?? '').trim() || 'Company';
-  const address = (firstRow.caddress ?? '').trim();
-  const telephone = (firstRow.tel ?? '').trim();
-  const email = (firstRow.email ?? '').trim();
+  const companyName = (creditUnion.ComName || creditUnion.com_name || creditUnion.CompanyName || 'Company').trim();
+  const address = (creditUnion.caddress || creditUnion.address || '').trim();
+  const telephone = (creditUnion.tel || creditUnion.telephone || '').trim();
+  const email = (creditUnion.email || creditUnion.Email || '').trim();
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
   const reportDateLabel = dayjs(reportDate).isValid() ? dayjs(reportDate).format('YYYY-MM-DD') : reportDate;
 

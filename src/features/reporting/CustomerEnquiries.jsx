@@ -565,7 +565,7 @@ export default function CustomerEnquiries() {
           variant="contained"
           onClick={() => handleExport('excel')}
           disabled={isPrinting}
-          sx={{ backgroundColor: '#16a34a', '&:hover': { backgroundColor: '#15803d' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+          sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           Excel
         </Button>
@@ -573,7 +573,7 @@ export default function CustomerEnquiries() {
           variant="contained"
           onClick={() => handleExport('csv')}
           disabled={isPrinting}
-          sx={{ backgroundColor: '#0ea5e9', '&:hover': { backgroundColor: '#0284c7' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+          sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
         >
           CSV
         </Button>

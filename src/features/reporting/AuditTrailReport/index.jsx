@@ -10,8 +10,8 @@ export default function AuditTrailReport() {
   const { types, loading: typesLoading } = useAuditTrailTypes()
   const { data: creditUnion } = useCreditUnionLookup()
   const [auditType, setAuditType] = useState('')
-  const [fromDate, setFromDate] = useState(null)
-  const [toDate, setToDate] = useState(null)
+  const [fromDate, setFromDate] = useState(() => dayjs('1980-01-01'))
+  const [toDate, setToDate] = useState(() => dayjs())
 
   const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''))
 
@@ -101,40 +101,61 @@ export default function AuditTrailReport() {
   }
 
   return (
-    <Box sx={{ p: 3, minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>Audit Trail Report</Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>View audit activities and export results</Typography>
-        </CardContent>
-      </Card>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Audit Trail Report
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          View audit activities and export results.
+        </Typography>
+      </Box>
 
-      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Filters</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 900, mx: 'auto' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
               label="Audit Type"
               value={auditType}
               onChange={(e) => setAuditType(e.target.value)}
               size="small"
-              sx={{ minWidth: 320 }}
+              fullWidth
             >
               <MenuItem value="">-- select --</MenuItem>
               {types.map((t) => (
                 <MenuItem key={t.id ?? t.code} value={t.code ?? t.id}>{String(t.codename || t.code || '').trim()}</MenuItem>
               ))}
             </TextField>
+          </Box>
 
-            <DatePicker label="Transaction From" value={fromDate} onChange={(v) => setFromDate(v)} renderInput={(params) => <TextField {...params} size="small" />} />
-            <DatePicker label="Transaction To" value={toDate} onChange={(v) => setToDate(v)} renderInput={(params) => <TextField {...params} size="small" />} />
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+            <DatePicker label="Transaction From" value={fromDate} onChange={(v) => setFromDate(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+            <DatePicker label="Transaction To" value={toDate} onChange={(v) => setToDate(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+          </Box>
 
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button variant="contained" onClick={() => handleExport('pdf')} sx={{ textTransform: 'none' }}>PDF</Button>
-              <Button variant="outlined" onClick={() => handleExport('excel')} sx={{ textTransform: 'none' }}>Excel</Button>
-              <Button variant="outlined" onClick={() => handleExport('csv')} sx={{ textTransform: 'none' }}>CSV</Button>
-            </Box>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('pdf')}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('excel')}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('csv')}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              CSV
+            </Button>
           </Box>
         </CardContent>
       </Card>

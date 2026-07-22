@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, Card, CardContent, TextField, Typography, Backdrop, CircularProgress } from '@mui/material';
 import { buildGroupReportPrintHtml } from './printSetup';
 import dayjs from 'dayjs';
@@ -9,6 +9,23 @@ export default function GroupReport() {
   const [statusMessage, setStatusMessage] = useState('');
   const { fetchGroupMembers, loading } = useGetGroupMembers();
   const [rows, setRows] = useState([]);
+  const [creditUnion, setCreditUnion] = useState({});
+
+  useEffect(() => {
+    const fetchCreditUnion = async () => {
+      try {
+        const res = await fetch('/api/lookups/creditunion/30');
+        if (res.ok) {
+          const json = await res.json();
+          const normalized = Array.isArray(json) ? (json[0] || {}) : json;
+          setCreditUnion(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to fetch credit union data:', err);
+      }
+    };
+    fetchCreditUnion();
+  }, []);
 
   const zeroPad = (value) => {
     const s = String(value || '').trim();
@@ -32,49 +49,65 @@ export default function GroupReport() {
     }
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Full Name', 'Loan Amount', 'Sector'];
-    const csvRows = rows.map((r) => [`${r.FirstName || ''} ${r.LastName || ''}`.trim(), (r.LoanAmount ?? 0).toFixed(2), String(r.Sector ?? '')]);
-    const content = [headers, ...csvRows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([content], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `group-members-${zeroPad(groupCode)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleExportCSV = async () => {
+    if (!groupCode) return alert('Please enter a group code');
+    await handleSearch();
+    setTimeout(() => {
+      const headers = ['Full Name', 'Loan Amount', 'Sector'];
+      const csvRows = rows.map((r) => [`${r.FirstName || ''} ${r.LastName || ''}`.trim(), (r.LoanAmount ?? 0).toFixed(2), String(r.Sector ?? '')]);
+      const content = [headers, ...csvRows].map((r) => r.join(',')).join('\n');
+      const blob = new Blob([content], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `group-members-${zeroPad(groupCode)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
-  const handleExportExcel = () => {
-    // reuse CSV content and XLSX mime for simplicity
-    const headers = ['Full Name', 'Loan Amount', 'Sector'];
-    const csvRows = rows.map((r) => [`${r.FirstName || ''} ${r.LastName || ''}`.trim(), (r.LoanAmount ?? 0).toFixed(2), String(r.Sector ?? '')]);
-    const content = [headers, ...csvRows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([content], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `group-members-${zeroPad(groupCode)}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleExportExcel = async () => {
+    if (!groupCode) return alert('Please enter a group code');
+    await handleSearch();
+    setTimeout(() => {
+      const headers = ['Full Name', 'Loan Amount', 'Sector'];
+      const csvRows = rows.map((r) => [`${r.FirstName || ''} ${r.LastName || ''}`.trim(), (r.LoanAmount ?? 0).toFixed(2), String(r.Sector ?? '')]);
+      const content = [headers, ...csvRows].map((r) => r.join(',')).join('\n');
+      const blob = new Blob([content], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `group-members-${zeroPad(groupCode)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
-  const handleExportPDF = () => {
-    const printWindow = window.open('', '_blank', 'width=1200,height=900');
-    if (!printWindow) {
-      setStatusMessage('Unable to open print preview.');
-      return;
-    }
-    const html = buildGroupReportPrintHtml(rows, dayjs().format('YYYY-MM-DD'));
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+  const handleExportPDF = async () => {
+    if (!groupCode) return alert('Please enter a group code');
+    await handleSearch();
+    setTimeout(async () => {
+      try {
+        const printWindow = window.open('', '_blank', 'width=1200,height=900');
+        if (!printWindow) {
+          setStatusMessage('Unable to open print preview.');
+          return;
+        }
+        const html = buildGroupReportPrintHtml(rows, dayjs().format('YYYY-MM-DD'), creditUnion);
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      } catch (err) {
+        console.error(err);
+        setStatusMessage('Failed to generate report');
+      }
+    }, 100);
   };
 
   return (
@@ -97,10 +130,30 @@ export default function GroupReport() {
           />
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Button variant="contained" onClick={handleSearch} disabled={loading || !groupCode} sx={{ backgroundColor: '#667eea' }}>Search</Button>
-            <Button variant="contained" onClick={handleExportPDF} disabled={rows.length === 0} sx={{ backgroundColor: '#667eea' }}>PDF</Button>
-            <Button variant="contained" onClick={handleExportExcel} disabled={rows.length === 0} sx={{ backgroundColor: '#27ae60' }}>Excel</Button>
-            <Button variant="contained" onClick={handleExportCSV} disabled={rows.length === 0} sx={{ backgroundColor: '#3498db' }}>CSV</Button>
+            <Button
+              variant="contained"
+              onClick={handleExportPDF}
+              disabled={loading || !groupCode}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleExportExcel}
+              disabled={loading || !groupCode}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleExportCSV}
+              disabled={loading || !groupCode}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              CSV
+            </Button>
           </Box>
 
           {statusMessage && <Typography color="warning.main" sx={{ mb: 2 }}>{statusMessage}</Typography>}

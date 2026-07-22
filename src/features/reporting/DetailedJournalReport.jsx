@@ -107,11 +107,9 @@ export default function DetailedJournalReport() {
         <Typography variant="body1" sx={{ opacity: 0.95 }}>Detailed journal entries by account and member.</Typography>
       </Box>
 
-      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3 }}>
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 900, mx: 'auto' }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#667eea' }}>Filters</Typography>
-
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, mb: 2 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               label="Account Number"
               size="small"
@@ -130,15 +128,36 @@ export default function DetailedJournalReport() {
             <TextField label="Member Name" size="small" value={memberName} onChange={(e) => setMemberName(e.target.value)} fullWidth />
           </Box>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 2 }}>
-            <DatePicker label="Transaction Date From" value={tranFrom} onChange={(v) => setTranFrom(v)} slotProps={{ textField: { size: 'small' } }} />
-            <DatePicker label="Transaction Date To" value={tranTo} onChange={(v) => setTranTo(v)} slotProps={{ textField: { size: 'small' } }} />
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+            <DatePicker label="Transaction Date From" value={tranFrom} onChange={(v) => setTranFrom(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+            <DatePicker label="Transaction Date To" value={tranTo} onChange={(v) => setTranTo(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Button variant="contained" color="primary" onClick={handleExportPDF} disabled={isPrinting}>{isPrinting ? <CircularProgress size={18} color="inherit" /> : 'PDF'}</Button>
-            <Button variant="outlined" color="primary" onClick={handleExportExcel} disabled={isPrinting}>{isPrinting ? 'Working...' : 'Excel'}</Button>
-            <Button variant="outlined" color="primary" onClick={handleExportCSV} disabled={isPrinting}>{isPrinting ? 'Working...' : 'CSV'}</Button>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleExportPDF}
+              disabled={isPrinting}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              {isPrinting ? <CircularProgress size={18} color="inherit" /> : 'PDF'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleExportExcel}
+              disabled={isPrinting}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              {isPrinting ? 'Working...' : 'Excel'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleExportCSV}
+              disabled={isPrinting}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              {isPrinting ? 'Working...' : 'CSV'}
+            </Button>
           </Box>
         </CardContent>
       </Card>

@@ -76,63 +76,82 @@ export default function BankReconciliationReport() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
-      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>Bank Reconciliation Report</Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>Run bank reconciliation reports and export</Typography>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          Bank Reconciliation Report
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.95 }}>
+          Run bank reconciliation reports and export results.
+        </Typography>
+      </Box>
+
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 900, mx: 'auto' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+            <TextField
+              select
+              label="Bank Account"
+              value={selected?.AccountNumber || selected?.AccountNo || ''}
+              onChange={(e) => {
+                const a = accounts.find((x) => (x.AccountNumber || x.AccountNo || '') === e.target.value);
+                setSelected(a || null);
+              }}
+              size="small"
+              fullWidth
+              disabled={accountsLoading}
+            >
+              <MenuItem value="">-- select account --</MenuItem>
+              {accounts.map((a) => (
+                <MenuItem key={a.AccountNumber || a.AccountNo} value={a.AccountNumber || a.AccountNo}>
+                  {a.AccountNumber || a.AccountNo} - {String(a.AccountName || '').trim()}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField label="Account Name" value={selected?.AccountName ? String(selected.AccountName).trim() : ''} size="small" fullWidth InputProps={{ readOnly: true }} />
+          </Box>
+
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+            <DatePicker
+              label="Transaction Date From"
+              value={fromDate}
+              onChange={(v) => setFromDate(v)}
+              slotProps={{ textField: { size: 'small', fullWidth: true } }}
+            />
+            <DatePicker
+              label="Transaction Date To"
+              value={toDate}
+              onChange={(v) => setToDate(v)}
+              slotProps={{ textField: { size: 'small', fullWidth: true } }}
+            />
+          </Box>
+
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('pdf')}
+              sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('excel')}
+              sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleExport('csv')}
+              sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
+            >
+              CSV
+            </Button>
+          </Box>
         </CardContent>
       </Card>
-
-      <Box sx={{ display: 'grid', gap: 3 }}>
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Bank Account</Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-              <TextField
-                select
-                label="Bank Account"
-                value={selected?.AccountNumber || selected?.AccountNo || ''}
-                onChange={(e) => {
-                  const a = accounts.find((x) => (x.AccountNumber || x.AccountNo || '') === e.target.value);
-                  setSelected(a || null);
-                }}
-                size="small"
-                sx={{ minWidth: 360 }}
-                disabled={accountsLoading}
-              >
-                <MenuItem value="">-- select account --</MenuItem>
-                {accounts.map((a) => (
-                  <MenuItem key={a.AccountNumber || a.AccountNo} value={a.AccountNumber || a.AccountNo}>
-                    {a.AccountNumber || a.AccountNo} - {String(a.AccountName || '').trim()}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField label="Account Name" value={selected?.AccountName ? String(selected.AccountName).trim() : ''} size="small" InputProps={{ readOnly: true }} sx={{ minWidth: 360 }} />
-
-              <DatePicker
-                label="Transaction Date From"
-                value={fromDate}
-                onChange={(v) => setFromDate(v)}
-                renderInput={(params) => <TextField {...params} size="small" />}
-              />
-              <DatePicker
-                label="Transaction Date To"
-                value={toDate}
-                onChange={(v) => setToDate(v)}
-                renderInput={(params) => <TextField {...params} size="small" />}
-              />
-
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="contained" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleExport('pdf')}>PDF</Button>
-                <Button variant="outlined" sx={{ textTransform: 'none' }} onClick={() => handleExport('excel')}>Excel</Button>
-                <Button variant="outlined" sx={{ textTransform: 'none' }} onClick={() => handleExport('csv')}>CSV</Button>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
     </Box>
   );
 }
