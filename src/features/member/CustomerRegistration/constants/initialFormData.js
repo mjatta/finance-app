@@ -63,6 +63,7 @@ export const initialForm = {
   currentSalary: '',
   biometricPhotoName: '',
   biometricSignatureName: '',
+  applicationFormName: '',
   registrationFee: '',
   contributionAccountNumber: '',
   contributionAccountName: '',

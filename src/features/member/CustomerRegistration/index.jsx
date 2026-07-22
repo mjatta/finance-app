@@ -744,7 +744,8 @@ export default function CustomerRegistration(props) {
         'chairName','chairTIN','chairMobilePhone','chairEmailAddress','chairAccountSignatory',
         'viceChairName','viceChairTIN','viceChairMobilePhone','viceChairEmailAddress','viceChairAccountSignatory',
         'treasurerName','treasurerTIN','treasurerMobilePhone','treasurerEmailAddress','treasurerAccountSignatory',
-        'secretaryName','secretaryTIN','secretaryMobilePhone','secretaryEmailAddress','secretaryAccountSignatory'
+        'secretaryName','secretaryTIN','secretaryMobilePhone','secretaryEmailAddress','secretaryAccountSignatory',
+        'biometricPhotoName','biometricSignatureName','applicationFormName'
       ];
       const next = { ...prev };
       keysToReset.forEach((k) => {
@@ -769,7 +770,7 @@ export default function CustomerRegistration(props) {
         'mobilePhoneNumber','emailAddress','refereeName','refereeAddress','refereeMobilePhone','refereeEmailAddress',
         'nextOfKinName','nextOfKinAddress','nextOfKinRelationship','nextOfKinMobilePhone','employer','employmentCountry',
         'employmentCity','employmentAddress','employmentMobilePhone','employmentEmailAddress','employmentNumber','designation',
-        'department','yearsWithCurrentEmployment','currentSalary','biometricPhotoName','biometricSignatureName','registrationFee',
+        'department','yearsWithCurrentEmployment','currentSalary','biometricPhotoName','biometricSignatureName','applicationFormName','registrationFee',
         'contributionAccountNumber','contributionAccountName','sharePrice','sharesPurchase','shareValue','savingMode','savingAmount',
         'accountSignatory','deductedFromSourcePayroll','residency','referenceDetailsName','referenceDetailsAddress','referenceDetailsMobilePhone',
         'referenceDetailsEmailAddress','signatory1','signatory3','defaultBatch','printReceipt'
@@ -781,6 +782,12 @@ export default function CustomerRegistration(props) {
       return next;
     });
     setTouched({});
+    photoFileRef.current = null;
+    signatureFileRef.current = null;
+    applicationFormFileRef.current = null;
+    setPhotoPreviewUrl('');
+    setSignaturePreviewUrl('');
+    setApplicationFormPreviewUrl('');
   };
 
 // Helper to format row for DataGrid
@@ -876,8 +883,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
+  const [applicationFormPreviewUrl, setApplicationFormPreviewUrl] = useState('');
   const photoFileRef = useRef(null);
   const signatureFileRef = useRef(null);
+  const applicationFormFileRef = useRef(null);
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
   const [touched, setTouched] = useState({});
@@ -995,6 +1004,16 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       });
     }
 
+    if (fieldName === 'applicationFormName') {
+      applicationFormFileRef.current = selectedFile;
+      setApplicationFormPreviewUrl((prevUrl) => {
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl);
+        }
+        return selectedFile ? URL.createObjectURL(selectedFile) : '';
+      });
+    }
+
     setFormData((prev) => ({
       ...prev,
       [fieldName]: selectedFile ? selectedFile.name : '',
@@ -1018,6 +1037,16 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     if (fieldName === 'biometricSignatureName') {
       signatureFileRef.current = null;
       setSignaturePreviewUrl((prevUrl) => {
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl);
+        }
+        return '';
+      });
+    }
+
+    if (fieldName === 'applicationFormName') {
+      applicationFormFileRef.current = null;
+      setApplicationFormPreviewUrl((prevUrl) => {
         if (prevUrl) {
           URL.revokeObjectURL(prevUrl);
         }
@@ -1136,6 +1165,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
     const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+    const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
 
     setIsSaving(true);
     setFieldErrors({});
@@ -1150,6 +1180,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       });
       individualPayload.MemberPicture = pictureBase64;
       individualPayload.MemberSignature = signatureBase64;
+      individualPayload.ApplicationForm = applicationFormBase64;
       try {
         const result = await registerIndividual(individualPayload);
         setStatusMessage('Individual registration saved successfully.');
@@ -1187,8 +1218,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         ]);
         photoFileRef.current = null;
         signatureFileRef.current = null;
+        applicationFormFileRef.current = null;
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
+        setApplicationFormPreviewUrl('');
         setTouched({});
       } catch (error) {
         setStatusMessage('Unable to save individual registration.');
@@ -1265,8 +1298,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         ]);
         photoFileRef.current = null;
         signatureFileRef.current = null;
+        applicationFormFileRef.current = null;
         setPhotoPreviewUrl('');
         setSignaturePreviewUrl('');
+        setApplicationFormPreviewUrl('');
         setTouched({});
       } catch (error) {
         setStatusMessage('Unable to save customer registration.');
@@ -1307,6 +1342,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
     const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+    const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
 
     try {
       const payload = mainTab === 0
@@ -1315,6 +1351,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
+      payload.ApplicationForm = applicationFormBase64;
       // Add EditedBy: current user
       payload.EditedBy = useAuthStore.getState().user?.username || (typeof document !== 'undefined' ? (document.cookie.split('; ').find(c=>c.startsWith('user=')) ? JSON.parse(decodeURIComponent(document.cookie.split('; ').find(c=>c.startsWith('user=')).split('=')[1])).username : '') : '');
 
@@ -1481,11 +1518,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     const pictureBase64 = photoFileRef.current ? await fileToBase64(photoFileRef.current) : null;
     const signatureBase64 = signatureFileRef.current ? await fileToBase64(signatureFileRef.current) : null;
+    const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
 
     try {
       const payload = buildInstitutionPayload(formData, institutionBranches, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId });
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
+      payload.ApplicationForm = applicationFormBase64;
       payload.EditedBy = useAuthStore.getState().user?.username || '';
       // Populate additional references (Ref2..Ref4) from `additionalReferences` state
       try {
@@ -2966,7 +3005,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
 
               {((mainTab === 1 && detailTab === 4) || (mainTab !== 1 && detailTab === 4)) && (
-                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
                   {/* Biometric Tab Content */}
                   <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                     <CardContent>
@@ -3107,6 +3146,80 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             ) : (
                               <Typography variant="body2" color="text.secondary">
                                 Selected signature preview will appear here.
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {/* Application Form Card */}
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                        Application Form
+                      </Typography>
+                      <Box sx={{ display: 'grid', gap: 1.25 }}>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Button component="label" variant="outlined" sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
+                            Select a Form
+                            <input
+                              hidden
+                              accept="image/*"
+                              type="file"
+                              onChange={(event) => handleBiometricFileChange('applicationFormName', event)}
+                            />
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            disabled={!formData.applicationFormName}
+                            onClick={() => handleRemoveBiometricFile('applicationFormName')}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Remove form
+                          </Button>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {formData.applicationFormName || 'No form selected.'}
+                        </Typography>
+                        <Box
+                          sx={{
+                            mt: 0.5,
+                            p: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 8px rgba(15, 23, 42, 0.06)',
+                            bgcolor: 'background.paper',
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
+                            Form Preview
+                          </Typography>
+                          <Box
+                            sx={{
+                              border: '1px dashed',
+                              borderColor: 'divider',
+                              borderRadius: 1.5,
+                              minHeight: 180,
+                              display: 'grid',
+                              placeItems: 'center',
+                              overflow: 'hidden',
+                              bgcolor: 'action.hover',
+                            }}
+                          >
+                            {applicationFormPreviewUrl ? (
+                              <Box
+                                component="img"
+                                src={applicationFormPreviewUrl}
+                                alt="Selected application form preview"
+                                sx={{ width: '100%', height: 180, objectFit: 'contain', bgcolor: 'background.paper', borderRadius: 1 }}
+                              />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Selected form preview will appear here.
                               </Typography>
                             )}
                           </Box>
