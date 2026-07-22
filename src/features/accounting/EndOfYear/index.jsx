@@ -5,7 +5,6 @@ import useAccounts from './hooks/useAccounts';
 import { useEndOfYearData } from './hooks/useEndOfYearData';
 import useProcessEndOfYear from './hooks/useProcessEndOfYear';
 import { formatCurrency } from '../../../utils/currencyFormatter';
-import dayjs from 'dayjs';
 
 export default function EndOfYearAccounting() {
   const { accounts, loading: accountsLoading } = useAccounts();
@@ -43,7 +42,7 @@ export default function EndOfYearAccounting() {
       if (!mounted) return;
       const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
         id: `${r.AccountNo || r.accountNo || idx}-${idx}`,
-        balanceDate: r.BalanceDate || r.balanceDate || '',
+        balanceDate: r.BalanceDate ? new Date(r.BalanceDate).toISOString().slice(0,10) : '',
         accountNo: r.AccountNo || r.accountNo || '',
         accountName: (r.AccountName || r.accountName || '').trim(),
         debit: Number(r.Debit || r.debit || 0),
@@ -55,15 +54,7 @@ export default function EndOfYearAccounting() {
   }, [fetchData]);
 
   const columns = [
-    { field: 'balanceDate', headerName: 'Balance Date', flex: 1, minWidth: 140,
-      valueGetter: (params) => {
-        return params?.row?.BalanceDate ?? params?.row?.balanceDate ?? params?.value ?? '';
-      },
-      valueFormatter: (params) => {
-        const val = params?.value;
-        return val ? dayjs(val).format('YYYY-MM-DD') : '';
-      }
-    },
+    { field: 'balanceDate', headerName: 'Balance Date', flex: 1, minWidth: 140 },
     { field: 'accountNo', headerName: 'Account Number', flex: 1, minWidth: 160 },
     { field: 'accountName', headerName: 'Account Name', flex: 2, minWidth: 240 },
     { field: 'debit', headerName: 'Debit', flex: 1, minWidth: 120, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
@@ -85,19 +76,18 @@ export default function EndOfYearAccounting() {
 
       <Box sx={{ display: 'grid', gap: 3, width: '100%' }}>
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+          <CardContent sx={{ pb: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, fontSize: '0.95rem', color: '#2c3e50' }}>
               Contra
             </Typography>
-            <Box sx={{ display: 'grid', gap: 2, maxWidth: 600 }}>
+            <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
               <TextField
                 select
-                fullWidth
                 label="Contra (Account No)"
                 value={selectedAccount}
                 onChange={handleSelect}
                 disabled={accountsLoading}
-                size="medium"
+                size="small"
               >
                 <MenuItem value="">All Accounts</MenuItem>
                 {accounts.map((a) => (
@@ -106,9 +96,9 @@ export default function EndOfYearAccounting() {
                   </MenuItem>
                 ))}
               </TextField>
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Account Name</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>{accountName || '-'}</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>Account Name</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>{accountName || '-'}</Typography>
               </Box>
             </Box>
           </CardContent>
@@ -116,23 +106,41 @@ export default function EndOfYearAccounting() {
 
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
           <CardContent sx={{ p: 0 }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>End Of Year Balances</Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} onClick={async () => {
-                  // reload grid
-                  const data = await fetchData(selectedAccount);
-                  const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
-                    id: `${r.AccountNo || r.accountNo || idx}-${idx}`,
-                    balanceDate: r.BalanceDate || r.balanceDate || '',
-                    accountNo: r.AccountNo || r.accountNo || '',
-                    accountName: (r.AccountName || r.accountName || '').trim(),
-                    debit: Number(r.Debit || r.debit || 0),
-                    credit: Number(r.Credit || r.credit || 0),
-                  }));
-                  setRows(mapped);
-                }}>Refresh</Button>
-                <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} disabled={!rows || rows.length === 0} onClick={() => window.print()}>Print</Button>
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>End Of Year Balances</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} onClick={async () => {
+                    // reload grid
+                    const data = await fetchData(selectedAccount);
+                    const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
+                      id: `${r.AccountNo || r.accountNo || idx}-${idx}`,
+                      balanceDate: r.BalanceDate ? new Date(r.BalanceDate).toISOString().slice(0,10) : '',
+                      accountNo: r.AccountNo || r.accountNo || '',
+                      accountName: (r.AccountName || r.accountName || '').trim(),
+                      debit: Number(r.Debit || r.debit || 0),
+                      credit: Number(r.Credit || r.credit || 0),
+                    }));
+                    setRows(mapped);
+                  }}>Refresh</Button>
+                  <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} disabled={!rows || rows.length === 0} onClick={() => window.print()}>Print</Button>
+                </Box>
+              </Box>
+
+              {/* Summary Totals */}
+              <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr 1fr 1fr' }, fontSize: '0.85rem' }}>
+                <Box sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 0.5 }}>
+                  <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, mb: 0.3 }}>Total Debit</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{formatCurrency(rows.reduce((sum, r) => sum + (r.debit || 0), 0))}</Typography>
+                </Box>
+                <Box sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 0.5 }}>
+                  <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, mb: 0.3 }}>Total Credit</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{formatCurrency(rows.reduce((sum, r) => sum + (r.credit || 0), 0))}</Typography>
+                </Box>
+                <Box sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 0.5 }}>
+                  <Typography variant="caption" sx={{ display: 'block', opacity: 0.9, mb: 0.3 }}>Surplus</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{formatCurrency(rows.reduce((sum, r) => sum + (r.credit || 0), 0) - rows.reduce((sum, r) => sum + (r.debit || 0), 0))}</Typography>
+                </Box>
               </Box>
             </Box>
 
