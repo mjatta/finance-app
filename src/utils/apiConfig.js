@@ -80,6 +80,16 @@ const ENDPOINT_MAP = {
     dev: '/api/account/details',
     prod: '/api/account/details',
   },
+  // GL Account Details (Financial Accounting)
+  'accounts-details': {
+    dev: '/api/accounts/details',
+    prod: '/api/accounts/details',
+  },
+  // GL Account Update (Financial Accounting)
+  'accounts-update-name': {
+    dev: '/api/accounts/update-name',
+    prod: '/api/accounts/update-name',
+  },
   // Client
   'client-code': {
     dev: '/api/client/get-code',

@@ -188,6 +188,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:path*"
     },
     {
+      "source": "/api/accounts/details/:accountNumber",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/details/:accountNumber"
+    },
+    {
+      "source": "/api/accounts/update-name",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name"
+    },
+    {
       "source": "/api/Withdrawal/BadDebt",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Withdrawal/BadDebt"
     },

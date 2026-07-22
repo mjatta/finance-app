@@ -146,6 +146,7 @@ const featurePageMap = {
     { path: '/accounting/transaction-update', label: 'Transaction Update' },
     { path: '/accounting/transaction-reversal-adjustment', label: 'Transaction Reversal / Adjustment' },
     { path: '/accounting/account-enquiry', label: 'GL Account Enquiry' },
+    { path: '/accounting/account-edit', label: 'Account Edit' },
     { path: '/accounting/general-ledger', label: 'General Ledger' },
     { path: '/accounting/account-reconciliation', label: 'Account Reconciliation' },
   ],

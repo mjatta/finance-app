@@ -94,6 +94,50 @@ const loanReportApiPlugin = () => ({
   },
 })
 
+// GL Account Update API Plugin (dev server middleware, backend only)
+const glAccountsUpdateApiPlugin = () => ({
+  name: 'gl-accounts-update-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/accounts/update-name', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process GL account update.', error: err.message }))
+      }
+    })
+  },
+})
+
 // Account Details API Plugin (dev server middleware, backend only)
 const accountDetailsApiPlugin = () => ({
   name: 'account-details-api-plugin',
@@ -133,6 +177,59 @@ const accountDetailsApiPlugin = () => ({
       } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to fetch account details.' }))
+      }
+    })
+  },
+})
+
+// GL Account Details API Plugin (dev server middleware, backend only)
+const glAccountsDetailsApiPlugin = () => ({
+  name: 'gl-accounts-details-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        // Only handle GL accounts details subpaths
+        if (!req.url || !req.url.startsWith('/api/accounts/details')) {
+          return next()
+        }
+
+        // Add CORS and JSON response header
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // GL Account Details: /api/accounts/details/:accountNumber
+          const detailsMatch = req.url.match(/^\/api\/accounts\/details\/([^\/\?]+)/)
+          if (detailsMatch) {
+            const accountNumber = detailsMatch[1]
+            try {
+              const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/accounts/details/${encodeURIComponent(accountNumber)}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // Unknown GET subpath; let other middleware handle
+          return next()
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch GL account details.', error: err.message }))
       }
     })
   },
@@ -3292,6 +3389,8 @@ export default defineConfig({
     react(),
     journalPostApiPlugin(),
   accountDetailsApiPlugin(),
+  glAccountsDetailsApiPlugin(),
+  glAccountsUpdateApiPlugin(),
   idTypesApiPlugin(),
     glTransactionsApiPlugin(),
     memberActivatePlugin(),
