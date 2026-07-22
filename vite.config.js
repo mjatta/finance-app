@@ -94,6 +94,110 @@ const loanReportApiPlugin = () => ({
   },
 })
 
+// Member Account Details API Plugin (dev server middleware, backend only)
+const memberAccountDetailsApiPlugin = () => ({
+  name: 'member-account-details-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        // Only handle member account details subpaths
+        if (!req.url || !req.url.startsWith('/api/member-account/member')) {
+          return next()
+        }
+
+        // Add CORS and JSON response header
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Member Account Details: /api/member-account/member/30/:customerCode
+          const detailsMatch = req.url.match(/^\/api\/member-account\/member\/30\/([^\/\?]+)/)
+          if (detailsMatch) {
+            const customerCode = detailsMatch[1]
+            try {
+              const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/member-account/member/30/${encodeURIComponent(customerCode)}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // Unknown GET subpath; let other middleware handle
+          return next()
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch member account details.', error: err.message }))
+      }
+    })
+  },
+})
+
+// Member Account Products API Plugin (dev server middleware, backend only)
+const memberAccountProductsApiPlugin = () => ({
+  name: 'member-account-products-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        // Only handle member account products subpaths
+        if (!req.url || !req.url.startsWith('/api/member-account/products')) {
+          return next()
+        }
+
+        // Add CORS and JSON response header
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Member Account Products: /api/member-account/products/30
+          if (req.url.startsWith('/api/member-account/products/30')) {
+            try {
+              const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/member-account/products/30', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // Unknown GET subpath; let other middleware handle
+          return next()
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch member account products.', error: err.message }))
+      }
+    })
+  },
+})
+
 // GL Account Update API Plugin (dev server middleware, backend only)
 const glAccountsUpdateApiPlugin = () => ({
   name: 'gl-accounts-update-api-plugin',
@@ -3391,6 +3495,8 @@ export default defineConfig({
   accountDetailsApiPlugin(),
   glAccountsDetailsApiPlugin(),
   glAccountsUpdateApiPlugin(),
+  memberAccountDetailsApiPlugin(),
+  memberAccountProductsApiPlugin(),
   idTypesApiPlugin(),
     glTransactionsApiPlugin(),
     memberActivatePlugin(),

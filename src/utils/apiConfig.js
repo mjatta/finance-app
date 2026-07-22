@@ -90,6 +90,16 @@ const ENDPOINT_MAP = {
     dev: '/api/accounts/update-name',
     prod: '/api/accounts/update-name',
   },
+  // Member Account Details (Member Account)
+  'member-account-details': {
+    dev: '/api/member-account/member/30',
+    prod: '/api/member-account/member/30',
+  },
+  // Member Account Products (Member Account)
+  'member-account-products': {
+    dev: '/api/member-account/products/30',
+    prod: '/api/member-account/products/30',
+  },
   // Client
   'client-code': {
     dev: '/api/client/get-code',

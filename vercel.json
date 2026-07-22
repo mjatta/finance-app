@@ -196,6 +196,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name"
     },
     {
+      "source": "/api/member-account/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member-account/:path*"
+    },
+    {
       "source": "/api/Withdrawal/BadDebt",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Withdrawal/BadDebt"
     },
