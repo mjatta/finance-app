@@ -223,71 +223,68 @@ export default function AccountClosure() {
               Account Details
             </Typography>
 
-            <Box sx={{ display: 'grid', gap: 2 }}>
+            <Box sx={{ display: 'grid', gap: 2.5 }}>
               {/* Account Name */}
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={40} />
-              ) : (
-                <TextField
-                  label="Account Name"
-                  value={formData.accountName}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  fullWidth
-                  size="small"
-                  sx={{
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      fontWeight: 600,
-                      color: '#2c3e50',
-                    },
-                  }}
-                />
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 140 }}>
+                  Account Name:
+                </Typography>
+                {isLoading ? (
+                  <Skeleton variant="text" width="100%" />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    {formData.accountName || 'n/a'}
+                  </Typography>
+                )}
+              </Box>
 
               {/* Account Balance */}
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={40} />
-              ) : (
-                <TextField
-                  label="Account Balance"
-                  value={formData.accountBalance}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                  fullWidth
-                  size="small"
-                  sx={{
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      fontWeight: 600,
-                      color: '#2c3e50',
-                    },
-                  }}
-                />
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 140 }}>
+                  Account Balance:
+                </Typography>
+                {isLoading ? (
+                  <Skeleton variant="text" width="100%" />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    {formData.accountBalance || 'n/a'}
+                  </Typography>
+                )}
+              </Box>
 
               {/* Account Status Checkboxes */}
-              {!isLoading && formData.accountName && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-                    Account Status
-                  </Typography>
-                  <FormGroup row>
-                    {statusOptions.map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        control={
-                          <Checkbox
-                            value={option}
-                            checked={formData.status.includes(option)}
-                            onChange={handleStatusChange}
-                            size="small"
-                          />
-                        }
-                        label={option}
-                      />
-                    ))}
-                  </FormGroup>
-                </Box>
-              )}
+              <Box sx={{ mt: 1, pt: 2, borderTop: '1px solid #eee' }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', mb: 1.5 }}>
+                  Account Status:
+                </Typography>
+                <FormGroup row sx={{ gap: 2 }}>
+                  {statusOptions.map((option) => (
+                    <FormControlLabel
+                      key={option}
+                      control={
+                        <Checkbox
+                          value={option}
+                          checked={formData.status.includes(option)}
+                          onChange={handleStatusChange}
+                          disabled={isLoading || !formData.accountName}
+                          size="small"
+                          sx={{
+                            color: '#667eea',
+                            '&.Mui-checked': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#2c3e50' }}>
+                          {option}
+                        </Typography>
+                      }
+                    />
+                  ))}
+                </FormGroup>
+              </Box>
             </Box>
           </CardContent>
         </Card>
