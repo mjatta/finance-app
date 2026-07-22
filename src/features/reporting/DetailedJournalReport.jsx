@@ -125,7 +125,10 @@ export default function DetailedJournalReport() {
               }}
               fullWidth
             />
-            <TextField label="Member Name" size="small" value={memberName} onChange={(e) => setMemberName(e.target.value)} fullWidth />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>Member Name:</Typography>
+              <Typography variant="body2">{memberName ? String(memberName).trim() : 'N/A'}</Typography>
+            </Box>
           </Box>
 
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
