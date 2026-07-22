@@ -53,6 +53,7 @@ import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
 // Use logo from public folder
 import './App.css';
 
@@ -94,6 +95,7 @@ const TransactionUpdate = lazy(() => import('./features/accounting/TransactionUp
 const TransactionReversalAdjustment = lazy(() => import('./features/accounting/TransactionReversalAdjustment'));
 const AccountEnquiry = lazy(() => import('./features/accounting/AccountEnquiry'));
 const AccountEdit = lazy(() => import('./features/accounting/AccountEdit'));
+const AccountOpening = lazy(() => import('./features/accounting/AccountOpening'));
 const GeneralLedger = lazy(() => import('./features/accounting/LedgerManagement'));
 const AccountReconciliation = lazy(() => import('./features/accounting/Reconciliation'));
 
@@ -446,6 +448,7 @@ function App() {
         { label: 'Journals', to: '/accounting/journals', icon: BookRoundedIcon },
         { label: 'Verification', to: '/accounting/verification', icon: VerifiedRoundedIcon },
         { label: 'GL Account Enquiry', to: '/accounting/account-enquiry', icon: ManageSearchRoundedIcon },
+        { label: 'Account Opening', to: '/accounting/account-opening', icon: AddCircleRoundedIcon },
         { label: 'Account Edit', to: '/accounting/account-edit', icon: ManageSearchRoundedIcon },
         { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
         { label: 'End of Year', to: '/accounting/end-of-year', icon: DateRangeRoundedIcon },
@@ -929,6 +932,10 @@ function App() {
                     <Route
                       path="/accounting/account-edit"
                       element={renderWithAccess('accounting', <AccountEdit />)}
+                    />
+                    <Route
+                      path="/accounting/account-opening"
+                      element={renderWithAccess('accounting', <AccountOpening />)}
                     />
                     <Route
                       path="/accounting/general-ledger"
