@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -146,6 +146,8 @@ export default function LoanApplication() {
   const [membersStatusError, setMembersStatusError] = useState(false);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [applicationFormPreviewUrl, setApplicationFormPreviewUrl] = useState('');
+  const applicationFormFileRef = useRef(null);
 
 
   // Fetch loan products on mount
@@ -251,6 +253,16 @@ export default function LoanApplication() {
     }
   }, [formData.loanProduct, formData.transactionType]);
 
+  const handleClear = () => {
+    setFormData(initialFormData);
+    setMemberDetails(null);
+    setSearchMemberCode('');
+    applicationFormFileRef.current = null;
+    setApplicationFormPreviewUrl('');
+    setStatusMessage('');
+    setStatusError(false);
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchMemberCode.trim()) {
@@ -274,6 +286,13 @@ export default function LoanApplication() {
         const savingsBalance = data.savingsBalance || data.SavingBalance || '';
         const memberPic = data.memberPic || data.MemberPicture || '';
         const memberSign = data.memberSign || data.MemberSignature || '';
+        const applicationForm = data.ApplicationForm || data.applicationForm || null;
+
+        // Convert ApplicationForm base64 to preview URL if available
+        if (applicationForm) {
+          const previewUrl = base64ToPreviewUrl(applicationForm);
+          setApplicationFormPreviewUrl(previewUrl);
+        }
 
         setFormData((prev) => ({
           ...prev,
@@ -298,6 +317,38 @@ export default function LoanApplication() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Convert base64 string to preview URL (for displaying backend data)
+  const base64ToPreviewUrl = (base64Data) => {
+    if (!base64Data) return '';
+    // If it doesn't have data URI prefix, add it
+    if (base64Data.startsWith('data:')) {
+      return base64Data;
+    }
+    // Assume it's JPEG if no format specified
+    return `data:image/jpeg;base64,${base64Data}`;
+  };
+
+  const handleApplicationFormFileChange = (event) => {
+    const selectedFile = event.target.files?.[0] || null;
+    applicationFormFileRef.current = selectedFile;
+    setApplicationFormPreviewUrl((prevUrl) => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return selectedFile ? URL.createObjectURL(selectedFile) : '';
+    });
+  };
+
+  const handleRemoveApplicationFormFile = () => {
+    applicationFormFileRef.current = null;
+    setApplicationFormPreviewUrl((prevUrl) => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return '';
+    });
   };
 
   // Handle principal amount input - only allow numbers and format with commas
@@ -480,6 +531,14 @@ export default function LoanApplication() {
                       return str.replace(/,/g, '')
                     }
                     const loanBalanceValue = pickPrincipal(loanRec.loanBal ?? loanRec.LoanBalance ?? loanRec.loanBalance ?? loanRec.loanamt ?? loanRec.loanAmt ?? loanRec.Principal ?? loanRec.principal)
+                    
+                    // Load ApplicationForm if available from backend
+                    const applicationFormData = loanRec.ApplicationForm || loanRec.applicationForm || null;
+                    if (applicationFormData) {
+                      const previewUrl = base64ToPreviewUrl(applicationFormData);
+                      setApplicationFormPreviewUrl(previewUrl);
+                    }
+                    
                     setFormData((prev) => ({
                       ...prev,
                       currentLoanBalance: loanRec.loanBal ?? loanRec.LoanBalance ?? prev.currentLoanBalance,
@@ -663,6 +722,20 @@ export default function LoanApplication() {
     try {
       setIsSaving(true);
 
+      // Convert application form to base64
+      const fileToBase64 = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+      const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
+
       // If top-up or reschedule transaction, call the loans update endpoint instead of the standard save
       const isTopupSave = formData.transactionType === 'topup_reschedule'
       const isRescheduleSave = formData.transactionType === 'topup_details'
@@ -724,6 +797,8 @@ export default function LoanApplication() {
               setFormData(initialFormData)
               setMemberDetails(null)
               setSearchMemberCode('')
+              applicationFormFileRef.current = null
+              setApplicationFormPreviewUrl('')
               setStatusMessage('')
             }, 4000)
           } else {
@@ -772,6 +847,7 @@ export default function LoanApplication() {
         glResched: formData.reschedule === true || formData.reschedule === 'true' || false,
         // dPrinPay based on the chosen principal (newPrincipal for top-up/reschedule)
         dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
+        ApplicationForm: applicationFormBase64,
       };
 
 
@@ -804,6 +880,8 @@ export default function LoanApplication() {
           setFormData(initialFormData);
           setMemberDetails(null);
           setSearchMemberCode('');
+          applicationFormFileRef.current = null;
+          setApplicationFormPreviewUrl('');
           setStatusMessage('');
         }, 8000);
       } else {
@@ -901,6 +979,22 @@ export default function LoanApplication() {
                   }}
                 >
                   {loadingMember ? 'Searching...' : 'Search'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleClear}
+                  sx={{
+                    alignSelf: 'flex-start',
+                    fontWeight: 600,
+                    paddingX: 3,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    color: '#666',
+                    borderColor: '#ccc',
+                    '&:hover': { borderColor: '#999', backgroundColor: '#f5f5f5' },
+                  }}
+                >
+                  Clear
                 </Button>
               </Box>
             </CardContent>
@@ -1404,6 +1498,76 @@ export default function LoanApplication() {
                     </Typography>
                   </Box>
 
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Application Form Card */}
+            <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                  Application Form
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button component="label" variant="outlined" sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
+                      Select a Form
+                      <input
+                        hidden
+                        accept="image/*"
+                        type="file"
+                        onChange={handleApplicationFormFileChange}
+                      />
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      disabled={!applicationFormPreviewUrl}
+                      onClick={handleRemoveApplicationFormFile}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Remove Form
+                    </Button>
+                  </Box>
+                  <Box
+                    sx={{
+                      p: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 8px rgba(15, 23, 42, 0.06)',
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
+                      Form Preview
+                    </Typography>
+                    <Box
+                      sx={{
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 1.5,
+                        minHeight: 150,
+                        display: 'grid',
+                        placeItems: 'center',
+                        overflow: 'hidden',
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      {applicationFormPreviewUrl ? (
+                        <Box
+                          component="img"
+                          src={applicationFormPreviewUrl}
+                          alt="Application form preview"
+                          sx={{ width: '100%', height: 150, objectFit: 'contain', bgcolor: 'background.paper', borderRadius: 1 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Selected form preview will appear here.
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
