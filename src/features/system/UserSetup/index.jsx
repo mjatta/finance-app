@@ -148,7 +148,6 @@ const featurePageMap = {
     { path: '/accounting/account-enquiry', label: 'GL Account Enquiry' },
     { path: '/accounting/general-ledger', label: 'General Ledger' },
     { path: '/accounting/account-reconciliation', label: 'Account Reconciliation' },
-    { path: '/accounting/end-of-year', label: 'End of Year' },
   ],
   processing: [
     { path: '/processing/subscription', label: 'Periodic Subscription Processing' },
@@ -159,11 +158,8 @@ const featurePageMap = {
     { path: '/system/product', label: 'Product Setup' },
     { path: '/system/user-setup', label: 'User Setup' },
     { path: '/system/login-attempts', label: 'Login Attempts' },
-    { path: '/system/access-control-groups', label: 'Access Control Groups' },
     { path: '/system/security', label: 'Security' },
     { path: '/system/save-logs', label: 'Save Logs' },
-    { path: '/system/running-balance-fix', label: 'Running Balance Fix' },
-    { path: '/system/end-of-year', label: 'End of Year' },
   ],
   reporting: [
     { path: '/reporting', label: 'Reports Hub' },

@@ -99,10 +99,7 @@ const AccountReconciliation = lazy(() => import('./features/accounting/Reconcili
 const UserSecurity = lazy(() => import('./features/system/UserSecurity'));
 const UserSetup = lazy(() => import('./features/system/UserSetup'));
 const LoginAttempts = lazy(() => import('./features/system/LoginAttempts'));
-const EndOfYear = lazy(() => import('./features/system/EndOfYear'));
 const EndOfYearAccounting = lazy(() => import('./features/accounting/EndOfYear'));
-const RunningBalanceFix = lazy(() => import('./features/system/RunningBalanceFix'));
-const AccessControlGroups = lazy(() => import('./features/system/AccessControlGroups'));
 const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
 const ProductDefinition = lazy(() => import('./features/system/ModuleSetup/ProductDefinition'));
 const SaveLogs = lazy(() => import('./features/system/SaveLogs'));
@@ -472,11 +469,8 @@ function App() {
         { label: 'Product Setup', to: '/system/product', icon: Inventory2RoundedIcon },
         { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
         { label: 'Login Attempts', to: '/system/login-attempts', icon: LockResetRoundedIcon },
-        { label: 'Access Control Groups', to: '/system/access-control-groups', icon: GroupWorkRoundedIcon },
         { label: 'Security', to: '/system/security', icon: SecurityRoundedIcon },
         { label: 'Save Logs', to: '/system/save-logs', icon: ListAltRoundedIcon },
-        { label: 'Running Balance Fix', to: '/system/running-balance-fix', icon: TuneRoundedIcon },
-        { label: 'End of Year', to: '/system/end-of-year', icon: DateRangeRoundedIcon },
       ],
     },
     {
@@ -980,10 +974,6 @@ function App() {
                       element={renderWithAccess('system', <LoginAttempts />)}
                     />
                     <Route
-                      path="/system/access-control-groups"
-                      element={renderWithAccess('system', <AccessControlGroups user={user} />)}
-                    />
-                    <Route
                       path="/system/security"
                       element={renderWithAccess('system', <UserSecurity />)}
                     />
@@ -994,14 +984,6 @@ function App() {
                     <Route
                       path="/system/product"
                       element={renderWithAccess('system', <ProductDefinition />)}
-                    />
-                    <Route
-                      path="/system/end-of-year"
-                      element={renderWithAccess('system', <EndOfYear />)}
-                    />
-                    <Route
-                      path="/system/running-balance-fix"
-                      element={renderWithAccess('system', <RunningBalanceFix />)}
                     />
 
                     <Route
