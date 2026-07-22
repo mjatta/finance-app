@@ -336,6 +336,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/data"
     },
     {
+      "source": "/api/endofyear/jvnumber",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/jvnumber"
+    },
+    {
       "source": "/api/journalenquiry/report",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/journalenquiry/report"
     },

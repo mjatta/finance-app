@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, MenuItem, TextField, Grid, Paper, Button } from '@mui/material';
+import { Box, Typography, Card, CardContent, MenuItem, TextField, Grid, Paper, Button, Skeleton, Backdrop, CircularProgress } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import useAccounts from './hooks/useAccounts';
 import { useEndOfYearData } from './hooks/useEndOfYearData';
 import useProcessEndOfYear from './hooks/useProcessEndOfYear';
+import { useJVNumber } from './hooks/useJVNumber';
 import { formatCurrency } from '../../../utils/currencyFormatter';
 
 export default function EndOfYearAccounting() {
   const { accounts, loading: accountsLoading } = useAccounts();
   const { fetchData, loading: dataLoading } = useEndOfYearData();
   const { process, loading: processLoading } = useProcessEndOfYear();
+  const { jvNumber, loading: jvLoading } = useJVNumber();
   const [selectedAccount, setSelectedAccount] = useState('');
   const [accountName, setAccountName] = useState('');
   const [rows, setRows] = useState([]);
@@ -62,7 +64,16 @@ export default function EndOfYearAccounting() {
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3, position: 'relative' }}>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        open={processLoading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress color="inherit" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Processing End of Year...</Typography>
+        </Box>
+      </Backdrop>
       <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
           <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
@@ -98,7 +109,11 @@ export default function EndOfYearAccounting() {
               </TextField>
               <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>Account Name</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>{accountName || '-'}</Typography>
+                {accountsLoading ? (
+                  <Skeleton variant="text" width="80%" height={24} />
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>{accountName || '-'}</Typography>
+                )}
               </Box>
             </Box>
           </CardContent>
@@ -144,22 +159,30 @@ export default function EndOfYearAccounting() {
               </Box>
             </Box>
 
-            <Box>
+            <Box sx={{ position: 'relative' }}>
               <div style={{ width: '100%' }}>
-                <DataGrid
-                  rows={rows}
-                  columns={columns}
-                  loading={dataLoading}
-                  density="compact"
-                  pageSizeOptions={[10, 25, 50, 100]}
-                  initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                  disableRowSelectionOnClick
-                  sx={{
-                    border: 'none',
-                    '& .MuiDataGrid-cell': { borderBottom: '1px solid', borderColor: 'divider' },
-                    '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
-                  }}
-                />
+                {processLoading ? (
+                  <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} variant="rectangular" height={40} />
+                    ))}
+                  </Box>
+                ) : (
+                  <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    loading={dataLoading}
+                    density="compact"
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                    disableRowSelectionOnClick
+                    sx={{
+                      border: 'none',
+                      '& .MuiDataGrid-cell': { borderBottom: '1px solid', borderColor: 'divider' },
+                      '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                    }}
+                  />
+                )}
               </div>
             </Box>
 
@@ -167,16 +190,31 @@ export default function EndOfYearAccounting() {
               <Button
                 variant="contained"
                 color="primary"
-                disabled={processLoading}
+                disabled={processLoading || jvLoading || !jvNumber}
                 onClick={async () => {
                   try {
-                    const payload = { AccountNo: selectedAccount };
+                    // Get auth data from localStorage
+                    const authData = JSON.parse(localStorage.getItem('microfinance-auth') || '{}');
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    const payload = {
+                      CompanyId: authData.CompId || 30,
+                      BranchId: authData.BranchId || 16,
+                      CurrencyCode: 1,
+                      UserId: authData.state?.user?.username,
+                      VoucherNo: 'VCH000001',
+                      JVNo: jvNumber,
+                      Stack: '000001',
+                      TransactionDate: today,
+                    };
+
                     await process(payload);
                     // reload grid after process
                     const data = await fetchData(selectedAccount);
                     const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
                       id: `${r.AccountNo || r.accountNo || idx}-${idx}`,
-                      balanceDate: r.BalanceDate || r.balanceDate || '',
+                      balanceDate: r.BalanceDate ? new Date(r.BalanceDate).toISOString().slice(0,10) : '',
                       accountNo: r.AccountNo || r.accountNo || '',
                       accountName: (r.AccountName || r.accountName || '').trim(),
                       debit: Number(r.Debit || r.debit || 0),
@@ -189,7 +227,7 @@ export default function EndOfYearAccounting() {
                 }}
                 sx={{ textTransform: 'none', fontWeight: 700 }}
               >
-                Calculated
+                {processLoading ? 'Processing...' : 'Process End of Year'}
               </Button>
             </Box>
           </CardContent>

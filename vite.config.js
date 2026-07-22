@@ -530,6 +530,20 @@ const glAccountsDetailsApiPlugin = () => ({
                 return
               }
 
+              // GET /api/endofyear/jvnumber
+              if (req.method === 'GET' && req.url.startsWith('/api/endofyear/jvnumber')) {
+                try {
+                  const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/endofyear/jvnumber', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+                  const data = await backendRes.text()
+                  res.statusCode = backendRes.status
+                  res.end(data)
+                } catch (err) {
+                  res.statusCode = 502
+                  res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+                }
+                return
+              }
+
               // POST handlers: /api/endofyear/data and /api/endofyear/process
               if (req.method === 'POST') {
                 const body = await parseRequestBody(req)
