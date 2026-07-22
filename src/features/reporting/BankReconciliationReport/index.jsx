@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, MenuItem, TextField, Button } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid } from '@mui/x-data-grid';
+import dayjs from 'dayjs';
 import useBankAccounts from './hooks/useBankAccounts';
 import buildBankReconciliationPrintHtml from './printSetup';
 import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
@@ -9,8 +10,8 @@ import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
 export default function BankReconciliationReport() {
   const { accounts, loading: accountsLoading } = useBankAccounts();
   const [selected, setSelected] = useState(null);
-  const [fromDate, setFromDate] = useState(null);
-  const [toDate, setToDate] = useState(null);
+  const [fromDate, setFromDate] = useState(() => dayjs('1980-01-01'));
+  const [toDate, setToDate] = useState(() => dayjs());
   const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
   const { data: creditUnion } = useCreditUnionLookup();
 
@@ -109,7 +110,10 @@ export default function BankReconciliationReport() {
               ))}
             </TextField>
 
-            <TextField label="Account Name" value={selected?.AccountName ? String(selected.AccountName).trim() : ''} size="small" fullWidth InputProps={{ readOnly: true }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>Account Name:</Typography>
+              <Typography variant="body2">{selected?.AccountName ? String(selected.AccountName).trim() : 'N/A'}</Typography>
+            </Box>
           </Box>
 
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
