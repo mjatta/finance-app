@@ -848,6 +848,7 @@ export default function LoanApplication() {
         // dPrinPay based on the chosen principal (newPrincipal for top-up/reschedule)
         dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
         ApplicationForm: applicationFormBase64,
+        applicationForm: applicationFormBase64 || '',
       };
 
 
