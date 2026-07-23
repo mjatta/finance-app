@@ -60,7 +60,7 @@ export default function AccountActivation() {
         name: [item.ccustfname, item.ccustmname, item.ccustlname]
           .filter((v) => v && v.trim())
           .join(' ')
-          .trim(),
+          .trim() || item.ccustname || '',
         dateJoined: item.datejoin || '',
         dateOfBirth: item.ddatebirth || '',
         phoneNumber: item.ctel?.trim() || '',
@@ -353,10 +353,13 @@ export default function AccountActivation() {
               fontWeight: 700,
               fontSize: '0.95rem',
               color: '#ffffff',
+              textAlign: 'center',
+              width: '100%',
             },
             '& .MuiDataGrid-columnHeader': {
               backgroundColor: '#2c3e50',
               borderBottom: '2px solid #1a252f',
+              justifyContent: 'center',
             },
             '& .MuiDataGrid-footerContainer': {
               backgroundColor: '#f5f5f5',
