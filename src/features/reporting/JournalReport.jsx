@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -42,6 +43,9 @@ export default function JournalReport() {
   const [tranFrom, setTranFrom] = useState(() => dayjs('1990-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
   const [isPrinting, setIsPrinting] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('error');
 
   // users are loaded by useJournalEnquiryUsers hook
 
@@ -88,7 +92,9 @@ export default function JournalReport() {
       downloadFile(csv, `journal-report-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
       console.error(err);
-      alert('Failed to export CSV');
+      setAlertMessage('Failed to export CSV');
+      setAlertSeverity('error');
+      setAlertOpen(true);
     } finally {
       setIsPrinting(false);
     }
@@ -129,7 +135,9 @@ export default function JournalReport() {
       w.print();
     } catch (err) {
       console.error(err);
-      alert('Failed to export PDF');
+      setAlertMessage('Failed to export PDF');
+      setAlertSeverity('error');
+      setAlertOpen(true);
     } finally {
       setIsPrinting(false);
     }
@@ -137,6 +145,11 @@ export default function JournalReport() {
 
   return (
     <Box sx={{ p: 3 }}>
+      {alertOpen && (
+        <Alert severity={alertSeverity} onClose={() => setAlertOpen(false)} sx={{ mb: 2 }}>
+          {alertMessage}
+        </Alert>
+      )}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Journal Report</Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>Generate journal report by company, branch, user and date range.</Typography>

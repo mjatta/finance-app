@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -13,8 +14,22 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { downloadFile } from '../../utils/downloadFile';
 import useGlAccount from './DetailedJournalReport/hooks/useGlAccount';
 import useGlStatement from './DetailedJournalReport/hooks/useGlStatement';
+import useCreditUnionLookup from '../../hooks/useCreditUnionLookup';
 
 const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
+
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const formatAmount = (value) => {
+  const n = Number(value ?? 0);
+  if (Number.isNaN(n)) return '0.00';
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
 export default function DetailedJournalReport() {
   const [accountNumber, setAccountNumber] = useState('');
@@ -22,9 +37,13 @@ export default function DetailedJournalReport() {
   const [tranFrom, setTranFrom] = useState(() => dayjs('1990-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
   const [isPrinting, setIsPrinting] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('error');
 
   const { fetchAccount } = useGlAccount();
   const { fetchStatement } = useGlStatement();
+  const { data: creditUnion } = useCreditUnionLookup(30);
 
   const buildPayload = () => ({
     accountNumber: accountNumber || '',
@@ -55,7 +74,9 @@ export default function DetailedJournalReport() {
       downloadFile(csv, `detailed-journal-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
       console.error(err);
-      alert('Failed to export CSV');
+      setAlertMessage('Failed to export CSV');
+      setAlertSeverity('error');
+      setAlertOpen(true);
     } finally {
       setIsPrinting(false);
     }
@@ -68,23 +89,44 @@ export default function DetailedJournalReport() {
   const handleExportPDF = async () => {
     setIsPrinting(true);
     try {
-      // Use GL statement API for print view
       const payload = await fetchStatement(accountNumber, formatDate(tranFrom), formatDate(tranTo));
       const rows = Array.isArray(payload) ? payload : (payload?.rows || payload?.data || []);
       const title = 'Detailed Journal Report';
       const printedDate = new Date().toISOString().slice(0,19).replace('T', ' ');
+      const companyName = creditUnion?.com_name || creditUnion?.CompanyName || 'Company';
+      const address = creditUnion?.caddress || creditUnion?.address || '';
+      const telephone = creditUnion?.tel || creditUnion?.telephone || '';
+      const email = creditUnion?.email || creditUnion?.Email || '';
+      const fromLabel = formatDate(tranFrom);
+      const toLabel = formatDate(tranTo);
+
       const tableRows = rows.map((r) => `
         <tr>
-          <td style="padding:6px">${r.AccountNumber || r.accountNumber || ''}</td>
-          <td style="padding:6px">${r.AccountName || r.accountName || ''}</td>
-          <td style="padding:6px">${r.Date || r.dtrandate || ''}</td>
-          <td style="padding:6px">${r.Description || r.ctrandesc || ''}</td>
-          <td style="padding:6px; text-align:right">${r.Debit ?? r.debit ?? ''}</td>
-          <td style="padding:6px; text-align:right">${r.Credit ?? r.credit ?? ''}</td>
+          <td>${escapeHtml(r.AccountNumber || r.accountNumber || '')}</td>
+          <td>${escapeHtml(r.AccountName || r.accountName || '')}</td>
+          <td>${escapeHtml(r.Date || r.dtrandate || '')}</td>
+          <td>${escapeHtml(r.Description || r.ctrandesc || '')}</td>
+          <td style="text-align:right">${formatAmount(r.Debit ?? r.debit ?? '')}</td>
+          <td style="text-align:right">${formatAmount(r.Credit ?? r.credit ?? '')}</td>
         </tr>
       `).join('');
 
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,Helvetica,sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd}</style></head><body><h2>${title}</h2><div>Printed: ${printedDate}</div><table><thead><tr><th>Account Number</th><th>Account Name</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
+    :root{--text:#0f172a;--muted:#475569;--line:#e6eef8;--header-bg:#f1f5f9}
+    body{font-family:Segoe UI,Roboto,Arial,sans-serif;color:var(--text);margin:0;padding:20px;background:#fff}
+    .report{max-width:1050px;margin:0 auto}
+    .header{text-align:center;margin-bottom:12px}
+    .meta-right{position:absolute;right:20px;top:20px;font-size:12px;color:var(--muted)}
+    .company{font-size:20px;font-weight:800}
+    .line{font-size:13px;color:var(--muted);margin:2px 0}
+    .title{margin-top:8px;font-size:16px;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+    thead th{background:var(--header-bg);border:1px solid var(--line);padding:8px;text-align:left;font-weight:700}
+    tbody td{border:1px solid var(--line);padding:7px;vertical-align:top}
+    tbody tr:nth-child(even){background:#fbfdff}
+    .amt{text-align:right;font-variant-numeric:tabular-nums}
+    @media print{body{padding:8mm}}
+  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedDate)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Account Number</th><th>Account Name</th><th>Date</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`;
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
@@ -94,7 +136,9 @@ export default function DetailedJournalReport() {
       w.print();
     } catch (err) {
       console.error(err);
-      alert('Failed to export PDF');
+      setAlertMessage('Failed to export PDF');
+      setAlertSeverity('error');
+      setAlertOpen(true);
     } finally {
       setIsPrinting(false);
     }
@@ -102,6 +146,11 @@ export default function DetailedJournalReport() {
 
   return (
     <Box sx={{ p: 3 }}>
+      {alertOpen && (
+        <Alert severity={alertSeverity} onClose={() => setAlertOpen(false)} sx={{ mb: 2 }}>
+          {alertMessage}
+        </Alert>
+      )}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Detailed Journal Report</Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>Detailed journal entries by account and member.</Typography>

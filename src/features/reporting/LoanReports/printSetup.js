@@ -32,11 +32,12 @@ const normalizeRows = (payload) => {
 export const buildLoanReportPrintHtml = (payload, context = {}) => {
   const rows = normalizeRows(payload);
   const first = rows[0] ?? {};
-  const companyName = String(first?.com_name ?? '').trim() || 'Company';
+  const creditUnion = context.creditUnion || {};
+  const companyName = String(creditUnion?.com_name || creditUnion?.CompanyName || first?.com_name || '').trim() || 'Company';
   const branchName = (first?.br_name ?? first?.branchName ?? '').trim();
-  const address = String(first?.caddress ?? '').trim();
-  const telephone = String(first?.CompanyTel ?? first?.tel ?? '').trim();
-  const email = String(first?.email ?? '').trim();
+  const address = String((creditUnion?.caddress || creditUnion?.address || first?.caddress) ?? '').trim();
+  const telephone = String((creditUnion?.tel || creditUnion?.telephone || first?.CompanyTel || first?.tel) ?? '').trim();
+  const email = String((creditUnion?.email || creditUnion?.Email || first?.email) ?? '').trim();
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
   const totals = rows.reduce((acc, r) => {

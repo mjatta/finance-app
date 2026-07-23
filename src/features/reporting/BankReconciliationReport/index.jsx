@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardContent, Typography, MenuItem, TextField, Button } from '@mui/material';
+import { Box, Card, CardContent, Typography, MenuItem, TextField, Button, Alert } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
@@ -12,6 +12,9 @@ export default function BankReconciliationReport() {
   const [selected, setSelected] = useState(null);
   const [fromDate, setFromDate] = useState(() => dayjs('1980-01-01'));
   const [toDate, setToDate] = useState(() => dayjs());
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('error');
   const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''));
   const { data: creditUnion } = useCreditUnionLookup();
 
@@ -21,9 +24,19 @@ export default function BankReconciliationReport() {
   }, [selected]);
 
   const handleExport = async (type) => {
-    if (!selected) return alert('Please select an account');
+    if (!selected) {
+      setAlertMessage('Please select an account');
+      setAlertSeverity('error');
+      setAlertOpen(true);
+      return;
+    }
     const acct = selected.AccountNumber || selected.AccountNo || '';
-    if (!acct) return alert('Selected account missing account number');
+    if (!acct) {
+      setAlertMessage('Selected account missing account number');
+      setAlertSeverity('error');
+      setAlertOpen(true);
+      return;
+    }
     setTimeout(() => {}, 0)
     try {
       const params = new URLSearchParams({ accountNo: String(acct), fromDate: formatDate(fromDate), toDate: formatDate(toDate) });
@@ -72,12 +85,19 @@ export default function BankReconciliationReport() {
       w.print();
     } catch (err) {
       console.error(err);
-      alert('Failed to export report');
+      setAlertMessage('Failed to export report');
+      setAlertSeverity('error');
+      setAlertOpen(true);
     }
   };
 
   return (
     <Box sx={{ p: 3 }}>
+      {alertOpen && (
+        <Alert severity={alertSeverity} onClose={() => setAlertOpen(false)} sx={{ mb: 2 }}>
+          {alertMessage}
+        </Alert>
+      )}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           Bank Reconciliation Report

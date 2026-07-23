@@ -23,6 +23,7 @@ import { useLoanReportUsers } from './hooks/useLoanReportUsers';
 import { useLoanReportCurrencies } from './hooks/useLoanReportCurrencies';
 import { useLoanReportPrintView } from './hooks/useLoanReportPrintView';
 import { buildLoanReportPrintHtml } from './printSetup';
+import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
 
 const ALL_BRANCHES_VALUE = 'ALL';
 
@@ -43,6 +44,7 @@ export default function LoanReports() {
   const { loanReasons, fetchLoanReasons } = useLoanReportLoanReasons();
   const { products, fetchProducts } = useLoanReportProducts();
   const { fetchCurrencies } = useLoanReportCurrencies();
+  const { data: creditUnion } = useCreditUnionLookup(30);
 
   const [product, setProduct] = useState('');
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
@@ -185,7 +187,10 @@ export default function LoanReports() {
         downloadFile(csv, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         setStatusMessage(`Excel (${filename}) downloaded.`);
       } else {
-        const html = buildLoanReportPrintHtml(rows, { subTitle: `From: ${uiPayload.TranFrom || ''} To: ${uiPayload.TranTo || ''}` });
+        const html = buildLoanReportPrintHtml(rows, { 
+          subTitle: `From: ${uiPayload.TranFrom || ''} To: ${uiPayload.TranTo || ''}`,
+          creditUnion: creditUnion
+        });
         const w = window.open('', '_blank');
         if (w) {
           w.document.open();
