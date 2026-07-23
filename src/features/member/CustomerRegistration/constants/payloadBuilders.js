@@ -51,6 +51,7 @@ export function buildIndividualPayload(formData, countries = [], cities = [], { 
     BranchId: branchId,
     MemberPicture: null,
     MemberSignature: null,
+    applicationForm: '',
     suers: 'AKH',
   };
 }
@@ -58,11 +59,10 @@ export function buildIndividualPayload(formData, countries = [], cities = [], { 
 /**
  * Build Institution Registration Payload
  * @param {Object} formData - Form data object containing all institution fields
- * @param {Array} institutionBranches - Array of institution branches
  * @param {Array} cities - Array of city objects with { id, name }
  * @returns {Object} Institution payload ready for API submission
  */
-export function buildInstitutionPayload(formData, institutionBranches = [], cities = [], { compId, branchId } = {}) {
+export function buildInstitutionPayload(formData, cities = [], { compId, branchId } = {}) {
   return {
     CustName: formData.institutionName, // Mandatory
     BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
@@ -140,6 +140,7 @@ export function buildInstitutionPayload(formData, institutionBranches = [], citi
     Ward: Number(formData.institutionWard) || 0,
     MemberPicture: null,
     MemberSignature: null,
+    applicationForm: '',
     suers: 'AKH',
   };
 }

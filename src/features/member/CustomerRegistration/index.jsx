@@ -1439,6 +1439,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
         memPict: pictureBase64 || null,
         memsign: signatureBase64 || null,
+        applicationForm: applicationFormBase64 || payload.ApplicationForm || '',
 
         levelofedu: Number(formData.levelOfEducation) || 0,
         tribe: Number(formData.tribe) || 0,
@@ -1652,6 +1653,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         // Some backend SPs expect these parameters to be supplied (empty string if no image)
         MemPicture: pictureBase64 || payload.MemberPicture || payload.MemPicture || '',
         MemSignature: signatureBase64 || payload.MemberSignature || payload.MemSignature || '',
+        applicationForm: applicationFormBase64 || payload.ApplicationForm || '',
 
         EditedBy: payload.EditedBy || useAuthStore.getState().user?.username || '',
       };
