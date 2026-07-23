@@ -239,7 +239,7 @@ export default function MemberPayrollManagement() {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
+      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700, fontSize: '1.2rem' }}>
         Member Payroll Management
       </Typography>
 

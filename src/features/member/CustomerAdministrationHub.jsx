@@ -34,7 +34,7 @@ export default function CustomerAdministrationHub() {
   return (
     <Box sx={{ p: { xs: 2.5, md: 4 }, minHeight: '100vh', bgcolor: '#f8f9fb' }}>
       <Box sx={{ mb: 4, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Customer Administration</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>Customer Administration</Typography>
         <Typography variant="body2" sx={{ opacity: 0.95 }}>Manage customer profiles, accounts, and transactions</Typography>
       </Box>
 

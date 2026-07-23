@@ -77,7 +77,7 @@ export default function AccessControlGroups({ user }) {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: '1.2rem' }}>
         Access Control Groups
       </Typography>
 

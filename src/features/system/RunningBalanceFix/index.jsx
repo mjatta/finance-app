@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 export default function RunningBalanceFix() {
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: '1.2rem' }}>
         Running Balance Fix
       </Typography>
       <Typography variant="body1" color="text.secondary">

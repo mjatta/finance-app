@@ -676,7 +676,7 @@ export default function DepositManagement() {
           color: 'white',
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>
           Deposit
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>

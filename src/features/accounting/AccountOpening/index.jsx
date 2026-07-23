@@ -63,7 +63,7 @@ export default function AccountOpening() {
       {/* Header */}
       <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
-          <Typography variant="h4" sx={{ color: 'white', fontWeight: 700, mb: 0.5 }}>
+          <Typography variant="h4" sx={{ color: 'white', fontWeight: 700, mb: 0.5, fontSize: '1.2rem' }}>
             Account Opening
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>

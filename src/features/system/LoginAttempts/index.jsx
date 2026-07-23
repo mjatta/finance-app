@@ -140,7 +140,7 @@ export default function LoginAttempts() {
           color: 'white',
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>
           Login Attempts
         </Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>

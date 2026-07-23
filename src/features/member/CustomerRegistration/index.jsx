@@ -1777,7 +1777,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       </Backdrop>
 
       <Box sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white', mb: 3, p: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>
           Registration Individual or Institution
         </Typography>
         <Typography variant="body1" sx={{ fontWeight: 400 }}>

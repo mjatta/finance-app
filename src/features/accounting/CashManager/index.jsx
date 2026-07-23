@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 export default function CashManager() {
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: '1.2rem' }}>
         Cash Manager
       </Typography>
       <Typography variant="body1" color="text.secondary">

@@ -151,7 +151,7 @@ export default function JournalReport() {
         </Alert>
       )}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Journal Report</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>Journal Report</Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>Generate journal report by company, branch, user and date range.</Typography>
       </Box>
 

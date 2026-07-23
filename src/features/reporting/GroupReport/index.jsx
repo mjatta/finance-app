@@ -113,7 +113,7 @@ export default function GroupReport() {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Group Report</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>Group Report</Typography>
         <Typography variant="body1" sx={{ opacity: 0.95 }}>Enter group code and search group members.</Typography>
       </Box>
 

@@ -26,7 +26,7 @@ export default function AccessDenied() {
           textAlign: 'center',
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: '1.2rem' }}>
           Access Denied
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
