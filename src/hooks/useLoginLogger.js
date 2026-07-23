@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { getFullApiUrl } from '../utils/apiConfig';
+import { recordLoginAttempt } from '../utils/loginAttemptLogs';
 
 // Lightweight client-side login logger
 export function useLoginLogger() {
@@ -59,6 +60,19 @@ export function useLoginLogger() {
       metadata,
     };
 
+    // Always persist locally first (localStorage) so the Login Attempts page
+    // works reliably regardless of backend/serverless persistence issues.
+    recordLoginAttempt({
+      username,
+      ip,
+      location,
+      device: device.vendor || '',
+      os: device.platform || '',
+      browser: device.userAgent || '',
+      status,
+      reason,
+    });
+
     // Best-effort: send to backend endpoint; don't block caller on failure
     try {
       const url = getFullApiUrl('/api/system/login-attempts');
@@ -68,7 +82,7 @@ export function useLoginLogger() {
         body: JSON.stringify(payload),
       });
     } catch (err) {
-      // swallow errors; consider local fallback in future
+      // swallow errors; local copy already persisted above
       // Optionally persist to localStorage queue for later retry
       try {
         const fallbackKey = 'loginAttempts:fallback';
