@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, CircularProgress, Button } from '@mui/material';
+import { Alert, Box, Typography, Card, CardContent, CircularProgress, Button, Paper, Skeleton } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { formatCurrency } from '../../../utils/currencyFormatter';
 import { useLoanAmortization } from './Hooks/useLoanAmortization';
 import { useCheckAmortization } from './Hooks/useCheckAmortization';
 import { useDisplayAmortization } from './Hooks/useDisplayAmortization';
 import { useGenerateAmortization } from './Hooks/useGenerateAmortization';
-import { notifySaveSuccess, notifySaveError } from '../../../utils/saveNotifications';
 
 const COLUMNS = [
   { field: 'loan_id', headerName: 'Loan Id', flex: 0.6, minWidth: 100 },
@@ -26,7 +25,10 @@ export default function LoanAmortization() {
   const [selectedLoanId, setSelectedLoanId] = useState(null);
   const [checkLoading, setCheckLoading] = useState(false);
   const [generateLoading, setGenerateLoading] = useState(false);
-  const { fetchAmortization, loading, error } = useLoanAmortization();
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('success');
+  const { fetchAmortization, loading } = useLoanAmortization();
   const { checkAmortization } = useCheckAmortization();
   const { displayAmortization } = useDisplayAmortization();
   const { generateAmortization } = useGenerateAmortization();
@@ -82,10 +84,14 @@ export default function LoanAmortization() {
         if (check && check.message === 'This loan already has amortization') {
           setAmortizedLoanIds((prev) => new Set(prev).add(String(loanId)));
           setPendingLoanIds((prev) => { const s = new Set(prev); s.delete(String(loanId)); return s; });
-          notifySaveSuccess({ page: 'Loan Amortization', action: 'Check Amortization', message: 'Amortization Confirmed' });
+          setAlertMessage('✓ Amortization Confirmed');
+          setAlertSeverity('success');
+          setAlertOpen(true);
         } else {
           setPendingLoanIds((prev) => new Set(prev).add(String(loanId)));
-          notifySaveSuccess({ page: 'Loan Amortization', action: 'Check Amortization', message: 'Amortization Pending' });
+          setAlertMessage('⏳ Loan Pending - Amortization Not Yet Generated');
+          setAlertSeverity('warning');
+          setAlertOpen(true);
         }
 
       const disp = await displayAmortization(loanId);
@@ -125,95 +131,118 @@ export default function LoanAmortization() {
   ];
 
   return (
-    <Box>
-      <Card>
-        <CardContent>
-          {/* Header Section */}
-          <Box
-            sx={{
-              mb: 3,
-              p: 3,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: 2,
-              color: 'white',
-            }}
-          >
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              Loan Amortization
-            </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.95 }}>
-              Amortization client list
-            </Typography>
-          </Box>
+    <Box p={3}>
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          color: 'white',
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+          Loan Amortization
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.95 }}>
+          Amortization client list and schedule
+        </Typography>
+      </Box>
 
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 3, color: '#2c3e50' }}>
-            Active Loans
-          </Typography>
-          <Box
-            sx={{
-              width: '100%',
-              borderRadius: 1.5,
-              border: '1px solid #e0e0e0',
-              overflow: 'hidden',
-              mb: 3,
-            }}
-          >
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
-            ) : (
-                <DataGrid
-                rows={rows}
-                columns={COLUMNS}
-                getRowClassName={(params) => (amortizedLoanIds.has(String(params.row.loan_id)) ? 'amortized' : (pendingLoanIds.has(String(params.row.loan_id)) ? 'pending' : ''))}
-                onRowClick={handleRowClick}
-                loading={loading}
-                pageSizeOptions={[5, 10, 25]}
-                autoHeight={false}
-                sx={{
-                  border: 'none',
-                  '& .MuiDataGrid-columnHeaderTitle': {
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    color: '#ffffff',
-                  },
-                  '& .MuiDataGrid-columnHeader': {
-                    backgroundColor: '#2c3e50',
-                    borderBottom: '2px solid #1a252f',
-                  },
-                  '& .MuiDataGrid-footerContainer': {
-                    backgroundColor: '#f5f5f5',
-                    borderTop: '1px solid #e0e0e0',
-                    fontWeight: 500,
-                  },
-                  '& .MuiTablePagination-root': {
-                    color: '#2c3e50',
-                    fontWeight: 500,
-                  },
-                  '& .MuiDataGrid-row': {
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    '&:nth-of-type(odd)': {
-                      backgroundColor: '#fafafa',
-                    },
-                    '&:nth-of-type(even)': {
-                      backgroundColor: '#ffffff',
-                    },
-                    '&:hover': {
-                      backgroundColor: '#f0f0f0 !important',
-                    },
-                    '&.amortized': {
-                      backgroundColor: '#e6ffed !important',
-                    },
-                    '&.pending': {
-                      backgroundColor: '#fff7e6 !important',
-                    },
-                  },
-                }}
-                initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                style={{ height: 520 }}
-              />
-              )}
+      {alertOpen && (
+        <Alert
+          severity={alertSeverity}
+          onClose={() => setAlertOpen(false)}
+          sx={{ mb: 3, borderRadius: 1.5, fontSize: '0.95rem', fontWeight: 500 }}
+        >
+          {alertMessage}
+        </Alert>
+      )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+              Active Loans
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={load}
+              disabled={loading}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              {loading ? 'Refreshing...' : '↻ Refresh'}
+            </Button>
           </Box>
+          <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+            <div style={{ height: 420, width: '100%' }}>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <DataGrid
+                  rows={rows}
+                  columns={COLUMNS}
+                  getRowClassName={(params) => (amortizedLoanIds.has(String(params.row.loan_id)) ? 'amortized' : (pendingLoanIds.has(String(params.row.loan_id)) ? 'pending' : ''))}
+                  onRowClick={handleRowClick}
+                  loading={loading}
+                  pageSizeOptions={[5, 10, 25]}
+                  initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                  density="compact"
+                  sx={{
+                    border: 'none',
+                    cursor: 'pointer',
+                    '& .MuiDataGrid-columnHeader': {
+                      backgroundColor: '#667eea',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                    },
+                    '& .MuiDataGrid-columnHeaderTitle': {
+                      fontWeight: 700,
+                    },
+                    '& .MuiDataGrid-row:nth-of-type(even)': {
+                      backgroundColor: '#f8f9fa',
+                    },
+                    '& .MuiDataGrid-row:hover': {
+                      backgroundColor: '#e9ecef !important',
+                    },
+                    '& .MuiDataGrid-cell': {
+                      borderColor: '#dee2e6',
+                    },
+                    '& .MuiDataGrid-footerContainer': {
+                      backgroundColor: '#f5f5f5',
+                      borderTop: '1px solid #dee2e6',
+                      fontWeight: 500,
+                    },
+                    '& .amortized': {
+                      backgroundColor: '#d4edda !important',
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: '#c3e6cb !important',
+                      },
+                    },
+                    '& .pending': {
+                      backgroundColor: '#fff3cd !important',
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: '#ffe69c !important',
+                      },
+                    },
+                  }}
+                  slots={{
+                    noRowsOverlay: () => (
+                      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No records found.
+                        </Typography>
+                      </Box>
+                    ),
+                  }}
+                />
+              )}
+            </div>
+          </Paper>
 
             {/* Preview Calculated Amortization (always visible, empty on load) */}
             <>
@@ -221,31 +250,69 @@ export default function LoanAmortization() {
                 Preview Calculated Amortization
                 {checkLoading ? <CircularProgress size={16} sx={{ ml: 1 }} /> : null}
               </Typography>
-              <Box sx={{ width: '100%', borderRadius: 1.5, border: '1px solid #e0e0e0', overflow: 'hidden', mb: 3 }}>
-                <DataGrid
-                  rows={previewRows}
-                  columns={PREVIEW_COLUMNS}
-                  pageSizeOptions={[5, 10, 25]}
-                  autoHeight={false}
-                  sx={{
-                    border: 'none',
-                    '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 700, fontSize: '0.95rem', color: '#ffffff' },
-                    '& .MuiDataGrid-columnHeader': { backgroundColor: '#2c3e50', borderBottom: '2px solid #1a252f' },
-                    '& .MuiDataGrid-footerContainer': { backgroundColor: '#f5f5f5', borderTop: '1px solid #e0e0e0', fontWeight: 500 },
-                    '& .MuiTablePagination-root': { color: '#2c3e50', fontWeight: 500 },
-                    '& .MuiDataGrid-row': { '&:nth-of-type(odd)': { backgroundColor: '#fafafa' }, '&:nth-of-type(even)': { backgroundColor: '#ffffff' } },
-                    '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center', justifyContent: 'center' },
-                  }}
-                  initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                  style={{ height: 420 }}
-                />
-              </Box>
+              <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', mb: 3 }}>
+                <div style={{ height: 420, width: '100%' }}>
+                  {checkLoading ? (
+                    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {Array.from({ length: 8 }).map((_, idx) => (
+                        <Skeleton key={idx} variant="rounded" height={40} />
+                      ))}
+                    </Box>
+                  ) : (
+                    <DataGrid
+                      rows={previewRows}
+                      columns={PREVIEW_COLUMNS}
+                      pageSizeOptions={[5, 10, 25]}
+                      initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                      density="compact"
+                      sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-columnHeader': {
+                          backgroundColor: '#667eea',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.9rem',
+                        },
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                          fontWeight: 700,
+                        },
+                        '& .MuiDataGrid-row:nth-of-type(even)': {
+                          backgroundColor: '#f8f9fa',
+                        },
+                        '& .MuiDataGrid-row:hover': {
+                          backgroundColor: '#e9ecef !important',
+                        },
+                        '& .MuiDataGrid-cell': {
+                          borderColor: '#dee2e6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        },
+                        '& .MuiDataGrid-footerContainer': {
+                          backgroundColor: '#f5f5f5',
+                          borderTop: '1px solid #dee2e6',
+                          fontWeight: 500,
+                        },
+                      }}
+                      slots={{
+                        noRowsOverlay: () => (
+                          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Select a loan to preview amortization.
+                            </Typography>
+                          </Box>
+                        ),
+                      }}
+                    />
+                  )}
+                </div>
+              </Paper>
               <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 3 }}>
                 <Button
                   variant="contained"
                   color="primary"
                   disabled={!selectedLoanId || generateLoading}
-                  sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+                  sx={{ borderRadius: 1.5, textTransform: 'none', px: 3, fontWeight: 600, backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, boxShadow: 'none' }}
                   onClick={async () => {
                     if (!selectedLoanId) return;
                     setGenerateLoading(true);
@@ -253,30 +320,39 @@ export default function LoanAmortization() {
                       const res = await generateAmortization(selectedLoanId);
                       if (res && (res.message === 'Amortization generated successfully' || (typeof res.message === 'string' && res.message.includes('already has amortization')))) {
                         // Treat both success and "already has amortization" as successful outcomes
-                        notifySaveSuccess({ page: 'Loan Amortization', action: 'Generate Amortization', message: res.message || 'Amortization generated successfully.' });
+                        setAlertMessage('✓ ' + (res.message || 'Amortization generated successfully.'));
+                        setAlertSeverity('success');
+                        setAlertOpen(true);
                         setAmortizedLoanIds((prev) => new Set(prev).add(String(selectedLoanId)));
                         setPendingLoanIds((prev) => { const s = new Set(prev); s.delete(String(selectedLoanId)); return s; });
                         // refresh list
                         await load();
                       } else {
-                        notifySaveError({ page: 'Loan Amortization', action: 'Generate Amortization', message: 'Failed to generate amortization.' });
+                        setAlertMessage('Failed to generate amortization.');
+                        setAlertSeverity('error');
+                        setAlertOpen(true);
                       }
                     } catch (err) {
                       console.error(err);
-                      notifySaveError({ page: 'Loan Amortization', action: 'Generate Amortization', message: 'Failed to generate amortization.', error: err });
+                      setAlertMessage('Failed to generate amortization.');
+                      setAlertSeverity('error');
+                      setAlertOpen(true);
                     } finally {
                       setGenerateLoading(false);
                     }
                   }}
                 >
-                  {generateLoading ? <CircularProgress size={18} color="inherit" /> : 'Save Amortization'}
+                  {generateLoading ? (
+                    <>
+                      <CircularProgress size={16} sx={{ mr: 1 }} color="inherit" />
+                      Processing...
+                    </>
+                  ) : (
+                    '✓ Save Amortization'
+                  )}
                 </Button>
               </Box>
             </>
-
-          {error ? <Typography color="error">{error}</Typography> : null}
-        </CardContent>
-      </Card>
     </Box>
   );
 }
