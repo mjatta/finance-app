@@ -422,7 +422,7 @@ function App() {
       key: 'member',
       label: 'Customer Administration',
       children: [
-        { label: 'Dashboard', to: '/member', icon: HowToRegRoundedIcon },
+        { label: 'Customer Administration Dashboard', to: '/member', icon: HowToRegRoundedIcon },
       ],
     },
     {
