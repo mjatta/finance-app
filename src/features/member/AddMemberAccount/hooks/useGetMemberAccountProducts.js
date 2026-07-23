@@ -20,7 +20,14 @@ export function useGetMemberAccountProducts() {
         const data = await resp.json();
 
         // Handle both array and nested response formats
-        const productList = Array.isArray(data) ? data : (data.data || data.products || []);
+        let productList = Array.isArray(data) ? data : (data.data || data.products || []);
+        
+        // Trim whitespace from product names
+        productList = productList.map(product => ({
+          ...product,
+          prd_name: product.prd_name ? product.prd_name.trim() : '',
+        }));
+        
         setProducts(productList);
       } catch (err) {
         setError(err.message || 'Unknown error');

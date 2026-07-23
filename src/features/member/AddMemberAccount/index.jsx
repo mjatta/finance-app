@@ -14,11 +14,13 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
 import { useGetMemberAccountDetails } from './hooks/useGetMemberAccountDetails';
 import { useGetMemberAccountProducts } from './hooks/useGetMemberAccountProducts';
+import { useGetBranches } from './hooks/useGetBranches';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AddMemberAccount() {
-  const { memberDetails, loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberAccountDetails();
+  const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberAccountDetails();
   const { products, loading: productsLoading } = useGetMemberAccountProducts();
+  const { branches, loading: branchesLoading } = useGetBranches();
   
   const [customerCode, setCustomerCode] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -57,9 +59,34 @@ export default function AddMemberAccount() {
       const details = await fetchMemberDetails(customerCode.trim());
 
       if (details) {
+        // Extract membname from the API response - this is the primary field name from the backend
+        let customerName = '';
+        
+        // Check for membname first (as provided in the API response)
+        if (details.membname && typeof details.membname === 'string' && details.membname.trim()) {
+          customerName = details.membname.trim();
+        } 
+        // Fallback to other possible field names
+        else if (details.customerName && typeof details.customerName === 'string' && details.customerName.trim()) {
+          customerName = details.customerName.trim();
+        } 
+        else if (details.CustomerName && typeof details.CustomerName === 'string' && details.CustomerName.trim()) {
+          customerName = details.CustomerName.trim();
+        }
+        else if (details.name && typeof details.name === 'string' && details.name.trim()) {
+          customerName = details.name.trim();
+        }
+        else if (details.Name && typeof details.Name === 'string' && details.Name.trim()) {
+          customerName = details.Name.trim();
+        }
+        
         setFormData({
-          ...formData,
-          customerName: details.customerName || details.CustomerName || details.name || details.Name || '',
+          customerName: customerName,
+          product: '',
+          branch: '',
+          itemNumber: '',
+          accountNumber: '',
+          accountName: '',
         });
         setStatusMessage('Customer details loaded successfully');
         setStatusError(false);
@@ -67,16 +94,24 @@ export default function AddMemberAccount() {
         setStatusMessage(`Error: ${memberError}`);
         setStatusError(true);
         setFormData({
-          ...formData,
           customerName: '',
+          product: '',
+          branch: '',
+          itemNumber: '',
+          accountNumber: '',
+          accountName: '',
         });
       }
     } catch (err) {
       setStatusMessage(`Error: ${err.message}`);
       setStatusError(true);
       setFormData({
-        ...formData,
         customerName: '',
+        product: '',
+        branch: '',
+        itemNumber: '',
+        accountNumber: '',
+        accountName: '',
       });
     }
   };
@@ -118,6 +153,22 @@ export default function AddMemberAccount() {
 
     try {
       // TODO: Add API call to save member account
+      // Example payload structure:
+      // const payload = {
+      //   customerCode: customerCode.trim(),
+      //   customerName: formData.customerName,
+      //   product: formData.product,
+      //   branch: formData.branch,
+      //   itemNumber: formData.itemNumber,
+      //   accountNumber: formData.accountNumber,
+      //   accountName: formData.accountName,
+      // };
+      // const response = await fetch('/api/member/account/add', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(payload),
+      // });
+
       setStatusMessage('Member account saved successfully');
       setStatusError(false);
       notifySaveSuccess({
@@ -226,28 +277,20 @@ export default function AddMemberAccount() {
       </Card>
 
       {/* Member Account Details Card */}
-      {formData.customerName && (
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-              Member Account Details
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-              <TextField
-                label="Customer Name"
-                value={formData.customerName}
-                size="small"
-                fullWidth
-                disabled
-                InputProps={{
-                  readOnly: true,
-                  sx: {
-                    fontWeight: 900,
-                    color: '#000000',
-                    fontSize: '0.95rem',
-                  },
-                }}
-              />
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+            Member Account Details
+          </Typography>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Customer Name
+                </Typography>
+                <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                  {formData.customerName || '—'}
+                </Typography>
+              </Box>
               <TextField
                 select
                 label="Product"
@@ -257,23 +300,53 @@ export default function AddMemberAccount() {
                 size="small"
                 fullWidth
                 disabled={productsLoading}
+                displayEmpty
+                InputProps={{
+                  placeholder: 'Select a product',
+                }}
+                renderValue={(value) => {
+                  if (value === '') return <span style={{ color: '#999' }}>Select a product</span>;
+                  const selected = products.find(p => p.prd_id === value);
+                  return selected ? selected.prd_name : value;
+                }}
               >
-                <MenuItem value="">Select product</MenuItem>
+                <MenuItem value="" disabled>
+                  Select a product
+                </MenuItem>
                 {products.map((product) => (
-                  <MenuItem key={product.id || product.productCode} value={product.id || product.productCode}>
-                    {product.name || product.productName || product.productCode}
+                  <MenuItem key={product.prd_id || product.id} value={product.prd_id || product.id}>
+                    {product.prd_name || product.name || product.productName}
                   </MenuItem>
                 ))}
               </TextField>
               <TextField
+                select
                 label="Branch"
                 name="branch"
                 value={formData.branch}
                 onChange={handleInputChange}
-                placeholder="Enter branch"
                 size="small"
                 fullWidth
-              />
+                disabled={branchesLoading}
+                displayEmpty
+                InputProps={{
+                  placeholder: 'Select a branch',
+                }}
+                renderValue={(value) => {
+                  if (value === '') return <span style={{ color: '#999' }}>Select a branch</span>;
+                  const selected = branches.find(b => b.branchid === value);
+                  return selected ? selected.br_name : value;
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select a branch
+                </MenuItem>
+                {branches.map((branch) => (
+                  <MenuItem key={branch.branchid || branch.id} value={branch.branchid || branch.id}>
+                    {branch.br_name || branch.name || branch.branchName}
+                  </MenuItem>
+                ))}
+              </TextField>
               <TextField
                 label="Item Number"
                 name="itemNumber"
@@ -337,7 +410,6 @@ export default function AddMemberAccount() {
             </Box>
           </CardContent>
         </Card>
-      )}
     </Box>
   );
 }
