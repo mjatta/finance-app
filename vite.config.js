@@ -339,6 +339,94 @@ const glAccountsDetailsApiPlugin = () => ({
   },
 })
 
+// Account Opening Lookups API Plugin (dev server middleware, backend only)
+// Handles: /api/accounts/branches/:instId, /api/accounts/subgroups/:instId, /api/accounts/nextaccount/:subgrpcode, POST /api/accounts/create
+const accountOpeningLookupsApiPlugin = () => ({
+  name: 'account-opening-lookups-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/accounts/')) {
+          return next()
+        }
+
+        // Skip paths handled by other plugins
+        if (req.url.startsWith('/api/accounts/details') || req.url.startsWith('/api/accounts/update-name')) {
+          return next()
+        }
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'POST' && req.url.startsWith('/api/accounts/create')) {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/accounts/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Branches: /api/accounts/branches/:instId
+          const branchesMatch = req.url.match(/^\/api\/accounts\/branches\/([^\/\?]+)/)
+          // Subgroups: /api/accounts/subgroups/:instId
+          const subgroupsMatch = req.url.match(/^\/api\/accounts\/subgroups\/([^\/\?]+)/)
+          // Next Account: /api/accounts/nextaccount/:subgrpcode
+          const nextAccountMatch = req.url.match(/^\/api\/accounts\/nextaccount\/([^\/\?]+)/)
+
+          let backendPath = null
+          if (branchesMatch) {
+            backendPath = `/api/accounts/branches/${encodeURIComponent(branchesMatch[1])}`
+          } else if (subgroupsMatch) {
+            backendPath = `/api/accounts/subgroups/${encodeURIComponent(subgroupsMatch[1])}`
+          } else if (nextAccountMatch) {
+            backendPath = `/api/accounts/nextaccount/${encodeURIComponent(nextAccountMatch[1])}`
+          }
+
+          if (backendPath) {
+            try {
+              const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com${backendPath}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+            } catch (err) {
+              res.statusCode = 502
+              res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            }
+            return
+          }
+
+          // Unknown GET subpath; let other middleware handle
+          return next()
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch account opening lookups.', error: err.message }))
+      }
+    })
+  },
+})
+
       // // Group Members API Plugin (dev server middleware, backend only)
       // const groupMembersApiPlugin = () => ({
       //   name: 'group-members-api-plugin',
@@ -3509,6 +3597,7 @@ export default defineConfig({
   accountDetailsApiPlugin(),
   glAccountsDetailsApiPlugin(),
   glAccountsUpdateApiPlugin(),
+  accountOpeningLookupsApiPlugin(),
   memberAccountDetailsApiPlugin(),
   memberAccountProductsApiPlugin(),
   idTypesApiPlugin(),

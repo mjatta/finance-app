@@ -196,6 +196,22 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name"
     },
     {
+      "source": "/api/accounts/branches/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/branches/:path*"
+    },
+    {
+      "source": "/api/accounts/subgroups/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/subgroups/:path*"
+    },
+    {
+      "source": "/api/accounts/nextaccount/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/nextaccount/:path*"
+    },
+    {
+      "source": "/api/accounts/create",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/create"
+    },
+    {
       "source": "/api/member-account/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member-account/:path*"
     },

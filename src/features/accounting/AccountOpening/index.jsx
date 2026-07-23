@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
 import {
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
+  MenuItem,
   TextField,
   Typography,
   Alert,
 } from '@mui/material';
 import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
+import { useAccountBranches } from './hooks/useAccountBranches';
+import { useAccountSubgroups } from './hooks/useAccountSubgroups';
+import { useNextAccount } from './hooks/useNextAccount';
+import { useCreateAccount } from './hooks/useCreateAccount';
+import { useAuthStore } from '../../../store/authStore';
+import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AccountOpening() {
+  const { branches, loading: branchesLoading } = useAccountBranches();
+  const { subgroups, loading: subgroupsLoading } = useAccountSubgroups();
+  const { fetchNextAccount } = useNextAccount();
+  const { loading: isSaving, createAccount } = useCreateAccount();
+  const user = useAuthStore((state) => state.user);
+
   const [formData, setFormData] = useState({
     subHead: '',
-    currency: '',
     branch: '',
     itemNumber: '',
     accountNumber: '',
@@ -30,25 +44,72 @@ export default function AccountOpening() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubHeadChange = async (e) => {
+    const subgrpcode = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      subHead: subgrpcode,
+    }));
+
+    if (subgrpcode) {
+      const nextAccount = await fetchNextAccount(subgrpcode);
+      if (nextAccount) {
+        setFormData((prev) => ({
+          ...prev,
+          subHead: subgrpcode,
+          itemNumber: nextAccount.AccountItem || '',
+          accountNumber: nextAccount.AccountNumber || '',
+        }));
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validation
-    if (!formData.subHead.trim() || !formData.currency.trim() || !formData.branch.trim() || 
-        !formData.itemNumber.trim() || !formData.accountNumber.trim() || !formData.accountName.trim()) {
+    // Validation - convert to strings for trim() since branch is numeric
+    if (!String(formData.subHead).trim() || !String(formData.branch).trim() ||
+        !String(formData.itemNumber).trim() || !String(formData.accountNumber).trim() || !String(formData.accountName).trim()) {
       setStatusMessage('Please fill in all fields');
       setStatusError(true);
       return;
     }
 
-    // TODO: Add API call here
-    setStatusMessage('Account opening data submitted successfully');
-    setStatusError(false);
+    const payload = {
+      AccountNumber: formData.accountNumber,
+      AccountName: formData.accountName,
+      BranchId: Number(formData.branch),
+      AccountItem: formData.itemNumber,
+      UserId: user?.username || 'SYSTEM',
+      CurrencyCode: 1,
+      SubGroupCode: formData.subHead,
+      CompanyId: user?.CompId || 30,
+    };
+
+    try {
+      await createAccount(payload);
+      setStatusMessage('Account opening data submitted successfully');
+      setStatusError(false);
+      notifySaveSuccess({
+        page: 'Accounting / Account Opening',
+        action: 'Create Account',
+        message: `Account ${formData.accountNumber} created successfully`,
+      });
+      handleClear();
+    } catch (err) {
+      setStatusMessage(err.message || 'Failed to submit account opening data');
+      setStatusError(true);
+      notifySaveError({
+        page: 'Accounting / Account Opening',
+        action: 'Create Account',
+        message: 'Failed to create account',
+        error: err,
+      });
+    }
   };
 
   const handleClear = () => {
     setFormData({
       subHead: '',
-      currency: '',
       branch: '',
       itemNumber: '',
       accountNumber: '',
@@ -84,58 +145,85 @@ export default function AccountOpening() {
       )}
 
       {/* Form Card */}
-      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+      <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2.5, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#667eea' }}>
             Account Opening Details
           </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, maxWidth: 800 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2.5, maxWidth: 800 }}>
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
               <TextField
+                select
                 label="Sub Head"
                 name="subHead"
                 value={formData.subHead}
-                onChange={handleInputChange}
-                placeholder="Enter sub head"
+                onChange={handleSubHeadChange}
                 size="small"
                 fullWidth
-              />
+                disabled={subgroupsLoading}
+                displayEmpty
+                InputProps={{
+                  placeholder: 'Select a sub head',
+                }}
+                renderValue={(value) => {
+                  if (value === '') return <span style={{ color: '#999' }}>Select a sub head</span>;
+                  const selected = subgroups.find((s) => s.subgrpcode === value);
+                  return selected ? selected.subgrpname : value;
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select a sub head
+                </MenuItem>
+                {subgroups.map((subgroup) => (
+                  <MenuItem key={subgroup.subgrpcode} value={subgroup.subgrpcode}>
+                    {subgroup.subgrpname}
+                  </MenuItem>
+                ))}
+              </TextField>
               <TextField
-                label="Currency"
-                name="currency"
-                value={formData.currency}
-                onChange={handleInputChange}
-                placeholder="Enter currency"
-                size="small"
-                fullWidth
-              />
-              <TextField
+                select
                 label="Branch"
                 name="branch"
                 value={formData.branch}
                 onChange={handleInputChange}
-                placeholder="Enter branch"
                 size="small"
                 fullWidth
-              />
-              <TextField
-                label="Item Number"
-                name="itemNumber"
-                value={formData.itemNumber}
-                onChange={handleInputChange}
-                placeholder="Enter item number"
-                size="small"
-                fullWidth
-              />
-              <TextField
-                label="Account Number"
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleInputChange}
-                placeholder="Enter account number"
-                size="small"
-                fullWidth
-              />
+                disabled={branchesLoading}
+                displayEmpty
+                InputProps={{
+                  placeholder: 'Select a branch',
+                }}
+                renderValue={(value) => {
+                  if (value === '') return <span style={{ color: '#999' }}>Select a branch</span>;
+                  const selected = branches.find((b) => (b.branchid ?? b.branchcode) === value);
+                  return selected ? selected.br_name : value;
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select a branch
+                </MenuItem>
+                {branches.map((branch) => (
+                  <MenuItem key={branch.branchid ?? branch.branchcode} value={branch.branchid ?? branch.branchcode}>
+                    {branch.br_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, p: 1.25, borderRadius: 2, backgroundColor: '#f8f9fa', border: '1px solid #eceff1' }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Item Number
+                </Typography>
+                <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                  {formData.itemNumber || '—'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, p: 1.25, borderRadius: 2, backgroundColor: '#f8f9fa', border: '1px solid #eceff1' }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Account Number
+                </Typography>
+                <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                  {formData.accountNumber || '—'}
+                </Typography>
+              </Box>
               <TextField
                 label="Account Name"
                 name="accountName"
@@ -146,21 +234,23 @@ export default function AccountOpening() {
                 fullWidth
               />
             </Box>
-            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, mt: 1, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
               <Button
                 variant="contained"
                 type="submit"
-                startIcon={<AddCircleRoundedIcon />}
+                disabled={isSaving}
+                startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : <AddCircleRoundedIcon />}
                 sx={{
                   backgroundColor: '#667eea',
                   '&:hover': { backgroundColor: '#5568d3' },
                   fontWeight: 600,
                   paddingX: 3,
-                  boxShadow: 'none',
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(102,126,234,0.35)',
                   textTransform: 'none',
                 }}
               >
-                Submit
+                {isSaving ? 'Submitting...' : 'Submit'}
               </Button>
               <Button
                 variant="outlined"
@@ -168,6 +258,7 @@ export default function AccountOpening() {
                 sx={{
                   fontWeight: 600,
                   paddingX: 3,
+                  borderRadius: 2,
                   boxShadow: 'none',
                   textTransform: 'none',
                   color: '#666',
@@ -181,6 +272,15 @@ export default function AccountOpening() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Saving Overlay */}
+      <Backdrop
+        open={isSaving}
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1, flexDirection: 'column', gap: 2 }}
+      >
+        <CircularProgress color="inherit" />
+        <Typography sx={{ fontWeight: 600 }}>Submitting account...</Typography>
+      </Backdrop>
     </Box>
   );
 }
