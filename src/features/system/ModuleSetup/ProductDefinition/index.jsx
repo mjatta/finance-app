@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Autocomplete,
   Box,
   Card,
   CardContent,
   Checkbox,
+  Chip,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -65,6 +67,70 @@ export default function ProductDefinition() {
   const [statusError, setStatusError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [productSearchValue, setProductSearchValue] = useState(null);
+
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true);
+    try {
+      const response = await fetch('/api/product-definition');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(Array.isArray(data?.products) ? data.products : []);
+      }
+    } catch {
+      // Ignore; search list simply stays empty/stale.
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const handleNewProduct = () => {
+    setForm(initialForm);
+    setSelectedProductId(null);
+    setProductSearchValue(null);
+    setStatusMessage('');
+    setStatusError(false);
+  };
+
+  const handleSelectProduct = (product) => {
+    if (!product) {
+      handleNewProduct();
+      return;
+    }
+    setForm({
+      mainCategory: product.mainCategory || '',
+      productName: product.productName || '',
+      hasDeductions: Boolean(product.hasDeductions),
+      isIslamicProduct: Boolean(product.isIslamicProduct),
+      interestRate: product.interestRate ?? '',
+      minimumAmount: product.minimumAmount ?? '',
+      maximumAmount: product.maximumAmount ?? '',
+      minimumDuration: product.minimumDuration ?? '',
+      maximumDuration: product.maximumDuration ?? '',
+      interestIncome: product.interestIncome ?? '',
+      badDebtRecovered: product.badDebtRecovered ?? '',
+      badDebtExpenses: product.badDebtExpenses ?? '',
+      loanProductControl: product.loanProductControl ?? '',
+      savingProductControl: product.savingProductControl ?? '',
+      expenseAccount: product.expenseAccount ?? '',
+      deductionAccountType: product.deductionAccountType ?? '',
+      deductionDestinationAccount: product.deductionDestinationAccount ?? '',
+      deductionPercentage: product.deductionPercentage ?? '',
+      deductionSourceProduct: product.deductionSourceProduct ?? '',
+    });
+    setSelectedProductId(product.id);
+    setProductSearchValue(product);
+    setStatusMessage(`Loaded "${product.productName}" for editing.`);
+    setStatusError(false);
+  };
+
   const selectedCategory = accountTypes.find((t) => t.adescrip === form.mainCategory);
   const selectedAdescrip = selectedCategory?.adescrip?.toUpperCase() || '';
   const selectedCategoryCode = selectedCategory?.acode || '';
@@ -104,9 +170,34 @@ export default function ProductDefinition() {
 
       if (!result) throw new Error('Save failed');
 
-      setStatusMessage('Product definition saved successfully.');
+      const isUpdate = Boolean(selectedProductId);
+      const productRecord = {
+        id: selectedProductId || `prd-${Date.now()}`,
+        ...form,
+      };
+
+      try {
+        const syncResponse = await fetch('/api/product-definition', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product: productRecord,
+            mainCategories: [form.mainCategory],
+            productNames: [form.productName],
+          }),
+        });
+        if (syncResponse.ok) {
+          const syncData = await syncResponse.json();
+          setProducts(Array.isArray(syncData?.products) ? syncData.products : []);
+        }
+      } catch {
+        // Local search index sync failed; the remote save already succeeded.
+      }
+
+      setSelectedProductId(productRecord.id);
+      setProductSearchValue(productRecord);
+      setStatusMessage(isUpdate ? 'Product definition updated successfully.' : 'Product definition saved successfully.');
       setStatusError(false);
-      setForm(initialForm);
     } catch {
       setStatusMessage('Failed to save product definition.');
       setStatusError(true);
@@ -132,6 +223,40 @@ export default function ProductDefinition() {
           {statusMessage}
         </Alert>
       )}
+
+      {/* Find Product search */}
+      <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>
+            Find Product
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Autocomplete
+              options={products}
+              loading={productsLoading}
+              value={productSearchValue}
+              onChange={(_, value) => handleSelectProduct(value)}
+              getOptionLabel={(option) => (option ? `${option.productName || ''} (${option.mainCategory || ''})` : '')}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              sx={{ minWidth: 320, flex: 1 }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Search Product"
+                  placeholder="Type a product name to search"
+                  size="small"
+                />
+              )}
+            />
+            {selectedProductId && (
+              <Chip label={`Editing: ${form.productName}`} color="primary" variant="outlined" />
+            )}
+            <Button variant="outlined" onClick={handleNewProduct} sx={{ fontWeight: 600, textTransform: 'none' }}>
+              New Product
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Cards grid - 2 column layout */}
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
@@ -468,11 +593,11 @@ export default function ProductDefinition() {
           disabled={isSaving || !form.mainCategory || !form.productName}
           sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', paddingX: 3, boxShadow: 'none' }}
         >
-          {isSaving ? 'Saving...' : '💾 Save Product'}
+          {isSaving ? 'Saving...' : selectedProductId ? '💾 Update Product' : '💾 Save Product'}
         </Button>
         <Button
           variant="outlined"
-          onClick={() => { setForm(initialForm); setStatusMessage(''); setStatusError(false); }}
+          onClick={handleNewProduct}
           sx={{ fontWeight: 600, textTransform: 'none', paddingX: 3 }}
         >
           Clear
