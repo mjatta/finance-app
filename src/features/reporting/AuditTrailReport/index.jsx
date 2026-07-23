@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Card, CardContent, Typography, MenuItem, TextField, Button } from '@mui/material'
+import { Alert, Backdrop, Box, Card, CardContent, CircularProgress, Typography, MenuItem, TextField, Button } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import useAuditTrailTypes from './hooks/useAuditTrailTypes'
 import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup'
@@ -10,15 +10,23 @@ export default function AuditTrailReport() {
   const { types, loading: typesLoading } = useAuditTrailTypes()
   const { data: creditUnion } = useCreditUnionLookup()
   const [auditType, setAuditType] = useState('')
-  const [fromDate, setFromDate] = useState(() => dayjs('1980-01-01'))
+  const [fromDate, setFromDate] = useState(() => dayjs().subtract(30, 'day'))
   const [toDate, setToDate] = useState(() => dayjs())
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [alertMessage, setAlertMessage] = useState('')
+  const [alertSeverity, setAlertSeverity] = useState('error')
+  const [isExporting, setIsExporting] = useState(false)
 
   const formatDate = (value) => (value && value.format ? value.format('YYYY-MM-DD') : (value || ''))
 
   const handleExport = async (type) => {
+    setIsExporting(true)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
     try {
       const payload = { AuditType: auditType || '', FromDate: formatDate(fromDate), ToDate: formatDate(toDate) }
-      const resp = await fetch('/api/audittrail/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const resp = await fetch('/api/audittrail/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal })
+      clearTimeout(timeoutId)
       if (!resp.ok) throw new Error(`Report API ${resp.status}`)
       const json = await resp.json()
       // Try to robustly find an array payload in the response
@@ -47,7 +55,10 @@ export default function AuditTrailReport() {
           w.document.write(`<pre style="white-space:pre-wrap;word-wrap:break-word">${JSON.stringify(json, null, 2)}</pre>`)
           w.document.close()
         }
-        alert('Report returned no rows. Opening raw response for inspection.')
+        setAlertMessage('Report returned no rows. Opening raw response for inspection.')
+        setAlertSeverity('warning')
+        setAlertOpen(true)
+        setIsExporting(false)
         return
       }
 
@@ -94,14 +105,35 @@ export default function AuditTrailReport() {
       w.document.close()
       w.focus()
       w.print()
+      return
     } catch (err) {
       console.error(err)
-      alert('Failed to export report')
+      clearTimeout(timeoutId)
+      const message = err?.name === 'AbortError'
+        ? 'Request timed out. Please narrow the date range or audit type and try again.'
+        : 'Failed to export report'
+      setAlertMessage(message)
+      setAlertSeverity('error')
+      setAlertOpen(true)
+    } finally {
+      setIsExporting(false)
     }
   }
 
   return (
     <Box sx={{ p: 3 }}>
+      <Backdrop open={isExporting} sx={{ zIndex: 1300 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={72} />
+          <Typography variant="h6" sx={{ color: 'white' }}>Preparing export...</Typography>
+        </Box>
+      </Backdrop>
+
+      {alertOpen && (
+        <Alert severity={alertSeverity} onClose={() => setAlertOpen(false)} sx={{ mb: 2 }}>
+          {alertMessage}
+        </Alert>
+      )}
       <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 2, color: 'white' }}>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           Audit Trail Report
@@ -138,6 +170,7 @@ export default function AuditTrailReport() {
             <Button
               variant="contained"
               onClick={() => handleExport('pdf')}
+              disabled={isExporting}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               PDF
@@ -145,6 +178,7 @@ export default function AuditTrailReport() {
             <Button
               variant="contained"
               onClick={() => handleExport('excel')}
+              disabled={isExporting}
               sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               Excel
@@ -152,6 +186,7 @@ export default function AuditTrailReport() {
             <Button
               variant="contained"
               onClick={() => handleExport('csv')}
+              disabled={isExporting}
               sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               CSV
