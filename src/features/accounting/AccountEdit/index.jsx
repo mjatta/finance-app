@@ -8,9 +8,11 @@ import {
   TextField,
   Typography,
   Alert,
+  Paper,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
+import dayjs from 'dayjs';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useSaveAccountDetails } from './hooks/useSaveAccountDetails';
 
@@ -22,19 +24,12 @@ export default function AccountEdit() {
   const [statusError, setStatusError] = useState(false);
   const [formData, setFormData] = useState({
     accountName: '',
-    balance: '',
+    balance: 0.00,
     openDate: '',
   });
 
   const handleAccountNumberChange = (e) => {
     setAccountNumber(e.target.value);
-  };
-
-  const handleAccountNameChange = (e) => {
-    setFormData({
-      ...formData,
-      accountName: e.target.value,
-    });
   };
 
   const handleAccountNumberTab = async (e) => {
@@ -45,11 +40,17 @@ export default function AccountEdit() {
         const details = await fetchAccountDetails(accountNumber.trim());
         
         if (details) {
-          // Map API response to form fields
+          // Map API response to form fields - extract Balance and format OpenDate
+          const balance = details.balance !== undefined ? details.balance : (details.Balance !== undefined ? details.Balance : (details.nbalance || 0.00));
+          let openDate = details.openDate || details.OpenDate || details.opendate || '';
+          if (openDate && openDate.trim()) {
+            openDate = dayjs(openDate).format('YYYY-MM-DD');
+          }
+          
           setFormData({
             accountName: details.accountName || details.AccountName || details.cacctname || '',
-            balance: details.balance || details.Balance || details.nbalance || '',
-            openDate: details.openDate || details.OpenDate || details.opendate || '',
+            balance: balance,
+            openDate: openDate,
           });
           setStatusMessage('Account details loaded successfully');
           setStatusError(false);
@@ -58,7 +59,7 @@ export default function AccountEdit() {
           setStatusError(true);
           setFormData({
             accountName: '',
-            balance: '',
+            balance: 0.00,
             openDate: '',
           });
         }
@@ -67,7 +68,7 @@ export default function AccountEdit() {
         setStatusError(true);
         setFormData({
           accountName: '',
-          balance: '',
+          balance: 0.00,
           openDate: '',
         });
       }
@@ -88,11 +89,17 @@ export default function AccountEdit() {
       const details = await fetchAccountDetails(accountNumber.trim());
       
       if (details) {
-        // Map API response to form fields
+        // Map API response to form fields - extract Balance and format OpenDate
+        const balance = details.balance !== undefined ? details.balance : (details.Balance !== undefined ? details.Balance : (details.nbalance || 0.00));
+        let openDate = details.openDate || details.OpenDate || details.opendate || '';
+        if (openDate && openDate.trim()) {
+          openDate = dayjs(openDate).format('YYYY-MM-DD');
+        }
+        
         setFormData({
           accountName: details.accountName || details.AccountName || details.cacctname || '',
-          balance: details.balance || details.Balance || details.nbalance || '',
-          openDate: details.openDate || details.OpenDate || details.opendate || '',
+          balance: balance,
+          openDate: openDate,
         });
         setStatusMessage('Account details loaded successfully');
         setStatusError(false);
@@ -101,7 +108,7 @@ export default function AccountEdit() {
         setStatusError(true);
         setFormData({
           accountName: '',
-          balance: '',
+          balance: 0.00,
           openDate: '',
         });
       }
@@ -110,7 +117,7 @@ export default function AccountEdit() {
       setStatusError(true);
       setFormData({
         accountName: '',
-        balance: '',
+        balance: 0.00,
         openDate: '',
       });
     }
@@ -120,7 +127,7 @@ export default function AccountEdit() {
     setAccountNumber('');
     setFormData({
       accountName: '',
-      balance: '',
+      balance: 0.00,
       openDate: '',
     });
     setStatusMessage('');
@@ -245,97 +252,102 @@ export default function AccountEdit() {
       </Card>
 
       {/* Account Details Card */}
-      {(formData.accountName || formData.balance || formData.openDate) && (
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-              Account Details
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-              <TextField
-                label="Account Name"
-                value={formData.accountName}
-                onChange={handleAccountNameChange}
-                size="small"
-                fullWidth
-                disabled={savingLoading}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& input': {
-                      fontWeight: 900,
-                      color: '#000000',
-                      fontSize: '0.95rem',
-                    },
-                  },
-                }}
-              />
-              <TextField
-                label="Balance"
-                value={formData.balance}
-                size="small"
-                fullWidth
-                disabled
-                InputProps={{
-                  readOnly: true,
-                  sx: {
-                    fontWeight: 900,
-                    color: '#000000',
-                    fontSize: '0.95rem',
-                  },
-                }}
-              />
-              <TextField
-                label="Open Date"
-                value={formData.openDate}
-                size="small"
-                fullWidth
-                disabled
-                InputProps={{
-                  readOnly: true,
-                  sx: {
-                    fontWeight: 900,
-                    color: '#000000',
-                    fontSize: '0.95rem',
-                  },
-                }}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={savingLoading ? <CircularProgress size={18} /> : <SaveRoundedIcon />}
-                onClick={handleSave}
-                disabled={savingLoading}
-                sx={{
-                  backgroundColor: '#28a745',
-                  '&:hover': { backgroundColor: '#218838' },
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                }}
-              >
-                {savingLoading ? 'Saving...' : 'Save'}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleClear}
-                sx={{
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                  color: '#666',
-                  borderColor: '#ccc',
-                  '&:hover': { borderColor: '#999', backgroundColor: '#f5f5f5' },
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+            Account Details
+          </Typography>
+          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' } }}>
+            {/* Account Name - Read-only Text Display */}
+            <Paper
+              elevation={0}
+              sx={{
+                backgroundColor: '#fff3cd',
+                borderLeft: '4px solid #ffc107',
+                p: 1.5,
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#666', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Account Name
+              </Typography>
+              <Typography sx={{ fontWeight: 700, color: '#333', fontSize: '1rem' }}>
+                {formData.accountName || '—'}
+              </Typography>
+            </Paper>
+
+            {/* Balance - Read-only Text Display */}
+            <Paper
+              elevation={0}
+              sx={{
+                backgroundColor: '#f0f4ff',
+                borderLeft: '4px solid #667eea',
+                p: 1.5,
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#666', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Balance
+              </Typography>
+              <Typography sx={{ fontWeight: 700, color: '#333', fontSize: '1.1rem' }}>
+                {typeof formData.balance === 'number' ? formData.balance.toFixed(2) : formData.balance}
+              </Typography>
+            </Paper>
+
+            {/* Open Date - Read-only Text Display */}
+            <Paper
+              elevation={0}
+              sx={{
+                backgroundColor: '#f0fff4',
+                borderLeft: '4px solid #28a745',
+                p: 1.5,
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#666', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Open Date
+              </Typography>
+              <Typography sx={{ fontWeight: 700, color: '#333', fontSize: '1rem' }}>
+                {formData.openDate || '—'}
+              </Typography>
+            </Paper>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
+            <Button
+              variant="contained"
+              startIcon={savingLoading ? <CircularProgress size={18} /> : <SaveRoundedIcon />}
+              onClick={handleSave}
+              disabled={savingLoading}
+              sx={{
+                backgroundColor: '#28a745',
+                '&:hover': { backgroundColor: '#218838' },
+                fontWeight: 600,
+                paddingX: 3,
+                boxShadow: 'none',
+                textTransform: 'none',
+              }}
+            >
+              {savingLoading ? 'Saving...' : 'Save'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleClear}
+              sx={{
+                fontWeight: 600,
+                paddingX: 3,
+                boxShadow: 'none',
+                textTransform: 'none',
+                color: '#666',
+                borderColor: '#ccc',
+                '&:hover': { borderColor: '#999', backgroundColor: '#f5f5f5' },
+              }}
+            >
+              Clear
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 }

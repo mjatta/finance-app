@@ -384,6 +384,24 @@ const accountOpeningLookupsApiPlugin = () => ({
           return
         }
 
+        if (req.method === 'POST' && req.url.startsWith('/api/accounts/update-name')) {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
         if (req.method === 'GET') {
           // Branches: /api/accounts/branches/:instId
           const branchesMatch = req.url.match(/^\/api\/accounts\/branches\/([^\/\?]+)/)
