@@ -15,12 +15,18 @@ import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
 import { useGetMemberAccountDetails } from './hooks/useGetMemberAccountDetails';
 import { useGetMemberAccountProducts } from './hooks/useGetMemberAccountProducts';
 import { useGetBranches } from './hooks/useGetBranches';
+import { useCheckGlDuplicate } from './hooks/useCheckGlDuplicate';
+import { useSaveAccount } from './hooks/useSaveAccount';
+import { useAuthStore } from '../../../store/authStore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 export default function AddMemberAccount() {
   const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberAccountDetails();
   const { products, loading: productsLoading } = useGetMemberAccountProducts();
   const { branches, loading: branchesLoading } = useGetBranches();
+  const { checkGlDuplicate, loading: glLoading } = useCheckGlDuplicate();
+  const { saveAccount } = useSaveAccount();
+  const user = useAuthStore((state) => state.user);
   
   const [customerCode, setCustomerCode] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -29,6 +35,7 @@ export default function AddMemberAccount() {
   
   const [formData, setFormData] = useState({
     customerName: '',
+    accountType: '',
     product: '',
     branch: '',
     itemNumber: '',
@@ -82,11 +89,12 @@ export default function AddMemberAccount() {
         
         setFormData({
           customerName: customerName,
+          accountType: '',
           product: '',
           branch: '',
-          itemNumber: '',
+          itemNumber: String(customerCode.trim()).padStart(6, '0'),
           accountNumber: '',
-          accountName: '',
+          accountName: customerName,
         });
         setStatusMessage('Customer details loaded successfully');
         setStatusError(false);
@@ -95,6 +103,7 @@ export default function AddMemberAccount() {
         setStatusError(true);
         setFormData({
           customerName: '',
+          accountType: '',
           product: '',
           branch: '',
           itemNumber: '',
@@ -124,10 +133,31 @@ export default function AddMemberAccount() {
     });
   };
 
+  const handleAccountTypeBlur = async () => {
+    if (!formData.accountType || !customerCode.trim()) {
+      return;
+    }
+
+    const paddedCode = String(customerCode.trim()).padStart(6, '0');
+    const result = await checkGlDuplicate(paddedCode, formData.accountType);
+    if (result.success && result.accountNo) {
+      setFormData({
+        ...formData,
+        accountNumber: result.accountNo,
+      });
+      setStatusMessage('Account number loaded successfully');
+      setStatusError(false);
+    } else {
+      setStatusMessage('Failed to load account number');
+      setStatusError(true);
+    }
+  };
+
   const handleClear = () => {
     setCustomerCode('');
     setFormData({
       customerName: '',
+      accountType: '',
       product: '',
       branch: '',
       itemNumber: '',
@@ -139,8 +169,8 @@ export default function AddMemberAccount() {
   };
 
   const handleSave = async () => {
-    if (!customerCode.trim() || !formData.customerName.trim() || !formData.product.trim() || 
-        !formData.branch.trim() || !formData.itemNumber.trim() || 
+    if (!customerCode.trim() || !formData.customerName.trim() || !formData.accountType.trim() || !formData.product || 
+        !formData.branch || !formData.itemNumber.trim() || 
         !formData.accountNumber.trim() || !formData.accountName.trim()) {
       setStatusMessage('Please fill in all fields before saving');
       setStatusError(true);
@@ -152,30 +182,50 @@ export default function AddMemberAccount() {
     setStatusError(false);
 
     try {
-      // TODO: Add API call to save member account
-      // Example payload structure:
-      // const payload = {
-      //   customerCode: customerCode.trim(),
-      //   customerName: formData.customerName,
-      //   product: formData.product,
-      //   branch: formData.branch,
-      //   itemNumber: formData.itemNumber,
-      //   accountNumber: formData.accountNumber,
-      //   accountName: formData.accountName,
-      // };
-      // const response = await fetch('/api/member/account/add', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload),
-      // });
+      // Map account type to product type code
+      const productTypeMap = {
+        'saving': '250',
+        'shares': '270',
+      };
+      const productType = productTypeMap[formData.accountType] || formData.accountType;
 
-      setStatusMessage('Member account saved successfully');
-      setStatusError(false);
-      notifySaveSuccess({
-        page: 'Customer Administration / Add Member Account',
-        action: 'Save Member Account',
-        message: 'Member account saved successfully',
-      });
+      // Build the payload according to API specification
+      const payload = {
+        membCode: formData.itemNumber, // Already padded to 6 digits
+        accountNumber: formData.accountNumber.trim(),
+        accountName: formData.accountName.trim(),
+        accountItem: formData.itemNumber, // Already padded to 6 digits
+        branchId: parseInt(formData.branch) || 16,
+        currencyCode: 1,
+        productType: productType,
+        productId: parseInt(formData.product) || 0,
+        companyId: 30,
+        userId: user?.username || 'SYSTEM',
+        enableSMS: false,
+        smsAccountNumber: '',
+      };
+
+      const result = await saveAccount(payload);
+
+      if (result.success) {
+        setStatusMessage('Member account saved successfully');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Customer Administration / Add Member Account',
+          action: 'Save Member Account',
+          message: 'Member account saved successfully',
+        });
+        // Clear the form after successful save
+        handleClear();
+      } else {
+        setStatusMessage(result.error || 'Failed to save member account');
+        setStatusError(true);
+        notifySaveError({
+          page: 'Customer Administration / Add Member Account',
+          action: 'Save Member Account',
+          message: result.error || 'Failed to save member account',
+        });
+      }
     } catch (error) {
       setStatusMessage('Failed to save member account');
       setStatusError(true);
@@ -293,6 +343,39 @@ export default function AddMemberAccount() {
               </Box>
               <TextField
                 select
+                label="Account Type"
+                name="accountType"
+                value={formData.accountType}
+                onChange={handleInputChange}
+                onBlur={handleAccountTypeBlur}
+                size="small"
+                fullWidth
+                disabled={glLoading}
+                displayEmpty
+                InputProps={{
+                  placeholder: 'Select account type',
+                }}
+                renderValue={(value) => {
+                  if (value === '') return <span style={{ color: '#999' }}>Select account type</span>;
+                  return value === 'saving' ? 'Saving Account' : value === 'shares' ? 'Shares Account' : value;
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select account type
+                </MenuItem>
+                <MenuItem value="saving">Saving Account</MenuItem>
+                <MenuItem value="shares">Shares Account</MenuItem>
+              </TextField>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Account Number
+                </Typography>
+                <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                  {formData.accountNumber || '—'}
+                </Typography>
+              </Box>
+              <TextField
+                select
                 label="Product"
                 name="product"
                 value={formData.product}
@@ -355,15 +438,7 @@ export default function AddMemberAccount() {
                 placeholder="Enter item number"
                 size="small"
                 fullWidth
-              />
-              <TextField
-                label="Account Number"
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleInputChange}
-                placeholder="Enter account number"
-                size="small"
-                fullWidth
+                inputProps={{ readOnly: true }}
               />
               <TextField
                 label="Account Name"

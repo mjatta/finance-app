@@ -588,6 +588,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsbalances/:path*"
     },
     {
+      "source": "/api/savingsaccount/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsaccount/:path*"
+    },
+    {
+      "source": "/api/Sharesaccount/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Sharesaccount/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

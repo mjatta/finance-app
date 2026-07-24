@@ -3704,6 +3704,27 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/getmember/, '/api/getmember'),
       },
+      // Proxy for savings account GL duplicate check
+      '/api/savingsaccount': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/savingsaccount/, '/api/savingsaccount'),
+      },
+      // Proxy for shares account GL duplicate check
+      '/api/Sharesaccount': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/Sharesaccount/, '/api/Sharesaccount'),
+      },
+      // Proxy for member account add endpoint
+      '/api/member-account': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/member-account/, '/api/member-account'),
+      },
       // Proxy dashboard summary to avoid CORS during development
       '/api/dashboard': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
