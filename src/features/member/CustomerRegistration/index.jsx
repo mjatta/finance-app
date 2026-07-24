@@ -1176,9 +1176,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     if (mainTab === 0) {
       // Individual tab: map fields to backend payload and call useRegisterIndividual
+      const user = useAuthStore.getState().user;
       const individualPayload = buildIndividualPayload(formData, countries, cities, {
-        compId: useAuthStore.getState().user?.CompId,
-        branchId: useAuthStore.getState().user?.BranchId,
+        compId: user?.CompId,
+        branchId: user?.BranchId,
+        username: user?.username,
       });
       individualPayload.MemberPicture = pictureBase64;
       individualPayload.MemberSignature = signatureBase64;
@@ -1240,10 +1242,12 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       }
     } else {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
-      const companyId = useAuthStore.getState().user?.CompId;
+      const user = useAuthStore.getState().user;
+      const companyId = user?.CompId;
       const institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
         compId: companyId,
-        branchId: useAuthStore.getState().user?.BranchId,
+        branchId: user?.BranchId,
+        username: user?.username,
       });
       institutionPayload.MemberPicture = pictureBase64;
       institutionPayload.MemberSignature = signatureBase64;
@@ -1347,9 +1351,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
 
     try {
+      const user = useAuthStore.getState().user;
       const payload = mainTab === 0
-        ? buildIndividualPayload(formData, countries, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId })
-        : buildInstitutionPayload(formData, institutionBranches, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId });
+        ? buildIndividualPayload(formData, countries, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username })
+        : buildInstitutionPayload(formData, institutionBranches, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
 
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
@@ -1524,7 +1529,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     const applicationFormBase64 = applicationFormFileRef.current ? await fileToBase64(applicationFormFileRef.current) : null;
 
     try {
-      const payload = buildInstitutionPayload(formData, institutionBranches, cities, { compId: useAuthStore.getState().user?.CompId, branchId: useAuthStore.getState().user?.BranchId });
+      const user = useAuthStore.getState().user;
+      const payload = buildInstitutionPayload(formData, institutionBranches, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
       payload.ApplicationForm = applicationFormBase64;
@@ -2549,30 +2555,24 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         </Typography>
                         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
                           <TextField
-                            required
                             label="Name"
                             name="treasurerName"
                             value={formData.treasurerName}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.treasurerName)}
                             sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
                           />
                           <TextField label="TIN" name="treasurerTIN" value={formData.treasurerTIN} onChange={handleChange} />
                           <TextField
-                            required
                             label="Mobile Phone"
                             name="treasurerMobilePhone"
                             value={formData.treasurerMobilePhone}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.treasurerMobilePhone)}
                           />
                           <TextField
-                            required
                             label="Email Address"
                             name="treasurerEmailAddress"
                             value={formData.treasurerEmailAddress}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.treasurerEmailAddress)}
                           />
                           <FormControlLabel
                             control={<Checkbox name="treasurerAccountSignatory" checked={formData.treasurerAccountSignatory} onChange={handleChange} />}

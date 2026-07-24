@@ -3,9 +3,10 @@
  * @param {Object} formData - Form data object containing all individual fields
  * @param {Array} countries - Array of country objects with { id, name }
  * @param {Array} cities - Array of city objects with { id, name }
+ * @param {Object} options - Options including compId, branchId, and username
  * @returns {Object} Individual payload ready for API submission
  */
-export function buildIndividualPayload(formData, countries = [], cities = [], { compId, branchId } = {}) {
+export function buildIndividualPayload(formData, countries = [], cities = [], { compId, branchId, username } = {}) {
   return {
     FName: formData.firstName,
     MName: formData.middleName,
@@ -48,21 +49,24 @@ export function buildIndividualPayload(formData, countries = [], cities = [], { 
     SharePrice: Number(formData.sharePrice) || '',
     Signatory: formData.signatory1,
     CompanyId: compId,
+    compid: compId,
     BranchId: branchId,
     MemberPicture: null,
     MemberSignature: null,
     applicationForm: '',
-    suers: 'AKH',
+    suers: username || 'SYSTEM',
   };
 }
 
 /**
  * Build Institution Registration Payload
  * @param {Object} formData - Form data object containing all institution fields
+ * @param {Array} institutionBranches - Array of institution branches
  * @param {Array} cities - Array of city objects with { id, name }
+ * @param {Object} options - Options including compId, branchId, and username
  * @returns {Object} Institution payload ready for API submission
  */
-export function buildInstitutionPayload(formData, cities = [], { compId, branchId } = {}) {
+export function buildInstitutionPayload(formData, institutionBranches = [], cities = [], { compId, branchId, username } = {}) {
   return {
     CustName: formData.institutionName, // Mandatory
     BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
@@ -125,6 +129,7 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
     Sign4: '',
     CompanyId: compId,
     BranchId: branchId,
+    compid: compId,
     BatId: 0,
     // Map UI institutionType to backend MemType numeric codes
     // group -> 2, corporate -> 3, default 0
@@ -141,6 +146,6 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
     MemberPicture: null,
     MemberSignature: null,
     applicationForm: '',
-    suers: 'AKH',
+    suers: username || 'SYSTEM',
   };
 }
