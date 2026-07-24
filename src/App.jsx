@@ -39,14 +39,12 @@ import CalculateRoundedIcon from '@mui/icons-material/CalculateRounded';
 import EventRepeatRoundedIcon from '@mui/icons-material/EventRepeatRounded';
 import PointOfSaleRoundedIcon from '@mui/icons-material/PointOfSaleRounded';
 import BookRoundedIcon from '@mui/icons-material/BookRounded';
-import SyncAltRoundedIcon from '@mui/icons-material/SyncAltRounded';
 import UndoRoundedIcon from '@mui/icons-material/UndoRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
 import BalanceRoundedIcon from '@mui/icons-material/BalanceRounded';
 import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
 import GroupWorkRoundedIcon from '@mui/icons-material/GroupWorkRounded';
-import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import DateRangeRoundedIcon from '@mui/icons-material/DateRangeRounded';
@@ -91,7 +89,6 @@ const PeriodDues = lazy(() => import('./features/accounting/PeriodicProcessing/P
 const CashManager = lazy(() => import('./features/accounting/CashManager'));
 const Journals = lazy(() => import('./features/accounting/Journals'));
 const Verification = lazy(() => import('./features/accounting/Verification'));
-const TransactionUpdate = lazy(() => import('./features/accounting/TransactionUpdate'));
 const TransactionReversalAdjustment = lazy(() => import('./features/accounting/TransactionReversalAdjustment'));
 const AccountEnquiry = lazy(() => import('./features/accounting/AccountEnquiry'));
 const AccountEdit = lazy(() => import('./features/accounting/AccountEdit'));
@@ -99,7 +96,6 @@ const AccountOpening = lazy(() => import('./features/accounting/AccountOpening')
 const GeneralLedger = lazy(() => import('./features/accounting/LedgerManagement'));
 const AccountReconciliation = lazy(() => import('./features/accounting/Reconciliation'));
 
-const UserSecurity = lazy(() => import('./features/system/UserSecurity'));
 const UserSetup = lazy(() => import('./features/system/UserSetup'));
 const LoginAttempts = lazy(() => import('./features/system/LoginAttempts'));
 const EndOfYearAccounting = lazy(() => import('./features/accounting/EndOfYear'));
@@ -453,7 +449,6 @@ function App() {
         { label: 'Account Reconciliation', to: '/accounting/account-reconciliation', icon: BalanceRoundedIcon },
         { label: 'End of Year', to: '/accounting/end-of-year', icon: DateRangeRoundedIcon },
         { label: 'Cash Manager', to: '/accounting/cash-manager', icon: PointOfSaleRoundedIcon },
-        { label: 'Transaction Update', to: '/accounting/transaction-update', icon: SyncAltRoundedIcon },
         { label: 'Transaction Reversal / Adjustment', to: '/accounting/transaction-reversal-adjustment', icon: UndoRoundedIcon },
         { label: 'General Ledger', to: '/accounting/general-ledger', icon: AccountBalanceRoundedIcon },
       ],
@@ -474,7 +469,6 @@ function App() {
         { label: 'Product Setup', to: '/system/product', icon: Inventory2RoundedIcon },
         { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
         { label: 'Login Attempts', to: '/system/login-attempts', icon: LockResetRoundedIcon },
-        { label: 'Security', to: '/system/security', icon: SecurityRoundedIcon },
         { label: 'Save Logs', to: '/system/save-logs', icon: ListAltRoundedIcon },
       ],
     },
@@ -918,10 +912,6 @@ function App() {
                       element={renderWithAccess('accounting', <Verification />)}
                     />
                     <Route
-                      path="/accounting/transaction-update"
-                      element={renderWithAccess('accounting', <TransactionUpdate />)}
-                    />
-                    <Route
                       path="/accounting/transaction-reversal-adjustment"
                       element={renderWithAccess('accounting', <TransactionReversalAdjustment />)}
                     />
@@ -985,10 +975,6 @@ function App() {
                     <Route
                       path="/system/login-attempts"
                       element={renderWithAccess('system', <LoginAttempts />)}
-                    />
-                    <Route
-                      path="/system/security"
-                      element={renderWithAccess('system', <UserSecurity />)}
                     />
                     <Route
                       path="/system/save-logs"

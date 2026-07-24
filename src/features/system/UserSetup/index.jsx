@@ -143,7 +143,6 @@ const featurePageMap = {
     { path: '/accounting/cash-manager', label: 'Cash Manager' },
     { path: '/accounting/journals', label: 'Journals' },
     { path: '/accounting/verification', label: 'Verification' },
-    { path: '/accounting/transaction-update', label: 'Transaction Update' },
     { path: '/accounting/transaction-reversal-adjustment', label: 'Transaction Reversal / Adjustment' },
     { path: '/accounting/account-enquiry', label: 'GL Account Enquiry' },
     { path: '/accounting/account-edit', label: 'Account Edit' },
@@ -160,7 +159,6 @@ const featurePageMap = {
     { path: '/system/product', label: 'Product Setup' },
     { path: '/system/user-setup', label: 'User Setup' },
     { path: '/system/login-attempts', label: 'Login Attempts' },
-    { path: '/system/security', label: 'Security' },
     { path: '/system/save-logs', label: 'Save Logs' },
   ],
   reporting: [
