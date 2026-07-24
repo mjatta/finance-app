@@ -104,6 +104,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/update-status"
     },
     {
+      "source": "/api/member/details/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/details/:path*"
+    },
+    {
+      "source": "/api/member/activate",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/activate"
+    },
+    {
       "source": "/api/remote-member/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/:path*"
     },

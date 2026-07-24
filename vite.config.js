@@ -3913,6 +3913,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/endofyear\/data/, '/api/endofyear/data'),
       },
       // Proxy member activation endpoints to avoid CORS
+      '/api/member/details': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/member\/details/, '/api/member/details'),
+      },
       '/api/member/activate': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
