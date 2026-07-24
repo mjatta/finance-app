@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useAccountDetails } from './hooks/useAccountDetails';
+import { useUpdateAccountStatus } from './hooks/useUpdateAccountStatus';
 
 export default function AccountClosure() {
   const [accountNumber, setAccountNumber] = useState('');
@@ -29,6 +30,7 @@ export default function AccountClosure() {
   const [hasSearched, setHasSearched] = useState(false);
 
   const { accountData, isLoading, error: fetchError, fetchAccountDetails } = useAccountDetails();
+  const { updateAccountStatus } = useUpdateAccountStatus();
 
   const statusOptions = ['Close', 'Inactive', 'Dormant', 'Frozen'];
 
@@ -84,19 +86,29 @@ export default function AccountClosure() {
     setHasSearched(false);
   };
 
+  // Map status display names to status codes
+  const getStatusCode = (statusName) => {
+    const codeMap = {
+      'Close': 'C',
+      'Inactive': 'I',
+      'Dormant': 'D',
+      'Frozen': 'F',
+    };
+    return codeMap[statusName] || '';
+  };
+
   const handleStatusChange = (event) => {
-    const { value, checked } = event.target;
+    const { value } = event.target;
+    // Allow only one status to be selected at a time
     setFormData((prev) => ({
       ...prev,
-      status: checked
-        ? [...prev.status, value]
-        : prev.status.filter((s) => s !== value),
+      status: prev.status.includes(value) ? [] : [value],
     }));
   };
 
   const handleSave = async () => {
     if (!accountNumber.trim() || !formData.accountName.trim() || formData.status.length === 0) {
-      setStatusMessage('Please fill in all required fields and select at least one status.');
+      setStatusMessage('Please fill in all required fields and select a status.');
       setStatusError(true);
       return;
     }
@@ -106,10 +118,14 @@ export default function AccountClosure() {
     setStatusError(false);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const selectedStatus = formData.status[0];
+      const result = await updateAccountStatus(accountNumber, selectedStatus);
 
-      const successMsg = `Account ${accountNumber} closure saved successfully.`;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update account status');
+      }
+
+      const successMsg = `Account ${accountNumber} status updated to ${selectedStatus} successfully.`;
       setStatusMessage(successMsg);
       setStatusError(false);
       notifySaveSuccess({
@@ -123,7 +139,8 @@ export default function AccountClosure() {
         handleClear();
       }, 2000);
     } catch (error) {
-      setStatusMessage('Failed to save account closure.');
+      console.error('Error updating account status:', error);
+      setStatusMessage('Failed to save account closure: ' + error.message);
       setStatusError(true);
       notifySaveError({
         page: 'Member / Account Closure',

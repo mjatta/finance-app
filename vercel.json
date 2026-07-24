@@ -100,6 +100,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/details/:accountNumber"
     },
     {
+      "source": "/api/account/update-status",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/account/update-status"
+    },
+    {
       "source": "/api/remote-member/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/:path*"
     },

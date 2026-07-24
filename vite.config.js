@@ -3999,6 +3999,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy account update status endpoint to avoid CORS
+      '/api/account/update-status': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api/Withdrawal/BadDebt': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
