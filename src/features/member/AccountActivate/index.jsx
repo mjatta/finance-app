@@ -12,15 +12,18 @@ import {
 } from '@mui/material';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useAccountDetails } from '../MemberClose/hooks/useAccountDetails';
+import { useActivateAccount } from './hooks/useActivateAccount';
 
 export default function AccountActivate() {
   const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const { accountData, isLoading, error: fetchError, fetchAccountDetails } = useAccountDetails();
+  const { activateAccount } = useActivateAccount();
 
   const handleSearchAccount = async () => {
     if (!accountNumber.trim()) {
@@ -36,6 +39,13 @@ export default function AccountActivate() {
     await fetchAccountDetails(accountNumber);
   };
 
+  // Update accountName when accountData is fetched
+  React.useEffect(() => {
+    if (accountData?.accountName) {
+      setAccountName(accountData.accountName);
+    }
+  }, [accountData]);
+
   // Show error when fetch fails
   React.useEffect(() => {
     if (fetchError && hasSearched) {
@@ -46,14 +56,15 @@ export default function AccountActivate() {
 
   const handleClear = () => {
     setAccountNumber('');
+    setAccountName('');
     setStatusMessage('');
     setStatusError(false);
     setHasSearched(false);
   };
 
   const handleSave = async () => {
-    if (!accountNumber.trim() || !accountData?.accountName) {
-      setStatusMessage('Please search and select an account first.');
+    if (!accountNumber.trim() || !accountName.trim()) {
+      setStatusMessage('Please search for an account and fill in the account name.');
       setStatusError(true);
       return;
     }
@@ -63,8 +74,11 @@ export default function AccountActivate() {
     setStatusError(false);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const result = await activateAccount(accountNumber, accountName);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to activate account');
+      }
 
       const successMsg = `Account ${accountNumber} activated successfully.`;
       setStatusMessage(successMsg);
@@ -80,7 +94,8 @@ export default function AccountActivate() {
         handleClear();
       }, 2000);
     } catch (error) {
-      setStatusMessage('Failed to activate account.');
+      console.error('Error activating account:', error);
+      setStatusMessage('Failed to activate account: ' + error.message);
       setStatusError(true);
       notifySaveError({
         page: 'Member / Account Activate',
@@ -180,20 +195,23 @@ export default function AccountActivate() {
               Account Details
             </Typography>
 
-            <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-              {/* Account Name */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Account Name:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
-                    {accountData?.accountName || 'n/a'}
-                  </Typography>
-                )}
-              </Box>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: '1fr' }}>
+              {/* Account Name - Editable */}
+              <TextField
+                label="Account Name"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                disabled={isLoading || !accountData?.accountName}
+                placeholder="Edit account name"
+                fullWidth
+                size="small"
+                helperText="You can edit the account name here"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: accountData?.accountName ? '#f8f9fa' : '#fff',
+                  },
+                }}
+              />
 
               {/* Account Balance */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -245,7 +263,7 @@ export default function AccountActivate() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={isSaving || !accountData?.accountName}
+            disabled={isSaving || !accountName.trim()}
             sx={{
               backgroundColor: '#667eea',
               '&:hover': { backgroundColor: '#5568d3' },
