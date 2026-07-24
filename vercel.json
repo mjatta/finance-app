@@ -196,6 +196,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/update-name"
     },
     {
+      "source": "/api/reversal/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/reversal/:path*"
+    },
+    {
       "source": "/api/accounts/branches/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/accounts/branches/:path*"
     },

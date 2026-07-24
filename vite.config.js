@@ -3690,6 +3690,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/audittrail/, '/api/audittrail'),
       },
+      // Proxy for member transactions reversal/adjustment endpoint to avoid CORS
+      '/api/reversal': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/reversal/, '/api/reversal'),
+      },
       // Proxy for getmember endpoint to avoid CORS
       '/api/getmember': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
