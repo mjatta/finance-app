@@ -17,7 +17,7 @@ import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useSaveAccountDetails } from './hooks/useSaveAccountDetails';
 
 export default function AccountEdit() {
-  const { accountDetails, loading, error, fetchAccountDetails } = useGetAccountDetails();
+  const { loading, error, fetchAccountDetails } = useGetAccountDetails();
   const { loading: savingLoading, error: saveError, saveAccountDetails } = useSaveAccountDetails();
   const [accountNumber, setAccountNumber] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -73,6 +73,14 @@ export default function AccountEdit() {
         });
       }
     }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   const handleSearch = async (e) => {
@@ -171,7 +179,7 @@ export default function AccountEdit() {
       <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
           <Typography variant="h4" sx={{ color: 'white', fontWeight: 700, mb: 0.5, fontSize: '1.2rem' }}>
-            Account Edit
+            GL Account Edit
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
             Search and edit account details
@@ -258,23 +266,16 @@ export default function AccountEdit() {
             Account Details
           </Typography>
           <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' } }}>
-            {/* Account Name - Read-only Text Display */}
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: '#fff3cd',
-                borderLeft: '4px solid #ffc107',
-                p: 1.5,
-                borderRadius: 1,
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#666', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Account Name
-              </Typography>
-              <Typography sx={{ fontWeight: 700, color: '#333', fontSize: '1rem' }}>
-                {formData.accountName || '—'}
-              </Typography>
-            </Paper>
+            {/* Account Name - Editable TextField */}
+            <TextField
+              label="Account Name"
+              name="accountName"
+              value={formData.accountName}
+              onChange={handleInputChange}
+              placeholder="Enter account name"
+              size="small"
+              fullWidth
+            />
 
             {/* Balance - Read-only Text Display */}
             <Paper
