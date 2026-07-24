@@ -1244,7 +1244,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
       const user = useAuthStore.getState().user;
       const companyId = user?.CompId;
-      const institutionPayload = buildInstitutionPayload(formData, institutionBranches, cities, {
+      const institutionPayload = buildInstitutionPayload(formData, cities, {
         compId: companyId,
         branchId: user?.BranchId,
         username: user?.username,
@@ -1354,7 +1354,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       const user = useAuthStore.getState().user;
       const payload = mainTab === 0
         ? buildIndividualPayload(formData, countries, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username })
-        : buildInstitutionPayload(formData, institutionBranches, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
+        : buildInstitutionPayload(formData, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
 
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
@@ -1530,7 +1530,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     try {
       const user = useAuthStore.getState().user;
-      const payload = buildInstitutionPayload(formData, institutionBranches, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
+      const payload = buildInstitutionPayload(formData, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
       payload.ApplicationForm = applicationFormBase64;

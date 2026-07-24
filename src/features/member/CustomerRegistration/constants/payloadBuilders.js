@@ -61,12 +61,11 @@ export function buildIndividualPayload(formData, countries = [], cities = [], { 
 /**
  * Build Institution Registration Payload
  * @param {Object} formData - Form data object containing all institution fields
- * @param {Array} institutionBranches - Array of institution branches
  * @param {Array} cities - Array of city objects with { id, name }
  * @param {Object} options - Options including compId, branchId, and username
  * @returns {Object} Institution payload ready for API submission
  */
-export function buildInstitutionPayload(formData, institutionBranches = [], cities = [], { compId, branchId, username } = {}) {
+export function buildInstitutionPayload(formData, cities = [], { compId, branchId, username } = {}) {
   return {
     CustName: formData.institutionName, // Mandatory
     BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
