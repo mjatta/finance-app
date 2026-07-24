@@ -972,7 +972,7 @@ export default function DepositManagement() {
                   <TextField
                     label="Deposit Amount"
                     name="depositAmount"
-                    value={formatCurrency(formData.depositAmount)}
+                    value={formData.depositAmount}
                     onChange={handleDepositAmountChange}
                     onBlur={() => handleBlur('depositAmount')}
                     error={Boolean(limitError) || isFieldInvalid('depositAmount')}

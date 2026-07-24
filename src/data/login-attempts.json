@@ -882,6 +882,34 @@
       "status": "success",
       "reason": "",
       "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-24T14:29:13.315Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "logout",
+      "reason": "idle",
+      "metadata": {}
+    },
+    {
+      "timestamp": "2026-07-24T14:35:33.478Z",
+      "username": "SUPER",
+      "ipAddress": "98.209.149.53",
+      "location": "Macomb, Michigan, United States",
+      "deviceFingerprint": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+        "platform": "MacIntel",
+        "vendor": "Google Inc."
+      },
+      "status": "success",
+      "reason": "",
+      "metadata": {}
     }
   ]
 }

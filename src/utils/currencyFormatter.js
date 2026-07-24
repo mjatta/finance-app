@@ -7,7 +7,7 @@ export const formatCurrency = (value) => {
   if (value === null || value === undefined || value === '') return '';
   const numValue = Number(String(value).replace(/,/g, ''));
   if (Number.isNaN(numValue)) return '';
-  return numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return numValue.toLocaleString('en-US');
 };
 
 /**
