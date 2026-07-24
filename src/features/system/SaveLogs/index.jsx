@@ -1,16 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import DownloadIcon from '@mui/icons-material/Download';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Stack,
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { clearSaveLogs, getSaveLogs, SAVE_LOG_KEY } from '../../../utils/saveNotifications';
+import { useGetSaveLogs } from './hooks/useGetSaveLogs';
 
 const formatDateTime = (isoDate) => {
   if (!isoDate) {
@@ -26,7 +28,7 @@ const formatDateTime = (isoDate) => {
 };
 
 export default function SaveLogs() {
-  const [logs, setLogs] = useState(() => getSaveLogs());
+  const { logs, loading, error, refetch } = useGetSaveLogs();
 
   const handleDownloadLog = (log) => {
     // If log.metadata is the payload, include it as 'payload' in the output
@@ -121,12 +123,7 @@ export default function SaveLogs() {
   const errorCount = useMemo(() => logs.filter((log) => log?.status === 'error').length, [logs]);
 
   const handleRefresh = () => {
-    setLogs(getSaveLogs());
-  };
-
-  const handleClear = () => {
-    clearSaveLogs();
-    setLogs([]);
+    refetch();
   };
 
   const handleExport = () => {
@@ -148,8 +145,16 @@ export default function SaveLogs() {
       </Typography>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Logs are stored in browser storage key: {SAVE_LOG_KEY}
+        {loading ? 'Loading save logs from server...' : 'Displaying save logs from the system'}
       </Typography>
+
+      {error && (
+        <Card sx={{ mb: 2, p: 2, backgroundColor: '#fee', borderLeft: '4px solid #ef4444' }}>
+          <Typography color="error">
+            Error loading save logs: {error}
+          </Typography>
+        </Card>
+      )}
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
         <Card sx={{ minWidth: 180, border: '1px solid', borderColor: 'divider' }}>
@@ -173,48 +178,57 @@ export default function SaveLogs() {
       </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
-        <Button variant="outlined" onClick={handleRefresh}>Refresh</Button>
-        <Button variant="outlined" onClick={handleExport} disabled={logs.length === 0}>Export JSON</Button>
-        <Button variant="contained" color="error" onClick={handleClear} disabled={logs.length === 0}>
-          Clear Logs
+        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={loading}>
+          {loading ? 'Loading...' : 'Refresh'}
+        </Button>
+        <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleExport} disabled={logs.length === 0}>
+          Export JSON
         </Button>
       </Stack>
 
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        disableSelectionOnClick
-        density="compact"
-        pageSizeOptions={[10, 25, 50, 100]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 25 } },
-          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-        }}
-        sx={{
-          '& .MuiDataGrid-root': {
-            border: 'none',
-            borderRadius: 2,
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          },
-          '& .MuiDataGrid-columnHeader': {
-            backgroundColor: 'primary.main',
-            color: 'primary.contrastText',
-            fontWeight: 700,
-            borderBottom: 'none',
-          },
-          '& .MuiDataGrid-row': {
-            '&:nth-of-type(odd)': {
-              backgroundColor: '#f8f9fa',
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {!loading && (
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          disableSelectionOnClick
+          density="compact"
+          pageSizeOptions={[10, 25, 50, 100]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25 } },
+            sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+          }}
+          sx={{
+            '& .MuiDataGrid-root': {
+              border: 'none',
+              borderRadius: 2,
             },
-            '&:hover': {
-              backgroundColor: '#e9ecef',
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid',
+              borderColor: 'divider',
             },
-          },
-        }}
-      />
+            '& .MuiDataGrid-columnHeader': {
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 700,
+              borderBottom: 'none',
+            },
+            '& .MuiDataGrid-row': {
+              '&:nth-of-type(odd)': {
+                backgroundColor: '#f8f9fa',
+              },
+              '&:hover': {
+                backgroundColor: '#e9ecef',
+              },
+            },
+          }}
+        />
+      )}
     </Box>
   );
 }
