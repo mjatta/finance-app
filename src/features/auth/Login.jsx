@@ -15,6 +15,7 @@ import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import testUsers from '../../data/test-users.json';
 import { useLogin } from './hooks/useLogin';
 import { useCreditUnionDetails } from './hooks/useCreditUnionDetails';
+import { useSaveLoginAttempt } from '../system/LoginAttempts/hooks/useSaveLoginAttempt';
 import { useAuthStore } from '../../store/authStore';
 
 const loginHighlights = [
@@ -48,6 +49,7 @@ export default function Login({ onLogin }) {
   const [errorMessage, setErrorMessage] = useState(() => getInitialErrorMessage());
   const { login: backendLogin, loading: loginLoading } = useLogin();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
+  const { saveLoginAttempt } = useSaveLoginAttempt();
   const setAuthUser = useAuthStore((state) => state.setUser);
   const setCompanyDetails = useAuthStore((state) => state.setCompanyDetails);
 
@@ -98,6 +100,9 @@ export default function Login({ onLogin }) {
         }
       }
 
+      // Log successful login attempt
+      saveLoginAttempt(normalizedUsername, true);
+
       setErrorMessage('');
       onLogin(safeUser);
       return;
@@ -110,11 +115,17 @@ export default function Login({ onLogin }) {
     if (foundDefaultUser) {
       const { password: _, ...safeUser } = foundDefaultUser;
       setAuthUser(safeUser);
+      
+      // Log successful login attempt
+      saveLoginAttempt(normalizedUsername, true);
+
       setErrorMessage('');
       onLogin(safeUser);
       return;
     }
 
+    // Log failed login attempt
+    saveLoginAttempt(normalizedUsername, false);
     setErrorMessage('Invalid username or password');
   };
 

@@ -596,6 +596,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Sharesaccount/:path*"
     },
     {
+      "source": "/api/systemAdministration/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/systemAdministration/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
