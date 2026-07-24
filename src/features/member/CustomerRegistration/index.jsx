@@ -30,6 +30,7 @@ import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCities } from './hooks/useCities';
+import { useDistricts } from './hooks/useDistricts';
 import { initialForm } from './constants/initialFormData';
 import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
 import { useUpdateInstitution } from './hooks/useUpdateInstitution';
@@ -136,6 +137,7 @@ export default function CustomerRegistration(props) {
   const { registerInstitution } = useRegisterInstitution();
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
+  const { districts } = useDistricts();
   // Map numeric city id (or legacy ncity) to the city id string that the UI dropdown expects
   const mapCityById = (val) => {
     if (val === undefined || val === null || val === '') return '';
@@ -2086,6 +2088,22 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             ))}
                           </TextField>
                           <TextField
+                            select
+                            required
+                            label="District"
+                            name="district"
+                            value={formData.district || ''}
+                            onChange={handleChange}
+                            error={Boolean(fieldErrors.district)}
+                          >
+                            <MenuItem value="">Select district</MenuItem>
+                            {districts.map((district) => (
+                              <MenuItem key={`district-${district.id}-${district.name}`} value={district.id}>
+                                {district.name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <TextField
                             required
                             label="Street"
                             name="address"
@@ -2187,14 +2205,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             required
                             label="District"
                             name="institutionDistrict"
-                            value={formData.institutionDistrict}
+                            value={formData.institutionDistrict || ''}
                             onChange={handleChange}
                           >
                             <MenuItem value="">Select district</MenuItem>
-                            <MenuItem value={1}>Banjul</MenuItem>
-                            <MenuItem value={2}>Kanifing</MenuItem>
-                            <MenuItem value={3}>Kombo North</MenuItem>
-                            <MenuItem value={4}>Kombo South</MenuItem>
+                            {districts.map((district) => (
+                              <MenuItem key={`district-${district.id}-${district.name}`} value={district.id}>
+                                {district.name}
+                              </MenuItem>
+                            ))}
                           </TextField>
                           <TextField
                             select
@@ -2415,17 +2434,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             select
                             label="District"
                             name="district"
-                            value={formData.district}
+                            value={formData.district || ''}
                             onChange={handleChange}
                             required
                             error={touched.district && !formData.district}
                             helperText={touched.district && !formData.district ? 'District is required' : ''}
                           >
                             <MenuItem value="">Select district</MenuItem>
-                            <MenuItem value={1}>Banjul</MenuItem>
-                            <MenuItem value={2}>Kanifing</MenuItem>
-                            <MenuItem value={3}>Kombo North</MenuItem>
-                            <MenuItem value={4}>Kombo South</MenuItem>
+                            {districts.map((district) => (
+                              <MenuItem key={`district-${district.id}-${district.name}`} value={district.id}>
+                                {district.name}
+                              </MenuItem>
+                            ))}
                           </TextField>
                           <TextField
                             select
@@ -2486,7 +2506,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             error={Boolean(fieldErrors.chairMobilePhone)}
                           />
                           <TextField
-                            required
                             label="Email Address"
                             name="chairEmailAddress"
                             value={formData.chairEmailAddress}
