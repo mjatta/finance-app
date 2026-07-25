@@ -102,5 +102,47 @@ export const initialForm = {
   signatory1: '',
   signatory3: '',
   defaultBatch: '',
+  // Background fields for Institution
+  backgroundYearOfFormation: '',
+  backgroundMembershipByGenderInitial: '',
+  backgroundRegistrationAuthority: '',
+  backgroundMembershipByGenderCurrent: '',
+  backgroundDropoutsRateByGender: '',
+  // Operations fields for Institution
+  operationsYearsOfOperation: '',
+  operationsProfitMargin: '',
+  operationsRecordsMaintenance: '',
+  operationsProximityToEndBorrowers: '',
+  // Trainings for Institution
+  trainings: [
+    {
+      id: 1,
+      yearOfTraining: '',
+      typeOfTraining: '',
+      duration: '',
+      supportedBy: '',
+      numberOfBeneficiaries: '',
+    },
+  ],
+  // Projects for Institution
+  projects: [
+    {
+      id: 1,
+      year: '',
+      projectType: '',
+      status: '',
+      supportedBy: '',
+      remarks: '',
+    },
+  ],
+  // Committee Members for Institution
+  committeeMembers: [
+    {
+      id: 1,
+      names: '',
+      positions: '',
+      literacyExperiences: '',
+    },
+  ],
   printReceipt: false,
 };

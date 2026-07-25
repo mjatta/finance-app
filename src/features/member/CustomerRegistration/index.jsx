@@ -19,9 +19,11 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
@@ -891,6 +893,34 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const applicationFormFileRef = useRef(null);
   const [additionalReferences, setAdditionalReferences] = useState([]);
   const [additionalNextOfKins, setAdditionalNextOfKins] = useState([]);
+  const [trainings, setTrainings] = useState([
+    {
+      id: Date.now(),
+      yearOfTraining: '',
+      typeOfTraining: '',
+      duration: '',
+      supportedBy: '',
+      numberOfBeneficiaries: '',
+    },
+  ]);
+  const [projects, setProjects] = useState([
+    {
+      id: Date.now() + 1,
+      year: '',
+      projectType: '',
+      status: '',
+      supportedBy: '',
+      remarks: '',
+    },
+  ]);
+  const [committeeMembers, setCommitteeMembers] = useState([
+    {
+      id: Date.now() + 2,
+      names: '',
+      positions: '',
+      literacyExperiences: '',
+    },
+  ]);
   const [touched, setTouched] = useState({});
   const [pendingNcity, setPendingNcity] = useState(null);
   const [pendingBranchId, setPendingBranchId] = useState(null);
@@ -1079,6 +1109,76 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setAdditionalReferences((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
+  };
+
+  const handleAddTrainingCard = () => {
+    setTrainings((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        yearOfTraining: '',
+        typeOfTraining: '',
+        duration: '',
+        supportedBy: '',
+        numberOfBeneficiaries: '',
+      },
+    ]);
+  };
+
+  const handleTrainingChange = (id, field, value) => {
+    setTrainings((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleDeleteTraining = (id) => {
+    setTrainings((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleAddProjectCard = () => {
+    setProjects((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        year: '',
+        projectType: '',
+        status: '',
+        supportedBy: '',
+        remarks: '',
+      },
+    ]);
+  };
+
+  const handleProjectChange = (id, field, value) => {
+    setProjects((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleDeleteProject = (id) => {
+    setProjects((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleAddCommitteeMemberCard = () => {
+    setCommitteeMembers((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        names: '',
+        positions: '',
+        literacyExperiences: '',
+      },
+    ]);
+  };
+
+  const handleCommitteeMemberChange = (id, field, value) => {
+    setCommitteeMembers((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleDeleteCommitteeMember = (id) => {
+    setCommitteeMembers((prev) => prev.filter((item) => item.id !== id));
   };
 
   const handleAddNextOfKinCard = () => {
@@ -2048,6 +2148,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 <Tab label="Contribution" />
                 <Tab label="Biometric" />
                 {mainTab === 1 && <Tab label="Group Member" />}
+                {mainTab === 1 && <Tab label="Background" />}
+                {mainTab === 1 && <Tab label="Trainings" />}
+                {mainTab === 1 && <Tab label="Projects Implemented" />}
               </Tabs>
 
               {detailTab === 0 && (
@@ -3253,56 +3356,472 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
               {/* Group Member tab content for Institution (last tab) */}
               {mainTab === 1 && detailTab === 5 && (
-                <Box sx={{ display: 'grid', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Group Member Details
-                    </Typography>
-                    <Button variant="outlined" size="small" onClick={handleAddGroupMemberCard}>
-                      Add more Group Member
-                    </Button>
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+                  {/* Group Members Section */}
+                  <Box sx={{ display: 'grid', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        Group Member Details
+                      </Typography>
+                      <Button variant="outlined" size="small" onClick={handleAddGroupMemberCard}>
+                        Add more Group Member
+                      </Button>
+                    </Box>
+                    {groupMembers && groupMembers.length > 0 ? (
+                      groupMembers.map((member, index) => (
+                        <Card key={member.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                          <CardContent>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                              Group Member {index + 1}
+                            </Typography>
+                            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                              <TextField
+                                required
+                                label="First Name"
+                                value={member.firstName}
+                                onChange={e => handleGroupMemberChange(member.id, 'firstName', e.target.value)}
+                              />
+                              <DatePicker
+                                required
+                                label="Date of Birth"
+                                value={member.dateOfBirth ? dayjs(member.dateOfBirth) : null}
+                                onChange={value => handleGroupMemberChange(member.id, 'dateOfBirth', value ? value.format('YYYY-MM-DD') : '')}
+                                disableFuture
+                                slotProps={{ textField: { required: true } }}
+                              />
+                              <TextField
+                                required
+                                label="Last Name"
+                                value={member.lastName}
+                                onChange={e => handleGroupMemberChange(member.id, 'lastName', e.target.value)}
+                              />
+                              <TextField
+                                required
+                                label="Phone Number"
+                                value={member.phoneNumber}
+                                onChange={e => handleGroupMemberChange(member.id, 'phoneNumber', e.target.value)}
+                              />
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">No group members added yet.</Typography>
+                    )}
                   </Box>
-                  {groupMembers && groupMembers.length > 0 ? (
-                    groupMembers.map((member, index) => (
-                      <Card key={member.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                        <CardContent>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                            Group Member {index + 1}
-                          </Typography>
-                          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                            <TextField
-                              required
-                              label="First Name"
-                              value={member.firstName}
-                              onChange={e => handleGroupMemberChange(member.id, 'firstName', e.target.value)}
-                            />
-                            <DatePicker
-                              required
-                              label="Date of Birth"
-                              value={member.dateOfBirth ? dayjs(member.dateOfBirth) : null}
-                              onChange={value => handleGroupMemberChange(member.id, 'dateOfBirth', value ? value.format('YYYY-MM-DD') : '')}
-                              disableFuture
-                              slotProps={{ textField: { required: true } }}
-                            />
-                            <TextField
-                              required
-                              label="Last Name"
-                              value={member.lastName}
-                              onChange={e => handleGroupMemberChange(member.id, 'lastName', e.target.value)}
-                            />
-                            <TextField
-                              required
-                              label="Phone Number"
-                              value={member.phoneNumber}
-                              onChange={e => handleGroupMemberChange(member.id, 'phoneNumber', e.target.value)}
-                            />
+
+                  {/* Committee Members Section */}
+                  <Box sx={{ display: 'grid', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Committee Members</Typography>
+                      <Button variant="outlined" size="small" onClick={handleAddCommitteeMemberCard}>
+                        Add More Committee
+                      </Button>
+                    </Box>
+                    <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                      <CardContent>
+                        {committeeMembers.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No committee members added yet.</Typography>
+                        ) : (
+                          <Box sx={{ display: 'grid', gap: 2 }}>
+                            {committeeMembers.map((member, index) => (
+                              <Card key={member.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                                <CardContent>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                                    Committee Member {index + 1}
+                                  </Typography>
+                                  {index > 0 && (
+                                    <Box sx={{ mb: 2 }}>
+                                      <Button
+                                        size="small"
+                                        color="error"
+                                        variant="outlined"
+                                        onClick={() => handleDeleteCommitteeMember(member.id)}
+                                        sx={{ textTransform: 'none' }}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </Box>
+                                  )}
+                                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+                                    <TextField
+                                      label="Names"
+                                      value={member.names}
+                                      onChange={(event) => handleCommitteeMemberChange(member.id, 'names', event.target.value)}
+                                      placeholder="e.g. John Doe"
+                                      fullWidth
+                                    />
+                                    <TextField
+                                      label="Positions"
+                                      value={member.positions}
+                                      onChange={(event) => handleCommitteeMemberChange(member.id, 'positions', event.target.value)}
+                                      placeholder="e.g. Chairperson"
+                                      fullWidth
+                                    />
+                                    <TextField
+                                      label="Literacy & Experiences"
+                                      value={member.literacyExperiences}
+                                      onChange={(event) => handleCommitteeMemberChange(member.id, 'literacyExperiences', event.target.value)}
+                                      placeholder="e.g. Secondary Education"
+                                      fullWidth
+                                      multiline
+                                      rows={3}
+                                    />
+                                  </Box>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </Box>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">No group members added yet.</Typography>
-                  )}
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Background tab content for Institution */}
+              {mainTab === 1 && detailTab === 8 && (
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Projects Implemented</Typography>
+                        <Button variant="outlined" size="small" onClick={handleAddProjectCard}>
+                          Add More Projects
+                        </Button>
+                      </Box>
+                      {projects.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No projects added yet.</Typography>
+                      ) : (
+                        projects.map((project, index) => (
+                          <Card key={project.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                                Project {index + 1}
+                              </Typography>
+                              {index > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    onClick={() => handleDeleteProject(project.id)}
+                                    sx={{ textTransform: 'none' }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </Box>
+                              )}
+                              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                                <TextField
+                                  label="Year"
+                                  type="number"
+                                  value={project.year}
+                                  onChange={(event) => handleProjectChange(project.id, 'year', event.target.value)}
+                                  placeholder="e.g. 2023"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Project Type"
+                                  value={project.projectType}
+                                  onChange={(event) => handleProjectChange(project.id, 'projectType', event.target.value)}
+                                  placeholder="e.g. Water Project"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Status"
+                                  value={project.status}
+                                  onChange={(event) => handleProjectChange(project.id, 'status', event.target.value)}
+                                  placeholder="e.g. Completed"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Supported By"
+                                  value={project.supportedBy}
+                                  onChange={(event) => handleProjectChange(project.id, 'supportedBy', event.target.value)}
+                                  placeholder="e.g. Organization Name"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Remarks"
+                                  value={project.remarks}
+                                  onChange={(event) => handleProjectChange(project.id, 'remarks', event.target.value)}
+                                  placeholder="e.g. Additional notes"
+                                  fullWidth
+                                  multiline
+                                  rows={3}
+                                  sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {mainTab === 1 && detailTab === 7 && (
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Trainings Received</Typography>
+                        <Button variant="outlined" size="small" onClick={handleAddTrainingCard}>
+                          Add More Training
+                        </Button>
+                      </Box>
+                      {trainings.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No trainings added yet.</Typography>
+                      ) : (
+                        trainings.map((training, index) => (
+                          <Card key={training.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                                Training {index + 1}
+                              </Typography>
+                              {index > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    onClick={() => handleDeleteTraining(training.id)}
+                                    sx={{ textTransform: 'none' }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </Box>
+                              )}
+                              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                                <TextField
+                                  label="Year of Training"
+                                  type="number"
+                                  value={training.yearOfTraining}
+                                  onChange={(event) => handleTrainingChange(training.id, 'yearOfTraining', event.target.value)}
+                                  placeholder="e.g. 2023"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Type of Training"
+                                  value={training.typeOfTraining}
+                                  onChange={(event) => handleTrainingChange(training.id, 'typeOfTraining', event.target.value)}
+                                  placeholder="e.g. Financial Management"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Duration"
+                                  value={training.duration}
+                                  onChange={(event) => handleTrainingChange(training.id, 'duration', event.target.value)}
+                                  placeholder="e.g. 5 days"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Supported By"
+                                  value={training.supportedBy}
+                                  onChange={(event) => handleTrainingChange(training.id, 'supportedBy', event.target.value)}
+                                  placeholder="e.g. Organization Name"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Number of Beneficiaries"
+                                  type="number"
+                                  value={training.numberOfBeneficiaries}
+                                  onChange={(event) => handleTrainingChange(training.id, 'numberOfBeneficiaries', event.target.value)}
+                                  placeholder="e.g. 25"
+                                  fullWidth
+                                  sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {mainTab === 1 && detailTab === 6 && (
+                <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+                  {/* Background Details Card */}
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Background Details</Typography>
+                      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+                        {/* Year of Formation */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Year of Formation</Typography>
+                          </Box>
+                          <DatePicker
+                            value={formData.backgroundYearOfFormation ? dayjs(formData.backgroundYearOfFormation) : null}
+                            onChange={value => handleChange({ target: { name: 'backgroundYearOfFormation', value: value ? value.format('YYYY-MM-DD') : '' } })}
+                            views={['year', 'month', 'day']}
+                            slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                          />
+                        </Box>
+
+                        {/* Membership by Gender (Initial) */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Initial Membership by Gender</Typography>
+                            <Tooltip title="How many members were there when the group was formed initially">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.backgroundMembershipByGenderInitial || ''}
+                            onChange={e => handleChange({ target: { name: 'backgroundMembershipByGenderInitial', value: e.target.value } })}
+                            placeholder="e.g. Males: 10, Females: 15"
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Registration Authority */}
+                        <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Registration Authority</Typography>
+                            <Tooltip title="AG's Chambers or Cooperatives">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <FormControl fullWidth>
+                            <RadioGroup
+                              name="backgroundRegistrationAuthority"
+                              value={formData.backgroundRegistrationAuthority || ''}
+                              onChange={handleChange}
+                              sx={{ mt: 0.5 }}
+                            >
+                              <FormControlLabel value="AGsChambers" control={<Radio size="small" />} label="AG's Chambers" />
+                              <FormControlLabel value="Cooperatives" control={<Radio size="small" />} label="Cooperatives" />
+                            </RadioGroup>
+                          </FormControl>
+                        </Box>
+
+                        {/* Membership by Gender (Current) */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Current Membership by Gender</Typography>
+                            <Tooltip title="At present what is total membership by gender">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.backgroundMembershipByGenderCurrent || ''}
+                            onChange={e => handleChange({ target: { name: 'backgroundMembershipByGenderCurrent', value: e.target.value } })}
+                            placeholder="e.g. Males: 12, Females: 18"
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Dropouts Rate by Gender */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Dropouts Rate of Members by Gender</Typography>
+                            <Tooltip title="How many members dropouts since formation">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.backgroundDropoutsRateByGender || ''}
+                            onChange={e => handleChange({ target: { name: 'backgroundDropoutsRateByGender', value: e.target.value } })}
+                            placeholder="e.g. Males: 2, Females: 1"
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {/* Operations Card */}
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Operations</Typography>
+                      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
+                        {/* Years of Operation */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Years of Operation</Typography>
+                            <Tooltip title="Should be captured in the registration">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.operationsYearsOfOperation || ''}
+                            onChange={e => handleChange({ target: { name: 'operationsYearsOfOperation', value: e.target.value } })}
+                            placeholder="e.g. 5 years"
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Profit Margin */}
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Profit Margin</Typography>
+                            <Tooltip title="The total profit from the 3 activities divided by 3">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.operationsProfitMargin || ''}
+                            onChange={e => handleChange({ target: { name: 'operationsProfitMargin', value: e.target.value } })}
+                            placeholder="e.g. 15%"
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Records Maintenance */}
+                        <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Records Maintenance</Typography>
+                            <Tooltip title="How do they keep records and in what language">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <TextField
+                            value={formData.operationsRecordsMaintenance || ''}
+                            onChange={e => handleChange({ target: { name: 'operationsRecordsMaintenance', value: e.target.value } })}
+                            placeholder="e.g. Digital records in English"
+                            fullWidth
+                            multiline
+                            rows={3}
+                            size="small"
+                          />
+                        </Box>
+
+                        {/* Proximity of group to end borrowers */}
+                        <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>Proximity of Group to End Borrowers</Typography>
+                            <Tooltip title="Select the location relationship of the group to end borrowers">
+                              <HelpOutlineIcon sx={{ fontSize: 16, color: '#667eea', cursor: 'pointer' }} />
+                            </Tooltip>
+                          </Box>
+                          <FormControl fullWidth>
+                            <TextField
+                              select
+                              value={formData.operationsProximityToEndBorrowers || ''}
+                              onChange={handleChange}
+                              name="operationsProximityToEndBorrowers"
+                              size="small"
+                            >
+                              <MenuItem value="">-- Select --</MenuItem>
+                              <MenuItem value="SameCommunity">If in the same community</MenuItem>
+                              <MenuItem value="OutsideCommunity">If members are from outside the community</MenuItem>
+                              <MenuItem value="NewOrganization">If group is a new organization</MenuItem>
+                            </TextField>
+                          </FormControl>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
                 </Box>
               )}
 

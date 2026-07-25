@@ -145,6 +145,23 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
     MemberPicture: null,
     MemberSignature: null,
     applicationForm: '',
+    // Background fields
+    YearOfFormation: formData.backgroundYearOfFormation,
+    MembershipByGenderInitial: formData.backgroundMembershipByGenderInitial,
+    RegistrationAuthority: formData.backgroundRegistrationAuthority,
+    MembershipByGenderCurrent: formData.backgroundMembershipByGenderCurrent,
+    DroppoutsRateByGender: formData.backgroundDropoutsRateByGender,
+    // Operations fields
+    YearsOfOperation: formData.operationsYearsOfOperation,
+    ProfitMargin: formData.operationsProfitMargin,
+    RecordsMaintenance: formData.operationsRecordsMaintenance,
+    ProximityOfGroupToEndBorrowers: formData.operationsProximityToEndBorrowers,
+    // Trainings array
+    Trainings: formData.trainings || [],
+    // Projects array
+    Projects: formData.projects || [],
+    // Committee Members array
+    CommitteeMembers: formData.committeeMembers || [],
     suers: username || 'SYSTEM',
   };
 }
