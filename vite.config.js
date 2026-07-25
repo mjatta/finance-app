@@ -806,7 +806,6 @@ const securitySettingsFilePath = path.resolve(process.cwd(), 'src/data/security-
 const productDefinitionFilePath = path.resolve(process.cwd(), 'src/data/product-definition.json')
 const periodicProcessingFilePath = path.resolve(process.cwd(), 'src/data/periodic-processing.json')
 const customerRegistrationFilePath = path.resolve(process.cwd(), 'src/data/customer-registration.json')
-const loginAttemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json')
 
 const parseRequestBody = async (req) => {
   const chunks = []
@@ -1005,23 +1004,6 @@ const readCustomerRegistrationFile = async () => {
 const writeCustomerRegistrationFile = async (rows) => {
   const payload = JSON.stringify({ rows }, null, 2)
   await fs.writeFile(customerRegistrationFilePath, payload, 'utf8')
-}
-
-const readLoginAttemptsFile = async () => {
-  try {
-    const raw = await fs.readFile(loginAttemptsFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed
-    return Array.isArray(parsed?.rows) ? parsed.rows : []
-  } catch (error) {
-    if (error.code === 'ENOENT') return []
-    throw error
-  }
-}
-
-const writeLoginAttemptsFile = async (rows) => {
-  const payload = JSON.stringify({ rows }, null, 2)
-  await fs.writeFile(loginAttemptsFilePath, payload, 'utf8')
 }
 
 const memberActivatePlugin = () => ({
@@ -3320,9 +3302,9 @@ const memberReportApiPlugin = () => ({
   },
 })
 
-// Dev middleware: persist login attempts to local JSON file
-const loginAttemptsApiPlugin = () => ({
-  name: 'login-attempts-api-plugin',
+// Dev middleware: proxy login attempts to backend API
+const loginAttemptsProxyPlugin = () => ({
+  name: 'login-attempts-proxy-plugin',
   configureServer(server) {
     server.middlewares.use('/api/system/login-attempts', async (req, res, next) => {
       try {
@@ -3337,33 +3319,60 @@ const loginAttemptsApiPlugin = () => ({
           return
         }
 
-        if (req.method === 'POST') {
-          const body = await parseRequestBody(req)
-          if (!body || typeof body !== 'object') {
-            res.statusCode = 400
-            res.end(JSON.stringify({ message: 'Invalid payload.' }))
-            return
+        // Proxy request to backend
+        const backendUrl = `${process.env.VITE_API_BASE_URL || 'https://alakuyateh-001-site10.atempurl.com'}/api/system/login-attempts`
+        
+        let body = undefined
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          const chunks = []
+          for await (const chunk of req) {
+            chunks.push(chunk)
           }
-
-          const rows = await readLoginAttemptsFile()
-          rows.push(body)
-          await writeLoginAttemptsFile(rows)
-          res.statusCode = 201
-          res.end(JSON.stringify({ rows }))
-          return
+          if (chunks.length > 0) {
+            body = Buffer.concat(chunks).toString('utf8')
+          }
         }
 
-        if (req.method === 'GET') {
-          const rows = await readLoginAttemptsFile()
-          res.statusCode = 200
-          res.end(JSON.stringify({ items: rows }))
-          return
-        }
+        const fetchFn = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default
+        const backendRes = await fetchFn(backendUrl, {
+          method: req.method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...req.headers,
+          },
+          body: body || undefined,
+          redirect: 'follow'
+        }).catch(async (err) => {
+          // Retry with insecure TLS agent if node-fetch is available
+          const nodeFetchModule = await import('node-fetch').catch(() => null)
+          if (nodeFetchModule) {
+            const httpsAgent = await import('https').then(m => new m.Agent({ rejectUnauthorized: false }))
+            return nodeFetchModule.default(backendUrl, {
+              method: req.method,
+              headers: {
+                'Content-Type': 'application/json',
+                ...req.headers,
+              },
+              body: body || undefined,
+              redirect: 'follow',
+              agent: httpsAgent
+            })
+          }
+          throw err
+        })
 
-        next()
+        const text = await backendRes.text()
+        res.statusCode = backendRes.status
+        backendRes.headers.forEach((v, k) => {
+          if (!['content-encoding', 'transfer-encoding'].includes(k.toLowerCase())) {
+            res.setHeader(k, v)
+          }
+        })
+        res.end(text)
       } catch (err) {
-        res.statusCode = 500
-        res.end(JSON.stringify({ message: 'Failed to process login attempts.', error: err.message }))
+        console.error('Login attempts proxy error:', err)
+        res.statusCode = 502
+        res.end(JSON.stringify({ message: 'Failed to proxy login attempts', error: err.message }))
       }
     })
   },
@@ -3635,7 +3644,7 @@ export default defineConfig({
     loanCheckTopupApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
-    loginAttemptsApiPlugin(),
+    loginAttemptsProxyPlugin(),
     guarantorLoadApiPlugin(),
     saveLoanGuarantorApiPlugin(),
     guaranteeHistoryApiPlugin(),

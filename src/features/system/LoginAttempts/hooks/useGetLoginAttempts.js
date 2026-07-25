@@ -66,10 +66,10 @@ export function useGetLoginAttempts() {
 // Note: dateTime from API is in ISO format (includes timezone info) and will be displayed in user's local timezone
 function mapLoginAttempts(data) {
   return (data || []).map((item, index) => ({
-    id: item.id || item.attemptId || index + 1,
+    id: item.ID || item.id || item.attemptId || index + 1,
     // timestamp stored in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ) - includes timezone info
     // will be converted to user's local timezone when displayed via formatDateTime()
-    timestamp: item.dateTime || item.date_time || item.timestamp || new Date().toISOString(),
+    timestamp: item.dateTIme || item.dateTime || item.date_time || item.timestamp || new Date().toISOString(),
     username: item.user || item.username || 'Unknown',
     ip: item.IpAddress || item.ip_address || item.ip || 'Unknown',
     location: item.location || 'Unknown',

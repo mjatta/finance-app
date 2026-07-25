@@ -1,10 +1,5 @@
 const BACKEND_BASE = process.env.VITE_API_BASE_URL || 'https://alakuyateh-001-site10.atempurl.com'
 import https from 'https';
-import fs from 'fs/promises';
-import path from 'path';
-
-const attemptsFilePath = path.resolve(process.cwd(), 'src/data/login-attempts.json');
-let fallbackAttempts = [];
 
 function copyHeaders(src) {
   const out = {};
