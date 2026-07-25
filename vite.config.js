@@ -4115,6 +4115,20 @@ export default defineConfig({
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/member-message/, '/api/member-message'),
         },
+        // Proxy member close details endpoint to avoid CORS
+        '/api/member/details': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/member\/details/, '/api/member/details'),
+        },
+        // Proxy member close account endpoint to avoid CORS
+        '/api/member/close': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/member\/close/, '/api/member/close'),
+        },
     },
   },
 })

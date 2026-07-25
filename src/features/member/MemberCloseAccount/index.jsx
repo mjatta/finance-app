@@ -10,15 +10,22 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import BalanceIcon from '@mui/icons-material/Balance';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import BadgeIcon from '@mui/icons-material/Badge';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useMemberCloseAccount } from './hooks/useMemberCloseAccount';
 
 export default function MemberCloseAccount() {
+  const { fetchMemberDetails, closeMemberAccount, loading, closing, error, closeError } = useMemberCloseAccount();
   const [memberId, setMemberId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [balanceWarning, setBalanceWarning] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     middleName: '',
@@ -38,44 +45,61 @@ export default function MemberCloseAccount() {
     setStatusMessage('');
     setStatusError(false);
     setHasSearched(true);
-    setIsLoading(true);
+    setBalanceWarning('');
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    const result = await fetchMemberDetails(memberId.trim());
+    console.log('API Result:', result); // Debug log
 
-      const mockMembers = {
-        MEM001: { firstName: 'John', middleName: 'Kwame', lastName: 'Doe', savingBalance: '5000', shareBalance: '2000', loanBalance: '0' },
-        MEM002: { firstName: 'Awa', middleName: 'Binta', lastName: 'Jallow', savingBalance: '8500', shareBalance: '3500', loanBalance: '1000' },
-        MEM003: { firstName: 'Lamin', middleName: 'Ousman', lastName: 'Sanyang', savingBalance: '12000', shareBalance: '5000', loanBalance: '5000' },
-        MEM004: { firstName: 'Fatou', middleName: 'Mariama', lastName: 'Camara', savingBalance: '3200', shareBalance: '1500', loanBalance: '0' },
-      };
-
-      const found = mockMembers[memberId.trim().toUpperCase()];
-
-      if (found) {
-        setFormData({
-          firstName: found.firstName,
-          middleName: found.middleName,
-          lastName: found.lastName,
-          savingBalance: found.savingBalance,
-          shareBalance: found.shareBalance,
-          loanBalance: found.loanBalance,
-        });
-        setStatusMessage('Member details loaded successfully.');
-        setStatusError(false);
+    if (result) {
+      // Handle if result is an array (take first item)
+      const data = Array.isArray(result) ? result[0] : result;
+      
+      // Check if individual name fields are empty/whitespace
+      const fname = (data.ccustfname || '').trim();
+      const mname = (data.ccustmname || '').trim();
+      const lname = (data.ccustlname || '').trim();
+      
+      let firstName, middleName, lastName;
+      
+      // If individual fields are empty, parse ccustname
+      if (!fname && !mname && !lname) {
+        const fullName = (data.ccustname || '').trim();
+        const nameParts = fullName.split(' ').filter(part => part);
+        firstName = nameParts[0] || 'Member';
+        middleName = nameParts[1] || '';
+        lastName = nameParts[2] || '';
       } else {
-        setFormData({
-          firstName: '',
-          middleName: '',
-          lastName: '',
-          savingBalance: '',
-          shareBalance: '',
-          loanBalance: '',
-        });
-        setStatusMessage('Member ID not found.');
-        setStatusError(true);
+        // Use individual fields
+        firstName = fname || 'Member';
+        middleName = mname || '';
+        lastName = lname || '';
       }
-    } catch {
+      
+      const saveBal = parseFloat(data.nsaveBal || 0);
+      const shareBal = parseFloat(data.nshareBal || 0);
+      const loanBal = parseFloat(data.nloanBal || 0);
+      
+      // Check if any balance is greater than 1
+      if (saveBal > 1 || shareBal > 1 || loanBal > 1) {
+        const balances = [];
+        if (saveBal > 1) balances.push(`Savings: ${saveBal.toLocaleString()}`);
+        if (shareBal > 1) balances.push(`Shares: ${shareBal.toLocaleString()}`);
+        if (loanBal > 1) balances.push(`Loans: ${loanBal.toLocaleString()}`);
+        setBalanceWarning(`Cannot close account with outstanding balance. ${balances.join(', ')}`);
+      }
+      
+      setFormData({
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
+        savingBalance: saveBal.toString(),
+        shareBalance: shareBal.toString(),
+        loanBalance: loanBal.toString(),
+      });
+      console.log('Form Data Updated:', { firstName, middleName, lastName, saveBal, shareBal, loanBal }); // Debug log
+      setStatusMessage('Member details loaded successfully.');
+      setStatusError(false);
+    } else {
       setFormData({
         firstName: '',
         middleName: '',
@@ -84,10 +108,9 @@ export default function MemberCloseAccount() {
         shareBalance: '',
         loanBalance: '',
       });
-      setStatusMessage('Failed to load member details.');
+      setBalanceWarning('');
+      setStatusMessage(error || 'Member ID not found.');
       setStatusError(true);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -104,6 +127,7 @@ export default function MemberCloseAccount() {
     setStatusMessage('');
     setStatusError(false);
     setHasSearched(false);
+    setBalanceWarning('');
   };
 
   const handleChange = (event) => {
@@ -118,18 +142,12 @@ export default function MemberCloseAccount() {
       return;
     }
 
-    if (!formData.savingBalance.trim() || !formData.shareBalance.trim() || !formData.loanBalance.trim()) {
-      setStatusMessage('Please fill in all balance fields.');
-      setStatusError(true);
-      return;
-    }
-
-    setIsSaving(true);
     setStatusMessage('');
     setStatusError(false);
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    const success = await closeMemberAccount(memberId.trim());
+
+    if (success) {
       setStatusMessage(`Member ${memberId} account closed successfully.`);
       setStatusError(false);
       notifySaveSuccess({
@@ -141,17 +159,15 @@ export default function MemberCloseAccount() {
       setTimeout(() => {
         handleClear();
       }, 2000);
-    } catch (error) {
-      setStatusMessage('Failed to close member account.');
+    } else {
+      setStatusMessage(closeError || 'Failed to close member account.');
       setStatusError(true);
       notifySaveError({
         page: 'Member / Member Close Account',
         action: 'Member Close Account',
-        message: 'Failed to close member account.',
-        error,
+        message: closeError || 'Failed to close member account.',
+        error: new Error(closeError),
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -189,18 +205,18 @@ export default function MemberCloseAccount() {
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchMember()}
-                disabled={isLoading}
-                placeholder="e.g., MEM001"
+                disabled={loading}
+                placeholder="e.g., 000003"
                 fullWidth
                 size="small"
-                helperText="Enter the member ID to search"
+                helperText="Enter the customer code to search"
               />
 
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Button
                   variant="contained"
                   onClick={handleSearchMember}
-                  disabled={isLoading || !memberId.trim()}
+                  disabled={loading || !memberId.trim()}
                   sx={{
                     backgroundColor: '#667eea',
                     '&:hover': { backgroundColor: '#5568d3' },
@@ -209,7 +225,7 @@ export default function MemberCloseAccount() {
                     textTransform: 'none',
                   }}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <>
                       <CircularProgress size={16} sx={{ mr: 1 }} />
                       Searching...
@@ -221,7 +237,7 @@ export default function MemberCloseAccount() {
                 <Button
                   variant="outlined"
                   onClick={handleClear}
-                  disabled={isLoading}
+                  disabled={loading}
                   sx={{
                     fontWeight: 600,
                     paddingX: 2,
@@ -236,144 +252,163 @@ export default function MemberCloseAccount() {
         </Card>
 
         {/* Member Details Card - Always visible */}
-        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)' }}>
           <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DashboardIcon sx={{ fontSize: 20 }} />
               Member Details
             </Typography>
 
-            <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-              {/* Personal Information Section */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  First Name:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
-                    {formData.firstName || 'n/a'}
-                  </Typography>
-                )}
+            {loading ? (
+              <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: '1fr' }}>
+                <Skeleton variant="rounded" width="100%" height={70} />
+                <Skeleton variant="rounded" width="100%" height={70} />
+                <Skeleton variant="rounded" width="100%" height={70} />
               </Box>
+            ) : formData.firstName && hasSearched ? (
+              <Box sx={{ display: 'grid', gap: 2.5 }}>
+                {/* Member Name */}
+                <Box sx={{
+                  p: 2,
+                  borderRadius: 1.5,
+                  backgroundColor: 'white',
+                  border: '1px solid #e3f2fd',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}>
+                  <PersonIcon sx={{ fontSize: 28, color: '#667eea' }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Member Name
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a237e', mt: 0.5 }}>
+                      {formData.firstName} {formData.middleName} {formData.lastName}
+                    </Typography>
+                  </Box>
+                </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Middle Name:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
-                    {formData.middleName || 'n/a'}
-                  </Typography>
-                )}
+                {/* Customer Code */}
+                <Box sx={{
+                  p: 2,
+                  borderRadius: 1.5,
+                  backgroundColor: 'white',
+                  border: '1px solid #f3e5f5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}>
+                  <BadgeIcon sx={{ fontSize: 28, color: '#9c27b0' }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Customer Code
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a237e', mt: 0.5 }}>
+                      {memberId || 'n/a'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Balance Summary - Three columns */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
+                  {/* Savings Balance */}
+                  <Box sx={{
+                    p: 2,
+                    borderRadius: 1.5,
+                    backgroundColor: '#e3f2fd',
+                    border: '1px solid #bbdefb',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountBalanceWalletIcon sx={{ fontSize: 20, color: '#1976d2' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#0d47a1', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Savings
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#0d47a1' }}>
+                      {(parseFloat(formData.savingBalance) || 0).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  {/* Share Balance */}
+                  <Box sx={{
+                    p: 2,
+                    borderRadius: 1.5,
+                    backgroundColor: '#f3e5f5',
+                    border: '1px solid #e1bee7',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AttachMoneyIcon sx={{ fontSize: 20, color: '#7b1fa2' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#4a148c', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Shares
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#4a148c' }}>
+                      {(parseFloat(formData.shareBalance) || 0).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  {/* Loan Balance */}
+                  <Box sx={{
+                    p: 2,
+                    borderRadius: 1.5,
+                    backgroundColor: '#fff3e0',
+                    border: '1px solid #ffe0b2',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <BalanceIcon sx={{ fontSize: 20, color: '#f57c00' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#e65100', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Loans
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#e65100' }}>
+                      {(parseFloat(formData.loanBalance) || 0).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Total Balance Highlight */}
+                <Box sx={{
+                  p: 2.5,
+                  borderRadius: 1.5,
+                  background: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
+                  border: 'none',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: '0 4px 12px rgba(20, 184, 166, 0.2)',
+                }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Total Balance
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mt: 0.5 }}>
+                      {(parseFloat(formData.savingBalance || 0) + parseFloat(formData.shareBalance || 0) + parseFloat(formData.loanBalance || 0)).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Last Name:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
-                    {formData.lastName || 'n/a'}
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Divider */}
-              <Box sx={{ gridColumn: '1 / -1', my: 1, borderTop: '2px solid #f0f0f0' }} />
-
-              {/* Balance Information Section */}
-              <Box sx={{ gridColumn: '1 / -1' }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#667eea', mb: 2, fontSize: '0.9rem' }}>
-                  Account Balances
+            ) : (
+              <Box sx={{
+                p: 3,
+                textAlign: 'center',
+                backgroundColor: 'white',
+                borderRadius: 1.5,
+                border: '1px dashed #ccc',
+              }}>
+                <Typography variant="body2" color="text.secondary">
+                  Search for a member to display details
                 </Typography>
               </Box>
-
-              {/* Saving Balance */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Saving Balance:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <TextField
-                    name="savingBalance"
-                    value={formData.savingBalance}
-                    onChange={handleChange}
-                    disabled={isLoading || !formData.firstName}
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9ff',
-                        '&:hover': {
-                          backgroundColor: '#f0f2ff',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              </Box>
-
-              {/* Share Balance */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Share Balance:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <TextField
-                    name="shareBalance"
-                    value={formData.shareBalance}
-                    onChange={handleChange}
-                    disabled={isLoading || !formData.firstName}
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9ff',
-                        '&:hover': {
-                          backgroundColor: '#f0f2ff',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              </Box>
-
-              {/* Loan Balance */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 120 }}>
-                  Loan Balance:
-                </Typography>
-                {isLoading ? (
-                  <Skeleton variant="text" width="100%" />
-                ) : (
-                  <TextField
-                    name="loanBalance"
-                    value={formData.loanBalance}
-                    onChange={handleChange}
-                    disabled={isLoading || !formData.firstName}
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#f8f9ff',
-                        '&:hover': {
-                          backgroundColor: '#f0f2ff',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              </Box>
-            </Box>
+            )}
           </CardContent>
         </Card>
       </Box>
@@ -390,33 +425,41 @@ export default function MemberCloseAccount() {
         </Box>
       )}
 
-      {/* Save Button */}
-      {formData.firstName && (
-        <Box sx={{ mt: 3, display: 'flex', gap: 1.5 }}>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={isSaving || !formData.firstName}
-            sx={{
-              backgroundColor: '#667eea',
-              '&:hover': { backgroundColor: '#5568d3' },
-              fontWeight: 600,
-              paddingX: 3,
-              boxShadow: 'none',
-              textTransform: 'none',
-            }}
-          >
-            {isSaving ? (
-              <>
-                <CircularProgress size={16} sx={{ mr: 1 }} />
-                Closing...
-              </>
-            ) : (
-              '✓ Member Close Account'
-            )}
-          </Button>
+      {/* Balance Warning */}
+      {balanceWarning && (
+        <Box sx={{ mt: 3 }}>
+          <Alert severity="warning" onClose={() => setBalanceWarning('')}>
+            {balanceWarning}
+          </Alert>
         </Box>
       )}
+
+      {/* Close Account Button */}
+      <Box sx={{ mt: 3, display: 'flex', gap: 1.5 }}>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={closing || !formData.firstName || !!balanceWarning}
+          sx={{
+            backgroundColor: '#667eea',
+            '&:hover': { backgroundColor: '#5568d3' },
+            '&:disabled': { backgroundColor: '#ccc', cursor: 'not-allowed' },
+            fontWeight: 600,
+            paddingX: 3,
+            boxShadow: 'none',
+            textTransform: 'none',
+          }}
+        >
+          {closing ? (
+            <>
+              <CircularProgress size={16} sx={{ mr: 1 }} />
+              Closing...
+            </>
+          ) : (
+            '✓ Close Account'
+          )}
+        </Button>
+      </Box>
     </Box>
   );
 }

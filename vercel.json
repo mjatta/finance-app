@@ -604,6 +604,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member-message/:path*"
     },
     {
+      "source": "/api/member/details/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/details/:path*"
+    },
+    {
+      "source": "/api/member/close",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/close"
+    },
+    {
       "source": "/api/savingsaccount/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsaccount/:path*"
     },
