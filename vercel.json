@@ -600,6 +600,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsbalances/:path*"
     },
     {
+      "source": "/api/member-message/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member-message/:path*"
+    },
+    {
       "source": "/api/savingsaccount/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/savingsaccount/:path*"
     },

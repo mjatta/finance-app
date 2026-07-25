@@ -4108,6 +4108,13 @@ export default defineConfig({
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/savingsbalances\/get/, '/api/savingsbalances/get'),
         },
+        // Proxy member message endpoint to avoid CORS
+        '/api/member-message': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/member-message/, '/api/member-message'),
+        },
     },
   },
 })

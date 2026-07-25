@@ -70,6 +70,7 @@ const AccountActivation = lazy(() => import('./features/member/AccountActivation
 const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
 const MemberClose = lazy(() => import('./features/member/MemberClose'));
 const MemberPayrollManagement = lazy(() => import('./features/member/MemberPayrollManagement'));
+const MemberMessage = lazy(() => import('./features/member/MemberMessage'));
 
 const Repayments = lazy(() => import('./features/loan/Repayments'));
 const LoanChangeOff = lazy(() => import('./features/loan/LoanChangeOff'));
@@ -854,6 +855,10 @@ function App() {
                     <Route
                       path="/member/member-payroll-management"
                       element={renderWithAccess('member', <MemberPayrollManagement />)}
+                    />
+                    <Route
+                      path="/member/member-message"
+                      element={renderWithAccess('member', <MemberMessage />)}
                     />
 
                     <Route path="/loan/repayments" element={renderWithAccess('loan', <Repayments user={user} />)} />
