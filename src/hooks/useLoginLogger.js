@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import dayjs from 'dayjs';
 import { getFullApiUrl } from '../utils/apiConfig';
 import { recordLoginAttempt } from '../utils/loginAttemptLogs';
 
@@ -45,21 +46,6 @@ export function useLoginLogger() {
       // ignore
     }
 
-    const payload = {
-      timestamp,
-      username,
-      ipAddress: ip,
-      location,
-      deviceFingerprint: {
-        userAgent: device.userAgent,
-        platform: device.platform,
-        vendor: device.vendor,
-      },
-      status,
-      reason,
-      metadata,
-    };
-
     // Always persist locally first (localStorage) so the Login Attempts page
     // works reliably regardless of backend/serverless persistence issues.
     recordLoginAttempt({
@@ -74,12 +60,25 @@ export function useLoginLogger() {
     });
 
     // Best-effort: send to backend endpoint; don't block caller on failure
+    // Uses the same endpoint as useSaveLoginAttempt (InsertLogAttempts) since
+    // /api/system/login-attempts is not a real backend route.
+    const backendPayload = {
+      dateTime: dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'), // local wall-clock time (no UTC conversion)
+      user: username || 'Unknown',
+      IpAddress: ip || 'Unknown',
+      location: location || 'Unknown',
+      device: device.vendor || 'Unknown',
+      os: device.platform || 'Unknown',
+      status: status === 'success' ? 'Login Success' : status === 'logout' ? 'Logout' : 'Login Failed',
+      reason,
+    };
+
     try {
-      const url = getFullApiUrl('/api/system/login-attempts');
+      const url = getFullApiUrl('/api/systemAdministration/InsertLogAttempts');
       await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(backendPayload),
       });
     } catch (err) {
       // swallow errors; local copy already persisted above
@@ -87,7 +86,7 @@ export function useLoginLogger() {
       try {
         const fallbackKey = 'loginAttempts:fallback';
         const existing = JSON.parse(localStorage.getItem(fallbackKey) || '[]');
-        existing.push(payload);
+        existing.push({ timestamp, username, ip, location, status, reason, metadata });
         localStorage.setItem(fallbackKey, JSON.stringify(existing.slice(-200))); // keep last 200
       } catch (e) {
         // ignore

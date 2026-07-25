@@ -58,7 +58,7 @@ export function useSaveLoginAttempt() {
       const { device, os } = getUserAgentInfo();
 
       const payload = {
-        dateTime: new Date().toISOString(), // ISO format with timezone info: YYYY-MM-DDTHH:mm:ss.sssZ
+        dateTime: dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'), // local wall-clock time (no UTC conversion)
         user: username || 'Unknown',
         IpAddress: ipAddress,
         location: location,

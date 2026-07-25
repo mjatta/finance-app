@@ -3302,82 +3302,6 @@ const memberReportApiPlugin = () => ({
   },
 })
 
-// Dev middleware: proxy login attempts to backend API
-const loginAttemptsProxyPlugin = () => ({
-  name: 'login-attempts-proxy-plugin',
-  configureServer(server) {
-    server.middlewares.use('/api/system/login-attempts', async (req, res, next) => {
-      try {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        res.setHeader('Content-Type', 'application/json')
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
-          return
-        }
-
-        // Proxy request to backend
-        const backendUrl = `${process.env.VITE_API_BASE_URL || 'https://alakuyateh-001-site10.atempurl.com'}/api/system/login-attempts`
-        
-        let body = undefined
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-          const chunks = []
-          for await (const chunk of req) {
-            chunks.push(chunk)
-          }
-          if (chunks.length > 0) {
-            body = Buffer.concat(chunks).toString('utf8')
-          }
-        }
-
-        const fetchFn = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default
-        const backendRes = await fetchFn(backendUrl, {
-          method: req.method,
-          headers: {
-            'Content-Type': 'application/json',
-            ...req.headers,
-          },
-          body: body || undefined,
-          redirect: 'follow'
-        }).catch(async (err) => {
-          // Retry with insecure TLS agent if node-fetch is available
-          const nodeFetchModule = await import('node-fetch').catch(() => null)
-          if (nodeFetchModule) {
-            const httpsAgent = await import('https').then(m => new m.Agent({ rejectUnauthorized: false }))
-            return nodeFetchModule.default(backendUrl, {
-              method: req.method,
-              headers: {
-                'Content-Type': 'application/json',
-                ...req.headers,
-              },
-              body: body || undefined,
-              redirect: 'follow',
-              agent: httpsAgent
-            })
-          }
-          throw err
-        })
-
-        const text = await backendRes.text()
-        res.statusCode = backendRes.status
-        backendRes.headers.forEach((v, k) => {
-          if (!['content-encoding', 'transfer-encoding'].includes(k.toLowerCase())) {
-            res.setHeader(k, v)
-          }
-        })
-        res.end(text)
-      } catch (err) {
-        console.error('Login attempts proxy error:', err)
-        res.statusCode = 502
-        res.end(JSON.stringify({ message: 'Failed to proxy login attempts', error: err.message }))
-      }
-    })
-  },
-})
-
 // https://vite.dev/config/
 // Bank Reconciliation Report API Plugin (dev server middleware, backend only)
 const bankReconciliationReportApiPlugin = () => ({
@@ -3644,7 +3568,6 @@ export default defineConfig({
     loanCheckTopupApiPlugin(),
     periodicProcessingApiPlugin(),
     customerRegistrationApiPlugin(),
-    loginAttemptsProxyPlugin(),
     guarantorLoadApiPlugin(),
     saveLoanGuarantorApiPlugin(),
     guaranteeHistoryApiPlugin(),

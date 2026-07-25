@@ -60,14 +60,25 @@ export default function LoginAttempts() {
       field: 'status',
       headerName: 'Status',
       width: 130,
-      renderCell: (params) => (
-        <Chip
-          size="small"
-          label={params.value === 'success' ? 'Success' : 'Failure'}
-          color={params.value === 'success' ? 'success' : 'error'}
-          variant="outlined"
-        />
-      ),
+      renderCell: (params) => {
+        let label = 'Failure';
+        let color = 'error';
+        if (params.value === 'success') {
+          label = 'Success';
+          color = 'success';
+        } else if (params.value === 'logout') {
+          label = 'Logout';
+          color = 'warning';
+        }
+        return (
+          <Chip
+            size="small"
+            label={label}
+            color={color}
+            variant="outlined"
+          />
+        );
+      },
     },
     { field: 'reason', headerName: 'Reason', flex: 1, minWidth: 150, valueFormatter: (value) => value || '-' },
     {
@@ -106,7 +117,8 @@ export default function LoginAttempts() {
   );
 
   const successCount = useMemo(() => attempts.filter((log) => log?.status === 'success').length, [attempts]);
-  const failureCount = useMemo(() => attempts.filter((log) => log?.status !== 'success').length, [attempts]);
+  const logoutCount = useMemo(() => attempts.filter((log) => log?.status === 'logout').length, [attempts]);
+  const failureCount = useMemo(() => attempts.filter((log) => log?.status === 'failure').length, [attempts]);
 
   const handleRefresh = () => {
     refetch();
@@ -158,6 +170,12 @@ export default function LoginAttempts() {
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Typography variant="caption" color="text.secondary">Successful logins</Typography>
             <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{successCount}</Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ minWidth: 180, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Typography variant="caption" color="text.secondary">Logouts</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{logoutCount}</Typography>
           </CardContent>
         </Card>
         <Card sx={{ minWidth: 180, border: '1px solid', borderColor: 'divider' }}>
