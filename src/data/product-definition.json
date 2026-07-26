@@ -2,7 +2,8 @@
   "mainCategories": [
     "Loans",
     "Savings",
-    "Shares"
+    "Shares",
+    "SHARES"
   ],
   "productNames": [
     "Development Loan",
@@ -13,7 +14,8 @@
     "Tobaski Loan",
     "Regular Saving",
     "Shares",
-    "Shares Batch"
+    "Shares Batch",
+    "Detroit "
   ],
   "products": [
     {
@@ -231,6 +233,28 @@
       "penaltyType": "value",
       "penaltyValue": "0",
       "savingInterestCalculationMethod": "maximum balance"
+    },
+    {
+      "id": "prd-1785000367181",
+      "mainCategory": "SHARES",
+      "productName": "Detroit ",
+      "hasDeductions": false,
+      "isIslamicProduct": false,
+      "interestRate": "12",
+      "minimumAmount": "400",
+      "maximumAmount": "2000",
+      "minimumDuration": "5",
+      "maximumDuration": "13",
+      "interestIncome": "",
+      "badDebtRecovered": "",
+      "badDebtExpenses": "",
+      "loanProductControl": "",
+      "savingProductControl": "21000210501",
+      "expenseAccount": "71100735201",
+      "deductionAccountType": "",
+      "deductionDestinationAccount": "",
+      "deductionPercentage": "",
+      "deductionSourceProduct": ""
     }
   ]
 }

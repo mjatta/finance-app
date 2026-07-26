@@ -45,7 +45,9 @@ const LOAN_COLUMNS = [
     headerAlign: 'center',
     renderCell: (params) => {
       if (!params.value) return 'D 0';
-      const amount = parseFloat(params.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Remove commas from string before parsing
+      const cleanValue = String(params.value).replace(/,/g, '');
+      const amount = parseFloat(cleanValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       return `D ${amount}`;
     },
   },
@@ -60,7 +62,9 @@ const LOAN_COLUMNS = [
     headerAlign: 'center',
     renderCell: (params) => {
       if (!params.value) return 'D 0';
-      const amount = parseFloat(params.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Remove commas from string before parsing
+      const cleanValue = String(params.value).replace(/,/g, '');
+      const amount = parseFloat(cleanValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       return `D ${amount}`;
     },
   },

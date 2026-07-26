@@ -2013,6 +2013,62 @@ const productDefinitionApiPlugin = () => ({
   },
 })
 
+const productUpdateApiPlugin = () => ({
+  name: 'product-update-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/Product/update', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'PUT') {
+          const body = await parseRequestBody(req)
+
+          if (!body || typeof body !== 'object') {
+            res.statusCode = 400
+            res.end(JSON.stringify({ message: 'Invalid payload. Expected product object.' }))
+            return
+          }
+
+          try {
+            console.log('🔵 Product Update Request:', JSON.stringify(body, null, 2))
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/Product/update', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+
+            const backendData = await backendRes.json()
+            console.log('🟢 Backend Response:', backendRes.status, JSON.stringify(backendData, null, 2))
+
+            res.statusCode = backendRes.status
+            res.end(JSON.stringify(backendData))
+          } catch (err) {
+            console.error('🔴 Backend Error:', err.message)
+            res.statusCode = 500
+            res.end(JSON.stringify({ message: 'Failed to update product on backend.', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        console.error('🔴 Middleware Error:', err.message)
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process product update request.', error: err.message }))
+      }
+    })
+  },
+})
+
 const periodicProcessingApiPlugin = () => ({
   name: 'periodic-processing-api-plugin',
   configureServer(server) {
@@ -3560,6 +3616,7 @@ export default defineConfig({
     userSetupApiPlugin(),
     securitySettingsApiPlugin(),
     productDefinitionApiPlugin(),
+    productUpdateApiPlugin(),
     loanRepaymentInsertApiPlugin(),
     loanReportApiPlugin(),
     loansTopupApiPlugin(),

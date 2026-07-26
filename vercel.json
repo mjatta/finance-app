@@ -436,6 +436,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/product-definition/:path*"
     },
     {
+      "source": "/api/Product/update",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/Product/update"
+    },
+    {
       "source": "/api/periodic-processing/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/periodic-processing/:path*"
     },

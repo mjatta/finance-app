@@ -27,6 +27,7 @@ import { useGetLiabilitiesAccounts } from './hooks/useGetLiabilitiesAccounts';
 import { useGetAssetsAccounts } from './hooks/useGetAssetsAccounts';
 import { useGetProductSource } from './hooks/useGetProductSource';
 import { useInsertProduct } from './hooks/useInsertProduct';
+import { useUpdateProduct } from './hooks/useUpdateProduct';
 
 export default function ProductDefinition() {
   const { accountTypes, loading: loadingTypes } = useGetAccountTypes();
@@ -36,6 +37,7 @@ export default function ProductDefinition() {
   const { assetsAccounts, loading: loadingAssetsAccounts } = useGetAssetsAccounts();
   const { productSources, loading: loadingProductSources } = useGetProductSource();
   const { insertProduct } = useInsertProduct();
+  const { updateProduct } = useUpdateProduct();
 
   const initialForm = {
     mainCategory: '',
@@ -70,6 +72,7 @@ export default function ProductDefinition() {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedProductNumericId, setSelectedProductNumericId] = useState(null);
   const [productSearchValue, setProductSearchValue] = useState(null);
 
   const loadProducts = useCallback(async () => {
@@ -78,14 +81,45 @@ export default function ProductDefinition() {
       const response = await fetch('/api/product-definition');
       if (response.ok) {
         const data = await response.json();
-        setProducts(Array.isArray(data?.products) ? data.products : []);
+        let products = Array.isArray(data?.products) ? data.products : [];
+        
+        // Ensure each product has mainCategory by mapping from acode if needed
+        products = products.map(product => {
+          let mainCategoryValue = product.mainCategory || '';
+          
+          if (mainCategoryValue && accountTypes.length > 0) {
+            // Try exact match first
+            let matchedType = accountTypes.find((t) => t.adescrip === mainCategoryValue);
+            // If no exact match, try case-insensitive
+            if (!matchedType) {
+              const upperMainCategory = mainCategoryValue.toUpperCase();
+              matchedType = accountTypes.find((t) => t.adescrip === upperMainCategory);
+              if (matchedType) {
+                mainCategoryValue = matchedType.adescrip;
+              }
+            }
+          } else if (!mainCategoryValue && product.acode && accountTypes.length > 0) {
+            // Fallback: look up from backend acode field if mainCategory not available
+            const matchedType = accountTypes.find(t => t.acode === product.acode);
+            if (matchedType) {
+              mainCategoryValue = matchedType.adescrip;
+            }
+          }
+          
+          return {
+            ...product,
+            mainCategory: mainCategoryValue,
+          };
+        });
+        
+        setProducts(products);
       }
     } catch {
       // Ignore; search list simply stays empty/stale.
     } finally {
       setProductsLoading(false);
     }
-  }, []);
+  }, [accountTypes]);
 
   useEffect(() => {
     loadProducts();
@@ -94,6 +128,7 @@ export default function ProductDefinition() {
   const handleNewProduct = () => {
     setForm(initialForm);
     setSelectedProductId(null);
+    setSelectedProductNumericId(null);
     setProductSearchValue(null);
     setStatusMessage('');
     setStatusError(false);
@@ -104,9 +139,34 @@ export default function ProductDefinition() {
       handleNewProduct();
       return;
     }
+
+    // Map mainCategory with case-insensitive matching
+    let mainCategoryValue = product.mainCategory || '';
+    if (mainCategoryValue && accountTypes.length > 0) {
+      // Try exact match first
+      let matchedType = accountTypes.find((t) => t.adescrip === mainCategoryValue);
+      // If no exact match, try case-insensitive
+      if (!matchedType) {
+        const upperMainCategory = mainCategoryValue.toUpperCase();
+        matchedType = accountTypes.find((t) => t.adescrip === upperMainCategory);
+        if (matchedType) {
+          mainCategoryValue = matchedType.adescrip;
+        }
+      }
+    } else if (!mainCategoryValue && product.acode && accountTypes.length > 0) {
+      // Fallback: look up from backend acode field if mainCategory not available
+      const matchedType = accountTypes.find((t) => t.acode === product.acode);
+      if (matchedType) {
+        mainCategoryValue = matchedType.adescrip;
+      }
+    }
+
+    // Extract numeric ProductID (try ProductID, productId, prd_id first as they might be numeric)
+    const numericId = product.ProductID || product.productId || product.prd_id || product.id;
+
     setForm({
-      mainCategory: product.mainCategory || '',
-      productName: product.productName || '',
+      mainCategory: mainCategoryValue,
+      productName: product.productName || product.prd_name || '',
       hasDeductions: Boolean(product.hasDeductions),
       isIslamicProduct: Boolean(product.isIslamicProduct),
       interestRate: product.interestRate ?? '',
@@ -125,9 +185,10 @@ export default function ProductDefinition() {
       deductionPercentage: product.deductionPercentage ?? '',
       deductionSourceProduct: product.deductionSourceProduct ?? '',
     });
-    setSelectedProductId(product.id);
+    setSelectedProductId(product.id || product.prd_id);
+    setSelectedProductNumericId(numericId);
     setProductSearchValue(product);
-    setStatusMessage(`Loaded "${product.productName}" for editing.`);
+    setStatusMessage(`Loaded "${product.productName || product.prd_name}" for editing.`);
     setStatusError(false);
   };
 
@@ -162,15 +223,29 @@ export default function ProductDefinition() {
     setIsSaving(true);
     setStatusMessage('');
     try {
-      const result = await insertProduct({
-        ...form,
-        mainCategoryCode: selectedCategoryCode,
-        productKind: isLoan ? 'loan' : isSavingOrShares ? 'saving' : 'other',
-      });
-
-      if (!result) throw new Error('Save failed');
-
       const isUpdate = Boolean(selectedProductId);
+
+      let result;
+      if (isUpdate) {
+        // Call update endpoint for existing products
+        result = await updateProduct({
+          ...form,
+          productId: selectedProductNumericId,
+          id: selectedProductId,
+          mainCategoryCode: selectedCategoryCode,
+          productKind: isLoan ? 'loan' : isSavingOrShares ? 'saving' : 'other',
+        });
+      } else {
+        // Call insert endpoint for new products
+        result = await insertProduct({
+          ...form,
+          mainCategoryCode: selectedCategoryCode,
+          productKind: isLoan ? 'loan' : isSavingOrShares ? 'saving' : 'other',
+        });
+      }
+
+      if (!result) throw new Error(isUpdate ? 'Update failed' : 'Save failed');
+
       const productRecord = {
         id: selectedProductId || `prd-${Date.now()}`,
         ...form,
@@ -198,8 +273,8 @@ export default function ProductDefinition() {
       setProductSearchValue(productRecord);
       setStatusMessage(isUpdate ? 'Product definition updated successfully.' : 'Product definition saved successfully.');
       setStatusError(false);
-    } catch {
-      setStatusMessage('Failed to save product definition.');
+    } catch (err) {
+      setStatusMessage(err.message || 'Failed to save product definition.');
       setStatusError(true);
     } finally {
       setIsSaving(false);
