@@ -24,10 +24,10 @@ const memberCards = [
   { title: 'Account Activate', description: 'Activate member accounts', path: '/member/account-activate', icon: ToggleOnRoundedIcon, color: '#14b8a6', bgGradient: 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(20, 184, 166, 0.05) 100%)' },
   { title: 'Member Close', description: 'Close member profiles', path: '/member/member-close-account', icon: PersonRemoveRoundedIcon, color: '#ef4444', bgGradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)' },
   { title: 'Account Closure', description: 'Close member accounts', path: '/member/member-close', icon: PersonRemoveRoundedIcon, color: '#f97316', bgGradient: 'linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)' },
-  { title: 'Member Transfer', description: 'Transfer member accounts', path: '/member/transfer', icon: SwapHorizRoundedIcon, color: '#06b6d4', bgGradient: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%)' },
+  // { title: 'Member Transfer', description: 'Transfer member accounts', path: '/member/transfer', icon: SwapHorizRoundedIcon, color: '#06b6d4', bgGradient: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%)' },
   { title: 'Member Message', description: 'View member messages', path: '/member/member-message', icon: MessageRoundedIcon, color: '#f59e0b', bgGradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)' },
-  { title: 'Payroll Management', description: 'Manage payroll transactions', path: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon, color: '#667eea', bgGradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%)' },
-  { title: 'Reprint', description: 'Reprint documents', path: '/member/reprint', icon: PrintRoundedIcon, color: '#8b5cf6', bgGradient: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)' },
+  // { title: 'Payroll Management', description: 'Manage payroll transactions', path: '/member/member-payroll-management', icon: ReceiptLongRoundedIcon, color: '#667eea', bgGradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%)' },
+  // { title: 'Reprint', description: 'Reprint documents', path: '/member/reprint', icon: PrintRoundedIcon, color: '#8b5cf6', bgGradient: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)' },
 ]
 
 export default function CustomerAdministrationHub() {
