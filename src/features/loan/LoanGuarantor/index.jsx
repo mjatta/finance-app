@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Button,
@@ -122,7 +122,6 @@ export default function LoanGuarantor() {
   });
   const [sortModel, setSortModel] = useState([]);
   
-  const [guaranteeHistoryData, setGuaranteeHistoryData] = useState(null);
   const [guaranteeHistoryRows, setGuaranteeHistoryRows] = useState([]);
   // Total Guaranteed is the sum of all guaramt in guaranteeHistoryRows (CurrentGuaranteed)
   const [totalGuaranteed, setTotalGuaranteed] = useState(0);
@@ -139,8 +138,6 @@ export default function LoanGuarantor() {
     setRemainingAmount(guaranteeRequired - totalGuaranteed);
   }, [guaranteeRequired, totalGuaranteed]);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
-  
-  const [guarantorDetailsOpen, setGuarantorDetailsOpen] = useState(false);
   const [guarantorType, setGuarantorType] = useState(''); // '' (empty), 'memberGuarantors' or 'collateral'
   
   const todayIso = dayjs().format('YYYY-MM-DD');
@@ -157,15 +154,20 @@ export default function LoanGuarantor() {
     guarantorRequired: false,
   });
 
+  // Collateral file upload references and state
+  const collateralFileRef = useRef(null);
+  const collateralInputRef = useRef(null);
+  const [collateralFileName, setCollateralFileName] = useState('');
+
   // Always keep guaranteeDate as today
   useEffect(() => {
     setGuarantorDetails((prev) => ({ ...prev, guaranteeDate: todayIso }));
   }, [todayIso]);
 
   const { fetchGuarantors } = useGuarantorLoad();
-  const { validateGuarantor, loading: validateLoading, error: validateError } = useGuarantorValidate();
+  const { validateGuarantor, error: validateError } = useGuarantorValidate();
   const { saveGuarantor, loading: saveLoading, error: saveError } = useSaveGuarantor();
-  const { fetchGuaranteeHistory, loading: historyLoading, error: historyError } = useGuaranteeHistory();
+  const { fetchGuaranteeHistory } = useGuaranteeHistory();
 
   const loadGuarantors = useCallback(async () => {
     setLoading(true);
@@ -242,7 +244,6 @@ export default function LoanGuarantor() {
       const data = await fetchGuaranteeHistory(loanId);
       if (data) {
         console.log('✓ Guarantee history loaded:', data);
-        setGuaranteeHistoryData(data);
         // Calculate CurrentGuaranteed (sum of guaramt in guaranteeHistoryRows)
         const currentGuaranteed = (data.Data && Array.isArray(data.Data))
           ? data.Data.reduce((sum, row) => sum + (parseFloat(row.guaramt) || 0), 0)
@@ -263,7 +264,6 @@ export default function LoanGuarantor() {
           setGuaranteeHistoryRows([]);
         }
       } else {
-        setGuaranteeHistoryData(null);
         setGuaranteeHistoryRows([]);
         setTotalGuaranteed(0);
         setRemainingAmount(0);
@@ -358,23 +358,6 @@ export default function LoanGuarantor() {
 
 
 
-  const handleGuarantorTypeChange = (e) => {
-    const newType = e.target.value;
-    setGuarantorType(newType);
-    
-    // If a row is already selected, revalidate with the new mode
-    if (selectedIds.length > 0) {
-      const selectedGuarantor = guarantors.find((g) => g.id === selectedIds[0]);
-      if (selectedGuarantor) {
-        if (newType === 'memberGuarantors') {
-          performGuarantorValidation(selectedGuarantor.guarantorId, 4);
-        } else if (newType === 'collateral') {
-          performGuarantorValidation(selectedGuarantor.guarantorId, 3);
-        }
-      }
-    }
-  };
-
   const handleGuarantorDetailsChange = (e) => {
     const { name, value } = e.target;
     setGuarantorDetails((prev) => ({ ...prev, [name]: value }));
@@ -394,7 +377,22 @@ export default function LoanGuarantor() {
     setGuarantorDetails((prev) => ({ ...prev, amountToGuarantee: cleanValue }));
   };
 
+  const handleCollateralFileChange = (event) => {
+    const selectedFile = event.target.files?.[0] || null;
+    setStatusMessage('');
+    setStatusError(false);
 
+    collateralFileRef.current = selectedFile;
+    setCollateralFileName(selectedFile ? selectedFile.name : '');
+  };
+
+  const handleRemoveCollateralFile = () => {
+    setStatusMessage('');
+    setStatusError(false);
+
+    collateralFileRef.current = null;
+    setCollateralFileName('');
+  };
 
   const handleSaveGuarantor = async () => {
     console.log('=== handleSaveGuarantor CALLED ===');
@@ -452,6 +450,24 @@ export default function LoanGuarantor() {
     // Helper function to pad member codes to 6 digits
     const padMemberCode = (code) => String(code || '').padStart(6, '0');
 
+    // Helper function to convert file to base64
+    const fileToBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    // Convert collateral file to base64 only if Collateral type is selected and file is present
+    let collateralBase64 = null;
+    if (guarantorType === 'collateral' && collateralFileRef.current) {
+      collateralBase64 = await fileToBase64(collateralFileRef.current);
+    }
+
     // Build the save payload matching backend expectations
     const savePayload = {
       MemberCode: padMemberCode(selectedGuarantor.guarantorId),
@@ -467,6 +483,7 @@ export default function LoanGuarantor() {
       UserId: userId,
       WorkStation: workStation,
       WinUser: winUser,
+      ...(collateralBase64 && { CollateralDocument: collateralBase64 }),
     };
 
     try {
@@ -503,6 +520,7 @@ export default function LoanGuarantor() {
           guarantorRequired: false,
         });
         setSelectedIds([]);
+        handleRemoveCollateralFile();
       } else {
         setStatusMessage(saveError || 'Failed to save guarantor.');
         setStatusError(true);
@@ -893,6 +911,54 @@ export default function LoanGuarantor() {
                   />
                 </Grid>
               )}
+
+              {/* Collateral File Upload - Show only for Collateral */}
+              {guarantorType === 'collateral' && (
+                <Grid size={{ xs: 12 }}>
+                  <Box sx={{ 
+                    p: 2, 
+                    border: '2px dashed #667eea', 
+                    borderRadius: 2, 
+                    backgroundColor: '#f8f9ff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.5,
+                  }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                      Upload Collateral Document
+                    </Typography>
+                    <input
+                      type="file"
+                      ref={collateralInputRef}
+                      onChange={handleCollateralFileChange}
+                      style={{ display: 'none' }}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => collateralInputRef.current?.click()}
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Choose File
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        disabled={!collateralFileName}
+                        onClick={handleRemoveCollateralFile}
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: collateralFileName ? '#28a745' : '#666' }}>
+                      {collateralFileName || 'No document selected'}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -987,7 +1053,7 @@ export default function LoanGuarantor() {
               columns={GUARANTEE_HISTORY_COLUMNS}
               pageSizeOptions={[5, 10, 25]}
               paginationModel={{ pageSize: 10, page: 0 }}
-              onPaginationModelChange={(newModel) => {}}
+              onPaginationModelChange={() => {}}
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-columnHeaderTitle': {
