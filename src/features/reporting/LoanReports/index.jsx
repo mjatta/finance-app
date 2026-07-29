@@ -26,6 +26,9 @@ import { buildLoanReportPrintHtml } from './printSetup';
 import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
 
 const ALL_BRANCHES_VALUE = 'ALL';
+const ALL_USERS_VALUE = 'ALL';
+const ALL_PRODUCTS_VALUE = 'ALL';
+const ALL_REASONS_VALUE = 'ALL';
 
 const CHECKS = [
   { name: 'loanApplication', label: 'Loan Application' },
@@ -46,10 +49,10 @@ export default function LoanReports() {
   const { fetchCurrencies } = useLoanReportCurrencies();
   const { data: creditUnion } = useCreditUnionLookup(30);
 
-  const [product, setProduct] = useState('');
+  const [product, setProduct] = useState(ALL_PRODUCTS_VALUE);
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
-  const [loanReason, setLoanReason] = useState('');
-  const [user, setUser] = useState('');
+  const [loanReason, setLoanReason] = useState(ALL_REASONS_VALUE);
+  const [user, setUser] = useState(ALL_USERS_VALUE);
   const [currency, setCurrency] = useState('GMD');
   const [checks, setChecks] = useState(initChecks());
   const [tranFrom, setTranFrom] = useState(() => dayjs('1980-01-01'));
@@ -82,10 +85,10 @@ export default function LoanReports() {
   };
 
   const handleClear = () => {
-    setProduct('');
+    setProduct(ALL_PRODUCTS_VALUE);
     setBranch(ALL_BRANCHES_VALUE);
-    setLoanReason('');
-    setUser('');
+    setLoanReason(ALL_REASONS_VALUE);
+    setUser(ALL_USERS_VALUE);
     setCurrency('GMD');
     setChecks(initChecks());
     setTranFrom(dayjs('1980-01-01'));
@@ -94,10 +97,10 @@ export default function LoanReports() {
   };
 
   const buildPayload = (format) => ({
-    Product: product,
+    Product: product === ALL_PRODUCTS_VALUE ? '' : product || '',
     Branch: branch === ALL_BRANCHES_VALUE ? 0 : Number(branch) || 0,
-    LoanReason: loanReason || '',
-    User: user || '',
+    LoanReason: loanReason === ALL_REASONS_VALUE ? '' : loanReason || '',
+    User: user === ALL_USERS_VALUE ? '' : user || '',
     Currency: currency || '',
     Types: Object.keys(checks).filter((k) => checks[k]),
     TranFrom: tranFrom ? (tranFrom.format ? tranFrom.format('YYYY-MM-DD') : String(tranFrom)) : '',
@@ -243,7 +246,7 @@ export default function LoanReports() {
 
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 2 }}>
               <TextField select label="Product" value={product} onChange={(e) => setProduct(e.target.value)} size="small">
-                <MenuItem value="">All products</MenuItem>
+                <MenuItem value={ALL_PRODUCTS_VALUE}>All products</MenuItem>
                 {productOptions.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
               </TextField>
               <TextField select label="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} size="small">
@@ -251,11 +254,11 @@ export default function LoanReports() {
                 {branchOptions.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
               </TextField>
               <TextField select label="Loan Reason" value={loanReason} onChange={(e) => setLoanReason(e.target.value)} size="small">
-                <MenuItem value="">All reasons</MenuItem>
+                <MenuItem value={ALL_REASONS_VALUE}>All reasons</MenuItem>
                 {loanReasonOptions.map((r) => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
               </TextField>
               <TextField select label="User" value={user} onChange={(e) => setUser(e.target.value)} size="small">
-                <MenuItem value="">All users</MenuItem>
+                <MenuItem value={ALL_USERS_VALUE}>All users</MenuItem>
                 {userOptions.map((u) => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
               </TextField>
             </Box>
