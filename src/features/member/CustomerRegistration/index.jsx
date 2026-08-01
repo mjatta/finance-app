@@ -35,6 +35,7 @@ import { useInstitutionDetails } from './hooks/useInstitutionDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useCities } from './hooks/useCities';
 import { useDistricts } from './hooks/useDistricts';
+import { useWards } from './hooks/useWards';
 import { initialForm } from './constants/initialFormData';
 import { buildIndividualPayload, buildInstitutionPayload } from './constants/payloadBuilders';
 import { useUpdateInstitution } from './hooks/useUpdateInstitution';
@@ -142,6 +143,7 @@ export default function CustomerRegistration(props) {
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
   const { districts } = useDistricts();
+  const { wards } = useWards();
   // Map numeric city id (or legacy ncity) to the city id string that the UI dropdown expects
   const mapCityById = (val) => {
     if (val === undefined || val === null || val === '') return '';
@@ -2337,10 +2339,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             onChange={handleChange}
                           >
                             <MenuItem value="">Select ward</MenuItem>
-                            <MenuItem value={1}>Ward 1</MenuItem>
-                            <MenuItem value={2}>Ward 2</MenuItem>
-                            <MenuItem value={3}>Ward 3</MenuItem>
-                            <MenuItem value={4}>Ward 4</MenuItem>
+                            {wards.map((ward) => (
+                              <MenuItem key={`ward-${ward.id}-${ward.name}`} value={ward.id}>
+                                {ward.name}
+                              </MenuItem>
+                            ))}
                           </TextField>
 
                         </Box>
@@ -2571,10 +2574,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             helperText={touched.ward && !formData.ward ? 'Ward is required' : ''}
                           >
                             <MenuItem value="">Select ward</MenuItem>
-                            <MenuItem value={1}>Ward 1</MenuItem>
-                            <MenuItem value={2}>Ward 2</MenuItem>
-                            <MenuItem value={3}>Ward 3</MenuItem>
-                            <MenuItem value={4}>Ward 4</MenuItem>
+                            {wards.map((ward) => (
+                              <MenuItem key={`ward-${ward.id}-${ward.name}`} value={ward.id}>
+                                {ward.name}
+                              </MenuItem>
+                            ))}
                           </TextField>
                         </Box>
                       </CardContent>

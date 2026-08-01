@@ -484,6 +484,10 @@
       "destination": "http://alakuyateh-001-site10.atempurl.com/api/lookups/counties"
     },
     {
+      "source": "/api/lookups/wards",
+      "destination": "http://alakuyateh-001-site10.atempurl.com/api/lookups/wards"
+    },
+    {
       "source": "/api/id-types",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/idtypes"
     },
