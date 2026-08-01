@@ -47,6 +47,14 @@ const normalizeRows = (payload) => {
   return [];
 };
 
+const sortAgingRanges = (a, b) => {
+  const extractDaysFrom = (key) => {
+    const match = key.match(/^(\d+)-/);
+    return match ? parseInt(match[1], 10) : Infinity;
+  };
+  return extractDaysFrom(a) - extractDaysFrom(b);
+};
+
 export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
   const rows = normalizeRows(payload);
   const firstRow = rows[0] ?? {};
@@ -86,6 +94,19 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
     groups = [rows];
   }
 
+  // Sort groups by aging range (0-30 first, then 31-90, 91-180, 181-365, etc.)
+  if (Array.isArray(groups) && groups.length > 0 && Array.isArray(groups[0])) {
+    const groupWithKeys = groups.map((g) => {
+      const first = g[0] ?? {};
+      const key = (first?.DaysFrom != null || first?.DaysTo != null)
+        ? `${first?.DaysFrom ?? 'N/A'}-${first?.DaysTo ?? 'N/A'}`
+        : (first?.LoanAgeCategory || 'Ungrouped');
+      return { group: g, key };
+    });
+    groupWithKeys.sort((a, b) => sortAgingRanges(a.key, b.key));
+    groups = groupWithKeys.map((g) => g.group);
+  }
+
   const tablesHtml = groups.map((groupRows) => {
     const safeGroup = Array.isArray(groupRows) ? groupRows : [];
     const first = safeGroup[0] ?? {};
@@ -109,9 +130,21 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
         </tr>
       `;
 
+    const totalPrincipal = safeGroup.reduce((s, r) => s + toNumber(r?.PRINCIPAL_AMT), 0);
+    const totalBookBalance = safeGroup.reduce((s, r) => s + toNumber(r?.nbookbal), 0);
     const totalPrepaid = safeGroup.reduce((s, r) => s + toNumber(r?.nnewbal), 0);
 
-    // Place the category label inside the table header for a cleaner look (e.g. "181 to 360").
+    const footerRow = safeGroup.length > 0 ? `
+      <tr style="background: #f1f5f9; font-weight: 700;">
+        <td class="num"></td>
+        <td style="font-weight: 700;">TOTAL</td>
+        <td class="amt">${formatAmountAbsolute(totalPrincipal)}</td>
+        <td class="amt">${formatAmountAbsolute(totalBookBalance)}</td>
+        <td class="amt">${formatAmountAbsolute(totalPrepaid)}</td>
+      </tr>
+    ` : '';
+
+    // Place the category label inside the table header for a cleaner look (e.g. "0 to 30").
     return `
       <div style="margin-top:18px;">
         <table>
@@ -127,6 +160,7 @@ export const buildDetailedAgingPrintHtml = (payload, reportDate) => {
           </thead>
           <tbody>
             ${body}
+            ${footerRow}
           </tbody>
         </table>
       </div>
