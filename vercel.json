@@ -480,6 +480,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/loanreason"
     },
     {
+      "source": "/api/lookups/counties",
+      "destination": "http://alakuyateh-001-site10.atempurl.com/api/lookups/counties"
+    },
+    {
       "source": "/api/id-types",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/lookups/idtypes"
     },

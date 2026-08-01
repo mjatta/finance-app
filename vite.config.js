@@ -2813,6 +2813,49 @@ const loanOfficersApiPlugin = () => ({
   },
 })
 
+// Counties Lookup API Plugin (dev server middleware, backend only)
+const countiesApiPlugin = () => ({
+  name: 'counties-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/lookups/counties', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward GET to backend only
+        if (req.method === 'GET') {
+          try {
+            const backendRes = await fetch('http://alakuyateh-001-site10.atempurl.com/api/lookups/counties', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to fetch counties.' }))
+      }
+    })
+  },
+})
+
 // Users API Plugin (dev server middleware, backend only)
 const usersApiPlugin = () => ({
   name: 'users-api-plugin',
@@ -3632,6 +3675,7 @@ export default defineConfig({
     loanDisbursementApiPlugin(),
     loanDisburseApiPlugin(),
     loanOfficersApiPlugin(),
+    countiesApiPlugin(),
     usersApiPlugin(),
     remoteMemberDetailsApiPlugin(),
     getMemberDetailsApiPlugin(),

@@ -29,6 +29,7 @@ import { useLoanApprovalSubmit } from './Hooks/useLoanApprovalSubmit';
 import { useCheckTopup } from './Hooks/useCheckTopup';
 import { useRejectReasons } from './Hooks/useRejectReasons';
 import { useSaveRejectedLoan } from './Hooks/useSaveRejectedLoan';
+import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { useUsersStore } from '../../../store/useUsersStore';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -127,6 +128,7 @@ export default function LoanApproval() {
     approveAmount: '',
     duration: '',
     approveDate: '',
+    loanOfficer: '',
   });
 
   const [appliedLoanDetails, setAppliedLoanDetails] = useState({
@@ -145,6 +147,7 @@ export default function LoanApproval() {
   const { fetchCheckTopup } = useCheckTopup();
   const { reasons: rejectReasons, fetchRejectReasons } = useRejectReasons();
   const { saveRejectedLoan } = useSaveRejectedLoan();
+  const { officers: loanOfficers, fetchLoanOfficers, isLoading: loadingOfficers, error: officersError } = useLoanOfficers();
   const authUser = useAuthStore((state) => state.user);
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -220,6 +223,16 @@ export default function LoanApproval() {
     loadLoans();
   }, [loadLoans]);
 
+  // Fetch loan officers on component mount
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
+
+  // Log officers when loaded
+  useEffect(() => {
+    console.log('Loan Officers loaded:', loanOfficers);
+  }, [loanOfficers]);
+
   // Fetch rejection reasons when reject dialog opens
   useEffect(() => {
     if (rejectDialogOpen && rejectReasons.length === 0) {
@@ -242,6 +255,7 @@ export default function LoanApproval() {
         approveAmount: '',
         duration: '',
         approveDate: '',
+        loanOfficer: '',
       });
       setAppliedLoanDetails({
         paymentFrequency: '',
@@ -470,7 +484,7 @@ export default function LoanApproval() {
         loanAmount: approveAmountNum,
         duration: durationNum,
         loanAccount: truncate(selectedLoan.loanacct || selectedLoan.loanAccount || '', 50),
-        loanOfficer: truncate(authUser?.username || 'SYSTEM', 20),
+        loanOfficer: truncate(approvalDetails.loanOfficer || authUser?.username || 'SYSTEM', 20),
         userid: truncate(authUser?.username || 'SYSTEM', 20),  // Use username instead of id (usually shorter)
         customerCode: truncate(selectedLoan.customerCode || selectedLoan.ccustcode || '', 20),
         memberType: truncate('C', 5),
@@ -514,6 +528,7 @@ export default function LoanApproval() {
           approveAmount: '',
           duration: '',
           approveDate: '',
+          loanOfficer: '',
         });
         setAppliedLoanDetails({
           paymentFrequency: '',
@@ -828,6 +843,29 @@ export default function LoanApproval() {
                         }}
                       />
                     </LocalizationProvider>
+                    <Box>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Approved By"
+                        name="loanOfficer"
+                        value={approvalDetails.loanOfficer}
+                        onChange={handleApprovalDetailsChange}
+                        variant="outlined"
+                        size="small"
+                        error={!!officersError}
+                        helperText={officersError ? `Error loading officers: ${officersError}` : loadingOfficers ? 'Loading officers...' : ''}
+                      >
+                        <MenuItem value="">
+                          <em>{loadingOfficers ? 'Loading...' : 'Select Loan Officer'}</em>
+                        </MenuItem>
+                        {loanOfficers.map((officer) => (
+                          <MenuItem key={officer.value} value={officer.label}>
+                            {officer.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
                   </Box>
                 </Grid>
 

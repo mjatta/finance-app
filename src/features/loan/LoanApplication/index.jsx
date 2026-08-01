@@ -36,6 +36,8 @@ import { useTopupLoans } from './hooks/useTopupLoans';
 import { useLoanDetails } from './hooks/useLoanDetails';
 import { useUpdateLoan } from './hooks/useUpdateLoan';
 import { useLoanReasons } from '../../../hooks/useLoanReasons';
+import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
+import { useAreas } from '../../../hooks/useAreas';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -74,6 +76,8 @@ const initialFormData = {
   calculatedInterestRate: '',
   totalInterest: '',
   totalPayment: '',
+  loanOfficer: '',
+  region: '',
 };
 
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -135,6 +139,8 @@ export default function LoanApplication() {
   const { fetchLoanDetails } = useLoanDetails();
   const { updateLoan } = useUpdateLoan();
   const { loanReasons, fetchLoanReasons } = useLoanReasons();
+  const { officers: loanOfficers, fetchLoanOfficers, isLoading: loadingOfficers, error: officersError } = useLoanOfficers();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
   const [sectorOptions, setSectorOptions] = useState([]);
@@ -191,10 +197,12 @@ export default function LoanApplication() {
     loadSetupDetails();
   }, []);
 
-  // Fetch loan reasons on mount
+  // Fetch loan reasons, loan officers and regions on mount
   useEffect(() => {
     fetchLoanReasons();
-  }, []);
+    fetchLoanOfficers();
+    fetchRegions();
+  }, [fetchLoanReasons, fetchLoanOfficers, fetchRegions]);
 
   // When transaction type changes, fetch relevant data
   useEffect(() => {
@@ -847,6 +855,8 @@ export default function LoanApplication() {
         glResched: formData.reschedule === true || formData.reschedule === 'true' || false,
         // dPrinPay based on the chosen principal (newPrincipal for top-up/reschedule)
         dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
+        loanOfficer: formData.loanOfficer || user?.username || 'SYSTEM',
+        region: formData.region || '',
         ApplicationForm: applicationFormBase64,
         applicationForm: applicationFormBase64 || '',
       };
@@ -1379,6 +1389,54 @@ export default function LoanApplication() {
                         </MenuItem>
                       ))}
                     </TextField>
+
+                    {/* Loan Officer */}
+                    <Box>
+                      <TextField
+                        select
+                        label="Loan Officer"
+                        name="loanOfficer"
+                        value={formData.loanOfficer}
+                        onChange={handleChange}
+                        size="small"
+                        fullWidth
+                        error={!!officersError}
+                        helperText={officersError ? `Error loading officers: ${officersError}` : loadingOfficers ? 'Loading officers...' : ''}
+                      >
+                        <MenuItem value="">
+                          <em>{loadingOfficers ? 'Loading...' : 'Select Loan Officer'}</em>
+                        </MenuItem>
+                        {loanOfficers.map((officer) => (
+                          <MenuItem key={officer.value} value={officer.label}>
+                            {officer.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
+
+                    {/* Region */}
+                    <Box>
+                      <TextField
+                        select
+                        label="Region"
+                        name="region"
+                        value={formData.region}
+                        onChange={handleChange}
+                        size="small"
+                        fullWidth
+                        error={!!regionsError}
+                        helperText={regionsError ? `Error loading regions: ${regionsError}` : loadingRegions ? 'Loading regions...' : ''}
+                      >
+                        <MenuItem value="">
+                          <em>{loadingRegions ? 'Loading...' : 'Select Region'}</em>
+                        </MenuItem>
+                        {regions.map((region) => (
+                          <MenuItem key={region.value} value={region.label}>
+                            {region.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
 
                   </Box>
                 </CardContent>
