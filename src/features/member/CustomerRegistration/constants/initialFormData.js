@@ -144,5 +144,15 @@ export const initialForm = {
       literacyExperiences: '',
     },
   ],
+  // Banking Information for Institution
+  bankingInformation: [
+    {
+      id: 1,
+      bank: '',
+      accountNumber: '',
+      currentBankBalance: '',
+      addressOfBank: '',
+    },
+  ],
   printReceipt: false,
 };

@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { useIdTypes } from './hooks/useIdTypes';
+import { useBanks } from './hooks/useBanks';
 import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
@@ -928,6 +929,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       literacyExperiences: '',
     },
   ]);
+  const [bankingInformation, setBankingInformation] = useState([
+    {
+      id: Date.now() + 3,
+      bank: '',
+      accountNumber: '',
+      currentBankBalance: '',
+      addressOfBank: '',
+    },
+  ]);
   const [touched, setTouched] = useState({});
   const [pendingNcity, setPendingNcity] = useState(null);
   const [pendingBranchId, setPendingBranchId] = useState(null);
@@ -1188,6 +1198,29 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setCommitteeMembers((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const handleAddBankingInformationCard = () => {
+    setBankingInformation((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        bank: '',
+        accountNumber: '',
+        currentBankBalance: '',
+        addressOfBank: '',
+      },
+    ]);
+  };
+
+  const handleBankingInformationChange = (id, field, value) => {
+    setBankingInformation((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleDeleteBankingInformation = (id) => {
+    setBankingInformation((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const handleAddNextOfKinCard = () => {
     setAdditionalNextOfKins((prev) => [
       ...prev,
@@ -1206,6 +1239,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
+
+  // Fetch banks data
+  const { banks, loading: banksLoading } = useBanks();
 
   const handleSave = async () => {
 
@@ -1351,11 +1387,21 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       // Institution tab: map fields to backend payload and call useRegisterInstitution
       const user = useAuthStore.getState().user;
       const companyId = user?.CompId;
-      const institutionPayload = buildInstitutionPayload(formData, cities, {
-        compId: companyId,
-        branchId: user?.BranchId,
-        username: user?.username,
-      });
+      const institutionPayload = buildInstitutionPayload(
+        {
+          ...formData,
+          trainings,
+          projects,
+          committeeMembers,
+          bankingInformation,
+        },
+        cities,
+        {
+          compId: companyId,
+          branchId: user?.BranchId,
+          username: user?.username,
+        }
+      );
       institutionPayload.MemberPicture = pictureBase64;
       institutionPayload.MemberSignature = signatureBase64;
       // Add GroupMembers array to payload
@@ -1400,6 +1446,43 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         setFormData(initialForm);
         setAdditionalReferences([]);
         setAdditionalNextOfKins([]);
+        setTrainings([
+          {
+            id: Date.now(),
+            yearOfTraining: '',
+            typeOfTraining: '',
+            duration: '',
+            supportedBy: '',
+            numberOfBeneficiaries: '',
+          },
+        ]);
+        setProjects([
+          {
+            id: Date.now() + 1,
+            year: '',
+            projectType: '',
+            status: '',
+            supportedBy: '',
+            remarks: '',
+          },
+        ]);
+        setCommitteeMembers([
+          {
+            id: Date.now() + 2,
+            names: '',
+            positions: '',
+            literacyExperiences: '',
+          },
+        ]);
+        setBankingInformation([
+          {
+            id: Date.now() + 3,
+            bank: '',
+            accountNumber: '',
+            currentBankBalance: '',
+            addressOfBank: '',
+          },
+        ]);
         setGroupMembers([
           {
             id: Date.now() + Math.random(),
@@ -1461,7 +1544,17 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       const user = useAuthStore.getState().user;
       const payload = mainTab === 0
         ? buildIndividualPayload(formData, countries, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username })
-        : buildInstitutionPayload(formData, cities, { compId: user?.CompId, branchId: user?.BranchId, username: user?.username });
+        : buildInstitutionPayload(
+            {
+              ...formData,
+              trainings,
+              projects,
+              committeeMembers,
+              bankingInformation,
+            },
+            cities,
+            { compId: user?.CompId, branchId: user?.BranchId, username: user?.username }
+          );
 
       payload.MemberPicture = pictureBase64;
       payload.MemberSignature = signatureBase64;
@@ -2156,6 +2249,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 {mainTab === 1 && <Tab label="Background" />}
                 {mainTab === 1 && <Tab label="Trainings" />}
                 {mainTab === 1 && <Tab label="Projects Implemented" />}
+                {mainTab === 1 && <Tab label="Banking Information" />}
               </Tabs>
 
               {detailTab === 0 && (
@@ -3581,6 +3675,92 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                   value={project.remarks}
                                   onChange={(event) => handleProjectChange(project.id, 'remarks', event.target.value)}
                                   placeholder="e.g. Additional notes"
+                                  fullWidth
+                                  multiline
+                                  rows={3}
+                                  sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {mainTab === 1 && detailTab === 9 && (
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Banking Information</Typography>
+                        <Button variant="outlined" size="small" onClick={handleAddBankingInformationCard}>
+                          Add More Banks
+                        </Button>
+                      </Box>
+                      {bankingInformation.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No banking information added yet.</Typography>
+                      ) : (
+                        bankingInformation.map((bank, index) => (
+                          <Card key={bank.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                                Bank {index + 1}
+                              </Typography>
+                              {index > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    onClick={() => handleDeleteBankingInformation(bank.id)}
+                                    sx={{ textTransform: 'none' }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </Box>
+                              )}
+                              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                                <TextField
+                                  select
+                                  label="Bank"
+                                  value={bank.bank}
+                                  onChange={(event) => handleBankingInformationChange(bank.id, 'bank', event.target.value)}
+                                  placeholder="Select a bank"
+                                  fullWidth
+                                  disabled={banksLoading}
+                                >
+                                  <MenuItem value="">-- Select --</MenuItem>
+                                  {banks
+                                    .filter((b) => b.BankName?.trim())
+                                    .map((b) => (
+                                      <MenuItem key={b.BankId} value={String(b.BankId)}>
+                                        {b.BankName?.trim()}
+                                      </MenuItem>
+                                    ))}
+                                </TextField>
+                                <TextField
+                                  label="Account Number"
+                                  value={bank.accountNumber}
+                                  onChange={(event) => handleBankingInformationChange(bank.id, 'accountNumber', event.target.value)}
+                                  placeholder="e.g. 1234567890"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Current Bank Balance"
+                                  type="number"
+                                  value={bank.currentBankBalance}
+                                  onChange={(event) => handleBankingInformationChange(bank.id, 'currentBankBalance', event.target.value)}
+                                  placeholder="e.g. 50000"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Address of Bank"
+                                  value={bank.addressOfBank}
+                                  onChange={(event) => handleBankingInformationChange(bank.id, 'addressOfBank', event.target.value)}
+                                  placeholder="e.g. Main Street, Downtown"
                                   fullWidth
                                   multiline
                                   rows={3}

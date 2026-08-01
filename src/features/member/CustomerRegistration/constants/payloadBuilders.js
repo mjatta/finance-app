@@ -162,6 +162,8 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
     Projects: formData.projects || [],
     // Committee Members array
     CommitteeMembers: formData.committeeMembers || [],
+    // Banking Information array
+    BankingInformation: formData.bankingInformation || [],
     suers: username || 'SYSTEM',
   };
 }
