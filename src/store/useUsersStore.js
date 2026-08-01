@@ -31,7 +31,6 @@ export const useUsersStore = create(
           }
 
           const payload = await response.json();
-          console.log('Users List Response:', payload);
 
           // Handle if payload is directly an array
           let usersData = [];

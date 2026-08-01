@@ -14,10 +14,7 @@ export function useSaveRejectedLoan() {
         throw new Error('Payload is required');
       }
 
-      console.log('Saving rejected loan with payload:', payload);
-
       const apiUrl = buildApiUrl('loan-reject-save', {});
-      console.log('Posting to reject endpoint:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -27,7 +24,6 @@ export function useSaveRejectedLoan() {
         body: JSON.stringify(payload),
       });
 
-      console.log('Reject response status:', response.status);
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -49,11 +45,9 @@ export function useSaveRejectedLoan() {
         result = { status: 'success', message: 'Loan rejected successfully' };
       }
 
-      console.log('Reject result:', result);
       setError(null);
       return result;
     } catch (err) {
-      console.error('Error rejecting loan:', err);
       setError(err.message || 'Failed to reject loan');
       return null;
     } finally {

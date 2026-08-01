@@ -33,8 +33,6 @@ export function useActivateAccount() {
         userId: finalUserId,
       };
 
-      console.log('Sending account activation:', payload);
-
       const url = getFullApiUrl('/api/account/update-status');
       const response = await fetch(url, {
         method: 'POST',
@@ -49,7 +47,6 @@ export function useActivateAccount() {
       }
 
       const result = await response.json();
-      console.log('Account activation API response:', result);
 
       return { success: true, data: result };
     } catch (err) {

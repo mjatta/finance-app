@@ -13,7 +13,6 @@ export function useGetLoginAttempts() {
       setError(null);
 
       const url = getFullApiUrl('/api/systemAdministration/LogAttempts');
-      console.log('Fetching login attempts from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -27,7 +26,6 @@ export function useGetLoginAttempts() {
       }
 
       const data = await response.json();
-      console.log('Login attempts API response:', data);
 
       // Handle array response directly
       if (Array.isArray(data)) {
@@ -44,7 +42,6 @@ export function useGetLoginAttempts() {
         }
       }
 
-      console.warn('Unexpected login attempts API response format:', data);
       setAttempts([]);
     } catch (err) {
       console.error('Error fetching login attempts:', err);

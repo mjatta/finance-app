@@ -39,7 +39,6 @@ export default function TransactionReversalAdjustment() {
 
   // Update display transactions when hook transactions change
   React.useEffect(() => {
-    console.log('Hook transactions updated:', transactions);
     if (transactions && transactions.length > 0) {
       setDisplayTransactions(transactions);
     }
@@ -63,7 +62,6 @@ export default function TransactionReversalAdjustment() {
         setSelectionModel({ type: 'include', ids: new Set() });
         const isReversal = transactionType === 'reversal';
         const txnResult = await fetchMemberTransactions(paddedCode, isReversal);
-        console.log('handleCustomerCodeTab result:', txnResult);
         if (txnResult && txnResult.length > 0) {
           setDisplayTransactions(txnResult);
         } else {
@@ -83,7 +81,6 @@ export default function TransactionReversalAdjustment() {
       const paddedCode = String(customerCode.trim()).padStart(6, '0');
       const isReversal = transactionType === 'reversal';
       const result = await fetchMemberTransactions(paddedCode, isReversal);
-      console.log('handleTransactionTypeBlur result:', result);
       if (result && result.length > 0) {
         setDisplayTransactions(result);
       } else {

@@ -26,8 +26,6 @@ export function useGetMemberTransactions() {
       if (!resp.ok) throw new Error('Failed to fetch member transactions');
       const data = await resp.json();
 
-      console.log('API Response:', data);
-
       // Handle multiple response formats
       let list = [];
       if (Array.isArray(data)) {
@@ -42,7 +40,6 @@ export function useGetMemberTransactions() {
         console.warn('Unexpected response format:', data);
       }
 
-      console.log('Parsed transactions:', list);
       setTransactions(list);
       return list;
     } catch (err) {

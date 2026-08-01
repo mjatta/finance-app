@@ -16,7 +16,6 @@ export function useGuaranteeHistory() {
 
     try {
       const url = getFullApiUrl(`/api/GuaranteeHistorySoFar/guaranteed-history/${loanId}`);
-      console.log('🔗 Fetching guarantee history from:', url);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -28,11 +27,9 @@ export function useGuaranteeHistory() {
       }
 
       const payload = await response.json();
-      console.log('✓ Guarantee history response:', payload);
       
       return payload;
     } catch (err) {
-      console.error('❌ Error fetching guarantee history:', err);
       setError(err.message || 'Failed to fetch guarantee history');
       return null;
     } finally {

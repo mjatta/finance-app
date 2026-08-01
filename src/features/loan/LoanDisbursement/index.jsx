@@ -142,8 +142,6 @@ export default function LoanDisbursement() {
       creditLimit = 0;
     }
   }
-  // Debug: Log limits and amount
-  console.log('DEBUG: debitLimit', debitLimit, 'creditLimit', creditLimit, 'amount', disbursementDetails.amount, 'user:', user);
 
   // Compute limitError for loan disbursement, only if amount is present
   let limitError = '';
@@ -153,8 +151,6 @@ export default function LoanDisbursement() {
       limitError = `You are not allowed to disburse more than D ${debitLimit.toLocaleString()}.`;
     }
   }
-  // Debug: Log limitError
-  console.log('DEBUG: limitError', limitError, 'isAmountBlocked', Boolean(limitError));
 
   const { fetchLoanDisbursementData } = useLoanDisbursementLoad();
   const { saveDisbursement } = useSaveDisbursement();
@@ -366,17 +362,11 @@ export default function LoanDisbursement() {
     setStatusError(false);
 
     try {
-      console.log('=== Disbursement Save Started ===');
-      console.log('selectedIds:', selectedIds);
-      console.log('clients:', clients);
       
       const selectedLoan = clients.find((c) => c.id === selectedIds[0]);
-      console.log('selectedLoan found:', selectedLoan);
+
       
       if (!selectedLoan) {
-        console.log('ERROR: Selected loan not found');
-        console.log('Looking for id:', selectedIds[0]);
-        console.log('Available ids:', clients.map(c => c.id));
         setStatusMessage('Selected loan not found.');
         setStatusError(true);
         return;

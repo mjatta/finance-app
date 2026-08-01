@@ -28,7 +28,6 @@ export function useLoanApprovalLoad() {
       }
 
       const payload = await response.json();
-      console.log('Loan Approval Response:', payload);
 
       // Handle if payload is directly an array
       if (Array.isArray(payload)) {

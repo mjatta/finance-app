@@ -101,12 +101,9 @@ export function useUpdateProduct() {
         body: JSON.stringify(payload),
       });
 
-      console.log('📤 Update Product Payload:', JSON.stringify(payload, null, 2));
-      console.log('📥 Update Product Response:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Backend Error Response:', errorData);
         throw new Error(errorData?.message || `HTTP ${response.status}`);
       }
 

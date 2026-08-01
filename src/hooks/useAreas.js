@@ -14,8 +14,7 @@ export const useAreas = () => {
         throw new Error(`API error: ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log('Counties API Response:', result);
+      const result = await response.json(); 
 
       // Handle different response formats
       let data = [];
@@ -29,7 +28,6 @@ export const useAreas = () => {
         data = result.Data;
       }
 
-      console.log('Parsed counties data:', data);
 
       // Map response to component format
       const mappedAreas = data
@@ -40,7 +38,6 @@ export const useAreas = () => {
         }))
         .filter((a) => a.label && a.value); // Filter out empty entries
 
-      console.log('Mapped counties:', mappedAreas);
       setAreas(mappedAreas);
       return mappedAreas;
     } catch (err) {

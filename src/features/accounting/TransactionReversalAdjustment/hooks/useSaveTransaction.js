@@ -64,7 +64,6 @@ export function useSaveTransaction() {
         payload.IsReversal = true;
       }
 
-      console.log('Saving transaction:', endpoint, payload);
 
       const resp = await fetch(endpoint, {
         method: 'POST',
@@ -80,7 +79,6 @@ export function useSaveTransaction() {
       }
 
       const result = await resp.json();
-      console.log('Save transaction response:', result);
       return result;
     } catch (err) {
       console.error('Save transaction error:', err);

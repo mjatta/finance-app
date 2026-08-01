@@ -13,6 +13,15 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
+// Suppress MUI Grid v2 migration warnings in development
+const originalWarn = console.warn
+console.warn = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('MUI Grid:')) {
+    return
+  }
+  originalWarn(...args)
+}
+
 const queryClient = new QueryClient();
 const theme = createTheme({
   components: {

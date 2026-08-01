@@ -240,14 +240,12 @@ export default function LoanGuarantor() {
 
   const loadGuaranteeHistory = useCallback(async (loanId) => {
     if (!loanId) {
-      console.log('No loan ID provided');
       return;
     }
     
     try {
       const data = await fetchGuaranteeHistory(loanId);
       if (data) {
-        console.log('✓ Guarantee history loaded:', data);
         // Calculate CurrentGuaranteed (sum of guaramt in guaranteeHistoryRows)
         const currentGuaranteed = (data.Data && Array.isArray(data.Data))
           ? data.Data.reduce((sum, row) => sum + (parseFloat(row.guaramt) || 0), 0)
@@ -411,46 +409,32 @@ export default function LoanGuarantor() {
   };
 
   const handleSaveGuarantor = async () => {
-    console.log('=== handleSaveGuarantor CALLED ===');
-    console.log('guarantorType:', guarantorType);
-    console.log('selectedIds:', selectedIds);
-    console.log('guarantorDetails.guarantorId:', guarantorDetails.guarantorId);
-    console.log('guarantorDetails.amountToGuarantee:', guarantorDetails.amountToGuarantee);
-    console.log('guarantors array length:', guarantors.length);
 
     // Validate required fields
     if (!guarantorType) {
-      console.log('❌ Validation failed: No guarantor type selected');
       setStatusMessage('Please select a guarantor type (Member Guarantors or Collateral).');
       setStatusError(true);
       return;
     }
 
     if (!guarantorDetails.guarantorId) {
-      console.log('❌ Validation failed: No guarantor ID');
       setStatusMessage('Please select a guarantor first.');
       setStatusError(true);
       return;
     }
 
     if (!guarantorDetails.amountToGuarantee) {
-      console.log('❌ Validation failed: No amount to guarantee:', guarantorDetails.amountToGuarantee);
       setStatusMessage('Please enter the amount to guarantee.');
       setStatusError(true);
       return;
     }
 
     // Get the selected guarantor from the grid
-    console.log('Looking for guarantor with id:', selectedIds[0]);
     const selectedGuarantor = guarantors.find((g) => {
-      console.log(`Checking guarantor id=${g.id} against selectedId=${selectedIds[0]}`);
       return g.id === selectedIds[0];
     });
-    console.log('✓ selectedGuarantor found:', selectedGuarantor);
     
     if (!selectedGuarantor) {
-      console.log('❌ Validation failed: Could not find selected guarantor');
-      console.log('Available guarantors:', guarantors);
       setStatusMessage('Error: Could not find selected guarantor.');
       setStatusError(true);
       return;

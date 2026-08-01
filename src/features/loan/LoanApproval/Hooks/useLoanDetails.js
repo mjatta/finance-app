@@ -36,7 +36,6 @@ export function useLoanDetails() {
       }
 
       const payload = await response.json();
-      console.log('Loan Details Response:', payload);
 
       // Handle if payload is directly an object with the loan details
       if (payload && typeof payload === 'object') {

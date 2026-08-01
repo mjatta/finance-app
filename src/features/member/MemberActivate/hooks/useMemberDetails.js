@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 export function useMemberDetails() {
@@ -21,7 +21,6 @@ export function useMemberDetails() {
       const paddedCode = customerCode.trim().padStart(6, '0');
 
       const url = getFullApiUrl(`/api/member/details/${paddedCode}/C`);
-      console.log('Fetching member details from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -35,7 +34,6 @@ export function useMemberDetails() {
       }
 
       const data = await response.json();
-      console.log('Member details API response:', data);
 
       // Handle array response directly
       if (Array.isArray(data) && data.length > 0) {

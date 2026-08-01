@@ -364,7 +364,7 @@ export default function Login({ onLogin }) {
                   bgcolor: 'rgba(247,250,255,0.96)',
                 },
               }}
-              inputProps={{ 'aria-required': true }}
+              inputProps={{ 'aria-required': true, autoComplete: 'username' }}
             />
 
             <TextField
@@ -404,7 +404,7 @@ export default function Login({ onLogin }) {
                   bgcolor: 'rgba(247,250,255,0.96)',
                 },
               }}
-              inputProps={{ 'aria-required': true }}
+              inputProps={{ 'aria-required': true, autoComplete: 'current-password' }}
             />
 
             {errorMessage && (

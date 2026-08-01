@@ -1564,7 +1564,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
       const url = getFullApiUrl('/api/UpdateMemberDeatails/update');
       // Log payload for debugging (inspect in browser console / server logs)
-      console.log('UpdateMemberDeatails payload:', updatePayload, 'url:', url);
 
       const res = await fetch(url, {
         method: 'PUT',
@@ -1574,7 +1573,6 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
       // Capture response text for better error reporting and debugging
       const resText = await res.text().catch(() => '');
-      console.log('UpdateMemberDeatails response status:', res.status, 'body:', resText);
 
       if (!res.ok) {
         let parsed = {};

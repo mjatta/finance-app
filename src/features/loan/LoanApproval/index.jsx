@@ -231,7 +231,6 @@ export default function LoanApproval() {
 
   // Log officers when loaded
   useEffect(() => {
-    console.log('Loan Officers loaded:', loanOfficers);
   }, [loanOfficers]);
 
   // Fetch rejection reasons when reject dialog opens
@@ -496,15 +495,6 @@ export default function LoanApproval() {
         glTopUp: isTopUpFlag,
         glResched: isRescheduledFlag,
       };
-
-      console.log('Submitting loan approval payload:', payload);
-      console.log('Payload types:', {
-        loanid: typeof payload.loanid,
-        loanAmount: typeof payload.loanAmount,
-        duration: typeof payload.duration,
-        customerCode: typeof payload.customerCode,
-        compid: typeof payload.compid,
-      });
 
       // Submit the loan approval
       const result = await submitLoanApproval(payload);

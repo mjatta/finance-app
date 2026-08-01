@@ -38,7 +38,6 @@ export function useLoanApprovalSubmit() {
       }
 
       const result = await response.json();
-      console.log('Loan Approval Submit Response:', result);
 
       // Handle both success and error responses
       if (result && typeof result === 'object') {

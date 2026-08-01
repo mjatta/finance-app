@@ -48,8 +48,6 @@ export default function MemberCloseAccount() {
     setBalanceWarning('');
 
     const result = await fetchMemberDetails(memberId.trim());
-    console.log('API Result:', result); // Debug log
-
     if (result) {
       // Handle if result is an array (take first item)
       const data = Array.isArray(result) ? result[0] : result;
@@ -96,7 +94,7 @@ export default function MemberCloseAccount() {
         shareBalance: shareBal.toString(),
         loanBalance: loanBal.toString(),
       });
-      console.log('Form Data Updated:', { firstName, middleName, lastName, saveBal, shareBal, loanBal }); // Debug log
+      
       setStatusMessage('Member details loaded successfully.');
       setStatusError(false);
     } else {
@@ -130,10 +128,6 @@ export default function MemberCloseAccount() {
     setBalanceWarning('');
   };
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
   const handleSave = async () => {
     if (!memberId.trim() || !formData.firstName.trim()) {

@@ -25,8 +25,6 @@ export const useGetTrialBalance = () => {
       };
 
       const url = getApiUrl('trial-balance');
-      console.log('Fetching Trial Balance from:', url);
-      console.log('Payload:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(url, {
         method: 'POST',
@@ -36,7 +34,6 @@ export const useGetTrialBalance = () => {
         body: JSON.stringify(payload),
       });
 
-      console.log('Response Status:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -44,7 +41,6 @@ export const useGetTrialBalance = () => {
       }
 
       const data = await response.json();
-      console.log('Trial Balance Response:', data);
       setLoading(false);
       return data;
     } catch (err) {

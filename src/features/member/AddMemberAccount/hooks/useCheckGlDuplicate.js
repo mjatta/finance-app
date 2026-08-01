@@ -28,7 +28,6 @@ export function useCheckGlDuplicate() {
         throw new Error(`Unknown account type: ${accountType}`);
       }
 
-      console.log('Checking GL duplicate:', endpoint);
 
       const resp = await fetch(endpoint);
       if (!resp.ok) {
@@ -36,7 +35,6 @@ export function useCheckGlDuplicate() {
       }
 
       const data = await resp.json();
-      console.log('GL duplicate check response:', data);
 
       // Return the account number
       return {

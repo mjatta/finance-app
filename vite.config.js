@@ -2039,7 +2039,6 @@ const productUpdateApiPlugin = () => ({
           }
 
           try {
-            console.log('🔵 Product Update Request:', JSON.stringify(body, null, 2))
             const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/Product/update', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -2047,12 +2046,10 @@ const productUpdateApiPlugin = () => ({
             })
 
             const backendData = await backendRes.json()
-            console.log('🟢 Backend Response:', backendRes.status, JSON.stringify(backendData, null, 2))
 
             res.statusCode = backendRes.status
             res.end(JSON.stringify(backendData))
           } catch (err) {
-            console.error('🔴 Backend Error:', err.message)
             res.statusCode = 500
             res.end(JSON.stringify({ message: 'Failed to update product on backend.', error: err.message }))
           }
@@ -2061,7 +2058,6 @@ const productUpdateApiPlugin = () => ({
 
         next()
       } catch (err) {
-        console.error('🔴 Middleware Error:', err.message)
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process product update request.', error: err.message }))
       }
@@ -2235,14 +2231,12 @@ const guarantorLoadApiPlugin = () => ({
             // Preserve the full path and query string
             const fullPath = req.url.startsWith('/api/guarantor') ? req.url : `/api/guarantor${req.url}`
             const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
-            console.log('Guarantor API Request:', backendUrl)
             
             const backendRes = await fetch(backendUrl, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             })
             const data = await backendRes.text()
-            console.log('Guarantor API Response:', backendRes.status)
             res.statusCode = backendRes.status
             res.end(data)
           } catch (fetchErr) {
@@ -2256,7 +2250,6 @@ const guarantorLoadApiPlugin = () => ({
 
         next()
       } catch (err) {
-        console.error('Guarantor load plugin error:', err)
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
       }
@@ -2521,8 +2514,6 @@ const saveLoanGuarantorApiPlugin = () => ({
             req.on('end', async () => {
               try {
                 const backendUrl = 'https://alakuyateh-001-site10.atempurl.com/api/loan/save-guarantor'
-                console.log('Save Guarantor API Request:', backendUrl)
-                console.log('Payload:', body)
                 
                 const backendRes = await fetch(backendUrl, {
                   method: 'POST',
@@ -2530,7 +2521,6 @@ const saveLoanGuarantorApiPlugin = () => ({
                   body: body,
                 })
                 const data = await backendRes.text()
-                console.log('Save Guarantor API Response:', backendRes.status)
                 res.statusCode = backendRes.status
                 res.end(data)
               } catch (fetchErr) {
@@ -2580,19 +2570,16 @@ const guaranteeHistoryApiPlugin = () => ({
             // Preserve the full path and query string
             const fullPath = req.url.startsWith('/api/GuaranteeHistorySoFar') ? req.url : `/api/GuaranteeHistorySoFar${req.url}`
             const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
-            console.log('Guarantee History API Request:', backendUrl)
             
             const backendRes = await fetch(backendUrl, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             })
             const data = await backendRes.text()
-            console.log('Guarantee History API Response:', backendRes.status)
             res.statusCode = backendRes.status
             res.end(data)
           } catch (fetchErr) {
             // Backend unreachable
-            console.error('Backend error:', fetchErr)
             res.statusCode = 502
             res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
           }
@@ -2632,14 +2619,13 @@ const loanApprovalApiPlugin = () => ({
             // Preserve the full path and query string
             const fullPath = req.url.startsWith('/api/LoanApproval') ? req.url : `/api/LoanApproval${req.url}`
             const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
-            console.log('Loan Approval API Request:', backendUrl)
             
             const backendRes = await fetch(backendUrl, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             })
             const data = await backendRes.text()
-            console.log('Loan Approval API Response:', backendRes.status)
+
             res.statusCode = backendRes.status
             res.end(data)
           } catch (fetchErr) {
@@ -2682,14 +2668,12 @@ const loanDisbursementApiPlugin = () => ({
           try {
             const fullPath = req.url.startsWith('/api/loan-disbursement') ? req.url : `/api/loan-disbursement${req.url}`
             const backendUrl = `https://alakuyateh-001-site10.atempurl.com${fullPath}`
-            console.log('Loan Disbursement API Request:', backendUrl)
             
             const backendRes = await fetch(backendUrl, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             })
             const data = await backendRes.text()
-            console.log('Loan Disbursement API Response:', backendRes.status)
             res.statusCode = backendRes.status
             res.end(data)
           } catch (fetchErr) {
@@ -2702,7 +2686,6 @@ const loanDisbursementApiPlugin = () => ({
 
         next()
       } catch (err) {
-        console.error('Loan disbursement plugin error:', err)
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
       }
@@ -2747,13 +2730,11 @@ const loanDisburseApiPlugin = () => ({
                 res.statusCode = backendRes.status
                 res.end(data)
               } catch (fetchErr) {
-                console.error('Backend error:', fetchErr)
                 res.statusCode = 502
                 res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
               }
             })
           } catch (fetchErr) {
-            console.error('Backend error:', fetchErr)
             res.statusCode = 502
             res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
           }
@@ -2762,7 +2743,6 @@ const loanDisburseApiPlugin = () => ({
 
         next()
       } catch (err) {
-        console.error('Loan disburse plugin error:', err)
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
       }
@@ -2947,7 +2927,6 @@ const trialBalanceApiPlugin = () => ({
   configureServer(server) {
     server.middlewares.use('/api/trialbalance', async (req, res, next) => {
       try {
-        console.log('Trial Balance API Request:', req.method, req.url)
         
         // Add CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*')
@@ -2972,8 +2951,6 @@ const trialBalanceApiPlugin = () => ({
 
             req.on('end', async () => {
               try {
-                console.log('Trial Balance Request Body:', body)
-                console.log('Backend URL:', backendUrl)
                 
                 const backendRes = await fetch(backendUrl, {
                   method: 'POST',
@@ -2981,19 +2958,15 @@ const trialBalanceApiPlugin = () => ({
                   body: body,
                 })
                 const data = await backendRes.text()
-                console.log('Trial Balance API Response Status:', backendRes.status)
-                console.log('Trial Balance API Response Data:', data)
                 
                 res.statusCode = backendRes.status
                 res.end(data)
               } catch (fetchErr) {
-                console.error('Backend Fetch Error:', fetchErr)
                 res.statusCode = 502
                 res.end(JSON.stringify({ message: 'Backend service unavailable', error: fetchErr.message }))
               }
             })
           } catch (err) {
-            console.error('Trial Balance API error:', err)
             res.statusCode = 500
             res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
           }
@@ -3002,7 +2975,6 @@ const trialBalanceApiPlugin = () => ({
 
         next()
       } catch (err) {
-        console.error('Trial Balance plugin error:', err)
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Internal server error', error: err.message }))
       }

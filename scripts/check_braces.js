@@ -18,4 +18,3 @@ for (const [open, close] of pairs) {
   }
   if (stack !== 0) console.log(`Unbalanced ${open}${close}: ${stack} (last seen open at or before line ${lastOpenLine})`);
 }
-console.log('done');

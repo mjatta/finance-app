@@ -17,7 +17,6 @@ export function useConfirmMemberActivate() {
         MemberCode: paddedCode,
       };
 
-      console.log('Confirming member activation:', payload);
 
       const url = getFullApiUrl('/api/member/activate');
       const response = await fetch(url, {
@@ -33,7 +32,6 @@ export function useConfirmMemberActivate() {
       }
 
       const result = await response.json();
-      console.log('Member activation API response:', result);
 
       return { success: true, data: result };
     } catch (err) {

@@ -23,7 +23,6 @@ export function useSaveLog() {
         error: errorMsg || '',
       };
 
-      console.log('Saving log:', logPayload);
 
       const url = getFullApiUrl('/api/systemAdministration/InsertLogs');
       const response = await fetch(url, {
@@ -39,7 +38,6 @@ export function useSaveLog() {
       }
 
       const result = await response.json();
-      console.log('Log saved successfully:', result);
 
       return { success: true, data: result };
     } catch (err) {

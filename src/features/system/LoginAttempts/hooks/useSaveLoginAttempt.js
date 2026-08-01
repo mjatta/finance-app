@@ -67,7 +67,6 @@ export function useSaveLoginAttempt() {
         status: isSuccess ? 'Login Success' : 'Login Failed',
       };
 
-      console.log('Saving login attempt:', payload);
 
       const url = getFullApiUrl('/api/systemAdministration/InsertLogAttempts');
       const response = await fetch(url, {
@@ -83,11 +82,9 @@ export function useSaveLoginAttempt() {
       }
 
       const result = await response.json();
-      console.log('Login attempt saved successfully:', result);
 
       return { success: true, data: result };
     } catch (err) {
-      console.error('Error saving login attempt:', err.message);
       setError(err.message);
       // Don't throw - allow login to proceed even if logging fails
       return { success: false, error: err.message };

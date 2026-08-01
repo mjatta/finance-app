@@ -32,8 +32,6 @@ export function useGetMemberDetails() {
       // Primary: individual
       let response = await callEnquiry('individual');
 
-      console.log(response, 'Raw response from member details API (individual)');
-
       // Handle 404 errors - member not found
       if (response.status === 404) {
         console.warn(`Member not found for code: ${memberCode}`);
@@ -59,10 +57,8 @@ export function useGetMemberDetails() {
       // If no accounts returned, try corporate then group fallbacks
       const hasAccounts = Array.isArray(payload?.Accounts) && payload.Accounts.length > 0;
       if (!hasAccounts) {
-        console.log('No accounts returned for individual; trying corporate endpoint');
         try {
           response = await callEnquiry('corporate');
-          console.log(response, 'Raw response from member details API (corporate)');
           if (response.ok) {
             const corpPayload = await response.json();
             if (Array.isArray(corpPayload?.Accounts) && corpPayload.Accounts.length > 0) {
@@ -75,10 +71,8 @@ export function useGetMemberDetails() {
         }
 
         // Try group
-        console.log('Trying group endpoint as final fallback');
         try {
           response = await callEnquiry('group');
-          console.log(response, 'Raw response from member details API (group)');
           if (response.ok) {
             const groupPayload = await response.json();
             if (Array.isArray(groupPayload?.Accounts) && groupPayload.Accounts.length > 0) {

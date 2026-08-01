@@ -32,7 +32,6 @@ export function useLoanCalculate() {
         return null;
       }
 
-      console.log('Loan calculation response:', result);
       return result;
     } catch (err) {
       console.error('Error calculating loan:', err);

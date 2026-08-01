@@ -43,7 +43,6 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
 
   const handleRowClick = useCallback((params) => {
     // Toggle selection on row click
-    console.log('Row clicked:', params.id);
     const accountId = params.id;
     
     if (selectedRows.includes(accountId)) {
@@ -95,15 +94,12 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
   // Effect to handle transaction fetching when a row is selected
   useEffect(() => {
     const fetchTransactionsForSelectedRow = async () => {
-      console.log('Effect triggered. selectedRows:', selectedRows);
       
       if (!memberDetails || !memberDetails.Accounts || memberDetails.Accounts.length === 0) {
-        console.log('No member details or accounts');
         return;
       }
 
       if (selectedRows.length === 0) {
-        console.log('No rows selected');
         setSelectedAccount(null);
         setTransactionData(null);
         setTransactionError('');
@@ -114,17 +110,13 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
 
       // Find the selected account
       const selectedRowId = selectedRows[0];
-      console.log('Selected row ID:', selectedRowId);
       
       const accountIndex = parseInt(selectedRowId.split('-')[1]);
-      console.log('Account index:', accountIndex);
       
       const selectedAccountData = memberDetails.Accounts[accountIndex];
-      console.log('Selected account data:', selectedAccountData);
 
       if (selectedAccountData) {
         const accountNumber = selectedAccountData.AccountNumber;
-        console.log('Fetching transactions for account:', accountNumber);
         
         setSelectedAccount(accountNumber);
         setTransactionData(null);
@@ -132,7 +124,6 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
 
         try {
           const data = await fetchTransactions(accountNumber);
-          console.log('Transaction data received:', data);
           
           if (data) {
             setTransactionData(data);
@@ -142,7 +133,6 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
             setTransactionData(null);
           }
         } catch (err) {
-          console.error('Error fetching transactions:', err);
           setTransactionError('Failed to fetch transactions');
           setTransactionData(null);
         }

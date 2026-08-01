@@ -21,15 +21,13 @@ export function useWards() {
         setLoading(true);
         // Use relative path so Vite proxy can intercept and handle CORS
         const url = getFullApiUrl('/api/lookups/wards');
-        console.log('Fetching wards from:', url);
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-
-        console.log('Wards API response status:', response.status);
 
         // Handle 404 errors - API endpoint doesn't exist
         if (response.status === 404) {
@@ -53,7 +51,6 @@ export function useWards() {
           throw new Error('Invalid JSON response from wards API');
         }
 
-        console.log('Wards API payload:', payload);
 
         // Determine the array to process
         let wardArray = [];
@@ -76,7 +73,6 @@ export function useWards() {
           )
         ).sort((a, b) => a.name.localeCompare(b.name));
 
-        console.log('Processed wards:', wardOptions);
 
         if (wardOptions.length === 0) {
           console.warn('No wards found in API response, using default wards');

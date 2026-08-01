@@ -46,7 +46,6 @@ export function useUpdateAccountStatus() {
         userId: finalUserId,
       };
 
-      console.log('Sending account status update:', payload);
 
       const url = getFullApiUrl('/api/account/update-status');
       const response = await fetch(url, {
@@ -62,7 +61,6 @@ export function useUpdateAccountStatus() {
       }
 
       const result = await response.json();
-      console.log('Account status update API response:', result);
 
       return { success: true, data: result };
     } catch (err) {

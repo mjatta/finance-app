@@ -12,7 +12,6 @@ export function useLogin() {
     setError(null);
     try {
       const url = getApiUrl('auth-login');
-      console.log('Login URL:', url);
 
       const response = await fetch(url, {
         method: 'POST',

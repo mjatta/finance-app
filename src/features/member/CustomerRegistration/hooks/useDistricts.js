@@ -27,15 +27,12 @@ export function useDistricts() {
         setLoading(true);
         // Use relative path so Vite proxy can intercept and handle CORS
         const url = getFullApiUrl('/api/lookups/areas');
-        console.log('Fetching districts from:', url);
         const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-
-        console.log('Districts API response status:', response.status);
 
         // Handle 404 errors - API endpoint doesn't exist
         if (response.status === 404) {
@@ -59,7 +56,6 @@ export function useDistricts() {
           throw new Error('Invalid JSON response from districts API');
         }
 
-        console.log('Districts API payload:', payload);
 
         // Determine the array to process
         let districtArray = [];
@@ -82,7 +78,6 @@ export function useDistricts() {
           )
         ).sort((a, b) => a.name.localeCompare(b.name));
 
-        console.log('Processed districts:', districtOptions);
 
         if (districtOptions.length === 0) {
           console.warn('No districts found in API response, using default districts');

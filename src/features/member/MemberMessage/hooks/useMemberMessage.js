@@ -22,7 +22,6 @@ export function useMemberMessage() {
       const paddedCode = String(customerCode).padStart(6, '0');
 
       const url = getFullApiUrl(`/api/member-message/${paddedCode}`);
-      console.log('Fetching member message from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -36,7 +35,6 @@ export function useMemberMessage() {
       }
 
       const result = await response.json();
-      console.log('Member message API response:', result);
 
       // Handle array response (first item) or direct object
       const messageData = Array.isArray(result) ? result[0] : result;
@@ -72,7 +70,6 @@ export function useMemberMessage() {
       };
 
       const url = getFullApiUrl('/api/member-message/update');
-      console.log('Updating member message at:', url, payload);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -87,7 +84,6 @@ export function useMemberMessage() {
       }
 
       const result = await response.json();
-      console.log('Member message update response:', result);
 
       // Update local state with new message
       setData((prev) => ({

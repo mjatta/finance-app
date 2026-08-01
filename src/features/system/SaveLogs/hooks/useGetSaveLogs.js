@@ -13,7 +13,6 @@ export function useGetSaveLogs() {
       setError(null);
 
       const url = getFullApiUrl('/api/systemAdministration/Logs');
-      console.log('Fetching save logs from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -27,7 +26,6 @@ export function useGetSaveLogs() {
       }
 
       const data = await response.json();
-      console.log('Save logs API response:', data);
 
       // Handle array response directly
       if (Array.isArray(data)) {
@@ -47,7 +45,6 @@ export function useGetSaveLogs() {
       console.warn('Unexpected save logs API response format:', data);
       setLogs([]);
     } catch (err) {
-      console.error('Error fetching save logs:', err);
       setError(err.message);
       setLogs([]);
     } finally {

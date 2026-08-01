@@ -482,7 +482,6 @@ export default function LoanApplication() {
           );
           if (response.ok) {
             const result = await response.json();
-            console.log('Transaction Type Change - API Response:', result);
             
             if (result.status === 'success' && result.data) {
               // Store in Zustand store
@@ -493,7 +492,6 @@ export default function LoanApplication() {
               const intRate = result.data.interestRate || result.data.int_rate || result.data.intRate || result.data.rate || '';
               const loanLimitVal = result.data.maxAmount || result.data.max_amount || result.data.maxAmount || '';
               
-              console.log('Mapped values - Method:', intMethod, 'Rate:', intRate, 'Limit:', loanLimitVal);
               
               // Apply mappings to form fields
               setFormData((prev) => ({
