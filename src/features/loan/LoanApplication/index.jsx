@@ -153,6 +153,8 @@ export default function LoanApplication() {
 
   const [formData, setFormData] = useState(initialFormData);
   const [applicationFormPreviewUrl, setApplicationFormPreviewUrl] = useState('');
+  const [expandedImageUrl, setExpandedImageUrl] = useState('');
+  const [expandedImageOpen, setExpandedImageOpen] = useState(false);
   const applicationFormFileRef = useRef(null);
 
 
@@ -1611,6 +1613,18 @@ export default function LoanApplication() {
                         placeItems: 'center',
                         overflow: 'hidden',
                         bgcolor: 'action.hover',
+                        cursor: applicationFormPreviewUrl ? 'pointer' : 'default',
+                        transition: 'all 0.2s ease',
+                        '&:hover': applicationFormPreviewUrl ? {
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                          transform: 'scale(1.02)',
+                        } : {},
+                      }}
+                      onClick={() => {
+                        if (applicationFormPreviewUrl) {
+                          setExpandedImageUrl(applicationFormPreviewUrl);
+                          setExpandedImageOpen(true);
+                        }
                       }}
                     >
                       {applicationFormPreviewUrl ? (
@@ -1769,6 +1783,45 @@ export default function LoanApplication() {
             {membersSaving ? 'Saving...' : 'Save Updates'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Expanded Image Modal */}
+      <Dialog
+        open={expandedImageOpen}
+        onClose={() => setExpandedImageOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: '#f5f5f5',
+            borderRadius: 2,
+            maxHeight: '95vh',
+          },
+        }}
+      >
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, height: '90vh' }}>
+          <Box
+            component="img"
+            src={expandedImageUrl}
+            alt="Expanded preview"
+            sx={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 2, textAlign: 'center', maxWidth: '100%' }}
+          >
+            Click outside to close or press Escape
+          </Typography>
+        </DialogContent>
       </Dialog>
     </Box>
   );

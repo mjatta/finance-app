@@ -158,6 +158,9 @@ export default function LoanGuarantor() {
   const collateralFileRef = useRef(null);
   const collateralInputRef = useRef(null);
   const [collateralFileName, setCollateralFileName] = useState('');
+  const [collateralPreviewUrl, setCollateralPreviewUrl] = useState('');
+  const [expandedImageUrl, setExpandedImageUrl] = useState('');
+  const [expandedImageOpen, setExpandedImageOpen] = useState(false);
 
   // Always keep guaranteeDate as today
   useEffect(() => {
@@ -384,6 +387,17 @@ export default function LoanGuarantor() {
 
     collateralFileRef.current = selectedFile;
     setCollateralFileName(selectedFile ? selectedFile.name : '');
+
+    // Generate preview URL for image files
+    if (selectedFile && selectedFile.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCollateralPreviewUrl(e.target?.result || '');
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setCollateralPreviewUrl('');
+    }
   };
 
   const handleRemoveCollateralFile = () => {
@@ -392,6 +406,7 @@ export default function LoanGuarantor() {
 
     collateralFileRef.current = null;
     setCollateralFileName('');
+    setCollateralPreviewUrl('');
   };
 
   const handleSaveGuarantor = async () => {
@@ -956,6 +971,52 @@ export default function LoanGuarantor() {
                     <Typography variant="body2" sx={{ color: collateralFileName ? '#28a745' : '#666' }}>
                       {collateralFileName || 'No document selected'}
                     </Typography>
+                    {collateralPreviewUrl && (
+                      <Box
+                        sx={{
+                          mt: 1.5,
+                          p: 1,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 8px rgba(15, 23, 42, 0.06)',
+                          bgcolor: 'background.paper',
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
+                          Document Preview
+                        </Typography>
+                        <Box
+                          sx={{
+                            border: '1px dashed',
+                            borderColor: 'divider',
+                            borderRadius: 1.5,
+                            minHeight: 150,
+                            display: 'grid',
+                            placeItems: 'center',
+                            overflow: 'hidden',
+                            bgcolor: 'action.hover',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              transform: 'scale(1.02)',
+                            },
+                          }}
+                          onClick={() => {
+                            setExpandedImageUrl(collateralPreviewUrl);
+                            setExpandedImageOpen(true);
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={collateralPreviewUrl}
+                            alt="Collateral document preview"
+                            sx={{ width: '100%', height: 150, objectFit: 'contain', objectPosition: 'center', borderRadius: 1, bgcolor: 'background.paper' }}
+                          />
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
                 </Grid>
               )}
@@ -1087,7 +1148,44 @@ export default function LoanGuarantor() {
         </Box>
       )}
 
-
+      {/* Expanded Image Modal */}
+      <Dialog
+        open={expandedImageOpen}
+        onClose={() => setExpandedImageOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: '#f5f5f5',
+            borderRadius: 2,
+            maxHeight: '95vh',
+          },
+        }}
+      >
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, height: '90vh' }}>
+          <Box
+            component="img"
+            src={expandedImageUrl}
+            alt="Expanded preview"
+            sx={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 2, textAlign: 'center', maxWidth: '100%' }}
+          >
+            Click outside to close or press Escape
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

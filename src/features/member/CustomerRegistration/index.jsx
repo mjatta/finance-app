@@ -10,6 +10,8 @@ import {
   CardContent,
   Checkbox,
   CircularProgress,
+  Dialog,
+  DialogContent,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -888,6 +890,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('');
   const [applicationFormPreviewUrl, setApplicationFormPreviewUrl] = useState('');
+  const [expandedImageUrl, setExpandedImageUrl] = useState('');
+  const [expandedImageOpen, setExpandedImageOpen] = useState(false);
   const photoFileRef = useRef(null);
   const signatureFileRef = useRef(null);
   const applicationFormFileRef = useRef(null);
@@ -3184,6 +3188,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               placeItems: 'center',
                               overflow: 'hidden',
                               bgcolor: 'action.hover',
+                              cursor: photoPreviewUrl ? 'pointer' : 'default',
+                              transition: 'all 0.2s ease',
+                              '&:hover': photoPreviewUrl ? {
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                transform: 'scale(1.02)',
+                              } : {},
+                            }}
+                            onClick={() => {
+                              if (photoPreviewUrl) {
+                                setExpandedImageUrl(photoPreviewUrl);
+                                setExpandedImageOpen(true);
+                              }
                             }}
                           >
                             {photoPreviewUrl ? (
@@ -3258,6 +3274,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               placeItems: 'center',
                               overflow: 'hidden',
                               bgcolor: 'action.hover',
+                              cursor: signaturePreviewUrl ? 'pointer' : 'default',
+                              transition: 'all 0.2s ease',
+                              '&:hover': signaturePreviewUrl ? {
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                transform: 'scale(1.02)',
+                              } : {},
+                            }}
+                            onClick={() => {
+                              if (signaturePreviewUrl) {
+                                setExpandedImageUrl(signaturePreviewUrl);
+                                setExpandedImageOpen(true);
+                              }
                             }}
                           >
                             {signaturePreviewUrl ? (
@@ -3882,6 +3910,45 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           </Box>
         </Box>
       )}
+
+      {/* Expanded Image Modal */}
+      <Dialog
+        open={expandedImageOpen}
+        onClose={() => setExpandedImageOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: '#f5f5f5',
+            borderRadius: 2,
+            maxHeight: '95vh',
+          },
+        }}
+      >
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, height: '90vh' }}>
+          <Box
+            component="img"
+            src={expandedImageUrl}
+            alt="Expanded preview"
+            sx={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 2, textAlign: 'center', maxWidth: '100%' }}
+          >
+            Click outside to close or press Escape
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
