@@ -26,6 +26,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useAuthStore } from '../../../store/authStore';
 import { useLoanDisbursementLoad } from './Hooks/useLoanDisbursementLoad';
 import { useSaveDisbursement } from './Hooks/useSaveDisbursement';
@@ -995,7 +996,7 @@ export default function LoanDisbursement() {
                       variant="outlined"
                       size="small"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        startAdornment: <CurrencyAdornment />
                       }}
                       inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                       error={isAmountBlocked}
@@ -1013,7 +1014,7 @@ export default function LoanDisbursement() {
                       variant="outlined"
                       size="small"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        startAdornment: <CurrencyAdornment />
                       }}
                       inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     />
@@ -1028,7 +1029,7 @@ export default function LoanDisbursement() {
                       variant="outlined"
                       size="small"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        startAdornment: <CurrencyAdornment />
                       }}
                       inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     />

@@ -17,6 +17,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -405,8 +406,8 @@ export default function MemberPayrollManagement() {
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
             <TextField label="Total Record" value={String(filteredPayrollRows.length)} InputProps={{ readOnly: true }} />
-            <TextField label="Total Contribution" value={numberFormat(memberContribution)} InputProps={{ readOnly: true }} />
-            <TextField label="Balance" value={numberFormat(processBalance)} InputProps={{ readOnly: true }} />
+            <TextField label="Total Contribution" value={numberFormat(memberContribution)} InputProps={{ readOnly: true, startAdornment: <CurrencyAdornment /> }} />
+            <TextField label="Balance" value={numberFormat(processBalance)} InputProps={{ readOnly: true, startAdornment: <CurrencyAdornment /> }} />
           </Box>
         </CardContent>
       </Card>

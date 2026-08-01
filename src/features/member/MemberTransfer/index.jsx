@@ -16,6 +16,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 
 export default function MemberTransfer({ user }) {
   const initialForm = {
@@ -219,6 +220,7 @@ export default function MemberTransfer({ user }) {
                     value={formData.fromAccountBalance}
                     onChange={handleChange}
                     sx={{ flex: '1 1 220px', minWidth: 220 }}
+                    InputProps={{ startAdornment: <CurrencyAdornment /> }}
                   />
 
                   <DatePicker
@@ -251,6 +253,7 @@ export default function MemberTransfer({ user }) {
                     value={formData.amount}
                     onChange={handleChange}
                     sx={{ flex: '1 1 220px', minWidth: 220 }}
+                    InputProps={{ startAdornment: <CurrencyAdornment /> }}
                   />
 
                   <TextField
@@ -314,6 +317,7 @@ export default function MemberTransfer({ user }) {
                     value={formData.toAccountBalance}
                     onChange={handleChange}
                     sx={{ flex: '1 1 220px', minWidth: 220 }}
+                    InputProps={{ startAdornment: <CurrencyAdornment /> }}
                   />
                 </Box>
               </CardContent>

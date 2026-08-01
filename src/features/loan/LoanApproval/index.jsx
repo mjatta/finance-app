@@ -23,6 +23,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useLoanApprovalLoad } from './Hooks/useLoanApprovalLoad';
 import { useLoanDetails } from './Hooks/useLoanDetails';
 import { useLoanApprovalSubmit } from './Hooks/useLoanApprovalSubmit';
@@ -809,7 +810,7 @@ export default function LoanApproval() {
                       size="small"
                       placeholder="Enter amount"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                        startAdornment: <CurrencyAdornment />
                       }}
                       inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     />
@@ -1044,7 +1045,7 @@ export default function LoanApproval() {
             <TextField
               label="Loan Amount"
               value={formatCurrency(selectedLoanForReject?.loanAmount || 0)}
-              InputProps={{ readOnly: true }}
+              InputProps={{ readOnly: true, startAdornment: <CurrencyAdornment /> }}
               variant="outlined"
               fullWidth
             />

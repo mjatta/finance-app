@@ -29,6 +29,7 @@ import dayjs from 'dayjs';
 import SaveIcon from '@mui/icons-material/Save';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useAuthStore } from '../../../store/authStore';
 import { useGuarantorLoad } from './Hooks/useGuarantorLoad';
 import { useGuarantorValidate } from './Hooks/useGuarantorValidate';
@@ -873,7 +874,7 @@ export default function LoanGuarantor() {
                   onChange={handleGuarantorDetailsChange}
                   variant="outlined"
                   size="small"
-                  InputProps={{ readOnly: true }}
+                  InputProps={{ readOnly: true, startAdornment: <CurrencyAdornment /> }}
                   sx={{ bgcolor: '#f5f5f5' }}
                 />
               </Grid>
@@ -902,7 +903,7 @@ export default function LoanGuarantor() {
                   size="small"
                   placeholder="Amount to Guarantee"
                   InputProps={{
-                    startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                    startAdornment: <CurrencyAdornment />
                   }}
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                 />
@@ -920,7 +921,7 @@ export default function LoanGuarantor() {
                     variant="outlined"
                     size="small"
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      startAdornment: <CurrencyAdornment />
                     }}
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                   />

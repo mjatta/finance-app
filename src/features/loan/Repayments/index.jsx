@@ -24,6 +24,7 @@ import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
 import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetBankAccounts';
 import { useAuthStore } from '../../../store/authStore';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 
 
 
@@ -847,7 +848,7 @@ export default function Repayments() {
                     fullWidth
                     required
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      startAdornment: <CurrencyAdornment />
                     }}
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                   />

@@ -15,6 +15,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { getFullApiUrl } from '../../../utils/apiConfig';
+import { PercentAdornment } from '../../../components/FieldAdornments';
 
 export default function InterestCalculation() {
   const [interestDate, setInterestDate] = useState('');
@@ -139,7 +140,13 @@ export default function InterestCalculation() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              <TextField label="Annual Rate (%)" fullWidth value={annualRate} onChange={(event) => setAnnualRate(event.target.value)} />
+              <TextField
+                label="Annual Rate (%)"
+                fullWidth
+                value={annualRate}
+                onChange={(event) => setAnnualRate(event.target.value)}
+                InputProps={{ endAdornment: <PercentAdornment /> }}
+              />
             </Grid>
             <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Button variant="contained" onClick={handleCalculate}>Calculate</Button>

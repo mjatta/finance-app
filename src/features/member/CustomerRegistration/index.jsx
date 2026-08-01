@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { useIdTypes } from './hooks/useIdTypes';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
@@ -2906,18 +2907,21 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             onBlur={() => handleBlur('registrationFee')}
                             error={isFieldInvalid('registrationFee')}
                             helperText={isFieldInvalid('registrationFee') ? 'Registration Fee is required' : ''}
+                            InputProps={{ startAdornment: <CurrencyAdornment /> }}
                           />
                           <TextField
                             label="Saving Amount"
                             name="savingAmount"
                             value={formData.savingAmount}
                             onChange={handleChange}
+                            InputProps={{ startAdornment: <CurrencyAdornment /> }}
                           />
                           <TextField
                             label="Share Price"
                             name="sharePrice"
                             value={formData.sharePrice}
                             onChange={handleChange}
+                            InputProps={{ startAdornment: <CurrencyAdornment /> }}
                             disabled
                             sx={{
                               '& .MuiInputBase-root.Mui-disabled': {

@@ -20,6 +20,7 @@ import {
   Backdrop,
   CircularProgress,
 } from '@mui/material';
+import { CurrencyAdornment, PercentAdornment } from '../../../../components/FieldAdornments';
 import { useGetAccountTypes } from './hooks/useGetAccountTypes';
 import { useGetIncomeAccounts } from './hooks/useGetIncomeAccounts';
 import { useGetExpenseAccounts } from './hooks/useGetExpenseAccounts';
@@ -422,6 +423,7 @@ export default function ProductDefinition() {
                   size="small"
                   fullWidth
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                  InputProps={{ endAdornment: <PercentAdornment /> }}
                 />
               )}
               <TextField
@@ -432,6 +434,7 @@ export default function ProductDefinition() {
                 size="small"
                 fullWidth
                 inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                InputProps={{ startAdornment: <CurrencyAdornment /> }}
               />
               <TextField
                 label="Maximum Amount"
@@ -441,6 +444,7 @@ export default function ProductDefinition() {
                 size="small"
                 fullWidth
                 inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                InputProps={{ startAdornment: <CurrencyAdornment /> }}
               />
               <TextField
                 label="Minimum Duration"
@@ -594,6 +598,7 @@ export default function ProductDefinition() {
                   size="small"
                   fullWidth
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
+                  InputProps={{ endAdornment: <PercentAdornment /> }}
                 />
                 <TextField
                   label="Source Product"

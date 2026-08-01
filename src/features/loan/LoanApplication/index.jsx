@@ -28,6 +28,7 @@ import dayjs from 'dayjs';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { useAuthStore } from '../../../store/authStore';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useLoanSetupDetails } from './hooks/useLoanSetupDetails';
 import { useLoanCalculate } from './hooks/useLoanCalculate';
@@ -1166,9 +1167,7 @@ export default function LoanApplication() {
                           placeholder: '0',
                         }}
                         InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                          ),
+                          startAdornment: <CurrencyAdornment />,
                         }}
                       />
                     )}
@@ -1189,9 +1188,7 @@ export default function LoanApplication() {
                         placeholder: '0',
                       }}
                       InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                        ),
+                        startAdornment: <CurrencyAdornment />,
                       }}
                     />
 
@@ -1212,9 +1209,7 @@ export default function LoanApplication() {
                           placeholder: '0',
                         }}
                         InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
-                          ),
+                          startAdornment: <CurrencyAdornment />,
                         }}
                       />
                     )}
@@ -1746,7 +1741,7 @@ export default function LoanApplication() {
                             size="small"
                             value={formatCurrency(member.LoanAmount)}
                             onChange={(e) => handleGroupMemberFieldChange(index, 'LoanAmount', e.target.value)}
-                            InputProps={{ startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment> }}
+                            InputProps={{ startAdornment: <CurrencyAdornment /> }}
                           />
                         </TableCell>
                         <TableCell sx={{ minWidth: 170 }}>

@@ -21,6 +21,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
+import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
@@ -981,7 +982,7 @@ export default function DepositManagement() {
                     fullWidth
                     required
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                      startAdornment: <CurrencyAdornment />
                     }}
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                     sx={{
@@ -1027,7 +1028,7 @@ export default function DepositManagement() {
                         onChange={handleDepositFeeAmountChange}
                         size="small"
                         InputProps={{
-                          startAdornment: <InputAdornment position="start">{CURRENCY_SYMBOL}</InputAdornment>
+                          startAdornment: <CurrencyAdornment />
                         }}
                         inputProps={{ inputMode: 'numeric', pattern: '[0-9.]*' }}
                         sx={{ width: '200px' }}

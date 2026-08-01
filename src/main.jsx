@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import InputAdornment from '@mui/material/InputAdornment'
 import EditNoteRoundedIcon from '@mui/icons-material/EditNoteRounded'
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
@@ -23,6 +24,34 @@ const theme = createTheme({
               <EditNoteRoundedIcon fontSize="small" />
             </InputAdornment>
           ),
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          '& .MuiOutlinedInput-notchedOutline': {
+            transition: 'border-color 0.2s ease',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#94a3b8',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderWidth: 2,
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      defaultProps: {
+        IconComponent: KeyboardArrowDownRoundedIcon,
+      },
+      styleOverrides: {
+        icon: {
+          color: '#64748b',
+          transition: 'transform 0.2s ease',
         },
       },
     },
