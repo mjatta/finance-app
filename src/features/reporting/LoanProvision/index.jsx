@@ -24,6 +24,7 @@ import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
 import useGetAgingProducts from '../DetailedAging/hooks/useGetAgingProducts';
 import useGetAgingCategories from '../DetailedAging/hooks/useGetAgingCategories';
 import useGetLoanProvisionDetails from './hooks/useGetLoanProvisionDetails';
+import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { buildLoanProvisionDetailsPrintHtml } from './printSetup';
 
 const FALLBACK_ROWS = [
@@ -69,10 +70,12 @@ export default function LoanProvision() {
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
   const [category, setCategory] = useState('');
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [runDate, setRunDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [rangesInitialized, setRangesInitialized] = useState(false);
   const [savingRanges, setSavingRanges] = useState(false);
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const isBusy = detailsLoading || savingRanges;
 
   useEffect(() => {
@@ -81,6 +84,11 @@ export default function LoanProvision() {
       setRangesInitialized(true);
     }
   }, [ranges, rangesLoading, rangesInitialized]);
+
+  // Load loan officers on mount
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
 
   const canRunAction = Boolean(runDate);
 
@@ -191,10 +199,17 @@ export default function LoanProvision() {
     }
 
     setStatusMessage('');
+    // Ensure ByLoanOfficer uses the officer `oprcode` (preferred) rather than `usernumb` value
+    const selectedOfficer = officers.find((o) => String(o.value) === String(loanOfficer));
+    const byLoanOfficerValue = (selectedOfficer && selectedOfficer.rawData && (selectedOfficer.rawData.oprcode || selectedOfficer.rawData.oprcode === 0))
+      ? String(selectedOfficer.rawData.oprcode)
+      : (loanOfficer || '');
+
     const response = await fetchDetails({
       toDate: runDate.format('YYYY-MM-DD'),
       productId: product ? product : 0,
       categoryId: category ? Number(category) || 0 : 0,
+      byLoanOfficer: byLoanOfficerValue,
     });
 
     if (!response.success) {
@@ -277,6 +292,7 @@ export default function LoanProvision() {
     setRangesInitialized(false);
     setProduct('');
     setCategory('');
+    setLoanOfficer('');
     setRunDate(dayjs());
     setStatusMessage('');
   };
@@ -389,7 +405,7 @@ export default function LoanProvision() {
             </Table>
           </TableContainer>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, mb: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(4, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
               label="Product"
@@ -440,6 +456,34 @@ export default function LoanProvision() {
             >
               <MenuItem value="">All Categories</MenuItem>
               {categoryOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Loan Officer"
+              value={loanOfficer}
+              onChange={(e) => setLoanOfficer(e.target.value)}
+              size="small"
+              fullWidth
+              disabled={officersLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return officersLoading ? 'Loading...' : 'All Officers';
+                  }
+
+                  const option = officers.find((item) => String(item.value) === String(selected));
+                  return option?.label || selected;
+                },
+              }}
+            >
+              <MenuItem value="">All Officers</MenuItem>
+              {officers.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
                 </MenuItem>

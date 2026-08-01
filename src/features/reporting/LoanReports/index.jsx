@@ -77,8 +77,6 @@ export default function LoanReports() {
 
   const userOptions = useMemo(() => (Array.isArray(users) ? users : []).map((u) => ({ id: u.id, name: u.name })), [users]);
 
-  
-
   const handleCheckChange = (e) => {
     const { name, checked } = e.target;
     setChecks((prev) => ({ ...prev, [name]: checked }));

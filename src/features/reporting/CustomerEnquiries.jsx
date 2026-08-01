@@ -34,10 +34,10 @@ const normalizeBranchId = (branch) => (
   || 0
 );
 
+const ALL_BRANCHES_VALUE = '__ALL_BRANCHES__';
 const MARITAL_STATUS_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'];
 const EDUCATION_LEVEL_OPTIONS = ['No Formal Education', 'Primary', 'Secondary', 'Vocational / Technical', 'Diploma', 'Bachelor\'s Degree', 'Master\'s Degree', 'PhD'];
 const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
-const ALL_BRANCHES_VALUE = '__ALL_BRANCHES__';
 
 const normalizeReportRows = (payload) => {
   if (Array.isArray(payload)) return payload;

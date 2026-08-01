@@ -16,6 +16,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import { buildSavingsBalancePrintHtml } from './SavingsBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -78,9 +79,11 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function SavingsBalance() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const [branchId, setBranchId] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [product, setProduct] = useState('');
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
@@ -151,6 +154,11 @@ export default function SavingsBalance() {
     loadProducts();
   }, []);
 
+  // Load loan officers on mount
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
+
   const handleExportPDF = (data) => {
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) {
@@ -187,6 +195,12 @@ export default function SavingsBalance() {
     setStatusMessage('');
 
     try {
+      // Ensure ByLoanOfficer uses the officer `oprcode` (preferred) rather than `usernumb` value
+      const selectedOfficer = officers.find((o) => String(o.value) === String(loanOfficer));
+      const byLoanOfficerValue = (selectedOfficer && selectedOfficer.rawData && (selectedOfficer.rawData.oprcode || selectedOfficer.rawData.oprcode === 0))
+        ? String(selectedOfficer.rawData.oprcode)
+        : (loanOfficer || '');
+
       // Build payload based on selected filters
       const payload = {
         BranchID: Number(branchId),
@@ -198,6 +212,7 @@ export default function SavingsBalance() {
         GenderFemale: gender.female ? 2 : 0,
         GenderOther: 3,
         TransactionDate: date,
+        ByLoanOfficer: byLoanOfficerValue,
       };
 
       const response = await fetch('/api/savingsbalances/get', {
@@ -327,8 +342,8 @@ export default function SavingsBalance() {
             />
           </Box>
 
-          {/* Row 2: Products */}
-          <Box sx={{ mb: 3 }}>
+          {/* Row 2: Products and Loan Officer */}
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
               label="Products"
@@ -347,6 +362,36 @@ export default function SavingsBalance() {
                 Select a product
               </MenuItem>
               {productOptions.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Loan Officer"
+              value={loanOfficer}
+              onChange={(e) => setLoanOfficer(e.target.value)}
+              size="small"
+              fullWidth
+              disabled={officersLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) {
+                    return 'Select a loan officer';
+                  }
+
+                  const option = officers.find((item) => String(item.value) === String(selected));
+                  return option?.label || selected;
+                },
+              }}
+            >
+              <MenuItem value="">
+                All Loan Officers
+              </MenuItem>
+              {officers.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
                   {item.label}
                 </MenuItem>

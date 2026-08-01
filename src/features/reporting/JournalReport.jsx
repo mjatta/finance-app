@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
+import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import useJournalEnquiryUsers from './JournalReport/hooks/useJournalEnquiryUsers';
 import { useAuthStore } from '../../store/authStore';
 import buildJournalReportPrintHtml from './JournalReport/printSetup';
@@ -35,17 +36,23 @@ const downloadFile = (content, filename, mimeType) => {
 export default function JournalReport() {
   const { branches, loading: branchesLoading } = useBranches();
   const { users, loading: usersLoading } = useJournalEnquiryUsers();
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const authUser = useAuthStore((s) => s.user);
   const { data: creditUnion, loading: creditUnionLoading } = useCreditUnionLookup(authUser?.CompId || 30);
   const [company, setCompany] = useState('');
   const [branch, setBranch] = useState('');
   const [user, setUser] = useState('');
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [tranFrom, setTranFrom] = useState(() => dayjs('1990-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
   const [isPrinting, setIsPrinting] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('error');
+
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
 
   // users are loaded by useJournalEnquiryUsers hook
 

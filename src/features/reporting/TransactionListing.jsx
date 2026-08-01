@@ -17,6 +17,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
 import { useUsers } from '../../hooks/useUsers';
+import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import { buildTransactionListingPrintHtml } from './TransactionListing/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -131,8 +132,10 @@ const downloadFile = (content, filename, mimeType) => {
 export default function TransactionListing() {
   const { branches, loading: branchesLoading } = useBranches();
   const { users, isLoading: usersLoading, fetchUsers } = useUsers();
+  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
+  const [loanOfficer, setLoanOfficer] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
   const [transDateFrom, setTransDateFrom] = useState(() => dayjs('1960-01-01'));
   const [transDateTo, setTransDateTo] = useState(() => dayjs());
@@ -149,6 +152,11 @@ export default function TransactionListing() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Load loan officers on component mount
+  useEffect(() => {
+    fetchLoanOfficers();
+  }, [fetchLoanOfficers]);
 
   const branchOptions = useMemo(
     () => {
@@ -433,7 +441,32 @@ export default function TransactionListing() {
               </TextField>
             </Box>
 
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 2 }}>
+              <TextField
+                select
+                label="Loan Officer"
+                value={loanOfficer}
+                onChange={(e) => setLoanOfficer(e.target.value)}
+                size="small"
+                fullWidth
+                disabled={officersLoading}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (!selected) return 'All Officers';
+                    const option = officers.find((item) => String(item.value) === String(selected));
+                    return option?.label || selected;
+                  },
+                }}
+              >
+                <MenuItem value="">All Officers</MenuItem>
+                {officers.map((item) => (
+                  <MenuItem key={item.value} value={item.value}>
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
               <TextField
                 label="Transaction Range"
                 value={transactionRange}
