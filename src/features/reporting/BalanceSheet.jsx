@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -14,9 +14,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
-import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import { useGetBalanceSheet } from './BalanceSheet/hook/useGetBalanceSheet';
 import { buildBalanceSheetPrintHtml } from './BalanceSheet/printSetup';
+
+const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -36,16 +37,13 @@ const normalizeBranchId = (branch) => (
 
 export default function BalanceSheet() {
   const { branches, loading: branchesLoading } = useBranches();
-  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const { fetchBalanceSheet, loading: isFetching, error: fetchError } = useGetBalanceSheet();
   const [branchId, setBranchId] = useState('ALL');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [loanOfficer, setLoanOfficer] = useState('');
+  const [region, setRegion] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
-  useEffect(() => {
-    fetchLoanOfficers();
-  }, [fetchLoanOfficers]);
+
 
   const formatAmount = (value) => {
     const amount = Number(value ?? 0);
@@ -211,28 +209,22 @@ export default function BalanceSheet() {
 
             <TextField
               select
-              label="Loan Officer"
-              value={loanOfficer}
-              onChange={(e) => setLoanOfficer(e.target.value)}
+              label="Region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               size="small"
               fullWidth
-              disabled={officersLoading || isFetching}
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
-                  if (!selected) return 'All Officers';
-                  const option = officers.find((item) => String(item.value) === String(selected));
-                  return option?.label || selected;
+                  if (!selected) return 'All Regions';
+                  return selected;
                 },
               }}
             >
-              <MenuItem value="">
-                All Officers
-              </MenuItem>
-              {officers.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
+              <MenuItem value="">All Regions</MenuItem>
+              {REGIONS.map((r) => (
+                <MenuItem key={r} value={r}>{r}</MenuItem>
               ))}
             </TextField>
           </Box>

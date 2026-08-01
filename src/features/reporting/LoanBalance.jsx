@@ -17,8 +17,9 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
-import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import useGetLoanBalancePrint from './LoanBalance/hooks/useGetLoanBalancePrint';
+
+const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 import { buildLoanBalancePrintHtml } from './LoanBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -81,12 +82,11 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function LoanBalance() {
   const { branches, loading: branchesLoading } = useBranches();
-  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
   const [branch, setBranch] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [productType, setProductType] = useState('');
-  const [loanOfficer, setLoanOfficer] = useState('');
+  const [region, setRegion] = useState('');
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
@@ -139,9 +139,7 @@ export default function LoanBalance() {
   }, []);
 
   // Load loan officers on mount
-  useEffect(() => {
-    fetchLoanOfficers();
-  }, [fetchLoanOfficers]);
+
 
   const branchOptions = useMemo(
     () => {
@@ -198,12 +196,6 @@ export default function LoanBalance() {
 
     setStatusMessage('');
 
-    // Ensure ByLoanOfficer uses the officer `oprcode` (preferred) rather than `usernumb` value
-    const selectedOfficer = officers.find((o) => String(o.value) === String(loanOfficer));
-    const byLoanOfficerValue = (selectedOfficer && selectedOfficer.rawData && (selectedOfficer.rawData.oprcode || selectedOfficer.rawData.oprcode === 0))
-      ? String(selectedOfficer.rawData.oprcode)
-      : (loanOfficer || '');
-
     const payload = {
       BranchID: branch === '0' ? 0 : Number(branch),
       ProductType: Number(productType) || 0,
@@ -214,7 +206,7 @@ export default function LoanBalance() {
       GenderFemale: gender.female ? 2 : '',
       GenderOther: customerType.group || customerType.corporate ? '3' : '',
       TransactionDate: date,
-      ByLoanOfficer: byLoanOfficerValue,
+      Region: region || '',
     };
 
     try {
@@ -386,31 +378,22 @@ export default function LoanBalance() {
 
             <TextField
               select
-              label="Loan Officer"
-              value={loanOfficer}
-              onChange={(e) => setLoanOfficer(e.target.value)}
+              label="Region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               size="small"
               fullWidth
-              disabled={officersLoading}
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
-                  if (!selected) {
-                    return 'Select a loan officer';
-                  }
-
-                  const option = officers.find((item) => String(item.value) === String(selected));
-                  return option?.label || selected;
+                  if (!selected) return 'All Regions';
+                  return selected;
                 },
               }}
             >
-              <MenuItem value="">
-                All Loan Officers
-              </MenuItem>
-              {officers.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
+              <MenuItem value="">All Regions</MenuItem>
+              {REGIONS.map((r) => (
+                <MenuItem key={r} value={r}>{r}</MenuItem>
               ))}
             </TextField>
           </Box>

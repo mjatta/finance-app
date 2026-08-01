@@ -54,7 +54,6 @@ export default function Repayments() {
     const printTime = now.toLocaleTimeString();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const cashierName = user?.name || user?.username || '-';
-    const amount = receipt.Amount != null ? parseFloat(receipt.Amount).toFixed(2) : '0.00';
     const principalPaid = receipt.PrincipalPaid != null ? parseFloat(receipt.PrincipalPaid).toFixed(2) : '0.00';
     const interestPaid = receipt.InterestPaid != null ? parseFloat(receipt.InterestPaid).toFixed(2) : '0.00';
     receiptWindow.document.write(`

@@ -15,7 +15,6 @@ export const useLoanOfficers = () => {
       }
 
       const result = await response.json();
-      console.log('Loan Officers API Response:', result);
       
       // Handle different response formats
       let data = [];
@@ -29,8 +28,6 @@ export const useLoanOfficers = () => {
         data = result.Data;
       }
 
-      console.log('Parsed officers data:', data);
-
       // Map response to component format, display username
       const mappedOfficers = data.map((officer) => ({
         value: officer?.usernumb?.toString() || officer?.oprcode?.trim() || officer?.OprCode?.trim() || '',
@@ -38,7 +35,6 @@ export const useLoanOfficers = () => {
         rawData: officer,
       })).filter(o => o.label && o.value); // Filter out empty entries
 
-      console.log('Mapped officers:', mappedOfficers);
       setOfficers(mappedOfficers);
       return mappedOfficers;
     } catch (err) {

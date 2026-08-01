@@ -24,8 +24,10 @@ import useGetAgingRanges from './hooks/useGetAgingRanges';
 import useGetAgingProducts from './hooks/useGetAgingProducts';
 import useGetAgingCategories from './hooks/useGetAgingCategories';
 import useGenerateAgingReport from './hooks/useGenerateAgingReport';
-import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { buildDetailedAgingPrintHtml } from './printSetup';
+
+const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
+const ALL_REGIONS_VALUE = '';
 
 const FALLBACK_ROWS = [
   { id: 1, daysFrom: '', daysTo: '', percentage: '' },
@@ -69,8 +71,7 @@ export default function DetailedAging() {
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
   const [category, setCategory] = useState('');
-  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
-  const [loanOfficer, setLoanOfficer] = useState('');
+  const [region, setRegion] = useState('');
   const [date, setDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [savingRanges, setSavingRanges] = useState(false);
@@ -85,9 +86,7 @@ export default function DetailedAging() {
   }, [ranges, rangesLoading, rangesInitialized]);
 
   // load loan officers
-  useEffect(() => {
-    fetchLoanOfficers();
-  }, [fetchLoanOfficers]);
+
 
   const convertBandsToCSV = (rows) => {
     const headers = ['Days From', 'Days To', 'Percentage (%)'];
@@ -199,7 +198,7 @@ export default function DetailedAging() {
       ToDate: date.format('YYYY-MM-DD'),
       Product: Number(product) || 0,
       Category: Number(category) || 0,
-      ByLoanOfficer: loanOfficer || '',
+      Region: region || '',
     };
 
     const response = await generateReport(payload);
@@ -469,24 +468,22 @@ export default function DetailedAging() {
 
               <TextField
                 select
-                label="Loan Officer"
-                value={loanOfficer}
-                onChange={(e) => setLoanOfficer(e.target.value)}
+                label="Region"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
                 size="small"
                 fullWidth
-                disabled={officersLoading}
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (selected) => {
-                    if (!selected) return 'All Loan Officers';
-                    const option = officers.find((o) => String(o.value) === String(selected));
-                    return option?.label || selected;
+                    if (!selected || selected === ALL_REGIONS_VALUE) return 'All Regions';
+                    return selected;
                   },
                 }}
               >
-                <MenuItem value="">All Loan Officers</MenuItem>
-                {officers.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                <MenuItem value={ALL_REGIONS_VALUE}>All Regions</MenuItem>
+                {REGIONS.map((r) => (
+                  <MenuItem key={r} value={r}>{r}</MenuItem>
                 ))}
               </TextField>
 

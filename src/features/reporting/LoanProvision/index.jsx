@@ -24,8 +24,9 @@ import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
 import useGetAgingProducts from '../DetailedAging/hooks/useGetAgingProducts';
 import useGetAgingCategories from '../DetailedAging/hooks/useGetAgingCategories';
 import useGetLoanProvisionDetails from './hooks/useGetLoanProvisionDetails';
-import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { buildLoanProvisionDetailsPrintHtml } from './printSetup';
+
+const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 
 const FALLBACK_ROWS = [
   { id: 1, daysFrom: '', daysTo: '', percentage: '' },
@@ -86,9 +87,7 @@ export default function LoanProvision() {
   }, [ranges, rangesLoading, rangesInitialized]);
 
   // Load loan officers on mount
-  useEffect(() => {
-    fetchLoanOfficers();
-  }, [fetchLoanOfficers]);
+
 
   const canRunAction = Boolean(runDate);
 
@@ -464,28 +463,25 @@ export default function LoanProvision() {
 
             <TextField
               select
-              label="Loan Officer"
-              value={loanOfficer}
-              onChange={(e) => setLoanOfficer(e.target.value)}
+              label="Region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               size="small"
               fullWidth
-              disabled={officersLoading}
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
                   if (!selected) {
-                    return officersLoading ? 'Loading...' : 'All Officers';
+                    return 'All Regions';
                   }
-
-                  const option = officers.find((item) => String(item.value) === String(selected));
-                  return option?.label || selected;
+                  return selected;
                 },
               }}
             >
-              <MenuItem value="">All Officers</MenuItem>
-              {officers.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
+              <MenuItem value="">All Regions</MenuItem>
+              {REGIONS.map((r) => (
+                <MenuItem key={r} value={r}>
+                  {r}
                 </MenuItem>
               ))}
             </TextField>
