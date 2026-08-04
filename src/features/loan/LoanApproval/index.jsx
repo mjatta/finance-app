@@ -558,16 +558,6 @@ export default function LoanApproval() {
     }
   };
 
-  const handleLoanAmortization = () => {
-    if (selectedIds.length === 0) {
-      setStatusMessage('Please select a loan first.');
-      setStatusError(true);
-      return;
-    }
-
-    setStatusMessage('Loan amortization generated.');
-    setStatusError(false);
-  };
 
   const loanCount = loans.length;
 
@@ -1001,18 +991,6 @@ export default function LoanApproval() {
           }}
         >
           ✗ Reject Loan
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={handleLoanAmortization}
-          disabled={selectedIds.length === 0 || loading}
-          sx={{
-            fontWeight: 600,
-            paddingX: 3,
-          }}
-        >
-          📊 Loan Amortization
         </Button>
       </Box>
 
