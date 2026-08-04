@@ -92,14 +92,6 @@ export const notifySaveError = ({
   emitToast({ severity: 'error', message, duration: SAVE_TOAST_DURATION_MS });
 };
 
-export const getSaveLogs = () => getStoredLogs();
 
-export const clearSaveLogs = () => {
-  try {
-    localStorage.removeItem(SAVE_LOG_STORAGE_KEY);
-  } catch {
-    // no-op
-  }
-};
 
 export const SAVE_LOG_KEY = SAVE_LOG_STORAGE_KEY;

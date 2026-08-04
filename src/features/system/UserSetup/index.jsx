@@ -159,7 +159,6 @@ const featurePageMap = {
     { path: '/system/product', label: 'Product Setup' },
     { path: '/system/user-setup', label: 'User Setup' },
     { path: '/system/login-attempts', label: 'Login Attempts' },
-    { path: '/system/save-logs', label: 'Save Logs' },
   ],
   reporting: [
     { path: '/reporting', label: 'Reports Hub' },

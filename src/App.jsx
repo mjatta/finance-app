@@ -103,7 +103,6 @@ const LoginAttempts = lazy(() => import('./features/system/LoginAttempts'));
 const EndOfYearAccounting = lazy(() => import('./features/accounting/EndOfYear'));
 const AccessDenied = lazy(() => import('./features/system/AccessDenied'));
 const ProductDefinition = lazy(() => import('./features/system/ModuleSetup/ProductDefinition'));
-const SaveLogs = lazy(() => import('./features/system/SaveLogs'));
 
 const TrialBalance = lazy(() => import('./features/reporting/TrialBalance'));
 const IncomeStatement = lazy(() => import('./features/reporting/IncomeStatement'));
@@ -492,7 +491,6 @@ function App() {
         { label: 'Product Setup', to: '/system/product', icon: Inventory2RoundedIcon },
         { label: 'User Setup', to: '/system/user-setup', icon: PersonAddAlt1RoundedIcon },
         { label: 'Login Attempts', to: '/system/login-attempts', icon: LockResetRoundedIcon },
-        { label: 'Save Logs', to: '/system/save-logs', icon: ListAltRoundedIcon },
       ],
     },
     {
@@ -1002,10 +1000,6 @@ function App() {
                     <Route
                       path="/system/login-attempts"
                       element={renderWithAccess('system', <LoginAttempts />)}
-                    />
-                    <Route
-                      path="/system/save-logs"
-                      element={renderWithAccess('system', <SaveLogs />)}
                     />
                     <Route
                       path="/system/product"
