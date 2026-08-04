@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Sentry from "@sentry/react";
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
@@ -42,7 +43,7 @@ const getInitialErrorMessage = () => {
   return '';
 };
 
-export default function Login({ onLogin }) {
+function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,76 +58,138 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     const normalizedUsername = username.trim();
 
-    // Try backend authentication
-    const result = await backendLogin(normalizedUsername, password);
-    if (result.success && result.data && result.data.Success) {
-      const apiUser = result.data;
-      const features = (apiUser.features || '').split(',').map((f) => f.trim()).filter(Boolean);
-      const role = (apiUser.Role || '').split(',')[0].trim();
+    try {
+      // Try backend authentication
+      const result = await backendLogin(normalizedUsername, password);
+      if (result.success && result.data && result.data.Success) {
+        const apiUser = result.data;
+        const features = (apiUser.features || '').split(',').map((f) => f.trim()).filter(Boolean);
+        const role = (apiUser.Role || '').split(',')[0].trim();
 
-      const safeUser = {
-        id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
-        name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
-        username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
-        mustChangePassword: Boolean(apiUser.MustChangePassword || apiUser.ResetPassword),
-        role: role || 'USER',
-        access: {
-          allPages: apiUser.Allpages ?? false,
-          features,
-          featurePermissions: apiUser.featurePermissions || {},
-          pagePermissions: apiUser.pagePermissions || {},
-        },
-        CompId: apiUser.CompId,
-        BranchId: apiUser.BranchId,
-        CashAccount: apiUser.CashAccount || '',
-        SuspenseAccount: apiUser.SuspenseAccount || '',
-        DebitLimit: apiUser.DebitLimit ?? 0,
-        CreditLimit: apiUser.CreditLimit ?? 0,
-        LoanLimit: apiUser.LoanLimit ?? 0,
-        AccessLevel: apiUser.AccessLevel ?? 0,
-        IsCashier: apiUser.IsCashier ?? false,
-        staffno: apiUser.staffno ? apiUser.staffno.trim() : '',
-        Dateforce: apiUser.Dateforce || '',
-      };
+        const safeUser = {
+          id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
+          name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
+          username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
+          mustChangePassword: Boolean(apiUser.MustChangePassword || apiUser.ResetPassword),
+          role: role || 'USER',
+          access: {
+            allPages: apiUser.Allpages ?? false,
+            features,
+            featurePermissions: apiUser.featurePermissions || {},
+            pagePermissions: apiUser.pagePermissions || {},
+          },
+          CompId: apiUser.CompId,
+          BranchId: apiUser.BranchId,
+          CashAccount: apiUser.CashAccount || '',
+          SuspenseAccount: apiUser.SuspenseAccount || '',
+          DebitLimit: apiUser.DebitLimit ?? 0,
+          CreditLimit: apiUser.CreditLimit ?? 0,
+          LoanLimit: apiUser.LoanLimit ?? 0,
+          AccessLevel: apiUser.AccessLevel ?? 0,
+          IsCashier: apiUser.IsCashier ?? false,
+          staffno: apiUser.staffno ? apiUser.staffno.trim() : '',
+          Dateforce: apiUser.Dateforce || '',
+        };
 
-      // Save to Zustand + localStorage
-      setAuthUser(safeUser);
+        // Set Sentry user context for successful login
+        Sentry.setUser({
+          id: safeUser.id,
+          username: safeUser.username,
+          role: safeUser.role,
+          CompId: safeUser.CompId,
+        });
 
-      // Fetch credit union details using CompId
-      if (apiUser.CompId) {
-        const companyDetails = await fetchCreditUnionDetails(apiUser.CompId);
-        if (companyDetails) {
-          setCompanyDetails(companyDetails);
+        // Save to Zustand + localStorage
+        setAuthUser(safeUser);
+
+        // Fetch credit union details using CompId
+        if (apiUser.CompId) {
+          const companyDetails = await fetchCreditUnionDetails(apiUser.CompId);
+          if (companyDetails) {
+            setCompanyDetails(companyDetails);
+          }
         }
+
+        // Log successful login attempt
+        saveLoginAttempt(normalizedUsername, true);
+
+        // Capture successful login in Sentry
+        Sentry.captureMessage('User login successful', 'info', {
+          contexts: {
+            login: {
+              username: normalizedUsername,
+              role,
+              CompId: apiUser.CompId,
+            },
+          },
+        });
+
+        setErrorMessage('');
+        onLogin(safeUser);
+        return;
       }
 
-      // Log successful login attempt
-      saveLoginAttempt(normalizedUsername, true);
+      // Fallback: check test-users for dev convenience
+      const foundDefaultUser = testUsers.users.find(
+        (u) => u.username === normalizedUsername && u.password === password,
+      );
+      if (foundDefaultUser) {
+        const { password: _, ...safeUser } = foundDefaultUser;
+        
+        // Set Sentry user context for test user
+        Sentry.setUser({
+          id: safeUser.id,
+          username: safeUser.username,
+          role: safeUser.role,
+        });
 
-      setErrorMessage('');
-      onLogin(safeUser);
-      return;
-    }
+        setAuthUser(safeUser);
+        
+        // Log successful login attempt
+        saveLoginAttempt(normalizedUsername, true);
 
-    // Fallback: check test-users for dev convenience
-    const foundDefaultUser = testUsers.users.find(
-      (u) => u.username === normalizedUsername && u.password === password,
-    );
-    if (foundDefaultUser) {
-      const { password: _, ...safeUser } = foundDefaultUser;
-      setAuthUser(safeUser);
+        // Capture successful test user login in Sentry
+        Sentry.captureMessage('Test user login successful', 'info', {
+          contexts: {
+            login: {
+              username: normalizedUsername,
+              isTestUser: true,
+            },
+          },
+        });
+
+        setErrorMessage('');
+        onLogin(safeUser);
+        return;
+      }
+
+      // Log failed login attempt
+      saveLoginAttempt(normalizedUsername, false);
       
-      // Log successful login attempt
-      saveLoginAttempt(normalizedUsername, true);
+      // Capture failed login attempt in Sentry
+      Sentry.captureMessage('Login attempt failed - invalid credentials', 'warning', {
+        contexts: {
+          login: {
+            username: normalizedUsername,
+            attemptedAt: new Date().toISOString(),
+          },
+        },
+      });
 
-      setErrorMessage('');
-      onLogin(safeUser);
-      return;
+      setErrorMessage('Invalid username or password');
+    } catch (error) {
+      // Capture login error in Sentry
+      Sentry.captureException(error, {
+        contexts: {
+          login: {
+            username: normalizedUsername,
+            attemptedAt: new Date().toISOString(),
+          },
+        },
+      });
+      
+      setErrorMessage('An error occurred during login. Please try again.');
     }
-
-    // Log failed login attempt
-    saveLoginAttempt(normalizedUsername, false);
-    setErrorMessage('Invalid username or password');
   };
 
   return (
@@ -457,3 +520,8 @@ export default function Login({ onLogin }) {
     </Box>
   );
 }
+
+export default Sentry.withErrorBoundary(Login, {
+  fallback: <div style={{ textAlign: 'center', padding: '2rem' }}>An error occurred on the login page. Please refresh and try again.</div>,
+  showDialog: true,
+});
