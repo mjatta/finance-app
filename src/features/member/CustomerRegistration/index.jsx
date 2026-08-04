@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import * as Sentry from "@sentry/react";
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Alert,
@@ -1244,6 +1245,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   const { banks, loading: banksLoading } = useBanks();
 
   const handleSave = async () => {
+    const formSubmitStartTime = performance.now();
+    
+    // Emit metric for form submission attempt
+    Sentry.metrics.count('registration_form_submit', 1);
 
     if (isReadOnlyRole || isSaving) {
       return;
@@ -1338,6 +1343,12 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           metadata: individualPayload,
         });
 
+        // Emit metrics for successful individual registration
+        const registrationDuration = performance.now() - formSubmitStartTime;
+        Sentry.metrics.count('registration_success', 1);
+        Sentry.metrics.count('individual_registration_success', 1);
+        Sentry.metrics.distribution('registration_duration_ms', registrationDuration);
+
         // Set recent member data for printing
         if (result) {
           const memberData = formatRecentMemberRow(result, institutionBranches);
@@ -1380,6 +1391,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           error,
           metadata: individualPayload,
         });
+
+        // Emit metrics for individual registration failure
+        Sentry.metrics.count('registration_failure', 1);
+        Sentry.metrics.count('individual_registration_failure', 1);
       } finally {
         setIsSaving(false);
       }
@@ -1429,6 +1444,12 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           message: 'Institution registration saved successfully.',
           metadata: institutionPayload,
         });
+
+        // Emit metrics for successful institution registration
+        const registrationDuration = performance.now() - formSubmitStartTime;
+        Sentry.metrics.count('registration_success', 1);
+        Sentry.metrics.count('institution_registration_success', 1);
+        Sentry.metrics.distribution('registration_duration_ms', registrationDuration);
 
         // Set recent member data for printing
         if (response) {
@@ -1509,6 +1530,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           error,
           metadata: institutionPayload,
         });
+
+        // Emit metrics for institution registration failure
+        Sentry.metrics.count('registration_failure', 1);
+        Sentry.metrics.count('institution_registration_failure', 1);
       } finally {
         setIsSaving(false);
       }

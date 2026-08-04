@@ -57,8 +57,12 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const normalizedUsername = username.trim();
+    const loginStartTime = performance.now();
 
     try {
+      // Emit metric for login attempt
+      Sentry.metrics.count('login_attempts', 1);
+
       // Try backend authentication
       const result = await backendLogin(normalizedUsername, password);
       if (result.success && result.data && result.data.Success) {
@@ -124,6 +128,11 @@ function Login({ onLogin }) {
           },
         });
 
+        // Emit metrics for successful login
+        const loginDuration = performance.now() - loginStartTime;
+        Sentry.metrics.count('login_success', 1);
+        Sentry.metrics.distribution('login_duration_ms', loginDuration);
+
         setErrorMessage('');
         onLogin(safeUser);
         return;
@@ -158,6 +167,12 @@ function Login({ onLogin }) {
           },
         });
 
+        // Emit metrics for successful test user login
+        const testLoginDuration = performance.now() - loginStartTime;
+        Sentry.metrics.count('login_success', 1);
+        Sentry.metrics.count('test_user_login', 1);
+        Sentry.metrics.distribution('login_duration_ms', testLoginDuration);
+
         setErrorMessage('');
         onLogin(safeUser);
         return;
@@ -176,6 +191,10 @@ function Login({ onLogin }) {
         },
       });
 
+      // Emit metrics for failed login
+      Sentry.metrics.count('login_failure', 1);
+      Sentry.metrics.count('invalid_credentials', 1);
+
       setErrorMessage('Invalid username or password');
     } catch (error) {
       // Capture login error in Sentry
@@ -187,6 +206,9 @@ function Login({ onLogin }) {
           },
         },
       });
+
+      // Emit metrics for login error
+      Sentry.metrics.count('login_error', 1);
       
       setErrorMessage('An error occurred during login. Please try again.');
     }

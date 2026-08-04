@@ -1,4 +1,5 @@
 import { cloneElement, isValidElement, lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import * as Sentry from "@sentry/react";
 import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
@@ -303,6 +304,27 @@ function App() {
 
   const handleLogout = useCallback((reason = 'manual') => {
     const username = user?.username || '';
+    const userRole = user?.role || '';
+    
+    // Capture logout event in Sentry
+    Sentry.captureMessage('User logout', 'info', {
+      contexts: {
+        logout: {
+          username,
+          role: userRole,
+          reason,
+          timestamp: new Date().toISOString(),
+        },
+      },
+    });
+
+    // Emit metrics for logout
+    Sentry.metrics.count('user_logout', 1);
+    Sentry.metrics.count(`logout_reason_${reason}`, 1);
+
+    // Clear Sentry user context
+    Sentry.setUser(null);
+
     // log logout event (best-effort)
     try { logAttempt({ username, status: 'logout', reason }); } catch { /* ignore */ }
 
