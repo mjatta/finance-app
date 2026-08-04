@@ -521,7 +521,13 @@ function Login({ onLogin }) {
   );
 }
 
+const LoginFallback = () => (
+  <div style={{ textAlign: 'center', padding: '2rem' }}>
+    An error occurred on the login page. Please refresh and try again.
+  </div>
+);
+
 export default Sentry.withErrorBoundary(Login, {
-  fallback: <div style={{ textAlign: 'center', padding: '2rem' }}>An error occurred on the login page. Please refresh and try again.</div>,
+  fallback: LoginFallback,
   showDialog: true,
 });
