@@ -480,6 +480,17 @@ export default function LoanApproval() {
         console.warn('Failed to fetch check-topup before approval:', err)
       }
 
+      // Extract officer code from the selected officer
+      let approvedByCode = 'AKH'
+      if (approvalDetails.loanOfficer) {
+        const selectedOfficer = loanOfficers.find((o) => o.label === approvalDetails.loanOfficer)
+        if (selectedOfficer?.rawData) {
+          // Use oprcode field and trim all whitespace
+          const oprcode = selectedOfficer.rawData.oprcode || selectedOfficer.rawData.OprCode || ''
+          approvedByCode = oprcode.trim().replace(/\s+/g, '')
+        }
+      }
+
       const payload = {
         loanid: loanIdNum,
         loanAmount: approveAmountNum,
@@ -495,6 +506,7 @@ export default function LoanApproval() {
         interestRate: interestRateNum,
         glTopUp: isTopUpFlag,
         glResched: isRescheduledFlag,
+        Capprovedby: approvedByCode,
       };
 
       // Submit the loan approval
