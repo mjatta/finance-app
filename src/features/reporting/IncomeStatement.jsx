@@ -14,7 +14,6 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
-import { useLoanOfficers } from '../../hooks/useLoanOfficers';
 import { useGetIncomeStatement } from './IncomeStatement/hook/useGetIncomeStatement';
 import { buildIncomeStatementPrintHtml } from './IncomeStatement/printSetup';
 
@@ -36,16 +35,10 @@ const normalizeBranchId = (branch) => (
 
 export default function IncomeStatement() {
   const { branches, loading: branchesLoading } = useBranches();
-  const { officers, isLoading: officersLoading, fetchLoanOfficers } = useLoanOfficers();
   const { fetchIncomeStatement, loading: isFetching, error: fetchError } = useGetIncomeStatement();
   const [branchId, setBranchId] = useState('ALL');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [loanOfficer, setLoanOfficer] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-
-  useEffect(() => {
-    fetchLoanOfficers();
-  }, [fetchLoanOfficers]);
 
   const formatAmount = (value) => {
     const amount = Number(value ?? 0);
@@ -164,7 +157,7 @@ export default function IncomeStatement() {
             </Alert>
           )}
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             <TextField
               select
               label="Branch"
@@ -197,33 +190,6 @@ export default function IncomeStatement() {
                 },
               }}
             />
-
-            <TextField
-              select
-              label="Loan Officer"
-              value={loanOfficer}
-              onChange={(e) => setLoanOfficer(e.target.value)}
-              size="small"
-              fullWidth
-              disabled={officersLoading || isFetching}
-              SelectProps={{
-                displayEmpty: true,
-                renderValue: (selected) => {
-                  if (!selected) return 'All Officers';
-                  const option = officers.find((item) => String(item.value) === String(selected));
-                  return option?.label || selected;
-                },
-              }}
-            >
-              <MenuItem value="">
-                All Officers
-              </MenuItem>
-              {officers.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </TextField>
           </Box>
 
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>

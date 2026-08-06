@@ -17,8 +17,6 @@ import { useBranches } from '../../hooks/useBranches';
 import { useGetBalanceSheet } from './BalanceSheet/hook/useGetBalanceSheet';
 import { buildBalanceSheetPrintHtml } from './BalanceSheet/printSetup';
 
-const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
-
 const normalizeBranchName = (branch) => (
   branch?.branchName
   || branch?.br_name
@@ -40,7 +38,6 @@ export default function BalanceSheet() {
   const { fetchBalanceSheet, loading: isFetching, error: fetchError } = useGetBalanceSheet();
   const [branchId, setBranchId] = useState('ALL');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [region, setRegion] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
 
@@ -166,7 +163,7 @@ export default function BalanceSheet() {
             </Alert>
           )}
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
             <TextField
               select
               label="Branch"
@@ -206,27 +203,6 @@ export default function BalanceSheet() {
                 },
               }}
             />
-
-            <TextField
-              select
-              label="Region"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              size="small"
-              fullWidth
-              SelectProps={{
-                displayEmpty: true,
-                renderValue: (selected) => {
-                  if (!selected) return 'All Regions';
-                  return selected;
-                },
-              }}
-            >
-              <MenuItem value="">All Regions</MenuItem>
-              {REGIONS.map((r) => (
-                <MenuItem key={r} value={r}>{r}</MenuItem>
-              ))}
-            </TextField>
           </Box>
 
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>

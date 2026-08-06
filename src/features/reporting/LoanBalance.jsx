@@ -17,9 +17,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useRegions } from '../../hooks/useRegions';
 import useGetLoanBalancePrint from './LoanBalance/hooks/useGetLoanBalancePrint';
-
-const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 import { buildLoanBalancePrintHtml } from './LoanBalance/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -82,11 +81,13 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function LoanBalance() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { regions, loading: regionsLoading } = useRegions();
   const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
   const [branch, setBranch] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [productType, setProductType] = useState('');
   const [region, setRegion] = useState('');
+  const [selectedRegionId, setSelectedRegionId] = useState('');
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
   const [memberStatus, setMemberStatus] = useState({
@@ -206,7 +207,7 @@ export default function LoanBalance() {
       GenderFemale: gender.female ? 2 : '',
       GenderOther: customerType.group || customerType.corporate ? '3' : '',
       TransactionDate: date,
-      Region: region || '',
+      region: selectedRegionId || '',
     };
 
     try {
@@ -380,9 +381,15 @@ export default function LoanBalance() {
               select
               label="Region"
               value={region}
-              onChange={(e) => setRegion(e.target.value)}
+              onChange={(e) => {
+                setRegion(e.target.value);
+                // Store the coun_id for the selected region by matching trimmed coun_name
+                const selected = regions.find((r) => r.coun_name?.trim() === e.target.value);
+                setSelectedRegionId(selected ? String(selected.coun_id) : '');
+              }}
               size="small"
               fullWidth
+              disabled={regionsLoading}
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
@@ -392,8 +399,8 @@ export default function LoanBalance() {
               }}
             >
               <MenuItem value="">All Regions</MenuItem>
-              {REGIONS.map((r) => (
-                <MenuItem key={r} value={r}>{r}</MenuItem>
+              {regions.map((r) => (
+                <MenuItem key={String(r.coun_id)} value={r.coun_name?.trim()}>{r.coun_name?.trim()}</MenuItem>
               ))}
             </TextField>
           </Box>
