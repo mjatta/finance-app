@@ -82,6 +82,7 @@ export function useAddUser() {
         features: getEnabledFeatures(roleForm.featurePermissions),
         FeaturePermissions: roleForm.featurePermissions || {},
         PagePermissions: roleForm.pagePermissions || {},
+        Region: userForm.selectedRegionId || '',
       };
 
       const response = await fetch('/api/Users/AddUser', {

@@ -23,6 +23,7 @@ import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotificat
 import { useAddUser } from './hooks/useAddUser';
 import { useGetAllUsers } from './hooks/useGetAllUsers';
 import { useGetBasicDetails } from './hooks/useGetBasicDetails';
+import { useRegions } from '../../../hooks/useRegions';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
@@ -71,6 +72,8 @@ const createDefaultUserForm = (companyName = '') => ({
   companyName,
   branch: '',
   branchId: null,
+  region: '',
+  selectedRegionId: '',
   staffNumber: '',
   userId: '',
   userName: '',
@@ -199,6 +202,7 @@ export default function UserSetup({ user }) {
   const { addUser } = useAddUser();
   const { cashAccounts, loading: cashAccountsLoading } = useGetBasicDetails();
   const { users: allUsers, loading: allUsersLoading } = useGetAllUsers();
+  const { regions, loading: regionsLoading } = useRegions();
 
   const [userForm, setUserForm] = useState(() => createDefaultUserForm(''));
 
@@ -396,6 +400,16 @@ export default function UserSetup({ user }) {
       return;
     }
 
+    if (name === 'region') {
+      const selected = regions.find((r) => r.coun_name?.trim() === value);
+      setUserForm((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.coun_id) : '',
+      }));
+      return;
+    }
+
     if (name === 'resetPassword' && type === 'checkbox') {
       setUserForm((prev) => {
         const nextResetValue = checked;
@@ -492,11 +506,15 @@ export default function UserSetup({ user }) {
   const handleEditSavedUser = (userRecord) => {
     const selectedCompanyName = getCompanyName(userRecord);
     const selectedBranch = getBranchName(userRecord);
+    const selectedRegion = userRecord?.Region || userRecord?.region || '';
+    const selectedRegionId = userRecord?.RegionId || userRecord?.regionId || userRecord?.coun_id || '';
 
     setUserForm({
       companyName: selectedCompanyName,
       branch: selectedBranch,
       branchId: getBranchIdFromRecord(userRecord),
+      region: selectedRegion,
+      selectedRegionId: String(selectedRegionId),
       staffNumber: userRecord?.StaffNo || userRecord?.staffNumber || '',
       userId: userRecord?.UserID || userRecord?.userId || '',
       userName: userRecord?.UserName || userRecord?.userName || '',
@@ -890,6 +908,30 @@ export default function UserSetup({ user }) {
                   {availableBranches.map((item) => (
                     <MenuItem key={item} value={item}>
                       {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  label="Region"
+                  name="region"
+                  value={userForm.region}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  disabled={regionsLoading}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => selected || 'Select a Region',
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    {regionsLoading ? 'Loading regions...' : 'Select a Region'}
+                  </MenuItem>
+                  {regions.map((r) => (
+                    <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>
+                      {r.coun_name?.trim()}
                     </MenuItem>
                   ))}
                 </TextField>
