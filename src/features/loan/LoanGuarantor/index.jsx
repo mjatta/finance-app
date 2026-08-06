@@ -20,6 +20,7 @@ import {
   Checkbox,
   CircularProgress,
   Backdrop,
+  Paper,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -643,19 +644,9 @@ export default function LoanGuarantor() {
       )}
 
       {/* Guarantors DataGrid */}
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 3, color: '#2c3e50' }}>
-        Customer
-      </Typography>
-      <Box
-        sx={{
-          width: '100%',
-          borderRadius: 1.5,
-          border: '1px solid #e0e0e0',
-          overflow: 'hidden',
-          mb: 3,
-        }}
-      >
-        <DataGrid
+      <Paper sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+        <div style={{ height: 420, width: '100%' }}>
+          <DataGrid
           rows={guarantors}
           columns={GUARANTOR_COLUMNS}
           loading={loading}
@@ -672,53 +663,20 @@ export default function LoanGuarantor() {
             return '';
           }}
           sx={{
-            border: 'none',
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontWeight: 700,
-              fontSize: '0.95rem',
-              color: '#ffffff',
-            },
+            cursor: 'pointer',
             '& .MuiDataGrid-columnHeader': {
-              backgroundColor: '#2c3e50',
-              borderBottom: '2px solid #1a252f',
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 700,
             },
-            '& .MuiDataGrid-footerContainer': {
-              backgroundColor: '#f5f5f5',
-              borderTop: '1px solid #e0e0e0',
-              fontWeight: 500,
-            },
-            '& .MuiTablePagination-root': {
-              color: '#2c3e50',
-              fontWeight: 500,
-            },
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              '&.selected-row': {
-                backgroundColor: '#1976d2 !important',
-                color: '#ffffff',
-                fontWeight: 600,
-                '& .MuiDataGrid-cell': {
-                  color: '#ffffff',
-                  borderBottomColor: '#1565c0',
-                },
-                '&:hover': {
-                  backgroundColor: '#1565c0 !important',
-                },
-              },
-              '&:nth-of-type(odd)': {
-                backgroundColor: '#fafafa',
-              },
-              '&:nth-of-type(even)': {
-                backgroundColor: '#ffffff',
-              },
-              '&:hover': {
-                backgroundColor: '#f0f0f0 !important',
-              },
-            },
+            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+            '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+            '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+            '& .selected-row': { backgroundColor: '#cfe2ff !important', fontWeight: 700 },
           }}
         />
-      </Box>
+        </div>
+      </Paper>
 
       {/* Guarantor Details Card */}
       <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -1082,54 +1040,28 @@ export default function LoanGuarantor() {
       {/* Guarantee History DataGrid */}
       {guaranteeHistoryRows.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-            Guarantee History
-          </Typography>
-          <Box
-            sx={{
-              height: 350,
-              width: '100%',
-              borderRadius: 1.5,
-              border: '1px solid #e0e0e0',
-              overflow: 'hidden',
-            }}
-          >
-            <DataGrid
+          <Paper sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+            <div style={{ height: 350, width: '100%' }}>
+              <DataGrid
               rows={guaranteeHistoryRows}
               columns={GUARANTEE_HISTORY_COLUMNS}
               pageSizeOptions={[5, 10, 25]}
               paginationModel={{ pageSize: 10, page: 0 }}
               onPaginationModelChange={() => {}}
               sx={{
-                border: 'none',
-                '& .MuiDataGrid-columnHeaderTitle': {
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  color: '#ffffff',
-                },
+                cursor: 'pointer',
                 '& .MuiDataGrid-columnHeader': {
-                  backgroundColor: '#2c3e50',
-                  borderBottom: '2px solid #1a252f',
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
                 },
-                '& .MuiDataGrid-footerContainer': {
-                  backgroundColor: '#f5f5f5',
-                  borderTop: '1px solid #e0e0e0',
-                  fontWeight: 500,
-                },
-                '& .MuiDataGrid-row': {
-                  '&:nth-of-type(odd)': {
-                    backgroundColor: '#fafafa',
-                  },
-                  '&:nth-of-type(even)': {
-                    backgroundColor: '#ffffff',
-                  },
-                  '&:hover': {
-                    backgroundColor: '#f0f0f0 !important',
-                  },
-                },
+                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
+                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
               }}
             />
-          </Box>
+            </div>
+          </Paper>
         </Box>
       )}
 

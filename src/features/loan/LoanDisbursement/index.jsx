@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Backdrop,
   Alert,
+  Paper,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -743,19 +744,9 @@ export default function LoanDisbursement() {
       <Grid container spacing={3}>
         {/* Clients DataGrid */}
         <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-            Customer for Disbursement
-          </Typography>
-          <Box
-            sx={{
-              width: '100%',
-              borderRadius: 1.5,
-              border: '1px solid #e0e0e0',
-              overflow: 'hidden',
-              mb: 3,
-            }}
-          >
-            <DataGrid
+          <Paper sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+            <div style={{ height: 420, width: '100%' }}>
+              <DataGrid
               rows={clients}
               columns={CLIENT_COLUMNS}
               loading={loading}
@@ -779,8 +770,9 @@ export default function LoanDisbursement() {
                   color: '#ffffff',
                 },
                 '& .MuiDataGrid-columnHeader': {
-                  backgroundColor: '#2c3e50',
-                  borderBottom: '2px solid #1a252f',
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
                 },
                 '& .MuiDataGrid-footerContainer': {
                   backgroundColor: '#f5f5f5',
@@ -795,30 +787,26 @@ export default function LoanDisbursement() {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   '&.selected-row': {
-                    backgroundColor: '#1976d2 !important',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    '& .MuiDataGrid-cell': {
-                      color: '#ffffff',
-                      borderBottomColor: '#1565c0',
-                    },
-                    '&:hover': {
-                      backgroundColor: '#1565c0 !important',
-                    },
-                  },
-                  '&:nth-of-type(odd)': {
-                    backgroundColor: '#fafafa',
+                    backgroundColor: '#cfe2ff !important',
+                    fontWeight: 700,
                   },
                   '&:nth-of-type(even)': {
+                    backgroundColor: '#f8f9fa',
+                  },
+                  '&:nth-of-type(odd)': {
                     backgroundColor: '#ffffff',
                   },
                   '&:hover': {
-                    backgroundColor: '#f0f0f0 !important',
+                    backgroundColor: '#e9ecef !important',
                   },
+                },
+                '& .MuiDataGrid-cell': {
+                  borderColor: '#dee2e6',
                 },
               }}
             />
-          </Box>
+            </div>
+          </Paper>
         </Grid>
 
         {/* Disbursement Details Card */}

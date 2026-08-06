@@ -193,10 +193,9 @@ export default function LoanAmortization() {
                     border: 'none',
                     cursor: 'pointer',
                     '& .MuiDataGrid-columnHeader': {
-                      backgroundColor: '#667eea',
-                      color: '#ffffff',
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
                       fontWeight: 700,
-                      fontSize: '0.9rem',
                     },
                     '& .MuiDataGrid-columnHeaderTitle': {
                       fontWeight: 700,
@@ -268,10 +267,9 @@ export default function LoanAmortization() {
                       sx={{
                         border: 'none',
                         '& .MuiDataGrid-columnHeader': {
-                          backgroundColor: '#667eea',
-                          color: '#ffffff',
+                          backgroundColor: 'primary.main',
+                          color: 'primary.contrastText',
                           fontWeight: 700,
-                          fontSize: '0.9rem',
                         },
                         '& .MuiDataGrid-columnHeaderTitle': {
                           fontWeight: 700,

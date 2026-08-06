@@ -17,6 +17,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
 import { useUsers } from '../../hooks/useUsers';
+import { useRegions } from '../../hooks/useRegions';
 import { buildTransactionListingPrintHtml } from './TransactionListing/printSetup';
 
 const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
@@ -133,6 +134,7 @@ const downloadFile = (content, filename, mimeType) => {
 export default function TransactionListing() {
   const { branches, loading: branchesLoading } = useBranches();
   const { users, isLoading: usersLoading, fetchUsers } = useUsers();
+  const { regions, loading: regionsLoading } = useRegions();
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
@@ -147,6 +149,7 @@ export default function TransactionListing() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [region, setRegion] = useState('');
+  const [selectedRegionId, setSelectedRegionId] = useState('');
 
   // Load users on component mount
   useEffect(() => {
@@ -197,6 +200,8 @@ export default function TransactionListing() {
     setSelectedBatch('');
     setSelectedProduct('');
     setStatusMessage('');
+    setRegion('');
+    setSelectedRegionId('');
   };
 
   const formatDateTime = (value, fallbackDate, endOfDay = false) => {
@@ -213,6 +218,7 @@ export default function TransactionListing() {
     ProductID: 0,
     UserID: user || '',
     cUserID: user || '',
+    region: selectedRegionId || '',
     Deposit: types.deposit ? '01' : '',
     Withdrawal: types.withdrawal ? '02' : '',
     LoanIssued: types.loanDisbursement ? '06' : '',
@@ -439,11 +445,17 @@ export default function TransactionListing() {
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 2 }}>
               <TextField
                 select
-                label="Loan Officer"
+                label="Region"
                 value={region}
-                onChange={(e) => setRegion(e.target.value)}
+                onChange={(e) => {
+                  setRegion(e.target.value);
+                  // Store the coun_id for the selected region by matching trimmed coun_name
+                  const selected = regions.find((r) => r.coun_name?.trim() === e.target.value);
+                  setSelectedRegionId(selected ? String(selected.coun_id) : '');
+                }}
                 size="small"
                 fullWidth
+                disabled={regionsLoading}
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (selected) => {
@@ -453,8 +465,8 @@ export default function TransactionListing() {
                 }}
               >
                 <MenuItem value="">All Regions</MenuItem>
-                {REGIONS.map((r) => (
-                  <MenuItem key={r} value={r}>{r}</MenuItem>
+                {regions.map((r) => (
+                  <MenuItem key={String(r.coun_id)} value={r.coun_name?.trim()}>{r.coun_name?.trim()}</MenuItem>
                 ))}
               </TextField>
 
