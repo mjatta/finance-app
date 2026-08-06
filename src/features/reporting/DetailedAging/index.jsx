@@ -26,9 +26,6 @@ import useGetAgingCategories from './hooks/useGetAgingCategories';
 import useGenerateAgingReport from './hooks/useGenerateAgingReport';
 import { buildDetailedAgingPrintHtml } from './printSetup';
 
-const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
-const ALL_REGIONS_VALUE = '';
-
 const FALLBACK_ROWS = [
   { id: 1, daysFrom: '', daysTo: '', percentage: '' },
   { id: 2, daysFrom: '', daysTo: '', percentage: '' },
@@ -71,7 +68,6 @@ export default function DetailedAging() {
   const [rows, setRows] = useState(FALLBACK_ROWS);
   const [product, setProduct] = useState('');
   const [category, setCategory] = useState('');
-  const [region, setRegion] = useState('');
   const [date, setDate] = useState(() => dayjs());
   const [statusMessage, setStatusMessage] = useState('');
   const [savingRanges, setSavingRanges] = useState(false);
@@ -198,7 +194,6 @@ export default function DetailedAging() {
       ToDate: date.format('YYYY-MM-DD'),
       Product: Number(product) || 0,
       Category: Number(category) || 0,
-      Region: region || '',
     };
 
     const response = await generateReport(payload);
@@ -465,27 +460,6 @@ export default function DetailedAging() {
                 </MenuItem>
               ))}
             </TextField>
-
-              <TextField
-                select
-                label="Region"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                size="small"
-                fullWidth
-                SelectProps={{
-                  displayEmpty: true,
-                  renderValue: (selected) => {
-                    if (!selected || selected === ALL_REGIONS_VALUE) return 'All Regions';
-                    return selected;
-                  },
-                }}
-              >
-                <MenuItem value={ALL_REGIONS_VALUE}>All Regions</MenuItem>
-                {REGIONS.map((r) => (
-                  <MenuItem key={r} value={r}>{r}</MenuItem>
-                ))}
-              </TextField>
 
               <DatePicker
                 label="Date"

@@ -15,8 +15,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useBranches } from '../../hooks/useBranches';
 import useJournalEnquiryUsers from './JournalReport/hooks/useJournalEnquiryUsers';
 import { useAuthStore } from '../../store/authStore';
-
-const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 import buildJournalReportPrintHtml from './JournalReport/printSetup';
 import useCreditUnionLookup from '../../hooks/useCreditUnionLookup';
 
@@ -44,7 +42,6 @@ export default function JournalReport() {
   const [user, setUser] = useState('');
   const [tranFrom, setTranFrom] = useState(() => dayjs('1990-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs('2089-01-01'));
-  const [region, setRegion] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -58,7 +55,6 @@ export default function JournalReport() {
     company: company || '',
     branch: branch || '',
     user: user || '',
-    region: region || '',
     tranFrom: formatDate(tranFrom),
     tranTo: formatDate(tranTo),
   });
@@ -180,29 +176,6 @@ export default function JournalReport() {
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <DatePicker label="Transaction Date From" value={tranFrom} onChange={(v) => setTranFrom(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
             <DatePicker label="Transaction Date To" value={tranTo} onChange={(v) => setTranTo(v)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
-          </Box>
-
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
-            <TextField
-              select
-              label="Region"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              size="small"
-              fullWidth
-              SelectProps={{
-                displayEmpty: true,
-                renderValue: (selected) => {
-                  if (!selected) return 'All Regions';
-                  return selected;
-                },
-              }}
-            >
-              <MenuItem value="">All Regions</MenuItem>
-              {REGIONS.map((r) => (
-                <MenuItem key={r} value={r}>{r}</MenuItem>
-              ))}
-            </TextField>
           </Box>
 
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>

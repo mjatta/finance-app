@@ -16,6 +16,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
+import { useRegions } from '../../hooks/useRegions';
 import { buildCustomerEnquiriesPrintHtml } from './CustomerEnquiries/printSetup';
 
 const normalizeBranchName = (branch) => (
@@ -37,7 +38,6 @@ const normalizeBranchId = (branch) => (
 const ALL_BRANCHES_VALUE = '__ALL_BRANCHES__';
 const MARITAL_STATUS_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'];
 const EDUCATION_LEVEL_OPTIONS = ['No Formal Education', 'Primary', 'Secondary', 'Vocational / Technical', 'Diploma', 'Bachelor\'s Degree', 'Master\'s Degree', 'PhD'];
-const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 
 const normalizeReportRows = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -107,10 +107,12 @@ const downloadFile = (content, filename, mimeType) => {
 
 export default function CustomerEnquiries() {
   const { branches, loading: branchesLoading } = useBranches();
+  const { regions, loading: regionsLoading } = useRegions();
 
   // Location filters
   const [branch, setBranch] = useState('');
   const [region, setRegion] = useState('');
+  const [selectedRegionId, setSelectedRegionId] = useState('');
 
   // Profile filters
   const [maritalStatus, setMaritalStatus] = useState('');
@@ -211,6 +213,7 @@ export default function CustomerEnquiries() {
       OpenToDate: formatDate(openDateTo, '2089-12-31'),
       ClosedFromDate: formatDate(closeDateFrom, '1900-01-01'),
       ClosedToDate: formatDate(closeDateTo, '2089-12-31'),
+      region: selectedRegionId || '',
     };
 
     const response = await fetch('/api/memberreport/get', {
@@ -370,14 +373,19 @@ export default function CustomerEnquiries() {
                 select
                 label="Region"
                 value={region}
-                onChange={(e) => setRegion(e.target.value)}
+                onChange={(e) => {
+                  setRegion(e.target.value);
+                  const selected = regions.find((r) => r.coun_name?.trim() === e.target.value);
+                  setSelectedRegionId(selected ? String(selected.coun_id) : '');
+                }}
                 size="small"
                 fullWidth
+                disabled={regionsLoading}
                 SelectProps={{ displayEmpty: true, renderValue: (v) => v || 'Select a region' }}
               >
                 <MenuItem value="" disabled>Select a region</MenuItem>
-                {REGIONS.map((r) => (
-                  <MenuItem key={r} value={r}>{r}</MenuItem>
+                {regions.map((r) => (
+                  <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>{r.coun_name?.trim()}</MenuItem>
                 ))}
               </TextField>
 
