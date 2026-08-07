@@ -26,6 +26,7 @@ import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useWithdrawalTransaction } from './hooks/useWithdrawalTransaction';
+import { useRegions } from '../../../hooks/useRegions';
 import { useAuthStore } from '../../../store/authStore';
 
 const todayIso = new Date().toISOString().split('T')[0];
@@ -72,6 +73,8 @@ export default function Withdrawal() {
     creditLimit: '',
     debitLimit: '',
     loanLimit: '',
+    region: '',
+    selectedRegionId: '',
   };
 
   const [formData, setFormData] = useState({
@@ -103,6 +106,8 @@ export default function Withdrawal() {
     creditLimit: '',
     debitLimit: '',
     loanLimit: '',
+    region: '',
+    selectedRegionId: '',
   });
   const user = useAuthStore((state) => state.user);
   const [statusMessage, setStatusMessage] = useState('');
@@ -147,6 +152,7 @@ export default function Withdrawal() {
   const { fetchBanks } = useGetBanks();
   const { fetchBankAccounts } = useGetBankAccounts();
   const { saveWithdrawalTransaction } = useWithdrawalTransaction();
+  const { regions, loading: regionsLoading } = useRegions();
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -334,6 +340,16 @@ export default function Withdrawal() {
       setFormData((prev) => ({
         ...prev,
         [name]: checked,
+      }));
+      return;
+    }
+
+    if (name === 'region') {
+      const selected = regions.find((r) => r.coun_name?.trim() === value);
+      setFormData((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.coun_id) : '',
       }));
       return;
     }
@@ -894,6 +910,29 @@ export default function Withdrawal() {
                         },
                       }}
                     />
+                    <TextField
+                      select
+                      label="Region"
+                      name="region"
+                      value={formData.region}
+                      onChange={handleChange}
+                      size="small"
+                      fullWidth
+                      disabled={regionsLoading}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select a Region',
+                      }}
+                    >
+                      <MenuItem value="" disabled>
+                        {regionsLoading ? 'Loading regions...' : 'Select a Region'}
+                      </MenuItem>
+                      {regions.map((r) => (
+                        <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>
+                          {r.coun_name?.trim()}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Box>
                 </CardContent>
               </Card>

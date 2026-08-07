@@ -31,6 +31,7 @@ export function useWithdrawalTransaction() {
         gcUserid: userId,
         ncompid: compId,
         gnBranchid: branchId,
+        region: formData.selectedRegionId || '',
       };
 
       // Validate required fields
