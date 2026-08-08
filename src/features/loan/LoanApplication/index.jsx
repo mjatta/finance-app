@@ -78,7 +78,9 @@ const initialFormData = {
   totalInterest: '',
   totalPayment: '',
   loanOfficer: '',
+  selectedOfficerCode: '',
   region: '',
+  selectedRegionId: '',
 };
 
 const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -327,6 +329,30 @@ export default function LoanApplication() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Handle loan officer change - extract oprcode from rawData
+    if (name === 'loanOfficer') {
+      const selected = loanOfficers.find((officer) => officer.label === value);
+      const oprcode = selected?.rawData?.oprcode?.trim().replace(/\s+/g, '') || '';
+      setFormData((prev) => ({
+        ...prev,
+        loanOfficer: value,
+        selectedOfficerCode: oprcode,
+      }));
+      return;
+    }
+
+    // Handle region change - extract coun_id from rawData
+    if (name === 'region') {
+      const selected = regions.find((r) => r.label === value);
+      setFormData((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.rawData?.coun_id || '') : '',
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -856,8 +882,8 @@ export default function LoanApplication() {
         glResched: formData.reschedule === true || formData.reschedule === 'true' || false,
         // dPrinPay based on the chosen principal (newPrincipal for top-up/reschedule)
         dPrinPay: parseFloat(((formData.transactionType === 'topup_reschedule' || formData.transactionType === 'topup_details') ? (parseFloat(formData.newPrincipal) || 0) : (parseFloat(formData.principalAmount) || 0)) * 0.9) || 0,
-        loanOfficer: formData.loanOfficer || user?.username || 'SYSTEM',
-        region: formData.region || '',
+        loanOfficer: formData.selectedOfficerCode || formData.loanOfficer || user?.username || 'SYSTEM',
+        region: formData.selectedRegionId || formData.region || '',
         ApplicationForm: applicationFormBase64,
         applicationForm: applicationFormBase64 || '',
       };
