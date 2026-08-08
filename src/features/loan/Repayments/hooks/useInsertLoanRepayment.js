@@ -30,6 +30,7 @@ export function useInsertLoanRepayment() {
         ChequeNo: params.checkNumber || '',
         cUserID: params.username,
         lbranchid: params.branchId,
+        region: params.region || '',
         llcBank: 0,
       };
       const resp = await fetch('/api/loanRepayment/InsertLoanRepayment', {

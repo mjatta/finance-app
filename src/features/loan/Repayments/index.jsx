@@ -23,6 +23,7 @@ import { useGetAccountDetails } from '../../member/DepositManagement/hooks/useGe
 import { useGetBanks } from '../../member/DepositManagement/hooks/useGetBanks';
 import { useGetBankAccounts } from '../../member/DepositManagement/hooks/useGetBankAccounts';
 import { useAuthStore } from '../../../store/authStore';
+import { useAreas } from '../../../hooks/useAreas';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { CurrencyAdornment } from '../../../components/FieldAdornments';
 
@@ -222,6 +223,7 @@ export default function Repayments() {
         checkNumber: formData.checkNumber,
         username: resolvedUsername,
         branchId: resolvedBranchId,
+        region: formData.selectedRegionId || '',
       };
       const result = await insertLoanRepayment(payload);
       if (result) {
@@ -273,9 +275,11 @@ export default function Repayments() {
             bankAccount: '',
             contraAccount: '',
             cashAccount: '',
+            region: '',
+            selectedRegionId: '',
             creditLimit: '',
             debitLimit: '',
-            loanLimit: '',
+            loanLimit: ''
           });
           setLastReceipt(null);
           setTouched({});
@@ -328,6 +332,8 @@ export default function Repayments() {
     bankAccount: '',
     contraAccount: '',
     cashAccount: '',
+    region: '',
+    selectedRegionId: '',
     creditLimit: '',
     debitLimit: '',
     loanLimit: '',
@@ -397,7 +403,7 @@ export default function Repayments() {
     const fetchLoanDetails = useCallback(async (accountNumber, tranDate) => {
       setLoadingAccountDetails(true);
       try {
-        const url = `http://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/getLoanRepaymentAccount?accountNumber=${encodeURIComponent(accountNumber)}&ncompid=30&tranDate=${tranDate}`;
+        const url = `/api/LoanRepayment/getLoanRepaymentAccount?accountNumber=${encodeURIComponent(accountNumber)}&ncompid=30&tranDate=${tranDate}`;
         const resp = await fetch(url);
         if (!resp.ok) throw new Error('Failed to fetch loan details');
         const data = await resp.json();
@@ -434,7 +440,13 @@ export default function Repayments() {
   // Hooks
   const { fetchLoanRepaymentAccount } = useGetLoanRepaymentAccount();
   const { fetchMemberDetails } = useGetMemberDetails();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
   useGetAccountDetails(); // Only call for side effects if any
+
+  // Fetch regions on component mount
+  useEffect(() => {
+    fetchRegions();
+  }, [fetchRegions]);
 
   // Search member by code
   const searchMember = useCallback(async () => {
@@ -510,6 +522,18 @@ export default function Repayments() {
   // Handle input changes
   const handleChange = (event) => {
     const { name, value } = event.target;
+
+    // Handle region change - extract coun_id from rawData
+    if (name === 'region') {
+      const selected = regions.find((r) => r.label === value);
+      setFormData((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.rawData?.coun_id || '') : '',
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -722,6 +746,25 @@ export default function Repayments() {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
+                  <TextField
+                    label="Region"
+                    name="region"
+                    select
+                    value={formData.region}
+                    onChange={handleChange}
+                    size="small"
+                    fullWidth
+                    disabled={loadingRegions}
+                    error={!!regionsError}
+                    helperText={regionsError ? 'Failed to load regions' : ''}
+                  >
+                    <MenuItem value="">Select Region</MenuItem>
+                    {regions.map((region) => (
+                      <MenuItem key={region.value} value={region.label}>
+                        {region.label.trim()}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </Box>
               </CardContent>
             </Card>

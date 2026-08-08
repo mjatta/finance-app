@@ -31,6 +31,7 @@ import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useAuthStore } from '../../../store/authStore';
 import { useLoanDisbursementLoad } from './Hooks/useLoanDisbursementLoad';
 import { useSaveDisbursement } from './Hooks/useSaveDisbursement';
+import { useAreas } from '../../../hooks/useAreas';
 import { useGetBanks } from './Hooks/useGetBanks';
 import { useGetBankAccounts } from './Hooks/useGetBankAccounts';
 
@@ -120,6 +121,8 @@ export default function LoanDisbursement() {
     topUpAmount: '',
     accruedInterest: '',
     chequeNumber: '',
+    region: '',
+    selectedRegionId: '',
   });
 
   // Loan limit error logic
@@ -156,6 +159,7 @@ export default function LoanDisbursement() {
   const { fetchLoanDisbursementData } = useLoanDisbursementLoad();
   const { saveDisbursement } = useSaveDisbursement();
   const { fetchBanks } = useGetBanks();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
   const { fetchBankAccounts } = useGetBankAccounts();
 
   const loadDisbursementData = useCallback(async () => {
@@ -221,6 +225,11 @@ export default function LoanDisbursement() {
   useEffect(() => {
     loadDisbursementData();
   }, [loadDisbursementData]);
+
+  // Fetch regions on component mount
+  useEffect(() => {
+    fetchRegions();
+  }, [fetchRegions]);
 
   const handleRowClick = (params) => {
     const loanId = params.id;
@@ -307,6 +316,18 @@ export default function LoanDisbursement() {
 
   const handleDisbursementDetailsChange = (e) => {
     const { name, value } = e.target;
+
+    // Handle region change - extract coun_id from rawData
+    if (name === 'region') {
+      const selected = regions.find((r) => r.label === value);
+      setDisbursementDetails((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.rawData?.coun_id || '') : '',
+      }));
+      return;
+    }
+
     setDisbursementDetails((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -400,6 +421,7 @@ export default function LoanDisbursement() {
         lcurrcode: 1,
         lbranchid: branchId,
         llcBank: selectedBank || 1,
+        region: disbursementDetails.selectedRegionId || '',
       };
 
       const result = await saveDisbursement(payload);
@@ -436,6 +458,8 @@ export default function LoanDisbursement() {
         topUpAmount: '',
         accruedInterest: '',
         chequeNumber: '',
+        region: '',
+        selectedRegionId: '',
       });
 
       // Auto dismiss success message and reload grid after 2 seconds
@@ -1032,6 +1056,29 @@ export default function LoanDisbursement() {
                         }}
                       />
                     </LocalizationProvider>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Region"
+                      name="region"
+                      value={disbursementDetails.region}
+                      onChange={handleDisbursementDetailsChange}
+                      variant="outlined"
+                      size="small"
+                      error={!!regionsError}
+                      helperText={regionsError ? `Error loading regions: ${regionsError}` : loadingRegions ? 'Loading regions...' : ''}
+                    >
+                      <MenuItem value="">
+                        <em>{loadingRegions ? 'Loading...' : 'Select Region'}</em>
+                      </MenuItem>
+                      {regions.map((region) => (
+                        <MenuItem key={region.value} value={region.label}>
+                          {region.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Grid>
                 </Grid>
               </Box>
