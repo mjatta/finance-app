@@ -38,9 +38,14 @@ export function useInsertLoanRepayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!resp.ok) throw new Error('Failed to save loan repayment');
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('InsertLoanRepayment error:', errorData);
+        throw new Error(errorData.message || `Failed to save loan repayment: ${resp.status}`);
+      }
       return await resp.json();
-    } catch {
+    } catch (err) {
+      console.error('Loan repayment error:', err);
       return null;
     }
   }, []);
