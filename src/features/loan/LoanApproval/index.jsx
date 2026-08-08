@@ -32,6 +32,7 @@ import { useCheckTopup } from './Hooks/useCheckTopup';
 import { useRejectReasons } from './Hooks/useRejectReasons';
 import { useSaveRejectedLoan } from './Hooks/useSaveRejectedLoan';
 import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
+import { useAreas } from '../../../hooks/useAreas';
 import { useUsersStore } from '../../../store/useUsersStore';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -130,7 +131,10 @@ export default function LoanApproval() {
     approveAmount: '',
     duration: '',
     approveDate: '',
+    region: '',
+    selectedRegionId: '',
     loanOfficer: '',
+    selectedOfficerCode: '',
   });
 
   const [appliedLoanDetails, setAppliedLoanDetails] = useState({
@@ -150,6 +154,7 @@ export default function LoanApproval() {
   const { reasons: rejectReasons, fetchRejectReasons } = useRejectReasons();
   const { saveRejectedLoan } = useSaveRejectedLoan();
   const { officers: loanOfficers, fetchLoanOfficers, isLoading: loadingOfficers, error: officersError } = useLoanOfficers();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
   const authUser = useAuthStore((state) => state.user);
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -229,6 +234,11 @@ export default function LoanApproval() {
   useEffect(() => {
     fetchLoanOfficers();
   }, [fetchLoanOfficers]);
+
+  // Fetch regions on component mount
+  useEffect(() => {
+    fetchRegions();
+  }, [fetchRegions]);
 
   // Log officers when loaded
   useEffect(() => {
@@ -331,6 +341,30 @@ export default function LoanApproval() {
 
   const handleApprovalDetailsChange = (e) => {
     const { name, value } = e.target;
+
+    // Handle loan officer change - extract oprcode from rawData
+    if (name === 'loanOfficer') {
+      const selected = loanOfficers.find((officer) => officer.label === value);
+      const oprcode = selected?.rawData?.oprcode?.trim().replace(/\s+/g, '') || '';
+      setApprovalDetails((prev) => ({
+        ...prev,
+        loanOfficer: value,
+        selectedOfficerCode: oprcode,
+      }));
+      return;
+    }
+
+    // Handle region change - extract coun_id from rawData
+    if (name === 'region') {
+      const selected = regions.find((r) => r.label === value);
+      setApprovalDetails((prev) => ({
+        ...prev,
+        region: value,
+        selectedRegionId: selected ? String(selected.rawData?.coun_id || '') : '',
+      }));
+      return;
+    }
+
     setApprovalDetails((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -496,7 +530,7 @@ export default function LoanApproval() {
         loanAmount: approveAmountNum,
         duration: durationNum,
         loanAccount: truncate(selectedLoan.loanacct || selectedLoan.loanAccount || '', 50),
-        loanOfficer: truncate(approvalDetails.loanOfficer || authUser?.username || 'SYSTEM', 20),
+        loanOfficer: truncate(approvalDetails.selectedOfficerCode || approvalDetails.loanOfficer || authUser?.username || 'SYSTEM', 20),
         userid: truncate(authUser?.username || 'SYSTEM', 20),  // Use username instead of id (usually shorter)
         customerCode: truncate(selectedLoan.customerCode || selectedLoan.ccustcode || '', 20),
         memberType: truncate('C', 5),
@@ -507,6 +541,7 @@ export default function LoanApproval() {
         glTopUp: isTopUpFlag,
         glResched: isRescheduledFlag,
         Capprovedby: approvedByCode,
+        region: approvalDetails.selectedRegionId || '',
       };
 
       // Submit the loan approval
@@ -532,7 +567,10 @@ export default function LoanApproval() {
           approveAmount: '',
           duration: '',
           approveDate: '',
+          region: '',
+          selectedRegionId: '',
           loanOfficer: '',
+          selectedOfficerCode: '',
         });
         setAppliedLoanDetails({
           paymentFrequency: '',
@@ -824,6 +862,29 @@ export default function LoanApproval() {
                         }}
                       />
                     </LocalizationProvider>
+                    <Box>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Region"
+                        name="region"
+                        value={approvalDetails.region}
+                        onChange={handleApprovalDetailsChange}
+                        variant="outlined"
+                        size="small"
+                        error={!!regionsError}
+                        helperText={regionsError ? `Error loading regions: ${regionsError}` : loadingRegions ? 'Loading regions...' : ''}
+                      >
+                        <MenuItem value="">
+                          <em>{loadingRegions ? 'Loading...' : 'Select Region'}</em>
+                        </MenuItem>
+                        {regions.map((region) => (
+                          <MenuItem key={region.value} value={region.label}>
+                            {region.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
                     <Box>
                       <TextField
                         select
