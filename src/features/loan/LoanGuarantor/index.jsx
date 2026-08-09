@@ -38,16 +38,16 @@ import { useSaveGuarantor } from './Hooks/useSaveGuarantor';
 import { useGuaranteeHistory } from './Hooks/useGuaranteeHistory';
 
 const GUARANTOR_COLUMNS = [
-  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true },
-  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 180, sortable: true },
+  { field: 'guarantorId', headerName: 'Guarantor ID', flex: 0.8, minWidth: 100, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'guarantorName', headerName: 'Guarantor Name', flex: 1.5, minWidth: 180, sortable: true, align: 'center', headerAlign: 'center' },
   { 
     field: 'loanAmount', 
     headerName: 'Loan Amount', 
     flex: 1, 
     minWidth: 140, 
     sortable: true,
-    align: 'right',
-    headerAlign: 'right',
+    align: 'center',
+    headerAlign: 'center',
   },
   { 
     field: 'lduration_num', 
@@ -82,14 +82,14 @@ const GUARANTOR_COLUMNS = [
     flex: 1, 
     minWidth: 140, 
     sortable: true,
-    align: 'right',
-    headerAlign: 'right',
+    align: 'center',
+    headerAlign: 'center',
   },
 ];
 
 const GUARANTEE_HISTORY_COLUMNS = [
-  { field: 'grantorcode', headerName: 'Grantor Code', flex: 0.8, minWidth: 100, sortable: true },
-  { field: 'grantor', headerName: 'Grantor', flex: 1.5, minWidth: 180, sortable: true },
+  { field: 'grantorcode', headerName: 'Grantor Code', flex: 0.8, minWidth: 100, sortable: true, align: 'center', headerAlign: 'center' },
+  { field: 'grantor', headerName: 'Grantor', flex: 1.5, minWidth: 180, sortable: true, align: 'center', headerAlign: 'center' },
   { 
     field: 'loanamt', 
     headerName: 'Loan Amount', 
@@ -730,6 +730,7 @@ export default function LoanGuarantor() {
                     name="guarantorId"
                     value={guarantorDetails.guarantorId}
                     onChange={handleGuarantorDetailsChange}
+                    type="number"
                     variant="outlined"
                     size="small"
                     placeholder="Enter Guarantor ID"
