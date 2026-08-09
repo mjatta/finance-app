@@ -845,7 +845,7 @@ export default function LoanDisbursement() {
                 {/* Payment Option Selection */}
                 <Box>
                   <FormLabel sx={{ fontWeight: 600, color: '#2c3e50', mb: 2, display: 'block' }}>
-                    Payment Option
+                    Payment Option <span style={{color: 'red', fontSize: '1.2em'}}>*</span>
                   </FormLabel>
                   <RadioGroup
                     aria-label="payment-option"
@@ -930,7 +930,7 @@ export default function LoanDisbursement() {
                       <TextField
                         select
                         fullWidth
-                        label="Bank Name"
+                        label={<span>Bank Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         value={selectedBank}
                         onChange={handleBankChange}
                         size="small"
@@ -950,7 +950,7 @@ export default function LoanDisbursement() {
                       <TextField
                         select
                         fullWidth
-                        label="Bank Account"
+                        label={<span>Bank Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         value={selectedBankAccount}
                         onChange={(e) => {
                           setSelectedBankAccount(e.target.value);
@@ -975,7 +975,7 @@ export default function LoanDisbursement() {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
-                        label="Cheque Number"
+                        label={<span>Cheque Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         name="chequeNumber"
                         value={disbursementDetails.chequeNumber}
                         onChange={handleDisbursementDetailsChange}
@@ -991,7 +991,7 @@ export default function LoanDisbursement() {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
-                      label="Amount"
+                      label={<span>Amount <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                       name="amount"
                       value={formatCurrency(disbursementDetails.amount)}
                       onChange={handleAmountChange}
@@ -1039,7 +1039,7 @@ export default function LoanDisbursement() {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        label="Transaction Date"
+                        label={<span>Transaction Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         value={disbursementDetails.transactionDate}
                         onChange={(newDate) =>
                           setDisbursementDetails((prev) => ({
@@ -1061,7 +1061,7 @@ export default function LoanDisbursement() {
                     <TextField
                       select
                       fullWidth
-                      label="Region"
+                      label={<span>Region <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                       name="region"
                       value={disbursementDetails.region}
                       onChange={handleDisbursementDetailsChange}
