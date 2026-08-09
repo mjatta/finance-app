@@ -56,11 +56,11 @@ export default function EndOfYearAccounting() {
   }, [fetchData]);
 
   const columns = [
-    { field: 'balanceDate', headerName: 'Balance Date', flex: 1, minWidth: 140 },
-    { field: 'accountNo', headerName: 'Account Number', flex: 1, minWidth: 160 },
-    { field: 'accountName', headerName: 'Account Name', flex: 2, minWidth: 240 },
-    { field: 'debit', headerName: 'Debit', flex: 1, minWidth: 120, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'credit', headerName: 'Credit', flex: 1, minWidth: 120, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'balanceDate', headerName: 'Balance Date', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center' },
+    { field: 'accountNo', headerName: 'Account Number', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
+    { field: 'accountName', headerName: 'Account Name', flex: 2, minWidth: 240, align: 'center', headerAlign: 'center' },
+    { field: 'debit', headerName: 'Debit', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'credit', headerName: 'Credit', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
   ];
 
   return (
