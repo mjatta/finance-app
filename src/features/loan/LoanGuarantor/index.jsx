@@ -726,7 +726,7 @@ export default function LoanGuarantor() {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Guarantor ID"
+                    label={<span>Guarantor ID <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="guarantorId"
                     value={guarantorDetails.guarantorId}
                     onChange={handleGuarantorDetailsChange}
@@ -742,7 +742,7 @@ export default function LoanGuarantor() {
             {/* Radio Button Group for Guarantor Type Selection */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', mb: 2, display: 'block', fontSize: '1.05rem' }}>
-                Select Guarantor Type
+                Select Guarantor Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span>
               </Typography>
               <RadioGroup
                 aria-label="guarantor-type"
@@ -798,7 +798,7 @@ export default function LoanGuarantor() {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Collateral Name"
+                    label={<span>Collateral Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="collateralName"
                     value={guarantorDetails.collateralName}
                     onChange={handleGuarantorDetailsChange}
@@ -838,7 +838,7 @@ export default function LoanGuarantor() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
-                  label="Enter amount"
+                  label={<span>Enter amount <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   name="amountToGuarantee"
                   value={formatCurrency(guarantorDetails.amountToGuarantee)}
                   onChange={handleAmountToGuaranteeChange}
@@ -857,7 +857,7 @@ export default function LoanGuarantor() {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
-                    label="Collateral Value"
+                    label={<span>Collateral Value <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="collateralValue"
                     value={guarantorDetails.collateralValue}
                     onChange={handleGuarantorDetailsChange}
@@ -884,7 +884,7 @@ export default function LoanGuarantor() {
                     gap: 1.5,
                   }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                      Upload Collateral Document
+                      Upload Collateral Document <span style={{color: 'red', fontSize: '1.2em'}}>*</span>
                     </Typography>
                     <input
                       type="file"
