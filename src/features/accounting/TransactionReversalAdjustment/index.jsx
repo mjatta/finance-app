@@ -162,7 +162,7 @@ export default function TransactionReversalAdjustment() {
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
-              label="Adjust By"
+              label={<span>Adjust By <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               value={adjustBy}
               onChange={(e) => setAdjustBy(e.target.value)}
               size="small"
@@ -178,10 +178,11 @@ export default function TransactionReversalAdjustment() {
           {adjustBy === 'customer' && (
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 2 }}>
               <TextField
-                label="Customer Code"
+                label={<span>Customer Code <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 value={customerCode}
                 onChange={(e) => setCustomerCode(e.target.value)}
                 onKeyDown={handleCustomerCodeTab}
+                type="number"
                 size="small"
                 fullWidth
                 placeholder="Enter or search customer code"
@@ -199,7 +200,7 @@ export default function TransactionReversalAdjustment() {
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField
               select
-              label="Transaction Type"
+              label={<span>Transaction Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value)}
               onBlur={handleTransactionTypeBlur}
@@ -213,7 +214,7 @@ export default function TransactionReversalAdjustment() {
             </TextField>
 
             <DatePicker
-              label="Transaction Date"
+              label={<span>Transaction Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               value={transactionDate}
               onChange={(v) => setTransactionDate(v)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
@@ -223,9 +224,10 @@ export default function TransactionReversalAdjustment() {
           {adjustBy === 'voucher' && (
             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
               <TextField
-                label="Voucher Number"
+                label={<span>Voucher Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 value={voucherNo}
                 onChange={(e) => setVoucherNo(e.target.value)}
+                type="number"
                 size="small"
                 fullWidth
                 placeholder="Enter voucher number"
