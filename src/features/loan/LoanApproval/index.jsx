@@ -820,7 +820,7 @@ export default function LoanApproval() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField
                       fullWidth
-                      label="Approve Amount"
+                      label={<span>Approve Amount <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                       name="approveAmount"
                       value={formatCurrency(approvalDetails.approveAmount)}
                       onChange={handleApproveAmountChange}
@@ -834,17 +834,18 @@ export default function LoanApproval() {
                     />
                     <TextField
                       fullWidth
-                      label="Duration"
+                      label={<span>Duration <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                       name="duration"
                       value={approvalDetails.duration}
                       onChange={handleApprovalDetailsChange}
+                      type="number"
                       variant="outlined"
                       size="small"
                       placeholder="Enter duration"
                     />
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        label="Approve Date"
+                        label={<span>Approve Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         value={approvalDetails.approveDate ? dayjs(approvalDetails.approveDate) : null}
                         onChange={(newValue) => {
                           const formatted = newValue ? newValue.format('YYYY-MM-DD') : '';
@@ -866,7 +867,7 @@ export default function LoanApproval() {
                       <TextField
                         select
                         fullWidth
-                        label="Region"
+                        label={<span>Region <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         name="region"
                         value={approvalDetails.region}
                         onChange={handleApprovalDetailsChange}
@@ -889,7 +890,7 @@ export default function LoanApproval() {
                       <TextField
                         select
                         fullWidth
-                        label="Approved By"
+                        label={<span>Approved By <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         name="loanOfficer"
                         value={approvalDetails.loanOfficer}
                         onChange={handleApprovalDetailsChange}
@@ -1091,7 +1092,7 @@ export default function LoanApproval() {
             {/* Rejection Reason - Dropdown */}
             <TextField
               select
-              label="Rejection Reason"
+              label={<span>Rejection Reason <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               name="rejectReasonId"
               value={rejectDetails.rejectReasonId}
               onChange={handleRejectDetailsChange}
