@@ -353,13 +353,12 @@ export default function ProductDefinition() {
                 <>
                   <TextField
                     select
-                    label="Main Category"
+                    label={<span>Main Category <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="mainCategory"
                     value={form.mainCategory}
                     onChange={handleChange}
                     size="small"
                     fullWidth
-                    required
                   >
                     <MenuItem value="">Select a Category</MenuItem>
                     {accountTypes.map((type) => (
@@ -369,13 +368,12 @@ export default function ProductDefinition() {
                     ))}
                   </TextField>
                   <TextField
-                    label="Product Name"
+                    label={<span>Product Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="productName"
                     value={form.productName}
                     onChange={handleChange}
                     size="small"
                     fullWidth
-                    required
                   />
                 </>
               )}
@@ -418,6 +416,7 @@ export default function ProductDefinition() {
                 <TextField
                   label="Interest Rate (%)"
                   name="interestRate"
+                  type="number"
                   value={form.interestRate}
                   onChange={handleChange}
                   size="small"
@@ -429,6 +428,7 @@ export default function ProductDefinition() {
               <TextField
                 label="Minimum Amount"
                 name="minimumAmount"
+                type="number"
                 value={form.minimumAmount}
                 onChange={handleChange}
                 size="small"
@@ -439,6 +439,7 @@ export default function ProductDefinition() {
               <TextField
                 label="Maximum Amount"
                 name="maximumAmount"
+                type="number"
                 value={form.maximumAmount}
                 onChange={handleChange}
                 size="small"
@@ -449,6 +450,7 @@ export default function ProductDefinition() {
               <TextField
                 label="Minimum Duration"
                 name="minimumDuration"
+                type="number"
                 value={form.minimumDuration}
                 onChange={handleChange}
                 size="small"
@@ -457,6 +459,7 @@ export default function ProductDefinition() {
               <TextField
                 label="Maximum Duration"
                 name="maximumDuration"
+                type="number"
                 value={form.maximumDuration}
                 onChange={handleChange}
                 size="small"
