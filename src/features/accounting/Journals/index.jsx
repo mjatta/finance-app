@@ -339,7 +339,7 @@ export default function SaveJournals() {
 
           <Box sx={{ display: 'grid', gap: 2 }}>
             <TextField
-              label="Date"
+              label={<span>Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               size="small"
               type="date"
               InputLabelProps={{ shrink: true }}
@@ -353,7 +353,7 @@ export default function SaveJournals() {
               onChange={(e) => handleTransactionChange(type, cardIndex, 'transactionDescription', e.target.value)}
             />
             <TextField
-              label={amountLabel}
+              label={<span>{amountLabel} <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               size="small"
               type="number"
               value={transaction.amount}
@@ -361,7 +361,7 @@ export default function SaveJournals() {
             />
             <TextField
               select
-              label={accountLabel}
+              label={<span>{accountLabel} <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               size="small"
               value={transaction.account}
               onChange={(e) => handleTransactionChange(type, cardIndex, 'account', e.target.value)}
