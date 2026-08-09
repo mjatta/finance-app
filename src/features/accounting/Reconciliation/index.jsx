@@ -36,11 +36,11 @@ export default function AccountReconciliation() {
   }, [selected]);
 
   const columns = [
-    { field: 'transactionDate', headerName: 'Date', flex: 1, minWidth: 140, valueFormatter: (params) => params?.value ? dayjs(params.value).format('YYYY-MM-DD') : '' },
-    { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 160 },
-    { field: 'narration', headerName: 'Narration', flex: 2, minWidth: 240 },
-    { field: 'debit', headerName: 'Debit', flex: 1, minWidth: 120, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'credit', headerName: 'Credit', flex: 1, minWidth: 120, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'transactionDate', headerName: 'Date', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', valueFormatter: (value) => value ? dayjs(value).format('YYYY-MM-DD') : '' },
+    { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
+    { field: 'narration', headerName: 'Narration', flex: 2, minWidth: 240, align: 'center', headerAlign: 'center' },
+    { field: 'debit', headerName: 'Debit', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'credit', headerName: 'Credit', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
   ];
 
   return (
