@@ -246,12 +246,12 @@ export default function Verification() {
       </Backdrop>
 
       {/* Header */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#2c3e50', mb: 0.5 }}>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
             Journal Verification
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>
             Verify and approve pending journal transactions
           </Typography>
         </CardContent>
