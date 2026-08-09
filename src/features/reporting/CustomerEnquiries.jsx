@@ -546,11 +546,11 @@ export default function CustomerEnquiries() {
               </Typography>
               <Box sx={{ display: 'flex', gap: 3 }}>
                 <FormControlLabel
-                  control={<Checkbox checked={gender.male} onChange={handleGenderChange} name="male" />}
+                  control={<Checkbox checked={gender.male} onChange={handleGenderChange} name="male" disabled={!customerType.individual} />}
                   label="Male"
                 />
                 <FormControlLabel
-                  control={<Checkbox checked={gender.female} onChange={handleGenderChange} name="female" />}
+                  control={<Checkbox checked={gender.female} onChange={handleGenderChange} name="female" disabled={!customerType.individual} />}
                   label="Female"
                 />
               </Box>

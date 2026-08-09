@@ -874,7 +874,7 @@ export default function UserSetup({ user }) {
               >
                 <TextField
                   select
-                  label="Company name"
+                  label={<span>Company name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   name="companyName"
                   value={userForm.companyName}
                   onChange={handleUserFormChange}
@@ -891,7 +891,7 @@ export default function UserSetup({ user }) {
 
                 <TextField
                   select
-                  label="Branch"
+                  label={<span>Branch <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   name="branch"
                   value={userForm.branch}
                   onChange={handleUserFormChange}
@@ -938,7 +938,7 @@ export default function UserSetup({ user }) {
 
                 <TextField label="Staff number" name="staffNumber" value={userForm.staffNumber} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField
-                  label="User id"
+                  label={<span>User id <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   name="userId"
                   value={userForm.userId}
                   onChange={handleUserFormChange}
@@ -970,7 +970,7 @@ export default function UserSetup({ user }) {
                     ) : null,
                   }}
                 />
-                <TextField label="Full Name" name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label={<span>Full Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>} name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
                 <TextField
                   label="Temporary password"
                   name="temporaryPassword"
@@ -1007,7 +1007,7 @@ export default function UserSetup({ user }) {
                 />
                 <TextField
                   select
-                  label="Cash account"
+                  label={<span>Cash account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   name="cashAccount"
                   value={userForm.cashAccount}
                   onChange={handleUserFormChange}
@@ -1028,9 +1028,9 @@ export default function UserSetup({ user }) {
                     </MenuItem>
                   ))}
                 </TextField>
-                <TextField label="Debit Limit" name="debitMit" value={userForm.debitMit} onChange={handleUserFormChange} size="small" fullWidth />
-                <TextField label="Credit limit" name="creditLimit" value={userForm.creditLimit} onChange={handleUserFormChange} size="small" fullWidth />
-                <TextField label="Loan limit" name="loanLimit" value={userForm.loanLimit} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Debit Limit" name="debitMit" type="number" value={userForm.debitMit} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Credit limit" name="creditLimit" type="number" value={userForm.creditLimit} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField label="Loan limit" name="loanLimit" type="number" value={userForm.loanLimit} onChange={handleUserFormChange} size="small" fullWidth />
 
                 <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' }, pt: 1.25, mt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
                   <Typography variant="subtitle2" sx={{ mb: 1.25, fontWeight: 800, color: '#2c3e50' }}>
@@ -1139,22 +1139,6 @@ export default function UserSetup({ user }) {
               {showCreateUserRoles && (
                 <>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <TextField
-                    label="Role name"
-                    name="roleName"
-                    value={roleForm.roleName}
-                    onChange={handleRoleFormChange}
-                    size="small"
-                    sx={{ flex: '1 1 240px', minWidth: 220 }}
-                  />
-                  <TextField
-                    label="Role description"
-                    name="roleDescription"
-                    value={roleForm.roleDescription}
-                    onChange={handleRoleFormChange}
-                    size="small"
-                    sx={{ flex: '1 1 320px', minWidth: 260 }}
-                  />
                   <Box sx={{ width: '100%' }}>
                     <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
                       Feature permissions
