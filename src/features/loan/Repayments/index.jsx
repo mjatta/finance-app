@@ -613,7 +613,7 @@ export default function Repayments() {
             </Typography>
             <Box sx={{ display: 'grid', gap: 2 }}>
               <TextField
-                label="Customer Code"
+                label={<span>Customer Code <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 name="memberCode"
                 value={formData.memberCode}
                 onChange={handleChange}
@@ -715,7 +715,7 @@ export default function Repayments() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <TextField
                     select
-                    label="Posting Account"
+                    label={<span>Posting Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="postingAccount"
                     value={formData.postingAccount}
                     onChange={handleChange}
@@ -737,7 +737,7 @@ export default function Repayments() {
                     ))}
                   </TextField>
                   <TextField
-                    label="Transaction Date"
+                    label={<span>Transaction Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="transactionDate"
                     type="date"
                     value={formData.transactionDate}
@@ -747,7 +747,7 @@ export default function Repayments() {
                     InputLabelProps={{ shrink: true }}
                   />
                   <TextField
-                    label="Region"
+                    label={<span>Region <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="region"
                     select
                     value={formData.region}
@@ -868,7 +868,7 @@ export default function Repayments() {
                 <Box sx={{ display: 'grid', gap: 2 }}>
                   <TextField
                     select
-                    label="Repayment Type"
+                    label={<span>Repayment Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="repaymentType"
                     value={formData.repaymentType}
                     onChange={handleRepaymentTypeChange}
@@ -883,7 +883,7 @@ export default function Repayments() {
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
                   </TextField>
                   <TextField
-                    label="Repayment Amount"
+                    label={<span>Repayment Amount <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     name="repaymentAmount"
                     value={formatCurrency(formData.repaymentAmount)}
                     onChange={handleRepaymentAmountChange}
@@ -952,7 +952,7 @@ export default function Repayments() {
                         {formData.repaymentType === 'cheque' && (
                           <>
                             <TextField
-                              label="Check Number"
+                              label={<span>Check Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                               name="checkNumber"
                               value={formData.checkNumber}
                               onChange={handleChange}
@@ -960,7 +960,7 @@ export default function Repayments() {
                               fullWidth
                             />
                             <TextField
-                              label="Check Date"
+                              label={<span>Check Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                               name="checkDate"
                               type="date"
                               value={formData.checkDate}
@@ -973,7 +973,7 @@ export default function Repayments() {
                         )}
                         <TextField
                           select
-                          label="Bank"
+                          label={<span>Bank <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                           name="bank"
                           value={formData.bank}
                           onChange={handleBankChange}
@@ -987,7 +987,7 @@ export default function Repayments() {
                         </TextField>
                         <TextField
                           select
-                          label="Bank Account"
+                          label={<span>Bank Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                           name="bankAccount"
                           value={formData.bankAccount}
                           onChange={handleBankAccountChange}
