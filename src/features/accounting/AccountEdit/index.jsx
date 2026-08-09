@@ -211,6 +211,7 @@ export default function AccountEdit() {
               onChange={handleAccountNumberChange}
               onKeyDown={handleAccountNumberTab}
               placeholder="Enter account number"
+              type="number"
               helperText="Enter account number and press Tab or Search to load details"
               FormHelperTextProps={{
                 sx: {

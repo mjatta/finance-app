@@ -16,13 +16,9 @@ import { useGetGLTransactions } from './hooks/useGetGLTransactions';
 
 export default function AccountEnquiry() {
   const [accountNumber, setAccountNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [results, setResults] = useState([]);
-  const [searched, setSearched] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const { transactions, loading: transactionsLoading, error: transactionsError, fetchGLTransactions } = useGetGLTransactions();
+  const { transactions, loading, error, fetchGLTransactions } = useGetGLTransactions();
 
   // Filtered results by date
   const filteredResults = useMemo(() => {
@@ -41,14 +37,12 @@ export default function AccountEnquiry() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    setSearched(true);
     if (!accountNumber.trim()) return;
     await fetchGLTransactions(accountNumber.trim());
   };
 
   const handleClear = () => {
     setAccountNumber('');
-    setSearched(false);
     setFromDate('');
     setToDate('');
     fetchGLTransactions(''); // clear results
@@ -149,6 +143,7 @@ export default function AccountEnquiry() {
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder="Enter GL account number"
+                type="number"
                 size="medium"
                 fullWidth
                 disabled={loading}
@@ -328,24 +323,26 @@ export default function AccountEnquiry() {
 
 // DEBUG: Show all fields as columns for troubleshooting
 const debugColumns = [
-  { field: 'id', headerName: 'ID', minWidth: 50 },
+  { field: 'id', headerName: 'ID', flex: 0.5, minWidth: 50 },
   {
     field: 'PostDate',
     headerName: 'Post Date',
+    flex: 0.9,
     minWidth: 120,
     valueGetter: (value) => (value ? dayjs(value).format('DD-MM-YYYY') : ''),
   },
   {
     field: 'ValueDate',
     headerName: 'Value Date',
+    flex: 0.9,
     minWidth: 120,
     valueGetter: (value) => (value ? dayjs(value).format('DD-MM-YYYY') : ''),
   },
-  { field: 'Debit', headerName: 'Debit', minWidth: 100 },
-  { field: 'Credit', headerName: 'Credit', minWidth: 100 },
-  { field: 'NewBalance', headerName: 'New Balance', minWidth: 120 },
-  { field: 'Description', headerName: 'Description', minWidth: 200 },
-  { field: 'ChequeNo', headerName: 'Cheque No', minWidth: 120 },
-  { field: 'UserId', headerName: 'User ID', minWidth: 100 },
-  { field: 'VoucherNo', headerName: 'Voucher No', minWidth: 140 },
+  { field: 'Debit', headerName: 'Debit', flex: 0.8, minWidth: 100 },
+  { field: 'Credit', headerName: 'Credit', flex: 0.8, minWidth: 100 },
+  { field: 'NewBalance', headerName: 'New Balance', flex: 0.9, minWidth: 120 },
+  { field: 'Description', headerName: 'Description', flex: 1.4, minWidth: 200 },
+  { field: 'ChequeNo', headerName: 'Cheque No', flex: 0.9, minWidth: 120 },
+  { field: 'UserId', headerName: 'User ID', flex: 0.8, minWidth: 100 },
+  { field: 'VoucherNo', headerName: 'Voucher No', flex: 1, minWidth: 140 },
 ];
