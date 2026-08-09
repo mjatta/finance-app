@@ -246,12 +246,12 @@ export default function Verification() {
       </Backdrop>
 
       {/* Header */}
-      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: '#2c3e50', mb: 0.5 }}>
             Journal Verification
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Verify and approve pending journal transactions
           </Typography>
         </CardContent>
@@ -259,32 +259,22 @@ export default function Verification() {
 
       {/* Status Message */}
       {statusMessage && (
-        <Box
+        <Alert
+          severity={statusError ? 'error' : 'success'}
           sx={{
-            mb: 2,
-            p: 2.5,
+            mb: 3,
             borderRadius: 1.5,
-            bgcolor: statusError ? '#ffebee' : '#f1f8e9',
-            borderLeft: `4px solid ${statusError ? '#c62828' : '#558b2f'}`,
-            border: `1px solid ${statusError ? '#ef5350' : '#9ccc65'}`,
+            fontWeight: 500,
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{
-              color: statusError ? '#c62828' : '#558b2f',
-              fontWeight: 500,
-            }}
-          >
-            {statusError ? '❌' : '✅'} {statusMessage}
-          </Typography>
-        </Box>
+          {statusMessage}
+        </Alert>
       )}
 
       {/* Filter and Sorting Section */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
-          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
             Filter by Transaction Type
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -296,8 +286,7 @@ export default function Verification() {
                 onClick={() => setSelectedTransactionType(type.value)}
                 sx={{
                   textTransform: 'none',
-                  borderRadius: '20px',
-                  px: 2,
+                  fontWeight: 600,
                 }}
               >
                 {type.label}
@@ -305,7 +294,7 @@ export default function Verification() {
             ))}
           </Box>
           {filteredJournals.length > 0 && (
-            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary', fontWeight: 500 }}>
               Showing {filteredJournals.length} of {journals.length} transactions
             </Typography>
           )}
@@ -313,126 +302,129 @@ export default function Verification() {
       </Card>
 
       {/* Data Grid */}
-      <Card sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, p: 2, pb: 0 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-            Unverified Journal Transactions
-          </Typography>
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3, overflow: 'hidden' }}>
+        {/* Header */}
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 200 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
+              Unverified Journal Transactions
+            </Typography>
+          </Box>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
               label={`Total Debit: D ${filteredTotalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sx={{ backgroundColor: '#e3f2fd', color: '#1565c0', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+              sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
             />
             <Chip
               label={`Total Credit: D ${filteredTotalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              sx={{ backgroundColor: '#e8f5e9', color: '#2e7d32', fontWeight: 700, fontSize: '0.95rem', height: 36, px: 1 }}
+              sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
             />
           </Box>
         </Box>
-        <Box sx={{ mt: 2 }}>
-        <Box
-          sx={{
-            width: '100%',
-            borderRadius: 1.5,
-            border: '1px solid #e0e0e0',
-            overflow: 'hidden',
-            mb: 2,
-          }}
-        >
-          <DataGrid
-            key={gridKey}
-            rows={filteredJournals}
-            columns={VERIFICATION_COLUMNS}
-            loading={loading}
-            pageSizeOptions={[5, 10, 25, 50]}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            sortModel={sortModel}
-            onSortModelChange={setSortModel}
-            checkboxSelection={false}
-            getRowId={(row) => row.uid}
-            onRowClick={(params) => {
-              const clickedRow = params.row;
-              const rowVoucher = String(clickedRow.cvoucherno);
-              
-              // Find all rows with the same voucher number
-              const sameVoucherRows = filteredJournals
-                .filter((j) => String(j.cvoucherno) === rowVoucher)
-                .map((j) => j.uid);
-              
-              let arr = Array.isArray(selectedIds) ? [...selectedIds] : [];
-              const allSelected = sameVoucherRows.every((uid) => arr.includes(uid));
-              
-              if (allSelected) {
-                // Deselect all with same voucher
-                arr = arr.filter((uid) => !sameVoucherRows.includes(uid));
-              } else {
-                // Select all with same voucher
-                arr = Array.from(new Set([...arr, ...sameVoucherRows]));
-              }
-              
-              setSelectedIds(arr);
-              setSelectedJVNumbers(arr);
-            }}
-            getRowClassName={(params) => {
-              const arr = Array.isArray(selectedIds) ? selectedIds : [selectedIds];
-              if (arr.includes(params.id)) return 'selected-row';
-              return '';
-            }}
+        <CardContent sx={{ p: 0 }}>
+          <Box
             sx={{
+              width: '100%',
+              borderRadius: 0,
               border: 'none',
-              '& .MuiDataGrid-columnHeaderTitle': {
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                color: '#2c3e50',
-              },
-              '& .MuiDataGrid-row': {
-                transition: 'all 0.2s ease',
-                '&:nth-of-type(odd)': {
-                  backgroundColor: '#fafafa',
-                },
-                '&:nth-of-type(even)': {
-                  backgroundColor: '#ffffff',
-                },
-                '&:hover': {
-                  backgroundColor: '#f0f0f0 !important',
-                },
-                '&.selected-row, &.Mui-selected': {
-                  backgroundColor: '#1976d2 !important',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  '& .MuiDataGrid-cell': {
-                    color: '#ffffff',
-                    borderBottomColor: '#1565c0',
-                  },
-                  '&:hover': {
-                    backgroundColor: '#1565c0 !important',
-                  },
-                },
-              },
+              overflow: 'hidden',
+              mt: 0,
+              height: 400,
             }}
-          />
-        </Box>
-        
-        {!loading && filteredJournals.length === 0 && (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography color="textSecondary" variant="body2">
-              ✅ No journals available for verification.
-            </Typography>
+          >
+            <DataGrid
+              key={gridKey}
+              rows={filteredJournals}
+              columns={VERIFICATION_COLUMNS}
+              loading={loading}
+              pageSizeOptions={[5, 10, 25, 50]}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              sortModel={sortModel}
+              onSortModelChange={setSortModel}
+              checkboxSelection={false}
+              getRowId={(row) => row.uid}
+              onRowClick={(params) => {
+                const clickedRow = params.row;
+                const rowVoucher = String(clickedRow.cvoucherno);
+                
+                // Find all rows with the same voucher number
+                const sameVoucherRows = filteredJournals
+                  .filter((j) => String(j.cvoucherno) === rowVoucher)
+                  .map((j) => j.uid);
+                
+                let arr = Array.isArray(selectedIds) ? [...selectedIds] : [];
+                const allSelected = sameVoucherRows.every((uid) => arr.includes(uid));
+                
+                if (allSelected) {
+                  // Deselect all with same voucher
+                  arr = arr.filter((uid) => !sameVoucherRows.includes(uid));
+                } else {
+                  // Select all with same voucher
+                  arr = Array.from(new Set([...arr, ...sameVoucherRows]));
+                }
+                
+                setSelectedIds(arr);
+                setSelectedJVNumbers(arr);
+              }}
+              getRowClassName={(params) => {
+                const arr = Array.isArray(selectedIds) ? selectedIds : [selectedIds];
+                if (arr.includes(params.id)) return 'selected-row';
+                return '';
+              }}
+              sx={{
+                border: 'none',
+                borderRadius: 0,
+                '& .MuiDataGrid-columnHeader': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 700,
+                },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                },
+                '& .MuiDataGrid-row': {
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: '#f5f5f5 !important',
+                  },
+                  '&.selected-row, &.Mui-selected': {
+                    backgroundColor: '#1976d2 !important',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    '& .MuiDataGrid-cell': {
+                      color: '#ffffff',
+                      borderBottomColor: '#1565c0',
+                    },
+                    '&:hover': {
+                      backgroundColor: '#1565c0 !important',
+                    },
+                  },
+                },
+              }}
+            />
           </Box>
-        )}
-        </Box>
+          
+          {!loading && filteredJournals.length === 0 && (
+            <Box sx={{ p: 2, textAlign: 'center' }}>
+              <Typography color="textSecondary" variant="body2">
+                ✅ No journals available for verification.
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
       </Card>
 
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
           onClick={handleSelectAll}
           sx={{
-            fontWeight: 600,
-            paddingX: 3,
+            fontWeight: 700,
             textTransform: 'none',
+            px: 3,
           }}
         >
           ✓ Select All Rows
@@ -442,9 +434,9 @@ export default function Verification() {
           onClick={handleClearSelection}
           disabled={selectedIds.length === 0}
           sx={{
-            fontWeight: 600,
-            paddingX: 3,
+            fontWeight: 700,
             textTransform: 'none',
+            px: 3,
           }}
         >
           ✕ Clear Selection
@@ -456,9 +448,10 @@ export default function Verification() {
           onClick={handleSaveVerification}
           disabled={selectedIds.length === 0}
           sx={{
-            fontWeight: 600,
-            paddingX: 3,
-            boxShadow: 2,
+            fontWeight: 700,
+            textTransform: 'none',
+            px: 3,
+            boxShadow: 1,
           }}
         >
           Save Verification
