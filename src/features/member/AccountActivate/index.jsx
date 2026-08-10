@@ -144,6 +144,7 @@ export default function AccountActivate() {
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchAccount()}
                 disabled={isLoading}
                 placeholder="e.g., ACC001"
+                type="number"
                 fullWidth
                 size="small"
                 helperText="Enter the account number to search"

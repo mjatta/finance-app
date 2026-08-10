@@ -278,6 +278,7 @@ export default function AddMemberAccount() {
               onChange={handleCustomerCodeChange}
               onKeyDown={handleCustomerCodeTab}
               placeholder="Enter customer code"
+              type="number"
               helperText="Enter customer code and press Tab or Search to load details"
               FormHelperTextProps={{
                 sx: {
@@ -343,7 +344,7 @@ export default function AddMemberAccount() {
               </Box>
               <TextField
                 select
-                label="Account Type"
+                label={<span>Account Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 name="accountType"
                 value={formData.accountType}
                 onChange={handleInputChange}
@@ -376,7 +377,7 @@ export default function AddMemberAccount() {
               </Box>
               <TextField
                 select
-                label="Product"
+                label={<span>Product <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 name="product"
                 value={formData.product}
                 onChange={handleInputChange}
@@ -404,7 +405,7 @@ export default function AddMemberAccount() {
               </TextField>
               <TextField
                 select
-                label="Branch"
+                label={<span>Branch <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 name="branch"
                 value={formData.branch}
                 onChange={handleInputChange}
@@ -441,7 +442,7 @@ export default function AddMemberAccount() {
                 inputProps={{ readOnly: true }}
               />
               <TextField
-                label="Account Name"
+                label={<span>Account Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                 name="accountName"
                 value={formData.accountName}
                 onChange={handleInputChange}

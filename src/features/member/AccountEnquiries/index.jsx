@@ -591,6 +591,7 @@ export default function AccountEnquiries({ user, title = 'Account Enquiries' }) 
                   value={searchMemberCode}
                   onChange={(e) => setSearchMemberCode(e.target.value)}
                   placeholder="Enter member code"
+                  type="number"
                   size="medium"
                   fullWidth
                   disabled={loading}

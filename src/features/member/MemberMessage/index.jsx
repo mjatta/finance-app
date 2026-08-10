@@ -86,7 +86,7 @@ export default function MemberMessage() {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: 'flex-end' }}>
             <TextField
               label="Customer Code"
-              type="text"
+              type="number"
               value={customerCode}
               onChange={(e) => setCustomerCode(e.target.value)}
               onKeyPress={handleKeyPress}

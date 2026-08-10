@@ -201,6 +201,7 @@ export default function MemberCloseAccount() {
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchMember()}
                 disabled={loading}
                 placeholder="e.g., 000003"
+                type="number"
                 fullWidth
                 size="small"
                 helperText="Enter the customer code to search"

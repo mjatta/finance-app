@@ -133,6 +133,7 @@ export default function MemberActivate() {
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchMember()}
                 disabled={isLoading}
                 placeholder="e.g., 1, 123, 001"
+                type="number"
                 fullWidth
                 size="small"
                 helperText="Enter the customer code to search"
