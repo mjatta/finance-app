@@ -4,15 +4,19 @@ import * as Sentry from "@sentry/react";
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Alert,
+  AlertTitle,
   Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
+  Chip,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
+  DialogTitle,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -202,6 +206,8 @@ export default function CustomerRegistration(props) {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
+  const [saveValidationErrors, setSaveValidationErrors] = useState(null);
+  const [pendingFormReset, setPendingFormReset] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [institutionBranches, setInstitutionBranches] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -262,6 +268,7 @@ export default function CustomerRegistration(props) {
   const { updateInstitution } = useUpdateInstitution();
 
   const handleFillFromMember = async () => {
+    setSaveValidationErrors(null);
     if (!individualSearchCode) return setStatusMessage('Enter member code to search');
     setStatusMessage('');
     try {
@@ -562,6 +569,7 @@ export default function CustomerRegistration(props) {
   };
 
   const handleFillFromInstitution = async () => {
+    setSaveValidationErrors(null);
     if (!institutionSearchCode) return setStatusMessage('Enter institution code to search');
     setStatusMessage('');
     try {
@@ -957,6 +965,171 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     return !value;
   };
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PHONE_REGEX = /^[0-9+()\-\s]{7,15}$/;
+
+  // Email is optional on most cards, so only flag it once touched and non-empty with a bad format.
+  const getEmailFormatError = (fieldName) => {
+    if (!touched[fieldName]) return '';
+    const value = formData[fieldName];
+    if (!value || !String(value).trim()) return '';
+    return EMAIL_REGEX.test(String(value).trim()) ? '' : 'Enter a valid email address';
+  };
+
+  // Phone fields here are required, so combine the required check with a format check.
+  const getPhoneError = (fieldName, label) => {
+    if (!touched[fieldName]) return '';
+    const value = formData[fieldName] ? String(formData[fieldName]).trim() : '';
+    if (!value) return `${label} is required`;
+    return PHONE_REGEX.test(value) ? '' : 'Enter a valid phone number';
+  };
+
+  const getDateOfBirthError = () => {
+    if (!touched.dateOfBirth) return '';
+    if (!formData.dateOfBirth) return 'Date of Birth is required';
+    const age = dayjs().diff(dayjs(formData.dateOfBirth), 'year');
+    return age >= 18 ? '' : 'Customer must be at least 18 years old';
+  };
+
+  const getExpiryDateError = () => {
+    if (!touched.expiryDate) return '';
+    if (!formData.expiryDate) return 'Expiry Date is required';
+    if (formData.dateIssued && dayjs(formData.expiryDate).isBefore(dayjs(formData.dateIssued))) {
+      return 'Expiry Date must be after Date Issued';
+    }
+    return '';
+  };
+
+  // Shared validation used by both the initial Save flow and the Update flows (edit-existing-member)
+  // so required-field checks, format checks, and the tab-auto-switch/scroll-to-field behavior stay
+  // consistent no matter which action the user takes.
+  const runFormValidation = (targetMainTab) => {
+    const missingFields = [];
+    const invalidMessages = [];
+    let firstErrorTab = null;
+    let firstErrorField = null;
+    const touchedFields = {};
+    const noteError = (field, tab) => {
+      if (firstErrorTab === null && tab !== null && tab !== undefined) firstErrorTab = tab;
+      if (firstErrorField === null && field) firstErrorField = field;
+    };
+
+    if (targetMainTab === 0) {
+      const requiredChecks = [
+        ['firstName', 'First Name', null],
+        ['surname', 'Surname', null],
+        ['institutionBranch', 'Branch', null],
+        ['city', 'City', 1],
+        ['address', 'Address', 1],
+        ['region', 'Region', 0],
+        ['district', 'District', 0],
+        ['ward', 'Ward', 0],
+        ['title', 'Title', 0],
+        ['gender', 'Gender', 0],
+        ['nationality', 'Nationality', 0],
+        ['maritalStatus', 'Marital status', 0],
+        ['dateOfBirth', 'Date of Birth', 0],
+        ['dateJoined', 'Date Joined', 0],
+        ['idType', 'ID Type', 0],
+        ['idNumber', 'ID number', 0],
+        ['placeIssue', 'Place Issued', 0],
+        ['dateIssued', 'Date Issued', 0],
+        ['expiryDate', 'Expiry Date', 0],
+        ['country', 'Country of Residence', 1],
+        ['mobilePhoneNumber', 'Mobile Phone number', 1],
+        ['nextOfKinName', 'Next of Kin Name', 1],
+        ['signatory1', 'Signatory 1', 3],
+      ];
+      requiredChecks.forEach(([name, label, tab]) => {
+        touchedFields[name] = true;
+        if (!formData[name]) {
+          missingFields.push(label);
+          noteError(name, tab);
+        }
+      });
+      touchedFields.emailAddress = true;
+
+      if (formData.dateOfBirth && dayjs().diff(dayjs(formData.dateOfBirth), 'year') < 18) {
+        invalidMessages.push('Date of Birth (must be 18 or older)');
+        noteError('dateOfBirth', 0);
+      }
+      if (formData.expiryDate && formData.dateIssued && dayjs(formData.expiryDate).isBefore(dayjs(formData.dateIssued))) {
+        invalidMessages.push('Expiry Date (must be after Date Issued)');
+        noteError('expiryDate', 0);
+      }
+      if (formData.mobilePhoneNumber && !PHONE_REGEX.test(String(formData.mobilePhoneNumber).trim())) {
+        invalidMessages.push('Mobile Phone number (invalid format)');
+        noteError('mobilePhoneNumber', 1);
+      }
+      if (formData.emailAddress && !EMAIL_REGEX.test(String(formData.emailAddress).trim())) {
+        invalidMessages.push('Email address (invalid format)');
+        noteError('emailAddress', 1);
+      }
+    } else {
+      const requiredChecks = [
+        ['institutionType', 'Institution Type', null],
+        ['institutionName', 'Institution Name', null],
+        ['institutionNature', 'Business Category', null],
+        ['country', 'Country', 0],
+        ['city', 'City', 0],
+        ['district', 'District', 0],
+        ['address', 'Street', 0],
+        ['mobilePhoneNumber', 'Tel', 0],
+        ['institutionIncoporationNumber', 'Incoporation Number', 0],
+        ['institutionTIN', 'TIN', 0],
+        ['institutionIncoporationDate', 'Incoporation date', 0],
+        ['institutionDateJoined', 'Date joined', 0],
+        ['institutionRegion', 'Region', 0],
+        ['institutionDistrict', 'Institution District', 0],
+        ['institutionWard', 'Ward', 0],
+        ['chairName', 'Chair Name', 1],
+        ['chairDOB', 'Chair Date of Birth', 1],
+        ['chairMobilePhone', 'Chair Mobile Phone', 1],
+        ['signatory1', 'Signatory 1', 1],
+      ];
+      requiredChecks.forEach(([name, label, tab]) => {
+        touchedFields[name] = true;
+        if (!formData[name]) {
+          missingFields.push(label);
+          noteError(name, tab);
+        }
+      });
+      touchedFields.emailAddress = true;
+      touchedFields.chairEmailAddress = true;
+
+      if (formData.mobilePhoneNumber && !PHONE_REGEX.test(String(formData.mobilePhoneNumber).trim())) {
+        invalidMessages.push('Tel (invalid format)');
+        noteError('mobilePhoneNumber', 0);
+      }
+      if (formData.chairMobilePhone && !PHONE_REGEX.test(String(formData.chairMobilePhone).trim())) {
+        invalidMessages.push('Chair Mobile Phone (invalid format)');
+        noteError('chairMobilePhone', 1);
+      }
+      if (formData.emailAddress && !EMAIL_REGEX.test(String(formData.emailAddress).trim())) {
+        invalidMessages.push('Email (invalid format)');
+        noteError('emailAddress', 0);
+      }
+      if (formData.chairEmailAddress && !EMAIL_REGEX.test(String(formData.chairEmailAddress).trim())) {
+        invalidMessages.push('Chair Email Address (invalid format)');
+        noteError('chairEmailAddress', 1);
+      }
+    }
+
+    return { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields };
+  };
+
+  // Scroll the first invalid/missing field into view once the tab holding it becomes active.
+  const scrollToField = (fieldName) => {
+    if (!fieldName || typeof document === 'undefined') return;
+    setTimeout(() => {
+      const el = document.querySelector(`[name="${fieldName}"]`);
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+      }
+    }, 120);
+  };
+
   // If a legacy numeric `ncity` was provided before `cities` loaded, apply it
   // as a 1-based index into the `cities` array once cities are available.
   useEffect(() => {
@@ -1029,10 +1202,33 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     }));
   };
 
+  const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+  const UPLOAD_FIELD_LABELS = {
+    biometricPhotoName: 'Photo',
+    biometricSignatureName: 'Signature',
+    applicationFormName: 'Application Form',
+  };
+
   const handleBiometricFileChange = (fieldName, event) => {
     const selectedFile = event.target.files?.[0] || null;
     setStatusMessage('');
     setStatusError(false);
+
+    if (selectedFile) {
+      const label = UPLOAD_FIELD_LABELS[fieldName] || 'File';
+      if (!selectedFile.type.startsWith('image/')) {
+        setStatusError(true);
+        setStatusMessage(`${label} must be an image file (JPG, PNG, etc.).`);
+        event.target.value = '';
+        return;
+      }
+      if (selectedFile.size > MAX_UPLOAD_SIZE_BYTES) {
+        setStatusError(true);
+        setStatusMessage(`${label} must be smaller than 5 MB.`);
+        event.target.value = '';
+        return;
+      }
+    }
 
     if (fieldName === 'biometricPhotoName') {
       photoFileRef.current = selectedFile;
@@ -1244,6 +1440,89 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   // Fetch banks data
   const { banks, loading: banksLoading } = useBanks();
 
+  // Reset helpers, used both by direct "start new registration" actions and by the
+  // post-save confirmation dialog, so the reset logic lives in exactly one place.
+  const resetIndividualForm = () => {
+    setFormData(initialForm);
+    setAdditionalReferences([]);
+    setAdditionalNextOfKins([]);
+    setGroupMembers([
+      {
+        id: Date.now() + Math.random(),
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        dateOfBirth: '',
+      },
+    ]);
+    photoFileRef.current = null;
+    signatureFileRef.current = null;
+    applicationFormFileRef.current = null;
+    setPhotoPreviewUrl('');
+    setSignaturePreviewUrl('');
+    setApplicationFormPreviewUrl('');
+    setTouched({});
+  };
+
+  const resetInstitutionForm = () => {
+    setFormData(initialForm);
+    setAdditionalReferences([]);
+    setAdditionalNextOfKins([]);
+    setTrainings([
+      {
+        id: Date.now(),
+        yearOfTraining: '',
+        typeOfTraining: '',
+        duration: '',
+        supportedBy: '',
+        numberOfBeneficiaries: '',
+      },
+    ]);
+    setProjects([
+      {
+        id: Date.now() + 1,
+        year: '',
+        projectType: '',
+        status: '',
+        supportedBy: '',
+        remarks: '',
+      },
+    ]);
+    setCommitteeMembers([
+      {
+        id: Date.now() + 2,
+        names: '',
+        positions: '',
+        literacyExperiences: '',
+      },
+    ]);
+    setBankingInformation([
+      {
+        id: Date.now() + 3,
+        bank: '',
+        accountNumber: '',
+        currentBankBalance: '',
+        addressOfBank: '',
+      },
+    ]);
+    setGroupMembers([
+      {
+        id: Date.now() + Math.random(),
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        dateOfBirth: '',
+      },
+    ]);
+    photoFileRef.current = null;
+    signatureFileRef.current = null;
+    applicationFormFileRef.current = null;
+    setPhotoPreviewUrl('');
+    setSignaturePreviewUrl('');
+    setApplicationFormPreviewUrl('');
+    setTouched({});
+  };
+
   const handleSave = async () => {
     const formSubmitStartTime = performance.now();
     
@@ -1254,50 +1533,23 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       return;
     }
 
-    // Validation with specific field names
-    let missingFields = [];
-    
-    if (mainTab === 0) {
-      // Individual validation
-      if (!formData.firstName) missingFields.push('First Name');
-      if (!formData.surname) missingFields.push('Surname');
-      if (!formData.institutionBranch) missingFields.push('Branch');
-      if (!formData.city) missingFields.push('City');
-      if (!formData.address) missingFields.push('Address');
-      if (!formData.region) missingFields.push('Region');
-      if (!formData.district) missingFields.push('District');
-      if (!formData.ward) missingFields.push('Ward');
-    } else {
-      // Institution validation
-      if (!formData.institutionType) missingFields.push('Institution Type');
-      if (!formData.institutionName) missingFields.push('Institution Name');
-      if (!formData.institutionNature) missingFields.push('Business Category');
-    }
+    setSaveValidationErrors(null);
 
-    if (missingFields.length > 0) {
-      // Only set touched for fields in the current tab
-      if (mainTab === 0) {
-        // Individual tab touched fields
-        setTouched({
-          firstName: !formData.firstName,
-          surname: !formData.surname,
-          institutionBranch: !formData.institutionBranch,
-          city: !formData.city,
-          address: !formData.address,
-          region: !formData.region,
-          district: !formData.district,
-          ward: !formData.ward,
-        });
-      } else {
-        // Institution tab touched fields
-        setTouched({
-          institutionType: !formData.institutionType,
-          institutionName: !formData.institutionName,
-          institutionNature: !formData.institutionNature,
-        });
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(mainTab);
+
+    if (missingFields.length > 0 || invalidMessages.length > 0) {
+      // Touch all relevant fields for the current tab so red borders/helper text appear
+      setTouched(touchedFields);
+
+      // Jump to the tab containing the first offending field so its red border is visible
+      if (firstErrorTab !== null && detailTab !== firstErrorTab) {
+        setDetailTab(firstErrorTab);
       }
-      setStatusMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
+
+      setSaveValidationErrors({ missingFields, invalidMessages });
+      setStatusMessage('');
       setStatusError(true);
+      scrollToField(firstErrorField);
       return;
     }
 
@@ -1362,32 +1614,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           }, 500);
         }
 
-        setFormData(initialForm);
-        setAdditionalReferences([]);
-        setAdditionalNextOfKins([]);
-        setGroupMembers([
-          {
-            id: Date.now() + Math.random(),
-            firstName: '',
-            lastName: '',
-            phoneNumber: '',
-            dateOfBirth: '',
-          },
-        ]);
-        photoFileRef.current = null;
-        signatureFileRef.current = null;
-        applicationFormFileRef.current = null;
-        setPhotoPreviewUrl('');
-        setSignaturePreviewUrl('');
-        setApplicationFormPreviewUrl('');
-        setTouched({});
+        setPendingFormReset('individual');
       } catch (error) {
-        setStatusMessage('Unable to save individual registration.');
+        const errorMessage = error?.response?.data?.message || error?.message || 'Unable to save individual registration.';
+        setStatusMessage(errorMessage);
         setStatusError(true);
         notifySaveError({
           page: 'Customer Administration / Registration',
           action: 'Save Individual Registration',
-          message: 'Unable to save individual registration.',
+          message: errorMessage,
           error,
           metadata: individualPayload,
         });
@@ -1464,69 +1699,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           }, 500);
         }
 
-        setFormData(initialForm);
-        setAdditionalReferences([]);
-        setAdditionalNextOfKins([]);
-        setTrainings([
-          {
-            id: Date.now(),
-            yearOfTraining: '',
-            typeOfTraining: '',
-            duration: '',
-            supportedBy: '',
-            numberOfBeneficiaries: '',
-          },
-        ]);
-        setProjects([
-          {
-            id: Date.now() + 1,
-            year: '',
-            projectType: '',
-            status: '',
-            supportedBy: '',
-            remarks: '',
-          },
-        ]);
-        setCommitteeMembers([
-          {
-            id: Date.now() + 2,
-            names: '',
-            positions: '',
-            literacyExperiences: '',
-          },
-        ]);
-        setBankingInformation([
-          {
-            id: Date.now() + 3,
-            bank: '',
-            accountNumber: '',
-            currentBankBalance: '',
-            addressOfBank: '',
-          },
-        ]);
-        setGroupMembers([
-          {
-            id: Date.now() + Math.random(),
-            firstName: '',
-            lastName: '',
-            phoneNumber: '',
-            dateOfBirth: '',
-          },
-        ]);
-        photoFileRef.current = null;
-        signatureFileRef.current = null;
-        applicationFormFileRef.current = null;
-        setPhotoPreviewUrl('');
-        setSignaturePreviewUrl('');
-        setApplicationFormPreviewUrl('');
-        setTouched({});
+        setPendingFormReset('institution');
       } catch (error) {
-        setStatusMessage('Unable to save customer registration.');
+        const errorMessage = error?.response?.data?.message || error?.message || 'Unable to save customer registration.';
+        setStatusMessage(errorMessage);
         setStatusError(true);
         notifySaveError({
           page: 'Customer Administration / Registration',
           action: 'Save Customer Registration',
-          message: 'Unable to save customer registration.',
+          message: errorMessage,
           error,
           metadata: institutionPayload,
         });
@@ -1542,6 +1723,20 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
   const handleUpdateCustomer = async () => {
     if (!isExistingMember || isSaving) return;
+
+    setSaveValidationErrors(null);
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(0);
+    if (missingFields.length > 0 || invalidMessages.length > 0) {
+      setTouched(touchedFields);
+      if (firstErrorTab !== null && detailTab !== firstErrorTab) {
+        setDetailTab(firstErrorTab);
+      }
+      setSaveValidationErrors({ missingFields, invalidMessages });
+      setStatusMessage('');
+      setStatusError(true);
+      scrollToField(firstErrorField);
+      return;
+    }
 
     // Similar to save: validate minimal fields then build payload and POST to update endpoint
     setIsSaving(true);
@@ -1730,6 +1925,21 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
   const handleUpdateInstitution = async () => {
     if (!isExistingMember || isSaving) return;
+
+    setSaveValidationErrors(null);
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(1);
+    if (missingFields.length > 0 || invalidMessages.length > 0) {
+      setTouched(touchedFields);
+      if (firstErrorTab !== null && detailTab !== firstErrorTab) {
+        setDetailTab(firstErrorTab);
+      }
+      setSaveValidationErrors({ missingFields, invalidMessages });
+      setStatusMessage('');
+      setStatusError(true);
+      scrollToField(firstErrorField);
+      return;
+    }
+
     setIsSaving(true);
     setFieldErrors({});
     setStatusMessage('');
@@ -2019,7 +2229,44 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       {/* Find customer search */}
       {/* Top-level search moved inside each tab */}
 
-      {statusMessage && (
+      {saveValidationErrors && (saveValidationErrors.missingFields.length > 0 || saveValidationErrors.invalidMessages.length > 0) && (
+        <Alert
+          severity="error"
+          variant="outlined"
+          sx={{ mb: 2, '& .MuiAlert-message': { width: '100%' } }}
+          onClose={() => setSaveValidationErrors(null)}
+        >
+          <AlertTitle sx={{ fontWeight: 700 }}>Please fix the highlighted fields before saving</AlertTitle>
+          {saveValidationErrors.missingFields.length > 0 && (
+            <Box sx={{ mb: saveValidationErrors.invalidMessages.length > 0 ? 1.5 : 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Missing required fields
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {saveValidationErrors.missingFields.map((label) => (
+                  <Chip key={label} label={label} size="small" color="error" variant="outlined" />
+                ))}
+              </Box>
+            </Box>
+          )}
+          {saveValidationErrors.invalidMessages.length > 0 && (
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Please correct
+              </Typography>
+              <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+                {saveValidationErrors.invalidMessages.map((msg) => (
+                  <Typography component="li" variant="body2" key={msg}>
+                    {msg}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Alert>
+      )}
+
+      {!saveValidationErrors && statusMessage && (
         <Alert
           severity={statusError ? 'error' : 'success'}
           sx={{ mb: 2 }}
@@ -2293,7 +2540,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="country"
                             value={formData.country}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.country)}
+                            onBlur={() => handleBlur('country')}
+                            error={Boolean(fieldErrors.country) || (touched.country && !formData.country)}
+                            helperText={touched.country && !formData.country ? 'Country is required' : ''}
                           >
                             <MenuItem value="">Select country</MenuItem>
                             {countries.map((country) => (
@@ -2327,7 +2576,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="district"
                             value={formData.district || ''}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.district)}
+                            onBlur={() => handleBlur('district')}
+                            error={Boolean(fieldErrors.district) || (touched.district && !formData.district)}
+                            helperText={touched.district && !formData.district ? 'District is required' : ''}
                           >
                             <MenuItem value="">Select district</MenuItem>
                             {districts.map((district) => (
@@ -2351,7 +2602,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="mobilePhoneNumber"
                             value={formData.mobilePhoneNumber}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.mobilePhoneNumber)}
+                            onBlur={() => handleBlur('mobilePhoneNumber')}
+                            error={Boolean(fieldErrors.mobilePhoneNumber) || Boolean(getPhoneError('mobilePhoneNumber', 'Tel'))}
+                            helperText={getPhoneError('mobilePhoneNumber', 'Tel')}
                           />
                           <TextField
                             label="Tel1"
@@ -2364,6 +2617,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="emailAddress"
                             value={formData.emailAddress}
                             onChange={handleChange}
+                            onBlur={() => handleBlur('emailAddress')}
+                            error={Boolean(getEmailFormatError('emailAddress'))}
+                            helperText={getEmailFormatError('emailAddress')}
                             sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
                           />
 
@@ -2390,7 +2646,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="institutionIncoporationNumber"
                             value={formData.institutionIncoporationNumber}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.institutionIncoporationNumber)}
+                            onBlur={() => handleBlur('institutionIncoporationNumber')}
+                            error={Boolean(fieldErrors.institutionIncoporationNumber) || (touched.institutionIncoporationNumber && !formData.institutionIncoporationNumber)}
+                            helperText={touched.institutionIncoporationNumber && !formData.institutionIncoporationNumber ? 'Incoporation Number is required' : ''}
                           />
                           <TextField
                             required
@@ -2398,7 +2656,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="institutionTIN"
                             value={formData.institutionTIN}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.institutionTIN)}
+                            onBlur={() => handleBlur('institutionTIN')}
+                            error={Boolean(fieldErrors.institutionTIN) || (touched.institutionTIN && !formData.institutionTIN)}
+                            helperText={touched.institutionTIN && !formData.institutionTIN ? 'TIN is required' : ''}
                           />
                           <DatePicker
                             required
@@ -2406,7 +2666,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.institutionIncoporationDate ? dayjs(formData.institutionIncoporationDate) : null}
                             onChange={(value) => handleDateChange('institutionIncoporationDate', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'institutionIncoporationDate', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'institutionIncoporationDate',
+                                required: true,
+                                onBlur: () => handleBlur('institutionIncoporationDate'),
+                                error: touched.institutionIncoporationDate && !formData.institutionIncoporationDate,
+                                helperText: touched.institutionIncoporationDate && !formData.institutionIncoporationDate ? 'Incoporation date is required' : '',
+                              },
+                            }}
                           />
                           <DatePicker
                             required
@@ -2414,7 +2682,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.institutionDateJoined ? dayjs(formData.institutionDateJoined) : null}
                             onChange={(value) => handleDateChange('institutionDateJoined', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'institutionDateJoined', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'institutionDateJoined',
+                                required: true,
+                                onBlur: () => handleBlur('institutionDateJoined'),
+                                error: touched.institutionDateJoined && !formData.institutionDateJoined,
+                                helperText: touched.institutionDateJoined && !formData.institutionDateJoined ? 'Date joined is required' : '',
+                              },
+                            }}
                           />
                           <TextField
                             select
@@ -2423,6 +2699,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="institutionRegion"
                             value={formData.institutionRegion}
                             onChange={handleChange}
+                            onBlur={() => handleBlur('institutionRegion')}
+                            error={touched.institutionRegion && !formData.institutionRegion}
+                            helperText={touched.institutionRegion && !formData.institutionRegion ? 'Region is required' : ''}
                           >
                             <MenuItem value="">Select region</MenuItem>
                             <MenuItem value={1}>Banjul</MenuItem>
@@ -2440,6 +2719,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="institutionDistrict"
                             value={formData.institutionDistrict || ''}
                             onChange={handleChange}
+                            onBlur={() => handleBlur('institutionDistrict')}
+                            error={touched.institutionDistrict && !formData.institutionDistrict}
+                            helperText={touched.institutionDistrict && !formData.institutionDistrict ? 'District is required' : ''}
                           >
                             <MenuItem value="">Select district</MenuItem>
                             {districts.map((district) => (
@@ -2455,6 +2737,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="institutionWard"
                             value={formData.institutionWard}
                             onChange={handleChange}
+                            onBlur={() => handleBlur('institutionWard')}
+                            error={touched.institutionWard && !formData.institutionWard}
+                            helperText={touched.institutionWard && !formData.institutionWard ? 'Ward is required' : ''}
                           >
                             <MenuItem value="">Select ward</MenuItem>
                             {wards.map((ward) => (
@@ -2555,7 +2840,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
                             onChange={(value) => handleDateChange('dateOfBirth', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateOfBirth', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'dateOfBirth',
+                                required: true,
+                                onBlur: () => handleBlur('dateOfBirth'),
+                                error: Boolean(getDateOfBirthError()),
+                                helperText: getDateOfBirthError(),
+                              },
+                            }}
                           />
                           <DatePicker
                             label="Date Joined"
@@ -2563,7 +2856,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.dateJoined ? dayjs(formData.dateJoined) : null}
                             onChange={(value) => handleDateChange('dateJoined', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateJoined', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'dateJoined',
+                                required: true,
+                                onBlur: () => handleBlur('dateJoined'),
+                                error: touched.dateJoined && !formData.dateJoined,
+                                helperText: touched.dateJoined && !formData.dateJoined ? 'Date Joined is required' : '',
+                              },
+                            }}
                           />
                           <TextField select label="Income Range" name="povertyLevel" value={formData.povertyLevel} onChange={handleChange}>
                             <MenuItem value="0-5000">0 - 5,000</MenuItem>
@@ -2636,14 +2937,30 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.dateIssued ? dayjs(formData.dateIssued) : null}
                             onChange={(value) => handleDateChange('dateIssued', value)}
                             disableFuture
-                            slotProps={{ textField: { name: 'dateIssued', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'dateIssued',
+                                required: true,
+                                onBlur: () => handleBlur('dateIssued'),
+                                error: touched.dateIssued && !formData.dateIssued,
+                                helperText: touched.dateIssued && !formData.dateIssued ? 'Date Issued is required' : '',
+                              },
+                            }}
                           />
                           <DatePicker
                             label="Expiry Date"
                             required
                             value={formData.expiryDate ? dayjs(formData.expiryDate) : null}
                             onChange={(value) => handleDateChange('expiryDate', value)}
-                            slotProps={{ textField: { name: 'expiryDate', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'expiryDate',
+                                required: true,
+                                onBlur: () => handleBlur('expiryDate'),
+                                error: Boolean(getExpiryDateError()),
+                                helperText: getExpiryDateError(),
+                              },
+                            }}
                           />
                           <TextField
                             select
@@ -2720,7 +3037,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="chairName"
                             value={formData.chairName}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.chairName)}
+                            onBlur={() => handleBlur('chairName')}
+                            error={Boolean(fieldErrors.chairName) || (touched.chairName && !formData.chairName)}
+                            helperText={touched.chairName && !formData.chairName ? 'Name is required' : ''}
                             sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
                           />
                           <TextField label="TIN" name="chairTIN" value={formData.chairTIN} onChange={handleChange} />
@@ -2730,7 +3049,15 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             value={formData.chairDOB ? dayjs(formData.chairDOB) : null}
                             onChange={value => handleChange({ target: { name: 'chairDOB', value: value ? value.format('YYYY-MM-DD') : '' } })}
                             disableFuture
-                            slotProps={{ textField: { name: 'chairDOB', required: true } }}
+                            slotProps={{
+                              textField: {
+                                name: 'chairDOB',
+                                required: true,
+                                onBlur: () => handleBlur('chairDOB'),
+                                error: touched.chairDOB && !formData.chairDOB,
+                                helperText: touched.chairDOB && !formData.chairDOB ? 'Date of Birth is required' : '',
+                              },
+                            }}
                           />
                           <TextField
                             required
@@ -2738,14 +3065,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                             name="chairMobilePhone"
                             value={formData.chairMobilePhone}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.chairMobilePhone)}
+                            onBlur={() => handleBlur('chairMobilePhone')}
+                            error={Boolean(fieldErrors.chairMobilePhone) || Boolean(getPhoneError('chairMobilePhone', 'Mobile Phone'))}
+                            helperText={getPhoneError('chairMobilePhone', 'Mobile Phone')}
                           />
                           <TextField
                             label="Email Address"
                             name="chairEmailAddress"
                             value={formData.chairEmailAddress}
                             onChange={handleChange}
-                            error={Boolean(fieldErrors.chairEmailAddress)}
+                            onBlur={() => handleBlur('chairEmailAddress')}
+                            error={Boolean(fieldErrors.chairEmailAddress) || Boolean(getEmailFormatError('chairEmailAddress'))}
+                            helperText={getEmailFormatError('chairEmailAddress')}
                           />
                           <FormControlLabel
                             control={<Checkbox name="chairAccountSignatory" checked={formData.chairAccountSignatory} onChange={handleChange} />}
@@ -2916,10 +3247,19 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                           value={formData.mobilePhoneNumber}
                           onChange={handleChange}
                           onBlur={() => handleBlur('mobilePhoneNumber')}
-                          error={isFieldInvalid('mobilePhoneNumber')}
-                          helperText={isFieldInvalid('mobilePhoneNumber') ? 'Mobile Phone number is required' : ''}
+                          error={Boolean(getPhoneError('mobilePhoneNumber', 'Mobile Phone number'))}
+                          helperText={getPhoneError('mobilePhoneNumber', 'Mobile Phone number')}
                         />
-                        <TextField label="Email address" name="emailAddress" value={formData.emailAddress} onChange={handleChange} sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }} />
+                        <TextField
+                          label="Email address"
+                          name="emailAddress"
+                          value={formData.emailAddress}
+                          onChange={handleChange}
+                          onBlur={() => handleBlur('emailAddress')}
+                          error={Boolean(getEmailFormatError('emailAddress'))}
+                          helperText={getEmailFormatError('emailAddress')}
+                          sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
+                        />
                       </Box>
                     </CardContent>
                   </Card>
@@ -4121,6 +4461,34 @@ function formatRecentMemberRow(row, institutionBranches = []) {
           </Box>
         </Box>
       )}
+
+      {/* Post-save confirmation: let the user choose to start a new registration or keep reviewing the saved data */}
+      <Dialog
+        open={Boolean(pendingFormReset)}
+        onClose={() => setPendingFormReset(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Registration Saved</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Would you like to start a new registration, or keep this data on screen to review or print?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPendingFormReset(null)}>Keep Data</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (pendingFormReset === 'individual') resetIndividualForm();
+              if (pendingFormReset === 'institution') resetInstitutionForm();
+              setPendingFormReset(null);
+            }}
+          >
+            Start New Registration
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Expanded Image Modal */}
       <Dialog
