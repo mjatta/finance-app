@@ -180,7 +180,7 @@ export default function TransactionReversalAdjustment() {
 
       <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 900, mx: 'auto', mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3, alignItems: 'center' }}>
             <TextField
               select
               label={<span>Adjust By <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
@@ -194,6 +194,17 @@ export default function TransactionReversalAdjustment() {
                 <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
             </TextField>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                disabled={savingTransaction}
+                onClick={handleClearForm}
+              >
+                Clear
+              </Button>
+            </Box>
           </Box>
 
           {adjustBy === 'customer' && (
@@ -339,14 +350,6 @@ export default function TransactionReversalAdjustment() {
             </Box>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
-            <Button
-              variant="outlined"
-              color="secondary"
-              disabled={savingTransaction}
-              onClick={handleClearForm}
-            >
-              Clear
-            </Button>
             <Button
               variant="contained"
               color="primary"
