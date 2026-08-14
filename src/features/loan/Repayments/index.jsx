@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -275,7 +275,6 @@ export default function Repayments() {
             bankAccount: '',
             contraAccount: '',
             cashAccount: '',
-            region: '',
             selectedRegionId: '',
             creditLimit: '',
             debitLimit: '',
@@ -332,7 +331,6 @@ export default function Repayments() {
     bankAccount: '',
     contraAccount: '',
     cashAccount: '',
-    region: '',
     selectedRegionId: '',
     creditLimit: '',
     debitLimit: '',
@@ -440,8 +438,16 @@ export default function Repayments() {
   // Hooks
   const { fetchLoanRepaymentAccount } = useGetLoanRepaymentAccount();
   const { fetchMemberDetails } = useGetMemberDetails();
-  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions } = useAreas();
   useGetAccountDetails(); // Only call for side effects if any
+
+  // Resolve the member's region (coun_id, e.g. "1") from /api/remote-member/details
+  // to its display name (e.g. "BCC") using the /api/lookups/counties list.
+  const memberRegionLabel = useMemo(() => {
+    if (!formData.selectedRegionId) return '';
+    const match = regions.find((r) => r.value === String(formData.selectedRegionId));
+    return match ? match.label : formData.selectedRegionId;
+  }, [regions, formData.selectedRegionId]);
 
   // Fetch regions on component mount
   useEffect(() => {
@@ -481,6 +487,7 @@ export default function Repayments() {
         phoneNumber: member.Phone || '',
         memberAccounts: Array.isArray(member.Accounts) ? member.Accounts : [],
         loanAccounts: Array.isArray(member.LoanAccounts) ? member.LoanAccounts : [],
+        selectedRegionId: member.region != null ? String(member.region) : '',
       }));
       setStatusMessage('Member accounts and contact details loaded successfully.');
       setStatusError(false);
@@ -620,6 +627,13 @@ export default function Repayments() {
                 onBlur={() => searchMember('memberCode')}
                 disabled={isLoadingMember}
                 placeholder="Member Code"
+                helperText="Enter customer code and press Tab to load member details."
+                FormHelperTextProps={{
+                  sx: {
+                    fontWeight: 800,
+                    color: '#b45309',
+                  },
+                }}
               />
               <TextField
                 label="Payroll Number"
@@ -746,25 +760,6 @@ export default function Repayments() {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                   />
-                  <TextField
-                    label={<span>Region <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
-                    name="region"
-                    select
-                    value={formData.region}
-                    onChange={handleChange}
-                    size="small"
-                    fullWidth
-                    disabled={loadingRegions}
-                    error={!!regionsError}
-                    helperText={regionsError ? 'Failed to load regions' : ''}
-                  >
-                    <MenuItem value="">Select Region</MenuItem>
-                    {regions.map((region) => (
-                      <MenuItem key={region.value} value={region.label}>
-                        {region.label.trim()}
-                      </MenuItem>
-                    ))}
-                  </TextField>
                 </Box>
               </CardContent>
             </Card>
@@ -851,6 +846,14 @@ export default function Repayments() {
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
                           {formData.startDate ? dayjs(formData.startDate).format('DD-MM-YYYY') : 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                          Region:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                          {loadingRegions ? 'Loading...' : (memberRegionLabel || 'N/A')}
                         </Typography>
                       </Box>
                     </>
