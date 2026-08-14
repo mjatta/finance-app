@@ -40,19 +40,9 @@ export function useGetMemberTransactions() {
         console.warn('Unexpected response format:', data);
       }
 
-      // Backend rows have no unique identifier field (no `itemid`), which
-      // DataGrid's getRowId relies on. Derive a stable, unique id from the
-      // voucher/account/transaction-code plus index so selection works.
-      list = list.map((row, index) => ({
-        ...row,
-        itemid: [
-          String(row.cvoucherno || '').trim(),
-          String(row.cacctnumb || '').trim(),
-          String(row.ctrancode || '').trim(),
-          index,
-        ].join('-'),
-      }));
-
+      // Backend rows already include a unique `itemid` field (numeric
+      // primary key), which is what the reverse/adjust API expects back in
+      // the save payload. Keep it as-is for DataGrid's getRowId/selection.
       setTransactions(list);
       return list;
     } catch (err) {

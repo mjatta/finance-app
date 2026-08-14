@@ -133,8 +133,9 @@ export default function TransactionReversalAdjustment() {
     if (result) {
       setStatusMessage(`${transactionType === 'reversal' ? 'Reversal' : 'Adjustment'} saved successfully!`);
       setStatusError(false);
-      // Reset form after successful save
+      // Clear selection and refresh the grid with up-to-date transactions
       setSelectionModel({ type: 'include', ids: new Set() });
+      await fetchTransactionsFor(transactionType, customerCode);
     } else {
       setStatusMessage(saveError || `Failed to save ${transactionType}`);
       setStatusError(true);
@@ -277,12 +278,12 @@ export default function TransactionReversalAdjustment() {
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
             Member Transactions {selectionModel.ids.size > 0 ? `(${selectionModel.ids.size} selected)` : ''}
           </Typography>
-          {loading && <Typography sx={{ mb: 2, color: 'info.main' }}>Loading transactions...</Typography>}
-          <Box sx={{ height: 500, width: '100%' }}>
+          <Box sx={{ height: 500, width: '100%', position: 'relative' }}>
             <DataGrid
               rows={displayTransactions}
               columns={columns}
               getRowId={(row) => row.itemid}
+              loading={loading || savingTransaction}
               checkboxSelection
               disableSelectionOnClick
               density="compact"
@@ -317,6 +318,24 @@ export default function TransactionReversalAdjustment() {
                 },
               }}
             />
+            {savingTransaction && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                  zIndex: 10,
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  Saving transaction...
+                </Typography>
+              </Box>
+            )}
             </Box>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
