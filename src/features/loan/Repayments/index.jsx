@@ -179,6 +179,13 @@ export default function Repayments() {
       return;
     }
 
+    if (formData.repaymentType === 'cheque' && !formData.checkNumber) {
+      setTouched((prev) => ({ ...prev, checkNumber: true }));
+      setStatusMessage('Please fill in all required fields: Check Number');
+      setStatusError(true);
+      return;
+    }
+
     setIsSavingRepayment(true);
 
     const parseLocalStorageJson = (key) => {
@@ -959,6 +966,8 @@ export default function Repayments() {
                               name="checkNumber"
                               value={formData.checkNumber}
                               onChange={handleChange}
+                              error={isFieldInvalid('checkNumber')}
+                              helperText={isFieldInvalid('checkNumber') ? 'Check Number is required' : ''}
                               size="small"
                               fullWidth
                             />
@@ -1046,6 +1055,7 @@ export default function Repayments() {
                   !formData.postingAccount ||
                   !formData.repaymentAmount ||
                   !formData.repaymentType ||
+                  (formData.repaymentType === 'cheque' && !formData.checkNumber) ||
                   isSavingRepayment
                 }
                 onClick={handleSaveRepayment}

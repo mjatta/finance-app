@@ -450,12 +450,14 @@ export default function Withdrawal() {
     if (!formData.postingAccount) missingFields.push('Posting Account');
     if (!formData.withdrawalAmount) missingFields.push('Withdrawal Amount');
     if (!formData.transactionDate) missingFields.push('Transaction Date');
+    if (formData.depositType === 'cheque' && !formData.checkNumber) missingFields.push('Check Number');
 
     if (missingFields.length > 0) {
       setTouched({
         postingAccount: !formData.postingAccount,
         withdrawalAmount: !formData.withdrawalAmount,
         transactionDate: !formData.transactionDate,
+        checkNumber: formData.depositType === 'cheque' && !formData.checkNumber,
       });
       setStatusMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
       setStatusError(true);
@@ -1138,10 +1140,12 @@ export default function Withdrawal() {
                     </Typography>
                     <Box sx={{ display: 'grid', gap: 2 }}>
                       <TextField
-                        label="Check Number"
+                        label={<span>Check Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                         name="checkNumber"
                         value={formData.checkNumber}
                         onChange={handleChange}
+                        error={!!touched.checkNumber && !formData.checkNumber}
+                        helperText={touched.checkNumber && !formData.checkNumber ? 'Check Number is required' : ''}
                         size="small"
                         fullWidth
                       />
