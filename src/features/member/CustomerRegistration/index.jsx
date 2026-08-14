@@ -3825,6 +3825,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               placeItems: 'center',
                               overflow: 'hidden',
                               bgcolor: 'action.hover',
+                              cursor: applicationFormPreviewUrl ? 'pointer' : 'default',
+                              transition: 'all 0.2s ease',
+                              '&:hover': applicationFormPreviewUrl ? {
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                transform: 'scale(1.02)',
+                              } : {},
+                            }}
+                            onClick={() => {
+                              if (applicationFormPreviewUrl) {
+                                setExpandedImageUrl(applicationFormPreviewUrl);
+                                setExpandedImageOpen(true);
+                              }
                             }}
                           >
                             {applicationFormPreviewUrl ? (
