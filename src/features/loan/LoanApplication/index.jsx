@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -143,7 +143,7 @@ export default function LoanApplication() {
   const { updateLoan } = useUpdateLoan();
   const { loanReasons, fetchLoanReasons } = useLoanReasons();
   const { officers: loanOfficers, fetchLoanOfficers, isLoading: loadingOfficers, error: officersError } = useLoanOfficers();
-  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions, error: regionsError } = useAreas();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: loadingRegions } = useAreas();
 
   const [sourceFundsOptions, setSourceFundsOptions] = useState([]);
   const [sectorOptions, setSectorOptions] = useState([]);
@@ -159,6 +159,14 @@ export default function LoanApplication() {
   const [expandedImageUrl, setExpandedImageUrl] = useState('');
   const [expandedImageOpen, setExpandedImageOpen] = useState(false);
   const applicationFormFileRef = useRef(null);
+
+  // Resolve the member's region (coun_id, e.g. "7") returned by remote-member-validate
+  // to its display name (e.g. "BCC") using the /api/lookups/counties list.
+  const memberRegionLabel = useMemo(() => {
+    if (!formData.selectedRegionId) return '';
+    const match = regions.find((r) => r.value === String(formData.selectedRegionId));
+    return match ? match.label : formData.selectedRegionId;
+  }, [regions, formData.selectedRegionId]);
 
 
   // Fetch loan products on mount
@@ -316,6 +324,7 @@ export default function LoanApplication() {
           memberSign,
           currentLoanBalance: data.LoanBalance || '',
           loanLimit: data.LoanLimit || '',
+          selectedRegionId: data.region != null ? String(data.region) : '',
         }));
       } else {
         setStatusMessage('Member not found');
@@ -338,17 +347,6 @@ export default function LoanApplication() {
         ...prev,
         loanOfficer: value,
         selectedOfficerCode: oprcode,
-      }));
-      return;
-    }
-
-    // Handle region change - extract coun_id from rawData
-    if (name === 'region') {
-      const selected = regions.find((r) => r.label === value);
-      setFormData((prev) => ({
-        ...prev,
-        region: value,
-        selectedRegionId: selected ? String(selected.rawData?.coun_id || '') : '',
       }));
       return;
     }
@@ -1337,6 +1335,16 @@ export default function LoanApplication() {
                       </Typography>
                     </Box>
 
+                    {/* Region as text (resolved from member's region code via /api/lookups/counties) */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                        Region:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {loadingRegions ? 'Loading...' : (memberRegionLabel || 'N/A')}
+                      </Typography>
+                    </Box>
+
                     {/* Start Date */}
                     <DatePicker
                       label="Start Date"
@@ -1430,30 +1438,6 @@ export default function LoanApplication() {
                         {loanOfficers.map((officer) => (
                           <MenuItem key={officer.value} value={officer.label}>
                             {officer.label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Box>
-
-                    {/* Region */}
-                    <Box>
-                      <TextField
-                        select
-                        label="Region"
-                        name="region"
-                        value={formData.region}
-                        onChange={handleChange}
-                        size="small"
-                        fullWidth
-                        error={!!regionsError}
-                        helperText={regionsError ? `Error loading regions: ${regionsError}` : loadingRegions ? 'Loading regions...' : ''}
-                      >
-                        <MenuItem value="">
-                          <em>{loadingRegions ? 'Loading...' : 'Select Region'}</em>
-                        </MenuItem>
-                        {regions.map((region) => (
-                          <MenuItem key={region.value} value={region.label}>
-                            {region.label}
                           </MenuItem>
                         ))}
                       </TextField>
