@@ -138,7 +138,7 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
       if (t === 'corporate') return 3;
       return 0;
     })(), // Mandatory (mapped from dropdown)
-    gender: Number(formData.gender) || 0, // Mandatory
+    gender: 3, // Hardcoded for institutions (Mandatory)
     Region: Number(formData.institutionRegion) || 0,
     District: Number(formData.institutionDistrict) || 0,
     Ward: Number(formData.institutionWard) || 0,
