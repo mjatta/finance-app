@@ -168,6 +168,12 @@ export default function LoanApplication() {
     return match ? match.label : formData.selectedRegionId;
   }, [regions, formData.selectedRegionId]);
 
+  // Ensure counties lookup is loaded when component mounts
+  useEffect(() => {
+    if (regions.length === 0) {
+      fetchRegions();
+    }
+  }, []);
 
   // Fetch loan products on mount
   useEffect(() => {

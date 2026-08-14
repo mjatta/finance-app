@@ -1,11 +1,21 @@
 import { useState, useCallback } from 'react';
 
+// Simple in-memory cache for areas (counties)
+let cachedAreas = null;
+
 export const useAreas = () => {
-  const [areas, setAreas] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [areas, setAreas] = useState(cachedAreas || []);
+  const [isLoading, setIsLoading] = useState(!cachedAreas);
   const [error, setError] = useState(null);
 
   const fetchAreas = useCallback(async () => {
+    // If already cached, return immediately without fetching
+    if (cachedAreas) {
+      setAreas(cachedAreas);
+      setIsLoading(false);
+      return cachedAreas;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -39,11 +49,13 @@ export const useAreas = () => {
         .filter((a) => a.label && a.value); // Filter out empty entries
 
       setAreas(mappedAreas);
+      cachedAreas = mappedAreas; // Cache it
       return mappedAreas;
     } catch (err) {
       console.error('Error fetching counties:', err);
       setError(err.message);
       setAreas([]);
+      cachedAreas = null;
       return [];
     } finally {
       setIsLoading(false);

@@ -17,6 +17,7 @@ import testUsers from '../../data/test-users.json';
 import { useLogin } from './hooks/useLogin';
 import { useCreditUnionDetails } from './hooks/useCreditUnionDetails';
 import { useSaveLoginAttempt } from '../system/LoginAttempts/hooks/useSaveLoginAttempt';
+import { useAreas } from '../../hooks/useAreas';
 import { useAuthStore } from '../../store/authStore';
 
 const loginHighlights = [
@@ -51,6 +52,7 @@ function Login({ onLogin }) {
   const { login: backendLogin, loading: loginLoading } = useLogin();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const { saveLoginAttempt } = useSaveLoginAttempt();
+  const { fetchAreas } = useAreas();
   const setAuthUser = useAuthStore((state) => state.setUser);
   const setCompanyDetails = useAuthStore((state) => state.setCompanyDetails);
 
@@ -134,6 +136,8 @@ function Login({ onLogin }) {
         Sentry.metrics.distribution('login_duration_ms', loginDuration);
 
         setErrorMessage('');
+        // Pre-load counties lookup data after successful login
+        await fetchAreas();
         onLogin(safeUser);
         return;
       }
@@ -174,6 +178,8 @@ function Login({ onLogin }) {
         Sentry.metrics.distribution('login_duration_ms', testLoginDuration);
 
         setErrorMessage('');
+        // Pre-load counties lookup data after successful login
+        await fetchAreas();
         onLogin(safeUser);
         return;
       }

@@ -26,7 +26,7 @@ import { useGetAccountDetails } from './hooks/useGetAccountDetails';
 import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useWithdrawalTransaction } from './hooks/useWithdrawalTransaction';
-import { useRegions } from '../../../hooks/useRegions';
+import { useAreas } from '../../../hooks/useAreas';
 import { useAuthStore } from '../../../store/authStore';
 
 const todayIso = new Date().toISOString().split('T')[0];
@@ -73,7 +73,6 @@ export default function Withdrawal() {
     creditLimit: '',
     debitLimit: '',
     loanLimit: '',
-    region: '',
     selectedRegionId: '',
   };
 
@@ -106,9 +105,9 @@ export default function Withdrawal() {
     creditLimit: '',
     debitLimit: '',
     loanLimit: '',
-    region: '',
     selectedRegionId: '',
   });
+
   const user = useAuthStore((state) => state.user);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
@@ -152,7 +151,22 @@ export default function Withdrawal() {
   const { fetchBanks } = useGetBanks();
   const { fetchBankAccounts } = useGetBankAccounts();
   const { saveWithdrawalTransaction } = useWithdrawalTransaction();
-  const { regions, loading: regionsLoading } = useRegions();
+  const { areas: regions, fetchAreas: fetchRegions, isLoading: regionsLoading } = useAreas();
+
+  // Resolve the member's region (coun_id, e.g. "1") from /api/remote-member/details
+  // to its display name (e.g. "BCC") using the /api/lookups/counties list.
+  const memberRegionLabel = useMemo(() => {
+    if (!formData.selectedRegionId) return '';
+    const match = regions.find((r) => r.value === String(formData.selectedRegionId));
+    return match ? match.label : formData.selectedRegionId;
+  }, [regions, formData.selectedRegionId]);
+
+  // Ensure counties lookup is loaded when component mounts
+  useEffect(() => {
+    if (regions.length === 0) {
+      fetchRegions();
+    }
+  }, []);
 
   const [banks, setBanks] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -185,6 +199,7 @@ export default function Withdrawal() {
       memberSignature: member.memberSignature,
       phoneNumber: member.phoneNumber,
       memberAccounts: member.memberAccounts || [],
+      selectedRegionId: member.memberRegion || '',
     }));
   };
 
@@ -262,7 +277,8 @@ export default function Withdrawal() {
               accountType: 'Account',
               accountNumber: '',
               accountBalance: '0.00'
-            }]
+            }],
+            memberRegion: remoteMemberData.region != null ? String(remoteMemberData.region) : '',
           };
         }
       } else {
@@ -910,29 +926,6 @@ export default function Withdrawal() {
                         },
                       }}
                     />
-                    <TextField
-                      select
-                      label="Region"
-                      name="region"
-                      value={formData.region}
-                      onChange={handleChange}
-                      size="small"
-                      fullWidth
-                      disabled={regionsLoading}
-                      SelectProps={{
-                        displayEmpty: true,
-                        renderValue: (selected) => selected || 'Select a Region',
-                      }}
-                    >
-                      <MenuItem value="" disabled>
-                        {regionsLoading ? 'Loading regions...' : 'Select a Region'}
-                      </MenuItem>
-                      {regions.map((r) => (
-                        <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>
-                          {r.coun_name?.trim()}
-                        </MenuItem>
-                      ))}
-                    </TextField>
                   </Box>
                 </CardContent>
               </Card>
@@ -983,6 +976,14 @@ export default function Withdrawal() {
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
                             {formData.unclearedBalance !== '' ? parseFloat(formData.unclearedBalance).toFixed(2) : 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '140px' }}>
+                            Region:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                            {regionsLoading ? 'Loading...' : (memberRegionLabel || 'N/A')}
                           </Typography>
                         </Box>
                       </>
