@@ -44,52 +44,59 @@ export default function TransactionReversalAdjustment() {
     }
   }, [transactions]);
 
+  const fetchTransactionsFor = async (typeValue, codeValue) => {
+    if (!typeValue || !codeValue.trim()) return;
+    setStatusMessage('');
+    setStatusError(false);
+    setSelectionModel({ type: 'include', ids: new Set() });
+    const paddedCode = String(codeValue.trim()).padStart(6, '0');
+    const isReversal = typeValue === 'reversal';
+    const result = await fetchMemberTransactions(paddedCode, isReversal);
+    if (result && result.length > 0) {
+      setDisplayTransactions(result);
+    } else {
+      setStatusMessage('No transactions found for this customer');
+      setStatusError(true);
+      setDisplayTransactions([]);
+    }
+  };
+
   const handleCustomerCodeTab = async (e) => {
     if (e.key === 'Tab' && customerCode.trim()) {
       const paddedCode = String(customerCode.trim()).padStart(6, '0');
       
       // Fetch customer name
       const result = await fetchMemberDetails(paddedCode);
+      let resolvedCode = customerCode;
       if (result?.success && result?.data) {
-        const name = result.data.membname || result.data.customerName || result.data.name || '';
+        const data = result.data;
+        const name = data.membname || data.customerName || data.name ||
+          [data.ccustfname, data.ccustmname, data.ccustlname]
+            .map((v) => (typeof v === 'string' ? v.trim() : v))
+            .filter(Boolean)
+            .join(' ');
         setCustomerName(name);
+
+        // Use the canonical customer code returned by the API (ccustcode)
+        if (data.ccustcode) {
+          resolvedCode = String(data.ccustcode).trim();
+          setCustomerCode(resolvedCode);
+        }
+      } else {
+        setCustomerName('');
       }
 
       // Fetch transactions if transaction type is selected
-      if (transactionType) {
-        setStatusMessage('');
-        setStatusError(false);
-        setSelectionModel({ type: 'include', ids: new Set() });
-        const isReversal = transactionType === 'reversal';
-        const txnResult = await fetchMemberTransactions(paddedCode, isReversal);
-        if (txnResult && txnResult.length > 0) {
-          setDisplayTransactions(txnResult);
-        } else {
-          setStatusMessage('No transactions found for this customer');
-          setStatusError(true);
-          setDisplayTransactions([]);
-        }
-      }
+      await fetchTransactionsFor(transactionType, resolvedCode);
     }
   };
 
-  const handleTransactionTypeBlur = async () => {
-    if (transactionType && customerCode.trim()) {
-      setStatusMessage('');
-      setStatusError(false);
-      setSelectionModel({ type: 'include', ids: new Set() });
-      const paddedCode = String(customerCode.trim()).padStart(6, '0');
-      const isReversal = transactionType === 'reversal';
-      const result = await fetchMemberTransactions(paddedCode, isReversal);
-      if (result && result.length > 0) {
-        setDisplayTransactions(result);
-      } else {
-        setStatusMessage('No transactions found for this customer');
-        setStatusError(true);
-        setDisplayTransactions([]);
-      }
-    }
+  const handleTransactionTypeChange = async (e) => {
+    const newType = e.target.value;
+    setTransactionType(newType);
+    await fetchTransactionsFor(newType, customerCode);
   };
+
 
   const handleSaveTransaction = async () => {
     if (!transactionType) {
@@ -132,6 +139,19 @@ export default function TransactionReversalAdjustment() {
       setStatusMessage(saveError || `Failed to save ${transactionType}`);
       setStatusError(true);
     }
+  };
+
+  const handleClearForm = () => {
+    setTransactionType('');
+    setTransactionDate(dayjs());
+    setAdjustBy('customer');
+    setCustomerCode('');
+    setCustomerName('');
+    setVoucherNo('');
+    setSelectionModel({ type: 'include', ids: new Set() });
+    setStatusMessage('');
+    setStatusError(false);
+    setDisplayTransactions([]);
   };
 
   const columns = useMemo(() => ([
@@ -202,8 +222,7 @@ export default function TransactionReversalAdjustment() {
               select
               label={<span>Transaction Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               value={transactionType}
-              onChange={(e) => setTransactionType(e.target.value)}
-              onBlur={handleTransactionTypeBlur}
+              onChange={handleTransactionTypeChange}
               size="small"
               fullWidth
             >
@@ -301,6 +320,14 @@ export default function TransactionReversalAdjustment() {
             </Box>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              disabled={savingTransaction}
+              onClick={handleClearForm}
+            >
+              Clear
+            </Button>
             <Button
               variant="contained"
               color="primary"
