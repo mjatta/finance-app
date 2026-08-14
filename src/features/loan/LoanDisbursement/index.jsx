@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -193,6 +193,7 @@ export default function LoanDisbursement() {
         loan_id: item.loan_id || '',
         loanacct: item.loanacct || item.loan_id || '',
         ctel: item.ctel || '',
+        region: item.nregion || '',
       }));
 
       setClients(mappedClients);
@@ -231,6 +232,12 @@ export default function LoanDisbursement() {
     fetchRegions();
   }, [fetchRegions]);
 
+  const memberRegionLabel = useMemo(() => {
+    if (!disbursementDetails.selectedRegionId) return '';
+    const match = regions.find((r) => r.value === String(disbursementDetails.selectedRegionId));
+    return match ? match.label : disbursementDetails.selectedRegionId;
+  }, [regions, disbursementDetails.selectedRegionId]);
+
   const handleRowClick = (params) => {
     const loanId = params.id;
     const selectedLoan = clients.find((c) => c.id === loanId);
@@ -242,6 +249,8 @@ export default function LoanDisbursement() {
         amount: '',
         topUpAmount: '',
         accruedInterest: '',
+        selectedRegionId: '',
+        region: '',
       });
     } else {
       setSelectedIds([loanId]);
@@ -251,6 +260,8 @@ export default function LoanDisbursement() {
           amount: selectedLoan.principal_amt || '',
           topUpAmount: '',
           accruedInterest: selectedLoan.totinterest || '',
+          selectedRegionId: selectedLoan.region != null ? String(selectedLoan.region) : '',
+          region: selectedLoan.region != null ? String(selectedLoan.region) : '',
         });
       }
     }
@@ -1058,27 +1069,14 @@ export default function LoanDisbursement() {
                     </LocalizationProvider>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      select
-                      fullWidth
-                      label={<span>Region <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
-                      name="region"
-                      value={disbursementDetails.region}
-                      onChange={handleDisbursementDetailsChange}
-                      variant="outlined"
-                      size="small"
-                      error={!!regionsError}
-                      helperText={regionsError ? `Error loading regions: ${regionsError}` : loadingRegions ? 'Loading regions...' : ''}
-                    >
-                      <MenuItem value="">
-                        <em>{loadingRegions ? 'Loading...' : 'Select Region'}</em>
-                      </MenuItem>
-                      {regions.map((region) => (
-                        <MenuItem key={region.value} value={region.label}>
-                          {region.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2c3e50', minWidth: '110px' }}>
+                        Region:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#34495e', fontSize: '0.95rem' }}>
+                        {loadingRegions ? 'Loading...' : (memberRegionLabel || 'N/A')}
+                      </Typography>
+                    </Box>
                   </Grid>
                 </Grid>
               </Box>
