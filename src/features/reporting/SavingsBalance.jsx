@@ -385,7 +385,8 @@ export default function SavingsBalance() {
             </TextField>
           </Box>
 
-          {/* Row 3: Member Status Checkboxes */}
+          {/* Row 3: Member Status Checkboxes - hidden for now */}
+          {false && (
           <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#555' }}>
               Member Status
@@ -413,6 +414,7 @@ export default function SavingsBalance() {
               />
             </Box>
           </Box>
+          )}
 
           {/* Row 4: Customer Type Checkboxes */}
           <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
