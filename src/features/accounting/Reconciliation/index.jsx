@@ -72,7 +72,11 @@ export default function AccountReconciliation() {
     if (!canConfirmAllReconcile) return;
     const transactionIds = rows.map((r) => r.tranId).filter((id) => id != null);
     if (transactionIds.length === 0) return;
-    await saveReconcile(transactionIds);
+    const success = await saveReconcile(transactionIds);
+    if (success && selected) {
+      await loadForAccount(selected);
+      setEndBalance('');
+    }
   };
 
   const columns = [
@@ -184,7 +188,25 @@ export default function AccountReconciliation() {
             </Box>
 
             <Box>
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', position: 'relative' }}>
+                {(selectLoading || saveLoading) && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 600, color: '#333' }}>
+                      {selectLoading ? 'Updating...' : 'Confirming...'}
+                    </Typography>
+                  </Box>
+                )}
                 <DataGrid
                   rows={rows}
                   columns={columns}
