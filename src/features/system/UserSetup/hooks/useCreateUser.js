@@ -34,6 +34,8 @@ export function useCreateUser() {
         Compid: 30,
         Oprcode: oprcode,
         Username: userForm.userName,
+        Email: userForm.email || '',
+        Phone: userForm.phone || '',
         Userpassword: userForm.temporaryPassword,
         Dateforce: new Date().toISOString(),
         Branchid: branchId,

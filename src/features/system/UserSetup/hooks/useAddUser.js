@@ -64,6 +64,8 @@ export function useAddUser() {
         Compid: 30,
         Oprcode: getOprcode(userForm),
         Username: userForm.userName || '',
+        Email: userForm.email || '',
+        Phone: userForm.phone || '',
         Userpassword: userForm.temporaryPassword || '',
         Dateforce: toDateOnly(new Date()),
         ResetPassword: Boolean(userForm.resetPassword),

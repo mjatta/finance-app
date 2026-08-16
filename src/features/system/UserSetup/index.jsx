@@ -77,6 +77,8 @@ const createDefaultUserForm = (companyName = '') => ({
   staffNumber: '',
   userId: '',
   userName: '',
+  email: '',
+  phone: '',
   temporaryPassword: generateTemporaryPassword(),
   baseRole: '',
   cashAccount: '',
@@ -220,6 +222,8 @@ export default function UserSetup({ user }) {
       && userForm.branch
       && userForm.userId
       && userForm.userName
+      && userForm.email
+      && userForm.phone
       && userForm.branchId !== null
       && userForm.branchId !== undefined,
     ),
@@ -518,6 +522,8 @@ export default function UserSetup({ user }) {
       staffNumber: userRecord?.StaffNo || userRecord?.staffNumber || '',
       userId: userRecord?.UserID || userRecord?.userId || '',
       userName: userRecord?.UserName || userRecord?.userName || '',
+      email: userRecord?.Email || userRecord?.email || '',
+      phone: userRecord?.Phone || userRecord?.phone || '',
       temporaryPassword: userRecord?.temporaryPassword || '',
       baseRole: userRecord?.Role || userRecord?.baseRole || '',
       cashAccount: userRecord?.CashAccount || userRecord?.cashAccount || '',
@@ -971,6 +977,26 @@ export default function UserSetup({ user }) {
                   }}
                 />
                 <TextField label={<span>Full Name <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>} name="userName" value={userForm.userName} onChange={handleUserFormChange} size="small" fullWidth />
+                <TextField
+                  label={<span>Email <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
+                  name="email"
+                  value={userForm.email}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  type="email"
+                  helperText="Enter user's email address (e.g., kuyatehala2006@gmail.com)"
+                />
+                <TextField
+                  label={<span>Phone <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
+                  name="phone"
+                  value={userForm.phone}
+                  onChange={handleUserFormChange}
+                  size="small"
+                  fullWidth
+                  type="tel"
+                  helperText="Enter user's phone number (e.g., +2202790316)"
+                />
                 <TextField
                   label="Temporary password"
                   name="temporaryPassword"
