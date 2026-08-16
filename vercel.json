@@ -412,6 +412,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/transactions/30/:accountNumber"
     },
     {
+      "source": "/api/reconcile/select",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/select"
+    },
+    {
+      "source": "/api/reconcile/save",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/save"
+    },
+    {
       "source": "/api/endofyear/process",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/endofyear/process"
     },

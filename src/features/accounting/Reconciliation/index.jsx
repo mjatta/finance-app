@@ -1,27 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Card, CardContent, Typography, MenuItem, TextField, Button } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Card, CardContent, Typography, MenuItem, TextField, Button, Chip } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import useBankAccounts from './hooks/useBankAccounts';
 import { useReconcileTransactions } from './hooks/useReconcileTransactions';
+import { useReconcileSelect } from './hooks/useReconcileSelect';
+import { useReconcileSave } from './hooks/useReconcileSave';
 import { formatCurrency } from '../../../utils/currencyFormatter';
 import dayjs from 'dayjs';
 
 export default function AccountReconciliation() {
   const { accounts, loading: accountsLoading } = useBankAccounts();
   const { fetchTransactions, loading: txLoading } = useReconcileTransactions();
+  const { selectTransaction, loading: selectLoading } = useReconcileSelect();
+  const { saveReconcile, loading: saveLoading } = useReconcileSave();
   const [selected, setSelected] = useState(null);
   const [rows, setRows] = useState([]);
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [endBalance, setEndBalance] = useState('');
 
   const loadForAccount = async (acc) => {
     if (!acc) return setRows([]);
     const data = await fetchTransactions(acc.AccountNumber || acc.AccountNo || acc.AccountNumber);
     const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
-      id: `${r.Id || r.id || idx}-${idx}`,
+      id: r.TranID ?? `${r.Id || r.id || idx}-${idx}`,
+      tranId: r.TranID,
       transactionDate: r.TransactionDate || r.Date || r.BalanceDate || r.TransactionDate || '',
       accountNumber: r.AccountNumber || r.AccountNo || acc.AccountNumber || acc.AccountNo || '',
       narration: r.Narration || r.Description || r.Particulars || '',
       debit: Number(r.Debit || r.debit || r.Dr || 0),
       credit: Number(r.Credit || r.credit || r.Cr || 0),
+      reconciled: Boolean(r.Selected),
     }));
     setRows(mapped);
   };
@@ -34,6 +42,38 @@ export default function AccountReconciliation() {
     })();
     return () => { mounted = false };
   }, [selected]);
+
+  const totals = useMemo(() => {
+    const reconciledRows = rows.filter((r) => r.reconciled);
+    const totalDebit = reconciledRows.reduce((sum, r) => sum + (r.debit || 0), 0);
+    const totalCredit = reconciledRows.reduce((sum, r) => sum + (r.credit || 0), 0);
+    const balance = totalDebit - totalCredit;
+    const difference = Math.abs(balance);
+    return { totalDebit, totalCredit, balance, difference };
+  }, [rows]);
+
+  const handleUpdateReconcile = async () => {
+    if (!selectedRowId) return;
+    const row = rows.find((r) => r.id === selectedRowId);
+    if (!row || row.tranId == null) return;
+
+    const newSelected = !row.reconciled;
+    const success = await selectTransaction(row.tranId, newSelected);
+    if (success) {
+      setRows((prev) => prev.map((r) => (r.id === selectedRowId ? { ...r, reconciled: newSelected } : r)));
+    }
+  };
+
+  const allReconciled = rows.length > 0 && rows.every((r) => r.reconciled);
+  const endBalanceMatches = endBalance !== '' && Math.abs(Number(endBalance) - totals.balance) < 0.01;
+  const canConfirmAllReconcile = allReconciled && endBalanceMatches;
+
+  const handleConfirmAllReconcile = async () => {
+    if (!canConfirmAllReconcile) return;
+    const transactionIds = rows.map((r) => r.tranId).filter((id) => id != null);
+    if (transactionIds.length === 0) return;
+    await saveReconcile(transactionIds);
+  };
 
   const columns = [
     { field: 'transactionDate', headerName: 'Date', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', valueFormatter: (value) => value ? dayjs(value).format('YYYY-MM-DD') : '' },
@@ -84,6 +124,29 @@ export default function AccountReconciliation() {
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField label="Account Number" value={selected?.AccountNumber || selected?.AccountNo || ''} size="small" InputProps={{ readOnly: true }} sx={{ minWidth: 300 }} />
                 <TextField label="Last Reconciliation Date" value={selected?.LastReconDate ? dayjs(selected.LastReconDate).format('YYYY-MM-DD') : ''} size="small" InputProps={{ readOnly: true }} sx={{ minWidth: 300 }} />
+                <TextField
+                  label="End Balance"
+                  type="number"
+                  value={endBalance}
+                  onChange={(e) => setEndBalance(e.target.value)}
+                  size="small"
+                  helperText="End balance should be equal to Reconciled Balance before you can Save and Reconcile all transactions"
+                  sx={{
+                    minWidth: 300,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: endBalance === '' ? undefined : (endBalanceMatches ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 235, 59, 0.25)'),
+                      '& fieldset': {
+                        borderColor: endBalance === '' ? undefined : (endBalanceMatches ? '#2e7d32' : '#f9a825'),
+                      },
+                      '&:hover fieldset': {
+                        borderColor: endBalance === '' ? undefined : (endBalanceMatches ? '#2e7d32' : '#f9a825'),
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: endBalance === '' ? undefined : (endBalanceMatches ? '#2e7d32' : '#f9a825'),
+                      },
+                    },
+                  }}
+                />
               </Box>
             </Box>
           </CardContent>
@@ -91,11 +154,32 @@ export default function AccountReconciliation() {
 
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
           <CardContent sx={{ p: 0 }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Reconciliation Transactions</Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} onClick={async () => { if (selected) await loadForAccount(selected); }}>Refresh</Button>
-                <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} disabled={!rows || rows.length === 0} onClick={() => window.print()}>Print</Button>
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Reconciliation Transactions</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} onClick={async () => { if (selected) await loadForAccount(selected); }}>Refresh</Button>
+                  <Button variant="outlined" sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText', textTransform: 'none', fontWeight: 600 }} disabled={!rows || rows.length === 0} onClick={() => window.print()}>Print</Button>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`Debit Reconciled: D ${totals.totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
+                />
+                <Chip
+                  label={`Credit Reconciled: D ${totals.totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
+                />
+                <Chip
+                  label={`Reconciled Balance: D ${totals.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
+                />
+                <Chip
+                  label={`Reconciled Difference: D ${totals.difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
+                />
               </Box>
             </Box>
 
@@ -108,14 +192,35 @@ export default function AccountReconciliation() {
                   density="compact"
                   pageSizeOptions={[10, 25, 50, 100]}
                   initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
-                  disableRowSelectionOnClick
+                  rowSelectionModel={{ type: 'include', ids: selectedRowId ? new Set([selectedRowId]) : new Set() }}
+                  onRowSelectionModelChange={(newSelection) => {
+                    const ids = Array.from(newSelection.ids || []);
+                    setSelectedRowId(ids.length > 0 ? ids[ids.length - 1] : null);
+                  }}
+                  checkboxSelection
+                  disableMultipleRowSelection
+                  disableRowSelectionOnClick={false}
+                  getRowClassName={(params) => (params.row.reconciled ? 'reconciled-row' : '')}
                   sx={{
                     border: 'none',
                     '& .MuiDataGrid-cell': { borderBottom: '1px solid', borderColor: 'divider' },
                     '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
+                    '& .reconciled-row': {
+                      backgroundColor: 'rgba(76, 175, 80, 0.25) !important',
+                      '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.35) !important' },
+                    },
                   }}
                 />
               </div>
+
+              <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Button variant="contained" sx={{ color: 'white', backgroundColor: '#2e7d32', textTransform: 'none', fontWeight: 600, '&:hover': { backgroundColor: '#1b5e20' } }} disabled={!selectedRowId || selectLoading} onClick={handleUpdateReconcile}>
+                  {selectLoading ? 'Updating...' : 'Update Reconcile'}
+                </Button>
+                <Button variant="contained" sx={{ color: 'white', backgroundColor: '#1565c0', textTransform: 'none', fontWeight: 600, '&:hover': { backgroundColor: '#0d47a1' } }} disabled={!canConfirmAllReconcile || saveLoading} onClick={handleConfirmAllReconcile}>
+                  {saveLoading ? 'Confirming...' : 'Confirm All Reconcile'}
+                </Button>
+              </Box>
             </Box>
           </CardContent>
         </Card>
