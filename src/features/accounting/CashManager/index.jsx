@@ -14,17 +14,16 @@ import {
   Radio,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { useBranches } from '../../../hooks/useBranches';
+import useCashManagerBranches from './hooks/useCashManagerBranches';
 import { useCashAccounts } from './hooks/useCashAccounts';
 import { formatCurrency } from '../../../utils/currencyFormatter';
 
 export default function CashManager() {
-  const { branches, loading: branchesLoading } = useBranches();
+  const { branches, loading: branchesLoading } = useCashManagerBranches();
   const { cashAccounts, loading: cashAccountsLoading } = useCashAccounts();
 
   const [branch, setBranch] = useState(null);
   const [cashAccount, setCashAccount] = useState(null);
-  const [voucherNumber, setVoucherNumber] = useState('');
   const [processType, setProcessType] = useState('allocation');
 
   const [rows] = useState([]);
@@ -35,9 +34,27 @@ export default function CashManager() {
   );
 
   const columns = [
+    { field: 'cashier', headerName: 'Cashier', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
     { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
     { field: 'accountName', headerName: 'Account Name', flex: 1.5, minWidth: 220, align: 'center', headerAlign: 'center' },
-    { field: 'cashier', headerName: 'Cashier', flex: 1, minWidth: 180, align: 'center', headerAlign: 'center' },
+    {
+      field: 'tillAmount',
+      headerName: 'Till Amount',
+      flex: 1,
+      minWidth: 140,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (p) => formatCurrency(p.value || 0),
+    },
+    {
+      field: 'endBalance',
+      headerName: 'End Balance',
+      flex: 1,
+      minWidth: 140,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (p) => formatCurrency(p.value || 0),
+    },
     {
       field: 'currentBalance',
       headerName: 'Current Balance',
@@ -58,12 +75,12 @@ export default function CashManager() {
         </CardContent>
       </Card>
 
-      <Box sx={{ display: 'grid', gap: 3, width: '100%' }}>
+      <Box sx={{ display: 'grid', gap: 3, width: '100%', gridTemplateColumns: { xs: '1fr', md: '25% 1fr' } }}>
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>Cash Details</Typography>
             <Box sx={{ display: 'grid', gap: 2 }}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
                 <TextField
                   select
                   fullWidth
@@ -83,7 +100,21 @@ export default function CashManager() {
                     </MenuItem>
                   ))}
                 </TextField>
+              </Box>
 
+              <FormControl component="fieldset">
+                <FormLabel component="legend" sx={{ fontSize: '0.75rem' }}>Process Type</FormLabel>
+                <RadioGroup
+                  row
+                  value={processType}
+                  onChange={(e) => setProcessType(e.target.value)}
+                >
+                  <FormControlLabel value="allocation" control={<Radio size="small" />} label="Allocation" />
+                  <FormControlLabel value="retirement" control={<Radio size="small" />} label="Retirement" />
+                </RadioGroup>
+              </FormControl>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
                 <TextField
                   select
                   fullWidth
@@ -103,44 +134,6 @@ export default function CashManager() {
                     </MenuItem>
                   ))}
                 </TextField>
-
-                <TextField
-                  label="Account Number"
-                  value={cashAccount?.accountNumber || ''}
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  fullWidth
-                />
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
-                <TextField
-                  label="Account Balance"
-                  value={formatCurrency(0)}
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  fullWidth
-                />
-
-                <TextField
-                  label="Voucher Number"
-                  value={voucherNumber}
-                  onChange={(e) => setVoucherNumber(e.target.value)}
-                  size="small"
-                  fullWidth
-                />
-
-                <FormControl component="fieldset" sx={{ justifyContent: 'center' }}>
-                  <FormLabel component="legend" sx={{ fontSize: '0.75rem' }}>Process Type</FormLabel>
-                  <RadioGroup
-                    row
-                    value={processType}
-                    onChange={(e) => setProcessType(e.target.value)}
-                  >
-                    <FormControlLabel value="allocation" control={<Radio size="small" />} label="Allocation" />
-                    <FormControlLabel value="retirement" control={<Radio size="small" />} label="Retirement" />
-                  </RadioGroup>
-                </FormControl>
               </Box>
             </Box>
           </CardContent>

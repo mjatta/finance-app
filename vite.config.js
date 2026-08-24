@@ -3830,6 +3830,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/remote-branches/, '/api/lookups'),
       },
+      // Proxy for CashManager branches endpoint
+      '/api/CashManager/branches': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => '/api/CashManager/branches?companyId=30',
+      },
       '/api/remote-countries': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
