@@ -60,7 +60,6 @@ import './App.css';
 const CustomerAdministrationHub = lazy(() => import('./features/member/CustomerAdministrationHub'));
 const DepositManagement = lazy(() => import('./features/member/DepositManagement'));
 const AccountEnquiries = lazy(() => import('./features/member/AccountEnquiries'));
-const MemberTransfer = lazy(() => import('./features/member/MemberTransfer'));
 const Reprint = lazy(() => import('./features/member/Reprint'));
 const CustomerRegistration = lazy(() => import('./features/member/CustomerRegistration'));
 const AddMemberAccount = lazy(() => import('./features/member/AddMemberAccount'));
@@ -72,6 +71,7 @@ const Withdrawal = lazy(() => import('./features/member/Withdrawal'));
 const MemberClose = lazy(() => import('./features/member/MemberClose'));
 const MemberPayrollManagement = lazy(() => import('./features/member/MemberPayrollManagement'));
 const MemberMessage = lazy(() => import('./features/member/MemberMessage'));
+const Transfer = lazy(() => import('./features/member/Transfer'));
 
 const Repayments = lazy(() => import('./features/loan/Repayments'));
 const LoanChangeOff = lazy(() => import('./features/loan/LoanChangeOff'));
@@ -837,10 +837,6 @@ function App() {
                       element={renderWithAccess('member', <Withdrawal />)}
                     />
                     <Route
-                      path="/member/transfer"
-                      element={renderWithAccess('member', <MemberTransfer user={user} />)}
-                    />
-                    <Route
                       path="/member/reprint"
                       element={renderWithAccess('member', <Reprint />)}
                     />
@@ -871,6 +867,10 @@ function App() {
                     <Route
                       path="/member/member-close"
                       element={renderWithAccess('member', <MemberClose />)}
+                    />
+                    <Route
+                      path="/member/transfer"
+                      element={renderWithAccess('member', <Transfer />)}
                     />
                     <Route
                       path="/member/member-payroll-management"

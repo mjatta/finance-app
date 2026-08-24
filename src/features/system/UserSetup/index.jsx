@@ -127,7 +127,7 @@ const featurePageMap = {
     { path: '/member/account-enquiries', label: 'Account Enquiries' },
     { path: '/member/member-close-account', label: 'Member Close' },
     { path: '/member/withdrawal', label: 'Withdrawal' },
-    { path: '/member/transfer', label: 'Member Transfer' },
+    { path: '/member/transfer', label: 'Transfer' },
     { path: '/member/member-payroll-management', label: 'Member Payroll Management' },
     { path: '/member/reprint', label: 'Reprint' },
     { path: '/member/member-close', label: 'Account Closure' },
