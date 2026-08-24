@@ -9,6 +9,11 @@ import {
   TextField,
   Typography,
   CircularProgress,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -19,11 +24,39 @@ import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
+const extractMemberName = (details) => {
+  if (details.membname && typeof details.membname === 'string' && details.membname.trim()) {
+    return details.membname.trim();
+  }
+  if (details.customerName && typeof details.customerName === 'string' && details.customerName.trim()) {
+    return details.customerName.trim();
+  }
+  if (details.CustomerName && typeof details.CustomerName === 'string' && details.CustomerName.trim()) {
+    return details.CustomerName.trim();
+  }
+  if (details.name && typeof details.name === 'string' && details.name.trim()) {
+    return details.name.trim();
+  }
+  if (details.Name && typeof details.Name === 'string' && details.Name.trim()) {
+    return details.Name.trim();
+  }
+  return '';
+};
+
 export default function Transfer() {
   const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberDetails();
+  const { loading: toMemberLoading, error: toMemberError, fetchMemberDetails: fetchToMemberDetails } = useGetMemberDetails();
+
+  const [transactionType, setTransactionType] = useState('account');
+
   const [customerCode, setCustomerCode] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [memberAccounts, setMemberAccounts] = useState([]);
+
+  const [toCustomerCode, setToCustomerCode] = useState('');
+  const [toCustomerName, setToCustomerName] = useState('');
+  const [toMemberAccounts, setToMemberAccounts] = useState([]);
+
   const [fromPostingAccount, setFromPostingAccount] = useState('');
   const [fromAccountNumber, setFromAccountNumber] = useState('');
   const [fromAccountBalance, setFromAccountBalance] = useState('');
@@ -36,6 +69,21 @@ export default function Transfer() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
 
+  const isMemberTransfer = transactionType === 'member';
+  const toAccountsSource = isMemberTransfer ? toMemberAccounts : memberAccounts;
+
+  const handleTransactionTypeChange = (e) => {
+    const value = e.target.value;
+    setTransactionType(value);
+    // Reset recipient/destination fields when switching type
+    setToCustomerCode('');
+    setToCustomerName('');
+    setToMemberAccounts([]);
+    setToPostingAccount('');
+    setToAccountNumber('');
+    setToAccountBalance('');
+  };
+
   const handleCustomerCodeChange = (e) => {
     setCustomerCode(e.target.value);
   };
@@ -43,6 +91,16 @@ export default function Transfer() {
   const handleCustomerCodeTab = async (e) => {
     if (e.key === 'Tab' && customerCode.trim()) {
       await handleSearch();
+    }
+  };
+
+  const handleToCustomerCodeChange = (e) => {
+    setToCustomerCode(e.target.value);
+  };
+
+  const handleToCustomerCodeTab = async (e) => {
+    if (e.key === 'Tab' && toCustomerCode.trim()) {
+      await handleSearchTo();
     }
   };
 
@@ -59,18 +117,7 @@ export default function Transfer() {
       const details = await fetchMemberDetails(customerCode.trim());
 
       if (details) {
-        let name = '';
-        if (details.membname && typeof details.membname === 'string' && details.membname.trim()) {
-          name = details.membname.trim();
-        } else if (details.customerName && typeof details.customerName === 'string' && details.customerName.trim()) {
-          name = details.customerName.trim();
-        } else if (details.CustomerName && typeof details.CustomerName === 'string' && details.CustomerName.trim()) {
-          name = details.CustomerName.trim();
-        } else if (details.name && typeof details.name === 'string' && details.name.trim()) {
-          name = details.name.trim();
-        } else if (details.Name && typeof details.Name === 'string' && details.Name.trim()) {
-          name = details.Name.trim();
-        }
+        const name = extractMemberName(details);
 
         // Extract member accounts from API response
         const accounts = Array.isArray(details.Accounts) ? details.Accounts : [];
@@ -92,6 +139,41 @@ export default function Transfer() {
     }
   };
 
+  const handleSearchTo = async () => {
+    if (!toCustomerCode.trim()) {
+      setStatusMessage('Please enter a recipient member code');
+      setStatusError(true);
+      return;
+    }
+
+    try {
+      setStatusMessage('');
+      setStatusError(false);
+      const details = await fetchToMemberDetails(toCustomerCode.trim());
+
+      if (details) {
+        const name = extractMemberName(details);
+
+        // Extract member accounts from API response
+        const accounts = Array.isArray(details.Accounts) ? details.Accounts : [];
+        setToMemberAccounts(accounts);
+        setToCustomerName(name);
+        setStatusMessage('Recipient member details loaded successfully');
+        setStatusError(false);
+      } else if (toMemberError) {
+        setStatusMessage(`Error: ${toMemberError}`);
+        setStatusError(true);
+        setToCustomerName('');
+        setToMemberAccounts([]);
+      }
+    } catch (err) {
+      setStatusMessage(`Error: ${err.message}`);
+      setStatusError(true);
+      setToCustomerName('');
+      setToMemberAccounts([]);
+    }
+  };
+
   const handleTransfer = async () => {
     if (!fromAccountNumber.trim()) {
       setStatusMessage('Please enter a source account number.');
@@ -100,6 +182,11 @@ export default function Transfer() {
     }
     if (!toAccountNumber.trim()) {
       setStatusMessage('Please enter a target account number.');
+      setStatusError(true);
+      return;
+    }
+    if (isMemberTransfer && !toCustomerCode.trim()) {
+      setStatusMessage('Please search for a recipient member.');
       setStatusError(true);
       return;
     }
@@ -120,12 +207,14 @@ export default function Transfer() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          transactionType,
           fromPostingAccount,
           sourceAccount: fromAccountNumber.trim(),
           targetAccount: toAccountNumber.trim(),
           toPostingAccount,
           amount: Number(amount),
           transferDate: transferDate ? transferDate.format('YYYY-MM-DD') : '',
+          ...(isMemberTransfer ? { recipientMemberCode: toCustomerCode.trim() } : {}),
         }),
       });
 
@@ -171,7 +260,7 @@ export default function Transfer() {
     const accountNumber = e.target.value;
     setToPostingAccount(accountNumber);
     // Find the selected account and auto-populate account number
-    const selectedAccount = memberAccounts.find(acc => acc.AccountNumber === accountNumber);
+    const selectedAccount = toAccountsSource.find(acc => acc.AccountNumber === accountNumber);
     if (selectedAccount) {
       setToAccountNumber(accountNumber);
     }
@@ -181,6 +270,9 @@ export default function Transfer() {
     setCustomerCode('');
     setCustomerName('');
     setMemberAccounts([]);
+    setToCustomerCode('');
+    setToCustomerName('');
+    setToMemberAccounts([]);
     setFromPostingAccount('');
     setFromAccountNumber('');
     setFromAccountBalance('');
@@ -202,7 +294,9 @@ export default function Transfer() {
             Member Transfer
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-            Transfer funds between member accounts
+            {isMemberTransfer
+              ? 'Transfer funds from one member to another member'
+              : 'Transfer funds between a member\'s own accounts'}
           </Typography>
         </CardContent>
       </Card>
@@ -218,79 +312,163 @@ export default function Transfer() {
         </Alert>
       )}
 
-      {/* Search Customer Card */}
+      {/* Transaction Type Card */}
       <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3 }}>
         <CardContent>
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-            Search Customer
+            Transaction Type
           </Typography>
-          <Box sx={{ display: 'grid', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-              <TextField
-                label="Customer Code"
-                value={customerCode}
-                onChange={handleCustomerCodeChange}
-                onKeyDown={handleCustomerCodeTab}
-                placeholder="Enter customer code"
-                type="number"
-                helperText="Enter customer code and press Tab or Search to load details"
-                FormHelperTextProps={{
-                  sx: {
-                    fontWeight: 600,
-                    color: '#666',
-                  },
-                }}
-                size="small"
-                sx={{ flex: 1 }}
-                disabled={memberLoading}
-              />
-              {customerName && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pt: 1, whiteSpace: 'nowrap', flex: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Customer Name
-                  </Typography>
-                  <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
-                    {customerName}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="contained"
-                startIcon={memberLoading ? <CircularProgress size={18} /> : <SearchRoundedIcon />}
-                onClick={handleSearch}
-                disabled={memberLoading}
-                sx={{
-                  backgroundColor: '#667eea',
-                  '&:hover': { backgroundColor: '#5568d3' },
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                }}
-              >
-                {memberLoading ? 'Searching...' : 'Search'}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleClear}
-                sx={{
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                  color: '#666',
-                  borderColor: '#ccc',
-                  '&:hover': { borderColor: '#999', backgroundColor: '#f5f5f5' },
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-          </Box>
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontSize: '0.75rem', mb: 0.5 }}>Select Transfer Type</FormLabel>
+            <RadioGroup
+              row
+              value={transactionType}
+              onChange={handleTransactionTypeChange}
+            >
+              <FormControlLabel value="account" control={<Radio size="small" />} label="Account Transfer" />
+              <FormControlLabel value="member" control={<Radio size="small" />} label="Member Transfer" />
+            </RadioGroup>
+          </FormControl>
         </CardContent>
       </Card>
+
+      {/* Search Cards Container */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 3, mb: 3 }}>
+        {/* Search Customer Card */}
+        <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+              {isMemberTransfer ? 'Search Sender (From Member)' : 'Search Customer'}
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                <TextField
+                  label="Customer Code"
+                  value={customerCode}
+                  onChange={handleCustomerCodeChange}
+                  onKeyDown={handleCustomerCodeTab}
+                  placeholder="Enter customer code"
+                  type="number"
+                  helperText="Enter customer code and press Tab or Search to load details"
+                  FormHelperTextProps={{
+                    sx: {
+                      fontWeight: 600,
+                      color: '#666',
+                    },
+                  }}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  disabled={memberLoading}
+                />
+                {customerName && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pt: 1, whiteSpace: 'nowrap', flex: 3 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Customer Name
+                    </Typography>
+                    <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                      {customerName}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  startIcon={memberLoading ? <CircularProgress size={18} /> : <SearchRoundedIcon />}
+                  onClick={handleSearch}
+                  disabled={memberLoading}
+                  sx={{
+                    backgroundColor: '#667eea',
+                    '&:hover': { backgroundColor: '#5568d3' },
+                    fontWeight: 600,
+                    paddingX: 3,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                  }}
+                >
+                  {memberLoading ? 'Searching...' : 'Search'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleClear}
+                  sx={{
+                    fontWeight: 600,
+                    paddingX: 3,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    color: '#666',
+                    borderColor: '#ccc',
+                    '&:hover': { borderColor: '#999', backgroundColor: '#f5f5f5' },
+                  }}
+                >
+                  Clear
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Search Recipient Member Card (Member Transfer only) */}
+        {isMemberTransfer && (
+          <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
+                Search Recipient (To Member)
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                  <TextField
+                    label="Customer Code"
+                    value={toCustomerCode}
+                    onChange={handleToCustomerCodeChange}
+                    onKeyDown={handleToCustomerCodeTab}
+                    placeholder="Enter recipient customer code"
+                    type="number"
+                    helperText="Enter recipient customer code and press Tab or Search to load details"
+                    FormHelperTextProps={{
+                      sx: {
+                        fontWeight: 600,
+                        color: '#666',
+                      },
+                    }}
+                    size="small"
+                    sx={{ flex: 1 }}
+                    disabled={toMemberLoading}
+                  />
+                  {toCustomerName && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pt: 1, whiteSpace: 'nowrap', flex: 3 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Customer Name
+                      </Typography>
+                      <Typography sx={{ fontWeight: 900, color: '#000000', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+                        {toCustomerName}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={toMemberLoading ? <CircularProgress size={18} /> : <SearchRoundedIcon />}
+                    onClick={handleSearchTo}
+                    disabled={toMemberLoading}
+                    sx={{
+                      backgroundColor: '#667eea',
+                      '&:hover': { backgroundColor: '#5568d3' },
+                      fontWeight: 600,
+                      paddingX: 3,
+                      boxShadow: 'none',
+                      textTransform: 'none',
+                    }}
+                  >
+                    {toMemberLoading ? 'Searching...' : 'Search'}
+                  </Button>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+      </Box>
 
       {/* Transfer From / Transfer To Card */}
       <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3 }}>
@@ -369,11 +547,11 @@ export default function Transfer() {
                     label={<span>Posting Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     value={toPostingAccount}
                     onChange={handleToAccountChange}
-                    disabled={isSaving || memberAccounts.length === 0}
+                    disabled={isSaving || toAccountsSource.length === 0}
                     size="small"
                   >
                     <MenuItem value="">Select Account</MenuItem>
-                    {memberAccounts.map((account) => (
+                    {toAccountsSource.map((account) => (
                       <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
                         {account.AccountName} ({account.AccountNumber})
                       </MenuItem>
@@ -444,3 +622,4 @@ export default function Transfer() {
     </Box>
   );
 }
+
