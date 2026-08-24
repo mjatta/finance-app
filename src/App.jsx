@@ -480,7 +480,7 @@ function App() {
       label: 'Processing',
       children: [
         { label: 'Periodic Subscription Processing', to: '/processing/subscription', icon: AutorenewRoundedIcon },
-        { label: 'Interest Calculation', to: '/processing/interest', icon: CalculateRoundedIcon },
+        { label: 'Savings Interest Calculation', to: '/processing/interest', icon: CalculateRoundedIcon },
         { label: 'Period Processing Period Dues', to: '/processing/period-dues', icon: EventRepeatRoundedIcon },
       ],
     },

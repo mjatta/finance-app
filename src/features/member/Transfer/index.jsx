@@ -23,6 +23,7 @@ export default function Transfer() {
   const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberDetails();
   const [customerCode, setCustomerCode] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [memberAccounts, setMemberAccounts] = useState([]);
   const [fromPostingAccount, setFromPostingAccount] = useState('');
   const [fromAccountNumber, setFromAccountNumber] = useState('');
   const [fromAccountBalance, setFromAccountBalance] = useState('');
@@ -71,6 +72,9 @@ export default function Transfer() {
           name = details.Name.trim();
         }
 
+        // Extract member accounts from API response
+        const accounts = Array.isArray(details.Accounts) ? details.Accounts : [];
+        setMemberAccounts(accounts);
         setCustomerName(name);
         setStatusMessage('Customer details loaded successfully');
         setStatusError(false);
@@ -78,11 +82,13 @@ export default function Transfer() {
         setStatusMessage(`Error: ${memberError}`);
         setStatusError(true);
         setCustomerName('');
+        setMemberAccounts([]);
       }
     } catch (err) {
       setStatusMessage(`Error: ${err.message}`);
       setStatusError(true);
       setCustomerName('');
+      setMemberAccounts([]);
     }
   };
 
@@ -151,9 +157,30 @@ export default function Transfer() {
     }
   };
 
+  const handleFromAccountChange = (e) => {
+    const accountNumber = e.target.value;
+    setFromPostingAccount(accountNumber);
+    // Find the selected account and auto-populate account number
+    const selectedAccount = memberAccounts.find(acc => acc.AccountNumber === accountNumber);
+    if (selectedAccount) {
+      setFromAccountNumber(accountNumber);
+    }
+  };
+
+  const handleToAccountChange = (e) => {
+    const accountNumber = e.target.value;
+    setToPostingAccount(accountNumber);
+    // Find the selected account and auto-populate account number
+    const selectedAccount = memberAccounts.find(acc => acc.AccountNumber === accountNumber);
+    if (selectedAccount) {
+      setToAccountNumber(accountNumber);
+    }
+  };
+
   const handleClear = () => {
     setCustomerCode('');
     setCustomerName('');
+    setMemberAccounts([]);
     setFromPostingAccount('');
     setFromAccountNumber('');
     setFromAccountBalance('');
@@ -280,13 +307,16 @@ export default function Transfer() {
                     fullWidth
                     label={<span>Posting Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     value={fromPostingAccount}
-                    onChange={(e) => setFromPostingAccount(e.target.value)}
-                    disabled={isSaving}
+                    onChange={handleFromAccountChange}
+                    disabled={isSaving || memberAccounts.length === 0}
                     size="small"
                   >
-                    <MenuItem value="savings">Savings</MenuItem>
-                    <MenuItem value="shares">Shares</MenuItem>
-                    <MenuItem value="deposits">Deposits</MenuItem>
+                    <MenuItem value="">Select Account</MenuItem>
+                    {memberAccounts.map((account) => (
+                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
+                        {account.AccountName} ({account.AccountNumber})
+                      </MenuItem>
+                    ))}
                   </TextField>
                   <TextField
                     fullWidth
@@ -338,13 +368,16 @@ export default function Transfer() {
                     fullWidth
                     label={<span>Posting Account <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                     value={toPostingAccount}
-                    onChange={(e) => setToPostingAccount(e.target.value)}
-                    disabled={isSaving}
+                    onChange={handleToAccountChange}
+                    disabled={isSaving || memberAccounts.length === 0}
                     size="small"
                   >
-                    <MenuItem value="savings">Savings</MenuItem>
-                    <MenuItem value="shares">Shares</MenuItem>
-                    <MenuItem value="deposits">Deposits</MenuItem>
+                    <MenuItem value="">Select Account</MenuItem>
+                    {memberAccounts.map((account) => (
+                      <MenuItem key={account.AccountNumber} value={account.AccountNumber}>
+                        {account.AccountName} ({account.AccountNumber})
+                      </MenuItem>
+                    ))}
                   </TextField>
                   <TextField
                     fullWidth

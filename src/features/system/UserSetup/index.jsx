@@ -157,7 +157,7 @@ const featurePageMap = {
   ],
   processing: [
     { path: '/processing/subscription', label: 'Periodic Subscription Processing' },
-    { path: '/processing/interest', label: 'Interest Calculation' },
+    { path: '/processing/interest', label: 'Savings Interest Calculation' },
     { path: '/processing/period-dues', label: 'Period Processing Period Dues' },
   ],
   system: [

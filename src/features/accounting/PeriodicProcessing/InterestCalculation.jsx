@@ -100,94 +100,48 @@ export default function InterestCalculation() {
   };
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom sx={{ fontSize: '1.2rem' }}>
-        Interest Calculation
-      </Typography>
-
-      {statusMessage && (
-        <Typography
-          variant="body2"
-          sx={{ mb: 2, fontWeight: 700 }}
-          color={statusMessage.toLowerCase().includes('unable') ? 'error.main' : 'success.main'}
-        >
-          {statusMessage}
-        </Typography>
-      )}
-
-      <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', p: 3 }}>
+      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
-              <DatePicker
-                label="Interest Date"
-                value={interestDate ? dayjs(interestDate) : null}
-                onChange={(value) => setInterestDate(value ? value.format('YYYY-MM-DD') : '')}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                select
-                label="Calculation Method"
-                fullWidth
-                value={calculationMethod}
-                onChange={(event) => setCalculationMethod(event.target.value)}
-              >
-                <MenuItem value="average">Average Balance</MenuItem>
-                <MenuItem value="minimum">Minimum Balance</MenuItem>
-                <MenuItem value="maximum">Maximum Balance</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                label="Annual Rate (%)"
-                fullWidth
-                value={annualRate}
-                onChange={(event) => setAnnualRate(event.target.value)}
-                InputProps={{ endAdornment: <PercentAdornment /> }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button variant="contained" onClick={handleCalculate}>Calculate</Button>
-              <Button variant="outlined">Post Interest</Button>
-            </Grid>
-          </Grid>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 600 }}>Savings Interest Calculation</Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.5 }}>Manage savings interest rates and calculation methods by product</Typography>
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 1.5 }}>
-            Interest Calculation Preview
-          </Typography>
-          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <Box sx={{ display: 'grid', gap: 3, width: '100%' }}>
+
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+        <CardContent sx={{ p: 0 }}>
+          <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Savings Interest Products</Typography>
+          </Box>
+          <Box sx={{ width: '100%' }}>
             <DataGrid
-              rows={rows.map((row, index) => ({ ...row, id: row.id || `${row.accountNo}-${index}` }))}
+              rows={rows.map((row, index) => ({ ...row, id: row.id || `${row.category || 'cat'}-${index}` }))}
               columns={[
-                { field: 'accountNo', headerName: 'Account No', flex: 1, minWidth: 120 },
-                { field: 'member', headerName: 'Member', flex: 1.2, minWidth: 140 },
-                { field: 'averageBalance', headerName: 'Average Balance', flex: 1, minWidth: 130 },
-                { field: 'rate', headerName: 'Rate', flex: 0.6, minWidth: 80 },
-                { field: 'interest', headerName: 'Interest Amount', flex: 1, minWidth: 130 },
+                { field: 'category', headerName: 'Category', flex: 0.9, minWidth: 120, align: 'center', headerAlign: 'center' },
+                { field: 'productName', headerName: 'Product Name', flex: 1.2, minWidth: 140, align: 'center', headerAlign: 'center' },
+                { field: 'interestRate', headerName: 'Interest Rate', flex: 0.9, minWidth: 110, align: 'center', headerAlign: 'center' },
+                { field: 'interestScope', headerName: 'Interest Scope', flex: 1.1, minWidth: 130, align: 'center', headerAlign: 'center' },
+                { field: 'calculationMethod', headerName: 'Calculation Method', flex: 1.2, minWidth: 140, align: 'center', headerAlign: 'center' },
+                { field: 'mandate', headerName: 'Mandate', flex: 0.8, minWidth: 100, align: 'center', headerAlign: 'center' },
+                { field: 'scope', headerName: 'Scope', flex: 0.8, minWidth: 100, align: 'center', headerAlign: 'center' },
               ]}
-              pageSizeOptions={[10, 25, 50]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              pageSizeOptions={[10, 25, 50, 100]}
+              initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
+              checkboxSelection
+              disableRowSelectionOnClick
               density="compact"
               sx={{
-                '& .MuiDataGrid-columnHeader': {
-                  backgroundColor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontWeight: 700,
-                },
-                '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#f8f9fa' },
-                '& .MuiDataGrid-row:hover': { backgroundColor: '#e9ecef' },
-                '& .MuiDataGrid-cell': { borderColor: '#dee2e6' },
+                border: 'none',
+                '& .MuiDataGrid-cell': { borderBottom: '1px solid', borderColor: 'divider' },
+                '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
               }}
             />
-          </Paper>
+          </Box>
         </CardContent>
       </Card>
+      </Box>
     </Box>
   );
 }

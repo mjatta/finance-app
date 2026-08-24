@@ -1,48 +1,75 @@
 import { useState } from 'react';
+import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 /**
  * Custom hook to fetch member details by customer code.
+ * Uses the same endpoint as Deposit page for consistency.
  * @returns {Object} { memberDetails, loading, error, fetchMemberDetails }
  */
 export function useGetMemberDetails() {
-  const [memberDetails, setMemberDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMemberDetails = async (customerCode) => {
+  const fetchMemberDetails = async (memberCode) => {
+    if (!memberCode || !memberCode.trim()) {
+      return null;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
-      // Pad customer code to 6 digits with leading zeros (e.g., 3 -> 000003, 13 -> 000013)
-      const paddedCode = String(customerCode).padStart(6, '0');
-      const url = `/api/member-account/member/30/${encodeURIComponent(paddedCode)}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('Failed to fetch member details');
-      const data = await resp.json();
+      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${memberCode.trim()}`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      // Handle both direct data and nested response formats
-      let details = data.data || data;
-
-      // If response is an array, extract the first element
-      if (Array.isArray(details) && details.length > 0) {
-        details = details[0];
+      // Handle 404 errors - member not found
+      if (response.status === 404) {
+        console.warn(`Member not found for code: ${memberCode}`);
+        setError('Member not found');
+        return null;
       }
 
-      // Ensure membname is extracted and trimmed for consistency
-      if (details && details.membname && typeof details.membname === 'string') {
-        details.membname = details.membname.trim();
+      // Handle other HTTP errors
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
       }
 
-      setMemberDetails(details);
-      return details;
+      // Attempt to parse JSON response
+      let payload;
+      try {
+        payload = await response.json();
+      } catch (jsonError) {
+        console.warn('Failed to parse member details response as JSON:', jsonError);
+        setError('Invalid response format');
+        return null;
+      }
+
+      // Validate response structure
+      if (!payload || typeof payload !== 'object') {
+        console.warn('Member details response is not an object:', payload);
+        setError('Invalid response structure');
+        return null;
+      }
+
+      setError(null);
+      return payload;
     } catch (err) {
-      setError(err.message || 'Unknown error');
-      setMemberDetails(null);
+      // Handle network errors and other exceptions
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        console.error('Network error or CORS issue fetching member details:', err);
+      } else {
+        console.error('Error fetching member details:', err);
+      }
+      setError(err.message || 'Failed to fetch member details');
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  return { memberDetails, loading, error, fetchMemberDetails };
+  return { fetchMemberDetails, loading, error };
 }
