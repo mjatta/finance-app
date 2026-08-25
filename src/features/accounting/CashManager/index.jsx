@@ -12,21 +12,38 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Button,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import useCashManagerBranches from './hooks/useCashManagerBranches';
 import { useCashAccounts } from './hooks/useCashAccounts';
+import { useCashiersByBranch } from './hooks/useCashiersByBranch';
 import { formatCurrency } from '../../../utils/currencyFormatter';
 
 export default function CashManager() {
   const { branches, loading: branchesLoading } = useCashManagerBranches();
   const { cashAccounts, loading: cashAccountsLoading } = useCashAccounts();
+  const { cashiers, loading: cashiersLoading, fetchCashiersByBranch } = useCashiersByBranch();
 
   const [branch, setBranch] = useState(null);
   const [cashAccount, setCashAccount] = useState(null);
   const [processType, setProcessType] = useState('allocation');
+  const [rows, setRows] = useState([]);
+  const [editingRows, setEditingRows] = useState({});
 
-  const [rows] = useState([]);
+  const handleSaveRow = (rowId) => {
+    // TODO: Call API to save the till amount for this cashier
+    console.log('Saving row:', rowId, rows.find(r => r.id === rowId));
+    setEditingRows(prev => ({ ...prev, [rowId]: false }));
+  };
+
+  const handleTillAmountChange = (rowId, newValue) => {
+    setRows(prev =>
+      prev.map(row =>
+        row.id === rowId ? { ...row, tillAmount: parseFloat(newValue) || 0 } : row
+      )
+    );
+  };
 
   const totalCurrentBalance = useMemo(
     () => rows.reduce((sum, r) => sum + (Number(r.currentBalance) || 0), 0),
@@ -44,7 +61,22 @@ export default function CashManager() {
       minWidth: 140,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (p) => formatCurrency(p.value || 0),
+      renderCell: (params) => (
+        <input
+          type="number"
+          value={params.value || 0}
+          onChange={(e) => handleTillAmountChange(params.id, e.target.value)}
+          style={{
+            width: '100%',
+            padding: '8px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            textAlign: 'center',
+            fontFamily: 'inherit',
+          }}
+          step="0.01"
+        />
+      ),
     },
     {
       field: 'endBalance',
@@ -63,6 +95,32 @@ export default function CashManager() {
       align: 'center',
       headerAlign: 'center',
       renderCell: (p) => formatCurrency(p.value || 0),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
+      minWidth: 100,
+      align: 'center',
+      headerAlign: 'center',
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => handleSaveRow(params.id)}
+          sx={{
+            backgroundColor: '#667eea',
+            '&:hover': { backgroundColor: '#5568d3' },
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '0.85rem',
+          }}
+        >
+          Save
+        </Button>
+      ),
     },
   ];
 
@@ -86,9 +144,18 @@ export default function CashManager() {
                   fullWidth
                   label="Branch Name"
                   value={branch?.BranchCode || branch?.branchCode || ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const b = branches.find((br) => (br.BranchCode || br.branchCode || '') === e.target.value);
                     setBranch(b || null);
+                    
+                    // Fetch cashiers for selected branch
+                    if (b && (b.branchCode || b.branchid)) {
+                      const branchId = b.branchCode || b.branchid;
+                      const fetchedCashiers = await fetchCashiersByBranch(branchId);
+                      setRows(fetchedCashiers);
+                    } else {
+                      setRows([]);
+                    }
                   }}
                   disabled={branchesLoading}
                   size="small"

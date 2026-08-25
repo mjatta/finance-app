@@ -54,6 +54,10 @@
         "source": "/api/CashManager/branches",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/CashManager/branches?companyId=30"
       },
+      {
+        "source": "/api/CashManager/cashiers",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/CashManager/cashiers"
+      },
 
     {
       "source": "/api/remote-countries/:path*",

@@ -28,8 +28,18 @@ export function useCashManagerBranches() {
         cachedBranches = null
         return
       }
-      setBranches(data)
-      cachedBranches = data
+      
+      // Map API response to expected property names
+      const mappedBranches = Array.isArray(data) ? data.map(branch => ({
+        branchCode: branch.branchid,
+        branchName: branch.br_name ? String(branch.br_name).trim() : '',
+        // Keep original properties for backward compatibility
+        branchid: branch.branchid,
+        br_name: branch.br_name,
+      })) : []
+      
+      setBranches(mappedBranches)
+      cachedBranches = mappedBranches
     } catch (err) {
       setError(err.message || 'Unknown error')
       setBranches([])

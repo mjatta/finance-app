@@ -3837,6 +3837,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => '/api/CashManager/branches?companyId=30',
       },
+      // Proxy for CashManager cashiers endpoint
+      '/api/CashManager/cashiers': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
       '/api/remote-countries': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
