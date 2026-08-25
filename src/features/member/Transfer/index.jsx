@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -22,6 +23,8 @@ import dayjs from 'dayjs';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import { useGetMemberDetails } from './hooks/useGetMemberDetails';
+import { useTransferChainedAPIs, isLoanAccount } from './hooks/useTransferChainedAPIs';
+import { useAuthStore } from '../../../store/authStore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 
 const extractMemberName = (details) => {
@@ -44,8 +47,11 @@ const extractMemberName = (details) => {
 };
 
 export default function Transfer() {
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberDetails();
   const { loading: toMemberLoading, error: toMemberError, fetchMemberDetails: fetchToMemberDetails } = useGetMemberDetails();
+  const { executeAccountTransfer, loading: transferLoading } = useTransferChainedAPIs();
 
   const [transactionType, setTransactionType] = useState('account');
 
@@ -201,37 +207,127 @@ export default function Transfer() {
     setIsSaving(true);
 
     try {
-      const response = await fetch('/api/transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transactionType,
-          fromPostingAccount,
-          sourceAccount: fromAccountNumber.trim(),
-          targetAccount: toAccountNumber.trim(),
-          toPostingAccount,
-          amount: Number(amount),
-          transferDate: transferDate ? transferDate.format('YYYY-MM-DD') : '',
-          ...(isMemberTransfer ? { recipientMemberCode: toCustomerCode.trim() } : {}),
-        }),
-      });
+      if (transactionType === 'account') {
+        // Account Transfer: Use chained API workflow
+        // Get the selected From and To accounts
+        const fromAccount = memberAccounts.find(acc => acc.AccountNumber === fromPostingAccount);
+        const toAccount = toAccountsSource.find(acc => acc.AccountNumber === toPostingAccount);
 
-      if (!response.ok) {
-        throw new Error('Failed to process transfer.');
+        if (!fromAccount || !toAccount) {
+          throw new Error('Invalid account selection');
+        }
+
+        // Build form data for withdrawal (from account)
+        const withdrawalFormData = {
+          accountNumber: fromAccountNumber,
+          contraAccount: fromAccountNumber,
+          controlAccount: '',
+          withdrawalAmount: amount,
+          transactionDate: transferDate ? transferDate.format('YYYY-MM-DD') : new Date().toISOString(),
+          checkNumber: '',
+          productId: fromAccount.ProductId || 5,
+          selectedRegionId: '',
+        };
+
+        // Build form data for deposit/repayment (to account)
+        const depositFormData = {
+          accountNumber: toAccountNumber,
+          contraAccount: toAccountNumber,
+          controlAccount: '',
+          depositAmount: amount,
+          repaymentAmount: amount,
+          transactionDate: transferDate ? transferDate.format('YYYY-MM-DD') : new Date().toISOString(),
+          checkNumber: '',
+          productId: toAccount.ProductId || 5,
+          selectedRegionId: '',
+          totalAccruedInterest: 0,
+          paymentOption: 2, // cash
+        };
+
+        const result = await executeAccountTransfer({
+          fromFormData: withdrawalFormData,
+          toFormData: depositFormData,
+          toAccountName: toAccount.AccountName,
+          userId: user?.username || '',
+          compId: user?.CompId || 30,
+          branchId: user?.BranchId || 1,
+        });
+
+        if (!result || !result.success) {
+          throw new Error(result?.message || 'Transfer failed');
+        }
+
+        setStatusMessage('Account transfer processed successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Customer Administration / Transfer',
+          action: 'Process Account Transfer',
+          message: 'Account transfer processed successfully.',
+        });
+
+        // Clear form
+        handleClear();
+      } else {
+        // Member Transfer: Use chained API workflow
+        // Get the selected From and To accounts
+        const fromAccount = memberAccounts.find(acc => acc.AccountNumber === fromPostingAccount);
+        const toAccount = toMemberAccounts.find(acc => acc.AccountNumber === toPostingAccount);
+
+        if (!fromAccount || !toAccount) {
+          throw new Error('Invalid account selection');
+        }
+
+        // Build form data for withdrawal (from account)
+        const withdrawalFormData = {
+          accountNumber: fromAccountNumber,
+          contraAccount: fromAccountNumber,
+          controlAccount: '',
+          withdrawalAmount: amount,
+          transactionDate: transferDate ? transferDate.format('YYYY-MM-DD') : new Date().toISOString(),
+          checkNumber: '',
+          productId: fromAccount.ProductId || 5,
+          selectedRegionId: '',
+        };
+
+        // Build form data for deposit/repayment (to account)
+        const depositFormData = {
+          accountNumber: toAccountNumber,
+          contraAccount: toAccountNumber,
+          controlAccount: '',
+          depositAmount: amount,
+          repaymentAmount: amount,
+          transactionDate: transferDate ? transferDate.format('YYYY-MM-DD') : new Date().toISOString(),
+          checkNumber: '',
+          productId: toAccount.ProductId || 5,
+          selectedRegionId: '',
+          totalAccruedInterest: 0,
+          paymentOption: 2, // cash
+        };
+
+        const result = await executeAccountTransfer({
+          fromFormData: withdrawalFormData,
+          toFormData: depositFormData,
+          toAccountName: toAccount.AccountName,
+          userId: user?.username || '',
+          compId: user?.CompId || 30,
+          branchId: user?.BranchId || 1,
+        });
+
+        if (!result || !result.success) {
+          throw new Error(result?.message || 'Transfer failed');
+        }
+
+        setStatusMessage('Member transfer processed successfully.');
+        setStatusError(false);
+        notifySaveSuccess({
+          page: 'Customer Administration / Transfer',
+          action: 'Process Member Transfer',
+          message: 'Member transfer processed successfully.',
+        });
+
+        // Clear form
+        handleClear();
       }
-
-      setStatusMessage('Transfer processed successfully.');
-      setStatusError(false);
-      notifySaveSuccess({
-        page: 'Customer Administration / Transfer',
-        action: 'Process Transfer',
-        message: 'Transfer processed successfully.',
-      });
-
-      // Clear form
-      handleClear();
     } catch (error) {
       setStatusMessage(error.message || 'Unable to process transfer.');
       setStatusError(true);
@@ -588,8 +684,8 @@ export default function Transfer() {
         <Button
           variant="contained"
           onClick={handleTransfer}
-          disabled={isSaving}
-          startIcon={isSaving ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <SwapHorizRoundedIcon />}
+          disabled={isSaving || transferLoading}
+          startIcon={isSaving || transferLoading ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <SwapHorizRoundedIcon />}
           sx={{
             backgroundColor: '#667eea',
             '&:hover': { backgroundColor: '#5568d3' },
@@ -617,6 +713,21 @@ export default function Transfer() {
           }}
         >
           Clear
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={() => navigate('/member/account-enquiries')}
+          sx={{
+            fontWeight: 600,
+            paddingX: 3,
+            boxShadow: 'none',
+            textTransform: 'none',
+            color: '#667eea',
+            borderColor: '#667eea',
+            '&:hover': { borderColor: '#5568d3', backgroundColor: '#f0f3ff' },
+          }}
+        >
+          Account Enquiries
         </Button>
       </Box>
     </Box>
