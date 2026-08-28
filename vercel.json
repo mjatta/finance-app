@@ -62,6 +62,10 @@
         "source": "/api/CashManager/post",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/CashManager/post"
       },
+      {
+        "source": "/api/interest-calculation/products/:companyId",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/products/:companyId"
+      },
 
     {
       "source": "/api/remote-countries/:path*",

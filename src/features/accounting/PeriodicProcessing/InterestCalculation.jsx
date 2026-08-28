@@ -1,101 +1,93 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
   Card,
   CardContent,
-  Grid,
-  MenuItem,
-  Paper,
+  LinearProgress,
+  Step,
+  StepLabel,
+  Stepper,
   TextField,
   Typography,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
-import { getFullApiUrl } from '../../../utils/apiConfig';
-import { PercentAdornment } from '../../../components/FieldAdornments';
+import { useInterestCalculationProducts } from './hooks/useInterestCalculationProducts';
 
 export default function InterestCalculation() {
-  const [interestDate, setInterestDate] = useState('');
-  const [calculationMethod, setCalculationMethod] = useState('average');
-  const [annualRate, setAnnualRate] = useState('6');
-  const [rows, setRows] = useState([]);
-  const [statusMessage, setStatusMessage] = useState('');
+  const { products: rows } = useInterestCalculationProducts();
+  const [fromDate, setFromDate] = useState(dayjs().startOf('month'));
+  const [toDate, setToDate] = useState(dayjs().endOf('month'));
+  const [currentStep, setCurrentStep] = useState(0);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadRows = async () => {
-      try {
-        // Use relative path so Vite middleware can intercept
-        const url = getFullApiUrl('/api/periodic-processing');
-        const response = await fetch(url);
-        if (!response.ok) {
-          return;
-        }
-        const payload = await response.json();
-        if (!isMounted) {
-          return;
-        }
-        setRows(Array.isArray(payload?.interestRows) ? payload.interestRows : []);
-      } catch {
-        setRows([]);
-      }
-    };
-
-    loadRows();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const steps = ['Ready', 'Validating', 'Processing', 'Complete'];
 
   const handleCalculate = async () => {
-    const sanitizedRate = Number(annualRate) || 0;
-    const baseBalance = 30000 + rows.length * 1250;
-    const monthlyInterest = ((baseBalance * (sanitizedRate / 100)) / 12).toFixed(2);
-
-    const nextRow = {
-      id: `int-${Date.now()}`,
-      accountNo: `SAV-${String((rows.length + 1) * 29).padStart(5, '0')}`,
-      member: `${calculationMethod} method member`,
-      averageBalance: `GMD ${baseBalance.toLocaleString()}`,
-      rate: `${sanitizedRate}%`,
-      interest: `GMD ${monthlyInterest}`,
-      date: interestDate,
-    };
-
     try {
-      // Use relative path so Vite middleware can intercept
-      const url = getFullApiUrl('/api/periodic-processing');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interestRow: nextRow }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save interest calculation entry.');
-      }
-
-      const payload = await response.json();
-      setRows(Array.isArray(payload?.interestRows) ? payload.interestRows : []);
-      setStatusMessage('Interest calculation completed and saved.');
-      notifySaveSuccess({
-        page: 'Processing / Interest Calculation',
-        action: 'Save Interest Calculation',
-        message: 'Interest calculation completed and saved.',
-      });
+      setCurrentStep(0);
+      
+      // Step 1: Validating
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setCurrentStep(1);
+      
+      // Step 2: Processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setCurrentStep(2);
+      
+      // Step 3: Complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setCurrentStep(3);
     } catch (error) {
-      setStatusMessage('Unable to calculate and save interest.');
-      notifySaveError({
-        page: 'Processing / Interest Calculation',
-        action: 'Save Interest Calculation',
-        message: 'Unable to calculate and save interest.',
-        error,
-      });
+      console.error('Error during calculation:', error);
+      setCurrentStep(0);
+    }
+  };
+
+  const handleInterestCalculation = async () => {
+    console.log('Interest Calculation:', { fromDate, toDate });
+    try {
+      setCurrentStep(0);
+      
+      // Step 1: Validating
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setCurrentStep(1);
+      
+      // Step 2: Processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setCurrentStep(2);
+      
+      // Step 3: Complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setCurrentStep(3);
+    } catch (error) {
+      console.error('Error:', error);
+      setCurrentStep(0);
+    }
+  };
+
+  const handleInterestApplication = async () => {
+    console.log('Interest Application:', { fromDate, toDate });
+    try {
+      setCurrentStep(0);
+      
+      // Step 1: Validating
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setCurrentStep(1);
+      
+      // Step 2: Processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setCurrentStep(2);
+      
+      // Step 3: Complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setCurrentStep(3);
+    } catch (error) {
+      console.error('Error:', error);
+      setCurrentStep(0);
     }
   };
 
@@ -117,7 +109,7 @@ export default function InterestCalculation() {
           </Box>
           <Box sx={{ width: '100%' }}>
             <DataGrid
-              rows={rows.map((row, index) => ({ ...row, id: row.id || `${row.category || 'cat'}-${index}` }))}
+              rows={rows}
               columns={[
                 { field: 'category', headerName: 'Category', flex: 0.9, minWidth: 120, align: 'center', headerAlign: 'center' },
                 { field: 'productName', headerName: 'Product Name', flex: 1.2, minWidth: 140, align: 'center', headerAlign: 'center' },
@@ -125,7 +117,6 @@ export default function InterestCalculation() {
                 { field: 'interestScope', headerName: 'Interest Scope', flex: 1.1, minWidth: 130, align: 'center', headerAlign: 'center' },
                 { field: 'calculationMethod', headerName: 'Calculation Method', flex: 1.2, minWidth: 140, align: 'center', headerAlign: 'center' },
                 { field: 'mandate', headerName: 'Mandate', flex: 0.8, minWidth: 100, align: 'center', headerAlign: 'center' },
-                { field: 'scope', headerName: 'Scope', flex: 0.8, minWidth: 100, align: 'center', headerAlign: 'center' },
               ]}
               pageSizeOptions={[10, 25, 50, 100]}
               initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
@@ -138,6 +129,116 @@ export default function InterestCalculation() {
                 '& .MuiDataGrid-columnHeader': { backgroundColor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 },
               }}
             />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Processing Card */}
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mt: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, fontSize: '0.95rem', color: '#2c3e50' }}>Processing</Typography>
+          
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 3 }}>
+              <DatePicker
+                label="From Date"
+                value={fromDate}
+                onChange={(newValue) => setFromDate(newValue)}
+                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+              />
+              <DatePicker
+                label="To Date"
+                value={toDate}
+                onChange={(newValue) => setToDate(newValue)}
+                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+              />
+            </Box>
+          </LocalizationProvider>
+
+          {/* Progress Bar with Steps */}
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, mb: 2, display: 'block', color: '#666' }}>
+              Processing Progress
+            </Typography>
+            <Box sx={{ width: '100%', mb: 2 }}>
+              <LinearProgress 
+                variant="determinate" 
+                value={(currentStep / (steps.length - 1)) * 100}
+                sx={{ 
+                  height: 8, 
+                  borderRadius: 4,
+                  backgroundColor: '#e0e0e0',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: currentStep === steps.length - 1 ? '#4caf50' : '#667eea',
+                    borderRadius: 4,
+                  }
+                }}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                {steps.map((label, index) => (
+                  <Typography 
+                    key={label}
+                    variant="caption" 
+                    sx={{ 
+                      fontWeight: index <= currentStep ? 600 : 400,
+                      color: index <= currentStep ? '#667eea' : '#999',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+            <Stepper activeStep={currentStep} sx={{ pt: 1 }}>
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </Box>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleCalculate}
+              sx={{
+                backgroundColor: '#667eea',
+                '&:hover': { backgroundColor: '#5568d3' },
+                fontWeight: 600,
+                py: 1.2,
+              }}
+            >
+              Calculate
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleInterestCalculation}
+              sx={{
+                borderColor: '#667eea',
+                color: '#667eea',
+                fontWeight: 600,
+                py: 1.2,
+                '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.04)' },
+              }}
+            >
+              Interest Calculation
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleInterestApplication}
+              sx={{
+                borderColor: '#667eea',
+                color: '#667eea',
+                fontWeight: 600,
+                py: 1.2,
+                '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.04)' },
+              }}
+            >
+              Interest Application
+            </Button>
           </Box>
         </CardContent>
       </Card>

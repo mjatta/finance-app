@@ -4302,6 +4302,12 @@ export default defineConfig({
           changeOrigin: true,
           secure: false,
         },
+        // Proxy interest calculation products endpoint to avoid CORS
+        '/api/interest-calculation/products': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
     },
   },
 })
