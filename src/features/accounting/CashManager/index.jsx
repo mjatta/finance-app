@@ -91,10 +91,14 @@ export default function CashManager() {
           style={{
             width: '100%',
             padding: '8px',
-            border: '1px solid #ccc',
+            border: '2px solid #2196f3',
             borderRadius: '4px',
             textAlign: 'center',
             fontFamily: 'inherit',
+            backgroundColor: '#e3f2fd',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#000000',
           }}
           step="0.01"
         />
