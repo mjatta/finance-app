@@ -58,6 +58,10 @@
         "source": "/api/CashManager/cashiers",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/CashManager/cashiers"
       },
+      {
+        "source": "/api/CashManager/post",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/CashManager/post"
+      },
 
     {
       "source": "/api/remote-countries/:path*",

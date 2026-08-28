@@ -13,29 +13,28 @@ import {
   FormControlLabel,
   Radio,
   Button,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import useCashManagerBranches from './hooks/useCashManagerBranches';
 import { useCashAccounts } from './hooks/useCashAccounts';
 import { useCashiersByBranch } from './hooks/useCashiersByBranch';
+import { useSaveCashManagerTills } from './hooks/useSaveCashManagerTills';
 import { formatCurrency } from '../../../utils/currencyFormatter';
+import { useAuthStore } from '../../../store/authStore';
 
 export default function CashManager() {
   const { branches, loading: branchesLoading } = useCashManagerBranches();
   const { cashAccounts, loading: cashAccountsLoading } = useCashAccounts();
   const { cashiers, loading: cashiersLoading, fetchCashiersByBranch } = useCashiersByBranch();
+  const { saveTillAmounts, saveLoading } = useSaveCashManagerTills();
+  const { user } = useAuthStore();
 
   const [branch, setBranch] = useState(null);
   const [cashAccount, setCashAccount] = useState(null);
   const [processType, setProcessType] = useState('allocation');
   const [rows, setRows] = useState([]);
-  const [editingRows, setEditingRows] = useState({});
-
-  const handleSaveRow = (rowId) => {
-    // TODO: Call API to save the till amount for this cashier
-    console.log('Saving row:', rowId, rows.find(r => r.id === rowId));
-    setEditingRows(prev => ({ ...prev, [rowId]: false }));
-  };
 
   const handleTillAmountChange = (rowId, newValue) => {
     setRows(prev =>
@@ -44,6 +43,20 @@ export default function CashManager() {
       )
     );
   };
+
+  const handleSaveAllChanges = async () => {
+    await saveTillAmounts(rows, branch, cashAccount, processType, user?.username);
+  };
+
+  const totalTillAmount = useMemo(
+    () => rows.reduce((sum, r) => sum + (Number(r.tillAmount) || 0), 0),
+    [rows],
+  );
+
+  const totalEndBalance = useMemo(
+    () => rows.reduce((sum, r) => sum + (Number(r.endBalance) || 0), 0),
+    [rows],
+  );
 
   const totalCurrentBalance = useMemo(
     () => rows.reduce((sum, r) => sum + (Number(r.currentBalance) || 0), 0),
@@ -54,6 +67,15 @@ export default function CashManager() {
     { field: 'cashier', headerName: 'Cashier', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
     { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 160, align: 'center', headerAlign: 'center' },
     { field: 'accountName', headerName: 'Account Name', flex: 1.5, minWidth: 220, align: 'center', headerAlign: 'center' },
+    {
+      field: 'currentBalance',
+      headerName: 'Current Balance',
+      flex: 1,
+      minWidth: 160,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (p) => formatCurrency(p.value || 0),
+    },
     {
       field: 'tillAmount',
       headerName: 'Till Amount',
@@ -86,41 +108,6 @@ export default function CashManager() {
       align: 'center',
       headerAlign: 'center',
       renderCell: (p) => formatCurrency(p.value || 0),
-    },
-    {
-      field: 'currentBalance',
-      headerName: 'Current Balance',
-      flex: 1,
-      minWidth: 160,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (p) => formatCurrency(p.value || 0),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      flex: 1,
-      minWidth: 100,
-      align: 'center',
-      headerAlign: 'center',
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={() => handleSaveRow(params.id)}
-          sx={{
-            backgroundColor: '#667eea',
-            '&:hover': { backgroundColor: '#5568d3' },
-            fontWeight: 600,
-            textTransform: 'none',
-            fontSize: '0.85rem',
-          }}
-        >
-          Save
-        </Button>
-      ),
     },
   ];
 
@@ -159,6 +146,9 @@ export default function CashManager() {
                   }}
                   disabled={branchesLoading}
                   size="small"
+                  required
+                  error={!branch}
+                  helperText={!branch ? 'Branch is required' : ''}
                 >
                   <MenuItem value="">Select Branch</MenuItem>
                   {(branches || []).map((b) => (
@@ -193,6 +183,9 @@ export default function CashManager() {
                   }}
                   disabled={cashAccountsLoading}
                   size="small"
+                  required
+                  error={!cashAccount}
+                  helperText={!cashAccount ? 'Cash Account is required' : ''}
                 >
                   <MenuItem value="">Select Cash Account</MenuItem>
                   {(cashAccounts || []).map((a) => (
@@ -209,13 +202,7 @@ export default function CashManager() {
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
           <CardContent sx={{ p: 0 }}>
             <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Cashier Accounts</Typography>
-                <Chip
-                  label={`Total: ${formatCurrency(totalCurrentBalance)}`}
-                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'primary.contrastText', fontWeight: 700, fontSize: '0.85rem' }}
-                />
-              </Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Cashier Accounts</Typography>
             </Box>
 
             <Box>
@@ -235,10 +222,67 @@ export default function CashManager() {
                 />
               </div>
             </Box>
+
+            {/* Totals Row */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1.5fr 1fr 1fr 1fr',
+                gap: 0,
+                borderTop: '2px solid',
+                borderColor: 'divider',
+                bgcolor: '#f5f7fa',
+              }}
+            >
+              <Box sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#666' }}>
+                  TOTALS
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }} />
+              <Box sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }} />
+              <Box sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                  {formatCurrency(totalCurrentBalance)}
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                  {formatCurrency(totalTillAmount)}
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2, textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                  {formatCurrency(totalEndBalance)}
+                </Typography>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
+      </Box>
+
+      {/* Save Button */}
+      <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+        <Button
+          variant="contained"
+          onClick={handleSaveAllChanges}
+          disabled={saveLoading || !branch || !cashAccount || rows.length === 0}
+          startIcon={saveLoading ? <CircularProgress size={20} color="inherit" /> : null}
+          sx={{
+            backgroundColor: '#667eea',
+            '&:hover': { backgroundColor: '#5568d3' },
+            fontWeight: 600,
+            paddingX: 4,
+            paddingY: 1.5,
+            boxShadow: 'none',
+            textTransform: 'none',
+            color: 'white',
+            fontSize: '1rem',
+          }}
+        >
+          Save Changes
+        </Button>
       </Box>
     </Box>
   );
 }
-

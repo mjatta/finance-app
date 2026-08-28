@@ -4296,6 +4296,12 @@ export default defineConfig({
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/member\/close/, '/api/member/close'),
         },
+        // Proxy CashManager post endpoint to avoid CORS
+        '/api/CashManager/post': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
     },
   },
 })
