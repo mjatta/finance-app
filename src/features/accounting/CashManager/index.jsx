@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -26,6 +27,7 @@ import { formatCurrency } from '../../../utils/currencyFormatter';
 import { useAuthStore } from '../../../store/authStore';
 
 export default function CashManager() {
+  const navigate = useNavigate();
   const { branches, loading: branchesLoading } = useCashManagerBranches();
   const { cashAccounts, loading: cashAccountsLoading } = useCashAccounts();
   const { cashiers, loading: cashiersLoading, fetchCashiersByBranch } = useCashiersByBranch();
@@ -40,6 +42,7 @@ export default function CashManager() {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('success');
   const [saveAttempted, setSaveAttempted] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const handleTillAmountChange = (rowId, newValue) => {
     setRows(prev =>
@@ -47,6 +50,23 @@ export default function CashManager() {
         row.id === rowId ? { ...row, tillAmount: newValue === '' ? '' : (parseFloat(newValue) || 0) } : row
       )
     );
+
+    // Validate till amount against current balance
+    const row = rows.find(r => r.id === rowId);
+    const tillValue = newValue === '' ? 0 : parseFloat(newValue) || 0;
+
+    if (row && tillValue > (row.currentBalance || 0)) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [rowId]: `Cannot exceed current balance (${formatCurrency(row.currentBalance || 0)})`
+      }));
+    } else {
+      setValidationErrors(prev => {
+        const updated = { ...prev };
+        delete updated[rowId];
+        return updated;
+      });
+    }
   };
 
   const handleSaveAllChanges = async () => {
@@ -56,6 +76,14 @@ export default function CashManager() {
     if (result.success) {
       setAlertSeverity('success');
       setAlertMessage('✓ Till amounts saved successfully');
+      
+      // Reset all fields after successful save
+      setRows([]);
+      setBranch(null);
+      setCashAccount(null);
+      setValidationErrors({});
+      setSaveAttempted(false);
+      setProcessType('allocation');
     } else {
       setAlertSeverity('error');
       setAlertMessage(`✗ ${result.errorMessage || 'Failed to save till amounts'}`);
@@ -106,16 +134,17 @@ export default function CashManager() {
           style={{
             width: '100%',
             padding: '8px',
-            border: '2px solid #2196f3',
+            border: validationErrors[params.id] ? '2px solid #d32f2f' : '2px solid #2196f3',
             borderRadius: '4px',
             textAlign: 'center',
             fontFamily: 'inherit',
-            backgroundColor: '#e3f2fd',
+            backgroundColor: validationErrors[params.id] ? '#ffebee' : '#e3f2fd',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#000000',
+            color: validationErrors[params.id] ? '#d32f2f' : '#000000',
           }}
           step="0.01"
+          title={validationErrors[params.id] || ''}
         />
       ),
     },
@@ -146,6 +175,15 @@ export default function CashManager() {
           sx={{ mb: 3, borderRadius: 1.5, fontSize: '0.95rem', fontWeight: 500 }}
         >
           {alertMessage}
+        </Alert>
+      )}
+
+      {Object.keys(validationErrors).length > 0 && (
+        <Alert
+          severity="error"
+          sx={{ mb: 3, borderRadius: 1.5, fontSize: '0.95rem', fontWeight: 500 }}
+        >
+          ✗ Please fix validation errors: {Object.values(validationErrors).join(', ')}
         </Alert>
       )}
 
@@ -290,12 +328,12 @@ export default function CashManager() {
         </Card>
       </Box>
 
-      {/* Save Button */}
+      {/* Save Button and Verification Link */}
       <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
         <Button
           variant="contained"
           onClick={handleSaveAllChanges}
-          disabled={saveLoading || !branch || !cashAccount || rows.length === 0}
+          disabled={saveLoading || !branch || !cashAccount || rows.length === 0 || Object.keys(validationErrors).length > 0}
           startIcon={saveLoading ? <CircularProgress size={20} color="inherit" /> : null}
           sx={{
             backgroundColor: '#667eea',
@@ -310,6 +348,25 @@ export default function CashManager() {
           }}
         >
           Save Changes
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={() => navigate('/accounting/verification')}
+          sx={{
+            borderColor: '#667eea',
+            color: '#667eea',
+            fontWeight: 600,
+            paddingX: 4,
+            paddingY: 1.5,
+            textTransform: 'none',
+            fontSize: '1rem',
+            '&:hover': { 
+              borderColor: '#5568d3',
+              backgroundColor: 'rgba(102, 126, 234, 0.04)'
+            },
+          }}
+        >
+          Go to Verification
         </Button>
       </Box>
 
