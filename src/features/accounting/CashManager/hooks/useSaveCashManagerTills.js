@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { notifySaveSuccess, notifySaveError } from '../../../../utils/saveNotifications';
 
 export const useSaveCashManagerTills = () => {
   const [saveLoading, setSaveLoading] = useState(false);
@@ -10,23 +9,19 @@ export const useSaveCashManagerTills = () => {
 
       // Validate required fields
       if (!branch) {
-        notifySaveError('Please select a branch');
-        return { success: false };
+        return { success: false, errorMessage: 'Please select a branch' };
       }
 
       if (!cashAccount) {
-        notifySaveError('Please select a cash account');
-        return { success: false };
+        return { success: false, errorMessage: 'Please select a cash account' };
       }
 
       if (!rows || rows.length === 0) {
-        notifySaveError('No cashier data to save');
-        return { success: false };
+        return { success: false, errorMessage: 'No cashier data to save' };
       }
 
       if (!userId) {
-        notifySaveError('User not authenticated');
-        return { success: false };
+        return { success: false, errorMessage: 'User not authenticated' };
       }
 
       // Build items array with till amounts
@@ -58,18 +53,25 @@ export const useSaveCashManagerTills = () => {
         body: JSON.stringify(payload),
       });
 
+      const result = await response.json();
+
+      // Check if response indicates an error (either HTTP error or API error)
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Extract error message from response
+        const errorMessage = result?.Message || result?.message || result?.error || `HTTP error! status: ${response.status}`;
+        return { success: false, errorMessage };
       }
 
-      const result = await response.json();
-      notifySaveSuccess('Till amounts saved successfully');
+      // Check for API-level errors even if HTTP status is 200
+      if (result?.Message && result.Message.toLowerCase().includes('error')) {
+        return { success: false, errorMessage: result.Message };
+      }
+
       console.log('Save result:', result);
       return { success: true, data: result };
     } catch (error) {
       console.error('Error saving till amounts:', error);
-      notifySaveError(error.message || 'Failed to save till amounts');
-      return { success: false, error: error.message };
+      return { success: false, errorMessage: error.message || 'Failed to save till amounts' };
     } finally {
       setSaveLoading(false);
     }

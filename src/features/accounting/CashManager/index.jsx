@@ -14,6 +14,7 @@ import {
   Radio,
   Button,
   Alert,
+  Backdrop,
   CircularProgress,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
@@ -35,17 +36,31 @@ export default function CashManager() {
   const [cashAccount, setCashAccount] = useState(null);
   const [processType, setProcessType] = useState('allocation');
   const [rows, setRows] = useState([]);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('success');
+  const [saveAttempted, setSaveAttempted] = useState(false);
 
   const handleTillAmountChange = (rowId, newValue) => {
     setRows(prev =>
       prev.map(row =>
-        row.id === rowId ? { ...row, tillAmount: parseFloat(newValue) || 0 } : row
+        row.id === rowId ? { ...row, tillAmount: newValue === '' ? '' : (parseFloat(newValue) || 0) } : row
       )
     );
   };
 
   const handleSaveAllChanges = async () => {
-    await saveTillAmounts(rows, branch, cashAccount, processType, user?.username);
+    setSaveAttempted(true);
+    const result = await saveTillAmounts(rows, branch, cashAccount, processType, user?.username);
+    
+    if (result.success) {
+      setAlertSeverity('success');
+      setAlertMessage('✓ Till amounts saved successfully');
+    } else {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${result.errorMessage || 'Failed to save till amounts'}`);
+    }
+    setAlertOpen(true);
   };
 
   const totalTillAmount = useMemo(
@@ -86,7 +101,7 @@ export default function CashManager() {
       renderCell: (params) => (
         <input
           type="number"
-          value={params.value || 0}
+          value={params.value}
           onChange={(e) => handleTillAmountChange(params.id, e.target.value)}
           style={{
             width: '100%',
@@ -124,6 +139,16 @@ export default function CashManager() {
         </CardContent>
       </Card>
 
+      {alertOpen && (
+        <Alert
+          severity={alertSeverity}
+          onClose={() => setAlertOpen(false)}
+          sx={{ mb: 3, borderRadius: 1.5, fontSize: '0.95rem', fontWeight: 500 }}
+        >
+          {alertMessage}
+        </Alert>
+      )}
+
       <Box sx={{ display: 'grid', gap: 3, width: '100%', gridTemplateColumns: { xs: '1fr', md: '25% 1fr' } }}>
         <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
@@ -151,8 +176,8 @@ export default function CashManager() {
                   disabled={branchesLoading}
                   size="small"
                   required
-                  error={!branch}
-                  helperText={!branch ? 'Branch is required' : ''}
+                  error={saveAttempted && !branch}
+                  helperText={saveAttempted && !branch ? 'Branch is required' : ''}
                 >
                   <MenuItem value="">Select Branch</MenuItem>
                   {(branches || []).map((b) => (
@@ -188,8 +213,8 @@ export default function CashManager() {
                   disabled={cashAccountsLoading}
                   size="small"
                   required
-                  error={!cashAccount}
-                  helperText={!cashAccount ? 'Cash Account is required' : ''}
+                  error={saveAttempted && !cashAccount}
+                  helperText={saveAttempted && !cashAccount ? 'Cash Account is required' : ''}
                 >
                   <MenuItem value="">Select Cash Account</MenuItem>
                   {(cashAccounts || []).map((a) => (
@@ -287,6 +312,26 @@ export default function CashManager() {
           Save Changes
         </Button>
       </Box>
+
+      {/* Loading Overlay */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+        }}
+        open={saveLoading}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+          Saving Changes...
+        </Typography>
+      </Backdrop>
     </Box>
   );
 }
