@@ -339,7 +339,7 @@ export default function InterestCalculation() {
                 py: 1.2,
               }}
             >
-              Calculate
+              MINIMUM BALANCE CALCULATION
             </Button>
             <Button
               variant="outlined"
@@ -353,7 +353,7 @@ export default function InterestCalculation() {
                 '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.04)' },
               }}
             >
-              Interest Calculation
+              SAVINGS INTEREST CALCULATION
             </Button>
             <Button
               variant="outlined"
@@ -366,7 +366,7 @@ export default function InterestCalculation() {
                 '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.04)' },
               }}
             >
-              Interest Application
+              Interest Applied
             </Button>
           </Box>
         </CardContent>
