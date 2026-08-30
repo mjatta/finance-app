@@ -24,17 +24,23 @@ import { useLastYearMinimumBalance } from './hooks/useLastYearMinimumBalance';
 import { useMonthMinimumBalance } from './hooks/useMonthMinimumBalance';
 import { useCalculateMinimumBalance } from './hooks/useCalculateMinimumBalance';
 import { useCalculateAccruedInterest } from './hooks/useCalculateAccruedInterest';
+import { useGetProductRate } from './hooks/useGetProductRate';
+import { useApplyInterest } from './hooks/useApplyInterest';
 
 export default function InterestCalculation() {
   const user = useAuthStore((state) => state.user);
   const companyId = user?.CompId || 30;
+  const userId = user?.username || 'ALA';
+  const branchId = user?.BranchId || 16;
   const { products: rows } = useInterestCalculationProducts();
   const { resetMinimumBalance, loading: resetting } = useResetMinimumBalance();
   const { getLastYearMinimumBalance, loading: loadingLastYear } = useLastYearMinimumBalance();
   const { getMonthMinimumBalance, loading: loadingMonth } = useMonthMinimumBalance();
   const { calculateMinimumBalance, loading: calculatingBalance } = useCalculateMinimumBalance();
   const { calculateAccruedInterest, loading: calculatingAccruedInterest } = useCalculateAccruedInterest();
-  const calculating = resetting || calculatingAccruedInterest || loadingLastYear || loadingMonth || calculatingBalance;
+  const { getProductRate, loading: loadingProductRate } = useGetProductRate();
+  const { applyInterest, loading: applyingInterest } = useApplyInterest();
+  const calculating = resetting || calculatingAccruedInterest || loadingLastYear || loadingMonth || calculatingBalance || loadingProductRate || applyingInterest;
   const [fromDate, setFromDate] = useState(dayjs().startOf('month'));
   const [toDate, setToDate] = useState(dayjs().endOf('month'));
   const [currentStep, setCurrentStep] = useState(0);
@@ -180,25 +186,52 @@ export default function InterestCalculation() {
   };
 
   const handleInterestApplication = async () => {
-    console.log('Interest Application:', { fromDate, toDate });
-    try {
-      setCurrentStep(0);
-      
-      // Step 1: Validating
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCurrentStep(1);
-      
-      // Step 2: Processing
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setCurrentStep(2);
-      
-      // Step 3: Complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCurrentStep(3);
-    } catch (error) {
-      console.error('Error:', error);
-      setCurrentStep(0);
+    if (!selectedProductId) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ Please select a product before applying interest');
+      setAlertOpen(true);
+      return;
     }
+
+    // Step 1: Get product rate and account information
+    const rateResult = await getProductRate({ productId: selectedProductId });
+    if (!rateResult.success) {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${rateResult.errorMessage || 'Failed to fetch product rate'}`);
+      setAlertOpen(true);
+      return;
+    }
+
+    const savingsExpenseAccount = rateResult.data?.savingsExpenseAccount;
+    const controlAccount = rateResult.data?.controlAccount;
+
+    if (!savingsExpenseAccount || !controlAccount) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ Missing account information from product rate response');
+      setAlertOpen(true);
+      return;
+    }
+
+    // Step 2: Apply interest using the extracted accounts
+    const processDate = new Date().toISOString();
+    const applyResult = await applyInterest({
+      companyId,
+      userId,
+      branchId,
+      currencyCode: 1,
+      processDate,
+      savingsControlAccount: controlAccount,
+      savingsExpenseAccount,
+    });
+
+    if (applyResult.success) {
+      setAlertSeverity('success');
+      setAlertMessage('✓ Interest applied successfully');
+    } else {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${applyResult.errorMessage || 'Failed to apply interest'}`);
+    }
+    setAlertOpen(true);
   };
 
   return (

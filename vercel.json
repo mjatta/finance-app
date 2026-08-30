@@ -74,6 +74,14 @@
         "source": "/api/interest-calculation/accrued-interest/:path*",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/accrued-interest/:path*"
       },
+      {
+        "source": "/api/interest-calculation/product/:path*",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/product/:path*"
+      },
+      {
+        "source": "/api/interest-calculation/interest/:path*",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/interest/:path*"
+      },
 
     {
       "source": "/api/remote-countries/:path*",
