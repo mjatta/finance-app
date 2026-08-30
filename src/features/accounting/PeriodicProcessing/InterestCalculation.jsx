@@ -17,6 +17,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { useAuthStore } from '../../../store/authStore';
 import { useInterestCalculationProducts } from './hooks/useInterestCalculationProducts';
 import { useResetMinimumBalance } from './hooks/useResetMinimumBalance';
 import { useLastYearMinimumBalance } from './hooks/useLastYearMinimumBalance';
@@ -25,22 +26,25 @@ import { useCalculateMinimumBalance } from './hooks/useCalculateMinimumBalance';
 import { useCalculateAccruedInterest } from './hooks/useCalculateAccruedInterest';
 
 export default function InterestCalculation() {
+  const user = useAuthStore((state) => state.user);
+  const companyId = user?.CompId || 30;
   const { products: rows } = useInterestCalculationProducts();
   const { resetMinimumBalance, loading: resetting } = useResetMinimumBalance();
   const { getLastYearMinimumBalance, loading: loadingLastYear } = useLastYearMinimumBalance();
   const { getMonthMinimumBalance, loading: loadingMonth } = useMonthMinimumBalance();
   const { calculateMinimumBalance, loading: calculatingBalance } = useCalculateMinimumBalance();
   const { calculateAccruedInterest, loading: calculatingAccruedInterest } = useCalculateAccruedInterest();
-  const calculating = resetting || loadingLastYear || loadingMonth || calculatingBalance;
+  const calculating = resetting || calculatingAccruedInterest || loadingLastYear || loadingMonth || calculatingBalance;
   const [fromDate, setFromDate] = useState(dayjs().startOf('month'));
   const [toDate, setToDate] = useState(dayjs().endOf('month'));
   const [currentStep, setCurrentStep] = useState(0);
+  const [progressPercent, setProgressPercent] = useState(0);
   const [rowSelectionModel, setRowSelectionModel] = useState({ type: 'include', ids: new Set() });
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('success');
 
-  const steps = ['Reset', 'Last Year', 'Month', 'Calculate'];
+  const steps = ['Reset', 'Accrued Interest', 'Last Year (Pass 1)', 'Last Year (Pass 2)', 'Month', 'Calculate'];
 
   const selectedProductId = Array.from(rowSelectionModel?.ids || [])[0];
 
@@ -52,7 +56,12 @@ export default function InterestCalculation() {
       return;
     }
 
+    const startYear = fromDate.year();
+    const startMonth = fromDate.month() + 1;
+    const endMonth = toDate.month() + 1;
+
     setCurrentStep(0);
+    setProgressPercent(0);
 
     // Step 1: Reset
     const resetResult = await resetMinimumBalance();
@@ -62,37 +71,81 @@ export default function InterestCalculation() {
       setAlertOpen(true);
       return;
     }
+    setProgressPercent(10);
 
-    // Step 2: Last Year
+    // Step 2: Accrued Interest Calculate - returns the list of accounts to process
     setCurrentStep(1);
-    const lastYearResult = await getLastYearMinimumBalance();
-    if (!lastYearResult.success) {
+    const accruedResult = await calculateAccruedInterest({ companyId, productId: selectedProductId, startYear, startMonth, endMonth });
+    if (!accruedResult.success) {
       setAlertSeverity('error');
-      setAlertMessage(`✗ ${lastYearResult.errorMessage || 'Failed to fetch last year data'}`);
+      setAlertMessage(`✗ ${accruedResult.errorMessage || 'Accrued interest calculation failed'}`);
+      setAlertOpen(true);
+      return;
+    }
+    setProgressPercent(20);
+
+    const accountNumbers = (accruedResult.data?.results || [])
+      .map((item) => item?.Account ?? item?.account)
+      .filter(Boolean);
+
+    if (accountNumbers.length === 0) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ No accounts returned from accrued interest calculation');
       setAlertOpen(true);
       return;
     }
 
-    // Step 3: Month
+    const totalLoopCalls = accountNumbers.length * 3;
+    let completedLoopCalls = 0;
+
+    // Step 3: Last Year - Pass 1 (sequentially, one call per account)
     setCurrentStep(2);
-    const monthResult = await getMonthMinimumBalance();
-    if (!monthResult.success) {
-      setAlertSeverity('error');
-      setAlertMessage(`✗ ${monthResult.errorMessage || 'Failed to fetch month data'}`);
-      setAlertOpen(true);
-      return;
+    for (const account of accountNumbers) {
+      const result = await getLastYearMinimumBalance({ companyId, year: startYear, account });
+      if (!result.success) {
+        setAlertSeverity('error');
+        setAlertMessage(`✗ ${result.errorMessage || `Failed processing account ${account}`}`);
+        setAlertOpen(true);
+        return;
+      }
+      completedLoopCalls += 1;
+      setProgressPercent(20 + Math.round((completedLoopCalls / totalLoopCalls) * 70));
     }
 
-    // Step 4: Calculate
+    // Step 4: Last Year - Pass 2 (sequentially, one call per account)
     setCurrentStep(3);
-    const calculateResult = await calculateMinimumBalance({
-      productId: selectedProductId,
-      startYear: fromDate.year(),
-      startMonth: fromDate.month() + 1,
-      endMonth: toDate.month() + 1,
-    });
+    for (const account of accountNumbers) {
+      const result = await getLastYearMinimumBalance({ companyId, year: startYear, account });
+      if (!result.success) {
+        setAlertSeverity('error');
+        setAlertMessage(`✗ ${result.errorMessage || `Failed processing account ${account}`}`);
+        setAlertOpen(true);
+        return;
+      }
+      completedLoopCalls += 1;
+      setProgressPercent(20 + Math.round((completedLoopCalls / totalLoopCalls) * 70));
+    }
+
+    // Step 5: Month (sequentially, one call per account)
+    setCurrentStep(4);
+    for (const account of accountNumbers) {
+      const result = await getMonthMinimumBalance({ companyId, year: startYear, month: startMonth, account });
+      if (!result.success) {
+        setAlertSeverity('error');
+        setAlertMessage(`✗ ${result.errorMessage || `Failed processing account ${account}`}`);
+        setAlertOpen(true);
+        return;
+      }
+      completedLoopCalls += 1;
+      setProgressPercent(20 + Math.round((completedLoopCalls / totalLoopCalls) * 70));
+    }
+
+    // Step 6: Final Calculate
+    setCurrentStep(5);
+    const calculateResult = await calculateMinimumBalance({ companyId, productId: selectedProductId, startYear, startMonth, endMonth });
 
     if (calculateResult.success) {
+      setProgressPercent(100);
       setCurrentStep(steps.length);
       setAlertSeverity('success');
       setAlertMessage('✓ Interest calculation completed successfully');
@@ -113,6 +166,7 @@ export default function InterestCalculation() {
 
     setCurrentStep(0);
     const result = await calculateAccruedInterest({
+      companyId,
       productId: selectedProductId,
       startYear: fromDate.year(),
       startMonth: fromDate.month() + 1,
@@ -236,13 +290,13 @@ export default function InterestCalculation() {
             <Box sx={{ width: '100%', mb: 2 }}>
               <LinearProgress 
                 variant="determinate" 
-                value={Math.min(100, (currentStep / (steps.length - 1)) * 100)}
+                value={progressPercent}
                 sx={{ 
                   height: 8, 
                   borderRadius: 4,
                   backgroundColor: '#e0e0e0',
                   '& .MuiLinearProgress-bar': {
-                    backgroundColor: currentStep >= steps.length - 1 ? '#4caf50' : '#667eea',
+                    backgroundColor: progressPercent >= 100 ? '#4caf50' : '#667eea',
                     borderRadius: 4,
                   }
                 }}
@@ -290,7 +344,7 @@ export default function InterestCalculation() {
             <Button
               variant="outlined"
               onClick={handleInterestCalculation}
-              disabled={calculatingAccruedInterest}
+              disabled={calculating}
               sx={{
                 borderColor: '#667eea',
                 color: '#667eea',
