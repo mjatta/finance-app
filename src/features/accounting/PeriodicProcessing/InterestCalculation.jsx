@@ -22,6 +22,7 @@ import { useResetMinimumBalance } from './hooks/useResetMinimumBalance';
 import { useLastYearMinimumBalance } from './hooks/useLastYearMinimumBalance';
 import { useMonthMinimumBalance } from './hooks/useMonthMinimumBalance';
 import { useCalculateMinimumBalance } from './hooks/useCalculateMinimumBalance';
+import { useCalculateAccruedInterest } from './hooks/useCalculateAccruedInterest';
 
 export default function InterestCalculation() {
   const { products: rows } = useInterestCalculationProducts();
@@ -29,6 +30,7 @@ export default function InterestCalculation() {
   const { getLastYearMinimumBalance, loading: loadingLastYear } = useLastYearMinimumBalance();
   const { getMonthMinimumBalance, loading: loadingMonth } = useMonthMinimumBalance();
   const { calculateMinimumBalance, loading: calculatingBalance } = useCalculateMinimumBalance();
+  const { calculateAccruedInterest, loading: calculatingAccruedInterest } = useCalculateAccruedInterest();
   const calculating = resetting || loadingLastYear || loadingMonth || calculatingBalance;
   const [fromDate, setFromDate] = useState(dayjs().startOf('month'));
   const [toDate, setToDate] = useState(dayjs().endOf('month'));
@@ -102,25 +104,30 @@ export default function InterestCalculation() {
   };
 
   const handleInterestCalculation = async () => {
-    console.log('Interest Calculation:', { fromDate, toDate });
-    try {
-      setCurrentStep(0);
-      
-      // Step 1: Validating
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCurrentStep(1);
-      
-      // Step 2: Processing
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setCurrentStep(2);
-      
-      // Step 3: Complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCurrentStep(3);
-    } catch (error) {
-      console.error('Error:', error);
-      setCurrentStep(0);
+    if (!selectedProductId) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ Please select a product before calculating');
+      setAlertOpen(true);
+      return;
     }
+
+    setCurrentStep(0);
+    const result = await calculateAccruedInterest({
+      productId: selectedProductId,
+      startYear: fromDate.year(),
+      startMonth: fromDate.month() + 1,
+      endMonth: toDate.month() + 1,
+    });
+
+    if (result.success) {
+      setCurrentStep(steps.length);
+      setAlertSeverity('success');
+      setAlertMessage('✓ Interest calculation completed successfully');
+    } else {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${result.errorMessage || 'Interest calculation failed'}`);
+    }
+    setAlertOpen(true);
   };
 
   const handleInterestApplication = async () => {
@@ -283,6 +290,7 @@ export default function InterestCalculation() {
             <Button
               variant="outlined"
               onClick={handleInterestCalculation}
+              disabled={calculatingAccruedInterest}
               sx={{
                 borderColor: '#667eea',
                 color: '#667eea',

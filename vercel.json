@@ -70,6 +70,10 @@
         "source": "/api/interest-calculation/minimum-balance/:path*",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/minimum-balance/:path*"
       },
+      {
+        "source": "/api/interest-calculation/accrued-interest/:path*",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/accrued-interest/:path*"
+      },
 
     {
       "source": "/api/remote-countries/:path*",
