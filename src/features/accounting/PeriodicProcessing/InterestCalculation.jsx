@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   LinearProgress,
   Step,
   StepLabel,
@@ -49,12 +51,21 @@ export default function InterestCalculation() {
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('success');
+  const [minBalanceCompleted, setMinBalanceCompleted] = useState(false);
+  const [savingsInterestCompleted, setSavingsInterestCompleted] = useState(false);
 
   const steps = ['Reset', 'Accrued Interest', 'Last Year (Pass 1)', 'Last Year (Pass 2)', 'Month', 'Calculate'];
 
   const selectedProductId = Array.from(rowSelectionModel?.ids || [])[0];
 
   const handleCalculate = async () => {
+    if (!fromDate || !toDate) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ From Date and To Date are required');
+      setAlertOpen(true);
+      return;
+    }
+
     if (!selectedProductId) {
       setAlertSeverity('error');
       setAlertMessage('✗ Please select a product before calculating');
@@ -153,6 +164,7 @@ export default function InterestCalculation() {
     if (calculateResult.success) {
       setProgressPercent(100);
       setCurrentStep(steps.length);
+      setMinBalanceCompleted(true);
       setAlertSeverity('success');
       setAlertMessage('✓ Interest calculation completed successfully');
     } else {
@@ -176,6 +188,7 @@ export default function InterestCalculation() {
     });
 
     if (result.success) {
+      setSavingsInterestCompleted(true);
       setAlertSeverity('success');
       setAlertMessage('✓ Savings interest calculation completed successfully');
     } else {
@@ -299,13 +312,15 @@ export default function InterestCalculation() {
                 label="From Date"
                 value={fromDate}
                 onChange={(newValue) => setFromDate(newValue)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                slotProps={{ textField: { fullWidth: true, size: 'small', required: true } }}
+                sx={{ '& .MuiFormLabel-asterisk': { color: 'red' } }}
               />
               <DatePicker
                 label="To Date"
                 value={toDate}
                 onChange={(newValue) => setToDate(newValue)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                slotProps={{ textField: { fullWidth: true, size: 'small', required: true } }}
+                sx={{ '& .MuiFormLabel-asterisk': { color: 'red' } }}
               />
             </Box>
           </LocalizationProvider>
@@ -359,7 +374,7 @@ export default function InterestCalculation() {
             <Button
               variant="contained"
               onClick={handleCalculate}
-              disabled={calculating}
+              disabled={!selectedProductId || calculating}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },
@@ -372,7 +387,7 @@ export default function InterestCalculation() {
             <Button
               variant="outlined"
               onClick={handleInterestCalculation}
-              disabled={calculating}
+              disabled={!selectedProductId || !minBalanceCompleted || calculating}
               sx={{
                 borderColor: '#667eea',
                 color: '#667eea',
@@ -386,6 +401,7 @@ export default function InterestCalculation() {
             <Button
               variant="outlined"
               onClick={handleInterestApplication}
+              disabled={!selectedProductId || !savingsInterestCompleted || calculating}
               sx={{
                 borderColor: '#667eea',
                 color: '#667eea',
@@ -400,6 +416,26 @@ export default function InterestCalculation() {
         </CardContent>
       </Card>
       </Box>
+
+      {/* Overlay Backdrop for API Operations */}
+      <Backdrop
+        open={calculatingAccruedInterest || applyingInterest}
+        sx={{
+          zIndex: 1300,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress sx={{ color: 'white', mb: 2 }} />
+          <Typography sx={{ color: 'white', fontWeight: 600, fontSize: '1.1rem' }}>
+            {calculatingAccruedInterest ? 'Calculating Savings Interest...' : 'Applying Interest...'}
+          </Typography>
+        </Box>
+      </Backdrop>
     </Box>
   );
 }
