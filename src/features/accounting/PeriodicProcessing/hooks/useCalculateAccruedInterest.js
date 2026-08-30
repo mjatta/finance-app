@@ -3,27 +3,31 @@ import { getFullApiUrl } from '../../../../utils/apiConfig';
 
 /**
  * Hook for POST /api/interest-calculation/accrued-interest/calculate
- * Body: { CompanyId, ProductId, StartYear, StartMonth, EndMonth }
+ * Body: { CompanyId, ProductId } OR { CompanyId, ProductId, StartYear, StartMonth, EndMonth }
+ * Dates are optional; used only when provided.
  */
 export function useCalculateAccruedInterest() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const calculateAccruedInterest = async ({ companyId = 30, productId, startYear, startMonth, endMonth }) => {
+  const calculateAccruedInterest = async ({ companyId = 30, productId, startYear, startMonth, endMonth } = {}) => {
     setLoading(true);
     setError(null);
     try {
       const url = getFullApiUrl('/api/interest-calculation/accrued-interest/calculate');
+      const bodyPayload = {
+        CompanyId: companyId,
+        ProductId: productId,
+      };
+      // Include date fields only if provided
+      if (startYear !== undefined) bodyPayload.StartYear = startYear;
+      if (startMonth !== undefined) bodyPayload.StartMonth = startMonth;
+      if (endMonth !== undefined) bodyPayload.EndMonth = endMonth;
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          CompanyId: companyId,
-          ProductId: productId,
-          StartYear: startYear,
-          StartMonth: startMonth,
-          EndMonth: endMonth,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       let payload = null;

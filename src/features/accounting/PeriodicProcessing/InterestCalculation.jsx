@@ -164,22 +164,17 @@ export default function InterestCalculation() {
       return;
     }
 
-    setCurrentStep(0);
     const result = await calculateAccruedInterest({
       companyId,
       productId: selectedProductId,
-      startYear: fromDate.year(),
-      startMonth: fromDate.month() + 1,
-      endMonth: toDate.month() + 1,
     });
 
     if (result.success) {
-      setCurrentStep(steps.length);
       setAlertSeverity('success');
-      setAlertMessage('✓ Interest calculation completed successfully');
+      setAlertMessage('✓ Savings interest calculation completed successfully');
     } else {
       setAlertSeverity('error');
-      setAlertMessage(`✗ ${result.errorMessage || 'Interest calculation failed'}`);
+      setAlertMessage(`✗ ${result.errorMessage || 'Savings interest calculation failed'}`);
     }
     setAlertOpen(true);
   };
