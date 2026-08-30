@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -17,34 +18,87 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useInterestCalculationProducts } from './hooks/useInterestCalculationProducts';
+import { useResetMinimumBalance } from './hooks/useResetMinimumBalance';
+import { useLastYearMinimumBalance } from './hooks/useLastYearMinimumBalance';
+import { useMonthMinimumBalance } from './hooks/useMonthMinimumBalance';
+import { useCalculateMinimumBalance } from './hooks/useCalculateMinimumBalance';
 
 export default function InterestCalculation() {
   const { products: rows } = useInterestCalculationProducts();
+  const { resetMinimumBalance, loading: resetting } = useResetMinimumBalance();
+  const { getLastYearMinimumBalance, loading: loadingLastYear } = useLastYearMinimumBalance();
+  const { getMonthMinimumBalance, loading: loadingMonth } = useMonthMinimumBalance();
+  const { calculateMinimumBalance, loading: calculatingBalance } = useCalculateMinimumBalance();
+  const calculating = resetting || loadingLastYear || loadingMonth || calculatingBalance;
   const [fromDate, setFromDate] = useState(dayjs().startOf('month'));
   const [toDate, setToDate] = useState(dayjs().endOf('month'));
   const [currentStep, setCurrentStep] = useState(0);
+  const [rowSelectionModel, setRowSelectionModel] = useState({ type: 'include', ids: new Set() });
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('success');
 
-  const steps = ['Ready', 'Validating', 'Processing', 'Complete'];
+  const steps = ['Reset', 'Last Year', 'Month', 'Calculate'];
+
+  const selectedProductId = Array.from(rowSelectionModel?.ids || [])[0];
 
   const handleCalculate = async () => {
-    try {
-      setCurrentStep(0);
-      
-      // Step 1: Validating
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCurrentStep(1);
-      
-      // Step 2: Processing
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setCurrentStep(2);
-      
-      // Step 3: Complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCurrentStep(3);
-    } catch (error) {
-      console.error('Error during calculation:', error);
-      setCurrentStep(0);
+    if (!selectedProductId) {
+      setAlertSeverity('error');
+      setAlertMessage('✗ Please select a product before calculating');
+      setAlertOpen(true);
+      return;
     }
+
+    setCurrentStep(0);
+
+    // Step 1: Reset
+    const resetResult = await resetMinimumBalance();
+    if (!resetResult.success) {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${resetResult.errorMessage || 'Reset failed'}`);
+      setAlertOpen(true);
+      return;
+    }
+
+    // Step 2: Last Year
+    setCurrentStep(1);
+    const lastYearResult = await getLastYearMinimumBalance();
+    if (!lastYearResult.success) {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${lastYearResult.errorMessage || 'Failed to fetch last year data'}`);
+      setAlertOpen(true);
+      return;
+    }
+
+    // Step 3: Month
+    setCurrentStep(2);
+    const monthResult = await getMonthMinimumBalance();
+    if (!monthResult.success) {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${monthResult.errorMessage || 'Failed to fetch month data'}`);
+      setAlertOpen(true);
+      return;
+    }
+
+    // Step 4: Calculate
+    setCurrentStep(3);
+    const calculateResult = await calculateMinimumBalance({
+      productId: selectedProductId,
+      startYear: fromDate.year(),
+      startMonth: fromDate.month() + 1,
+      endMonth: toDate.month() + 1,
+    });
+
+    if (calculateResult.success) {
+      setCurrentStep(steps.length);
+      setAlertSeverity('success');
+      setAlertMessage('✓ Interest calculation completed successfully');
+    } else {
+      setAlertSeverity('error');
+      setAlertMessage(`✗ ${calculateResult.errorMessage || 'Interest calculation failed'}`);
+    }
+    setAlertOpen(true);
   };
 
   const handleInterestCalculation = async () => {
@@ -100,6 +154,16 @@ export default function InterestCalculation() {
         </CardContent>
       </Card>
 
+      {alertOpen && (
+        <Alert
+          severity={alertSeverity}
+          onClose={() => setAlertOpen(false)}
+          sx={{ mb: 2, borderRadius: 1.5, fontSize: '0.95rem', fontWeight: 500 }}
+        >
+          {alertMessage}
+        </Alert>
+      )}
+
       <Box sx={{ display: 'grid', gap: 3, width: '100%' }}>
 
       <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -121,7 +185,9 @@ export default function InterestCalculation() {
               pageSizeOptions={[10, 25, 50, 100]}
               initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
               checkboxSelection
-              disableRowSelectionOnClick
+              disableMultipleRowSelection
+              rowSelectionModel={rowSelectionModel}
+              onRowSelectionModelChange={(newModel) => setRowSelectionModel(newModel)}
               density="compact"
               sx={{
                 border: 'none',
@@ -163,13 +229,13 @@ export default function InterestCalculation() {
             <Box sx={{ width: '100%', mb: 2 }}>
               <LinearProgress 
                 variant="determinate" 
-                value={(currentStep / (steps.length - 1)) * 100}
+                value={Math.min(100, (currentStep / (steps.length - 1)) * 100)}
                 sx={{ 
                   height: 8, 
                   borderRadius: 4,
                   backgroundColor: '#e0e0e0',
                   '& .MuiLinearProgress-bar': {
-                    backgroundColor: currentStep === steps.length - 1 ? '#4caf50' : '#667eea',
+                    backgroundColor: currentStep >= steps.length - 1 ? '#4caf50' : '#667eea',
                     borderRadius: 4,
                   }
                 }}
@@ -204,6 +270,7 @@ export default function InterestCalculation() {
             <Button
               variant="contained"
               onClick={handleCalculate}
+              disabled={calculating}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },

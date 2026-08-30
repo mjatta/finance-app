@@ -66,6 +66,10 @@
         "source": "/api/interest-calculation/products/:companyId",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/products/:companyId"
       },
+      {
+        "source": "/api/interest-calculation/minimum-balance/:path*",
+        "destination": "https://alakuyateh-001-site10.atempurl.com/api/interest-calculation/minimum-balance/:path*"
+      },
 
     {
       "source": "/api/remote-countries/:path*",
