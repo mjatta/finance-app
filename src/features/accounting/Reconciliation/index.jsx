@@ -64,9 +64,8 @@ export default function AccountReconciliation() {
     }
   };
 
-  const allReconciled = rows.length > 0 && rows.every((r) => r.reconciled);
-  const endBalanceMatches = endBalance !== '' && Math.abs(Number(endBalance) - totals.balance) < 0.01;
-  const canConfirmAllReconcile = allReconciled && endBalanceMatches;
+  const endBalanceMatches = endBalance !== '' && Math.abs(Number(endBalance) - totals.difference) < 0.01;
+  const canConfirmAllReconcile = endBalanceMatches;
 
   const handleConfirmAllReconcile = async () => {
     if (!canConfirmAllReconcile) return;
