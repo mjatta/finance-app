@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -8,6 +9,7 @@ import {
   Alert,
   Collapse,
   IconButton,
+  Button,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -17,6 +19,7 @@ import useGlManagement from './hooks/useGlManagement';
 import useGlSubgroups from './hooks/useGlSubgroups';
 import useGlAccountTransactions from './hooks/useGlAccountTransactions';
 import { formatCurrency } from '../../../utils/currencyFormatter';
+import { downloadFile } from '../../../utils/downloadFile';
 
 function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accountsData, accountsLoading, selectedAccountNumber, onSelectAccount, transactionsData, transactionsLoading, isExpanded, onToggleExpand }) {
   const subGroupRows = (Array.isArray(category.SubGroups) ? category.SubGroups : []).map((sg, idx) => ({
@@ -36,8 +39,6 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
         accountNumber: a.AccountNumber,
         accountName: a.AccountName,
         bookBalance: Number(a.BookBalance || 0),
-        budgetAmount: Number(a.BudgetAmount || 0),
-        actualAmount: Number(a.ActualAmount || 0),
       }))
     : [];
 
@@ -61,8 +62,6 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
     { field: 'accountNumber', headerName: 'Account Number', flex: 1, minWidth: 150, align: 'center', headerAlign: 'center' },
     { field: 'accountName', headerName: 'Account Name', flex: 2, minWidth: 200, align: 'center', headerAlign: 'center' },
     { field: 'bookBalance', headerName: 'Book Balance', flex: 1, minWidth: 130, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'budgetAmount', headerName: 'Budget Amount', flex: 1, minWidth: 130, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'actualAmount', headerName: 'Actual Amount', flex: 1, minWidth: 130, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
   ];
 
   const transactionColumns = [
@@ -72,6 +71,134 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
     { field: 'credit', headerName: 'Credit', flex: 1, minWidth: 120, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
     { field: 'newBalance', headerName: 'New Balance', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
   ];
+
+  const handleExportCSV = () => {
+    const rows = Array.isArray(transactionsData?.Transactions) ? transactionsData.Transactions : [];
+    const headers = ['Post Date', 'Description', 'Debit', 'Credit', 'New Balance'];
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(t => [
+        dayjs(t.PostDate).format('DD-MM-YYYY'),
+        `"${String(t.TransactionDescription || '').replace(/"/g, '""')}"`,
+        Number(t.Debit || 0).toFixed(2),
+        Number(t.Credit || 0).toFixed(2),
+        Number(t.NewBalance || 0).toFixed(2),
+      ].join(',')),
+    ].join('\n');
+    downloadFile(csvContent, `Account_Transactions_${selectedAccountNumber}_${dayjs().format('YYYY-MM-DD')}.csv`, 'text/csv');
+  };
+
+  const handleExportExcel = () => {
+    const rows = Array.isArray(transactionsData?.Transactions) ? transactionsData.Transactions : [];
+    const headers = ['Post Date', 'Description', 'Debit', 'Credit', 'New Balance'];
+    const excelContent = [
+      headers.join('\t'),
+      ...rows.map(t => [
+        dayjs(t.PostDate).format('DD-MM-YYYY'),
+        String(t.TransactionDescription || ''),
+        Number(t.Debit || 0).toFixed(2),
+        Number(t.Credit || 0).toFixed(2),
+        Number(t.NewBalance || 0).toFixed(2),
+      ].join('\t')),
+    ].join('\n');
+    downloadFile(excelContent, `Account_Transactions_${selectedAccountNumber}_${dayjs().format('YYYY-MM-DD')}.xlsx`, 'application/vnd.ms-excel');
+  };
+
+  const handleExportPDF = () => {
+    const rows = Array.isArray(transactionsData?.Transactions) ? transactionsData.Transactions : [];
+    const htmlContent = `
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Account Transactions</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h2 { color: #333; margin-bottom: 20px; }
+            .account-info { margin-bottom: 20px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #667eea; color: white; padding: 10px; text-align: center; font-weight: bold; }
+            td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <h2>Account Transactions Report</h2>
+          <div class="account-info">
+            <strong>Account Number:</strong> ${selectedAccountNumber}<br>
+            <strong>Generated Date:</strong> ${dayjs().format('DD-MM-YYYY HH:mm:ss')}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Post Date</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>New Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(t => `
+                <tr>
+                  <td>${dayjs(t.PostDate).format('DD-MM-YYYY')}</td>
+                  <td>${String(t.TransactionDescription || '')}</td>
+                  <td>${Number(t.Debit || 0).toFixed(2)}</td>
+                  <td>${Number(t.Credit || 0).toFixed(2)}</td>
+                  <td>${Number(t.NewBalance || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    downloadFile(htmlContent, `Account_Transactions_${selectedAccountNumber}_${dayjs().format('YYYY-MM-DD')}.pdf`, 'application/pdf');
+  };
+
+  const handlePrintPDF = () => {
+    try {
+      const printedDate = dayjs().format('DD-MM-YYYY HH:mm');
+      const tableRows = transactionRows.map((row) => `
+        <tr>
+          <td>${dayjs(row.postDate).format('DD-MM-YYYY')}</td>
+          <td>${row.description}</td>
+          <td style="text-align:right">${formatCurrency(row.debit)}</td>
+          <td style="text-align:right">${formatCurrency(row.credit)}</td>
+          <td style="text-align:right">${formatCurrency(row.newBalance)}</td>
+        </tr>
+      `).join('');
+
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Account Transactions</title><style>
+    :root{--text:#0f172a;--muted:#475569;--line:#e6eef8;--header-bg:#f1f5f9}
+    body{font-family:Segoe UI,Roboto,Arial,sans-serif;color:var(--text);margin:0;padding:20px;background:#fff}
+    .report{max-width:1050px;margin:0 auto}
+    .header{text-align:center;margin-bottom:12px;border-bottom:2px solid #ccc;padding-bottom:12px}
+    .meta-right{position:absolute;right:20px;top:20px;font-size:12px;color:var(--muted)}
+    .company{font-size:20px;font-weight:800;margin-bottom:4px}
+    .report-type{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .line{font-size:13px;color:var(--muted);margin:2px 0}
+    .account-info{display:flex;gap:40px;margin:12px 0;font-size:13px;color:var(--text)}
+    .account-detail{display:flex;gap:8px}
+    .account-detail-label{font-weight:700;color:var(--muted)}
+    .title{margin-top:8px;font-size:16px;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+    thead th{background:var(--header-bg);border:1px solid var(--line);padding:8px;text-align:left;font-weight:700}
+    tbody td{border:1px solid var(--line);padding:7px;vertical-align:top}
+    tbody tr:nth-child(even){background:#fbfdff}
+    @media print{body{padding:8mm}}
+  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${printedDate}</div><div class="company">MicroFinance Application</div><div class="report-type">Account Transactions Report</div><div class="title">Account Transactions</div><div class="account-info"><div class="account-detail"><span class="account-detail-label">Account Number:</span><span>${selectedAccountNumber}</span></div></div></div><table><thead><tr><th>Post Date</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">New Balance</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`;
+      
+      const w = window.open('', '_blank', 'width=1000,height=800');
+      if (!w) throw new Error('Popup blocked');
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', mb: 3 }}>
@@ -175,6 +302,68 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
             </div>
           </Box>
         )}
+
+        {accountBelongsToThisCard && transactionRows.length > 0 && (
+          <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              onClick={handlePrintPDF}
+              sx={{
+                borderColor: '#667eea',
+                color: '#667eea',
+                fontWeight: 600,
+                paddingX: 3,
+                paddingY: 1,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                '&:hover': {
+                  borderColor: '#5568d3',
+                  backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                },
+              }}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleExportCSV}
+              sx={{
+                borderColor: '#667eea',
+                color: '#667eea',
+                fontWeight: 600,
+                paddingX: 3,
+                paddingY: 1,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                '&:hover': {
+                  borderColor: '#5568d3',
+                  backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                },
+              }}
+            >
+              CSV
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleExportExcel}
+              sx={{
+                borderColor: '#667eea',
+                color: '#667eea',
+                fontWeight: 600,
+                paddingX: 3,
+                paddingY: 1,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                '&:hover': {
+                  borderColor: '#5568d3',
+                  backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                },
+              }}
+            >
+              Excel
+            </Button>
+          </Box>
+        )}
       </CardContent>
       </Collapse>
     </Card>
@@ -182,6 +371,7 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
 }
 
 export default function LedgerManagement() {
+  const navigate = useNavigate();
   const { fetchGlData, loading, error } = useGlManagement();
   const { fetchSubgroupAccounts, loading: accountsLoading } = useGlSubgroups();
   const { fetchAccountTransactions, loading: transactionsLoading } = useGlAccountTransactions();
@@ -268,48 +458,65 @@ export default function LedgerManagement() {
       </Card>
 
       {financialPeriod && (
-        <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <CardContent>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-                  Financial Period Start:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                  {financialPeriod.StartDate
-                    ? new Date(financialPeriod.StartDate).toISOString().split('T')[0]
-                    : 'N/A'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-                  Financial Period End:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                  {financialPeriod.EndDate
-                    ? new Date(financialPeriod.EndDate).toISOString().split('T')[0]
-                    : 'N/A'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-                  Number of Periods:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                  {financialPeriod.NumberOfPeriods || 'N/A'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-                  Current Period:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                  {financialPeriod.CurrentPeriod || 'N/A'}
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/reporting/trial-balance')}
+            sx={{
+              borderColor: '#667eea',
+              color: '#667eea',
+              fontWeight: 600,
+              paddingX: 4,
+              paddingY: 1.5,
+              textTransform: 'none',
+              fontSize: '1rem',
+              '&:hover': {
+                borderColor: '#5568d3',
+                backgroundColor: 'rgba(102, 126, 234, 0.04)',
+              },
+            }}
+          >
+            Trial Balance Report
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/reporting/income-statement')}
+            sx={{
+              borderColor: '#667eea',
+              color: '#667eea',
+              fontWeight: 600,
+              paddingX: 4,
+              paddingY: 1.5,
+              textTransform: 'none',
+              fontSize: '1rem',
+              '&:hover': {
+                borderColor: '#5568d3',
+                backgroundColor: 'rgba(102, 126, 234, 0.04)',
+              },
+            }}
+          >
+            Income Statement Report
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/reporting/balance-sheet')}
+            sx={{
+              borderColor: '#667eea',
+              color: '#667eea',
+              fontWeight: 600,
+              paddingX: 4,
+              paddingY: 1.5,
+              textTransform: 'none',
+              fontSize: '1rem',
+              '&:hover': {
+                borderColor: '#5568d3',
+                backgroundColor: 'rgba(102, 126, 234, 0.04)',
+              },
+            }}
+          >
+            Balance Sheet Report
+          </Button>
+        </Box>
       )}
 
       {Array.isArray(categories) && categories.length > 0 ? (
