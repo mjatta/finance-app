@@ -100,16 +100,17 @@ export default function DetailedJournalReport() {
       const fromLabel = formatDate(tranFrom);
       const toLabel = formatDate(tranTo);
 
-      const tableRows = rows.map((r) => `
+      const tableRows = rows.map((r) => {
+        const rowDate = r.TranDate || r.Date || r.dtrandate || '';
+        const formattedDate = rowDate ? dayjs(rowDate).format('DD-MM-YY') : '';
+        return `
         <tr>
-          <td>${escapeHtml(r.AccountNumber || r.accountNumber || '')}</td>
-          <td>${escapeHtml(r.AccountName || r.accountName || '')}</td>
-          <td>${escapeHtml(r.Date || r.dtrandate || '')}</td>
-          <td>${escapeHtml(r.Description || r.ctrandesc || '')}</td>
+          <td>${escapeHtml(formattedDate)}</td>
+          <td>${escapeHtml(r.Reference || r.Description || r.ctrandesc || '')}</td>
           <td style="text-align:right">${formatAmount(r.Debit ?? r.debit ?? '')}</td>
           <td style="text-align:right">${formatAmount(r.Credit ?? r.credit ?? '')}</td>
         </tr>
-      `).join('');
+      `}).join('');
 
       const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
     :root{--text:#0f172a;--muted:#475569;--line:#e6eef8;--header-bg:#f1f5f9}
@@ -119,6 +120,9 @@ export default function DetailedJournalReport() {
     .meta-right{position:absolute;right:20px;top:20px;font-size:12px;color:var(--muted)}
     .company{font-size:20px;font-weight:800}
     .line{font-size:13px;color:var(--muted);margin:2px 0}
+    .account-info{display:flex;gap:40px;margin:12px 0;font-size:13px;color:var(--text)}
+    .account-detail{display:flex;gap:8px}
+    .account-detail-label{font-weight:700;color:var(--muted)}
     .title{margin-top:8px;font-size:16px;font-weight:700}
     table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
     thead th{background:var(--header-bg);border:1px solid var(--line);padding:8px;text-align:left;font-weight:700}
@@ -126,7 +130,7 @@ export default function DetailedJournalReport() {
     tbody tr:nth-child(even){background:#fbfdff}
     .amt{text-align:right;font-variant-numeric:tabular-nums}
     @media print{body{padding:8mm}}
-  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedDate)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Account Number</th><th>Account Name</th><th>Date</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`;
+  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedDate)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="account-info"><div class="account-detail"><span class="account-detail-label">Account Number:</span><span>${escapeHtml(accountNumber || 'N/A')}</span></div><div class="account-detail"><span class="account-detail-label">Member Name:</span><span>${escapeHtml(memberName || 'N/A')}</span></div></div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Date</th><th>Reference</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`;
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
