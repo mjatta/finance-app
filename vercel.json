@@ -425,6 +425,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/glmanagement/load"
     },
     {
+      "source": "/api/glmanagement/subgroups/:subGroupCode/accounts",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/glmanagement/subgroups/:subGroupCode/accounts"
+    },
+    {
+      "source": "/api/glmanagement/account-transactions",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/glmanagement/account-transactions"
+    },
+    {
       "source": "/api/reconcile/bankaccounts/30",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30"
     },

@@ -3733,6 +3733,92 @@ const glManagementApiPlugin = () => ({
   }
 })
 
+// GL Management Subgroups Accounts API Plugin (dev server middleware)
+const glSubgroupsAccountsApiPlugin = () => ({
+  name: 'gl-subgroups-accounts-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/glmanagement/subgroups')) return next()
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Forward /api/glmanagement/subgroups/{subGroupCode}/accounts
+          try {
+            const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+            const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to proxy glmanagement subgroups request', error: err.message }))
+      }
+    })
+  }
+})
+
+// GL Management Account Transactions API Plugin (dev server middleware)
+const glAccountTransactionsApiPlugin = () => ({
+  name: 'gl-account-transactions-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/glmanagement/account-transactions')) return next()
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Forward /api/glmanagement/account-transactions?companyId=30&accountNumber=...
+          try {
+            const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+            const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to proxy glmanagement account transactions request', error: err.message }))
+      }
+    })
+  }
+})
+
 export default defineConfig({
   base: '/',
   plugins: [
@@ -3791,6 +3877,8 @@ export default defineConfig({
     journalEnquiryApiPlugin(),
     glStatementApiPlugin(),
     glManagementApiPlugin(),
+    glSubgroupsAccountsApiPlugin(),
+    glAccountTransactionsApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
