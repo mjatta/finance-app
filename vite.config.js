@@ -3690,6 +3690,49 @@ const glStatementApiPlugin = () => ({
   }
 })
 
+// GL Management API Plugin (dev server middleware)
+const glManagementApiPlugin = () => ({
+  name: 'gl-management-api-plugin',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      try {
+        if (!req.url || !req.url.startsWith('/api/glmanagement/load')) return next()
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Forward /api/glmanagement/load?companyId=30 (keep query string)
+          try {
+            const url = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+            const backendRes = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to proxy glmanagement request', error: err.message }))
+      }
+    })
+  }
+})
+
 export default defineConfig({
   base: '/',
   plugins: [
@@ -3747,6 +3790,7 @@ export default defineConfig({
     bankReconciliationReportApiPlugin(),
     journalEnquiryApiPlugin(),
     glStatementApiPlugin(),
+    glManagementApiPlugin(),
     loanAgingApiPlugin(),
     loanProvisionApiPlugin(),
     loanBalanceApiPlugin(),
@@ -4282,13 +4326,13 @@ export default defineConfig({
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/member-message/, '/api/member-message'),
         },
-        // Proxy member close details endpoint to avoid CORS
-        '/api/member/details': {
-          target: 'https://alakuyateh-001-site10.atempurl.com',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api\/member\/details/, '/api/member/details'),
-        },
+        // // Proxy member close details endpoint to avoid CORS
+        // '/api/member/details': {
+        //   target: 'https://alakuyateh-001-site10.atempurl.com',
+        //   changeOrigin: true,
+        //   secure: false,
+        //   rewrite: (path) => path.replace(/^\/api\/member\/details/, '/api/member/details'),
+        // },
         // Proxy member close account endpoint to avoid CORS
         '/api/member/close': {
           target: 'https://alakuyateh-001-site10.atempurl.com',
