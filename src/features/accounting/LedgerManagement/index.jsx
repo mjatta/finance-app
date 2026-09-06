@@ -138,6 +138,7 @@ function CategoryCard({ category, selectedSubGroupCode, onSelectSubGroup, accoun
                   '& .MuiDataGrid-row': { cursor: 'pointer' },
                   '& .MuiDataGrid-cell': { borderBottom: '1px solid', borderColor: 'divider' },
                   '& .MuiDataGrid-columnHeader': { backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 700 },
+                  '& .MuiDataGrid-footerContainer': { paddingLeft: '6px', paddingRight: '40px' },
                   '& .selected-row': {
                     backgroundColor: 'rgba(25, 118, 210, 0.12) !important',
                     '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.2) !important' },
