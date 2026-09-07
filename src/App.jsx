@@ -210,11 +210,15 @@ const isLikelyWriteAction = (target) => {
   return writeActionKeywords.some((keyword) => actionText.includes(keyword));
 };
 
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 const ABSOLUTE_TIMEOUT_MS = 5 * 60 * 60 * 1000;
 const SESSION_LOGIN_AT_KEY = 'microfinance_session_login_at';
 const SESSION_LAST_ACTIVITY_AT_KEY = 'microfinance_session_last_activity_at';
 const SESSION_LOGOUT_REASON_KEY = 'microfinance_logout_reason';
+// Stored in sessionStorage (not localStorage) so the browser automatically clears it when the
+// tab/window is closed, while it survives a same-tab refresh/navigation. Used to force a fresh
+// login whenever the tab is reopened, even if the underlying session hasn't otherwise expired.
+const TAB_SESSION_ACTIVE_KEY = 'microfinance_tab_session_active';
 
 const setUserCookie = (userInfo) => {
   const expires = new Date(Date.now() + ABSOLUTE_TIMEOUT_MS).toUTCString();
@@ -225,6 +229,7 @@ const initializeSessionWindow = () => {
   const now = Date.now();
   localStorage.setItem(SESSION_LOGIN_AT_KEY, String(now));
   localStorage.setItem(SESSION_LAST_ACTIVITY_AT_KEY, String(now));
+  sessionStorage.setItem(TAB_SESSION_ACTIVE_KEY, '1');
 };
 
 const touchSessionActivity = () => {
@@ -236,6 +241,59 @@ const parseTimestamp = (value) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
+const clearStoredSession = () => {
+  useAuthStore.getState().clearUser();
+  useUsersStore.getState().clearUsers();
+  localStorage.removeItem(SESSION_LOGIN_AT_KEY);
+  localStorage.removeItem(SESSION_LAST_ACTIVITY_AT_KEY);
+  sessionStorage.removeItem(TAB_SESSION_ACTIVE_KEY);
+  document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+};
+
+// Resolves the user to show on first paint, validating the stored session synchronously so an
+// expired/invalid or tab-closed session never briefly renders the authenticated app before
+// redirecting to /login.
+const getValidInitialUser = () => {
+  let candidateUser = useAuthStore.getState().user;
+
+  if (!candidateUser) {
+    const match = document.cookie.split('; ').find((c) => c.startsWith('user='));
+    if (match) {
+      try {
+        candidateUser = JSON.parse(decodeURIComponent(match.split('=')[1]));
+      } catch (e) {
+        console.error('failed to parse user cookie', e);
+        candidateUser = null;
+      }
+    }
+  }
+
+  if (!candidateUser) {
+    return null;
+  }
+
+  const now = Date.now();
+  const loginAt = parseTimestamp(localStorage.getItem(SESSION_LOGIN_AT_KEY));
+  const lastActivityAt = parseTimestamp(localStorage.getItem(SESSION_LAST_ACTIVITY_AT_KEY));
+  // sessionStorage does not carry over when a tab/window is closed, so its absence here means
+  // this is a brand-new tab (the previous tab was closed) and the user must sign in again.
+  const tabWasClosed = sessionStorage.getItem(TAB_SESSION_ACTIVE_KEY) !== '1';
+  const idleExpired = lastActivityAt !== null && now - lastActivityAt >= IDLE_TIMEOUT_MS;
+  const absoluteExpired = loginAt !== null && now - loginAt >= ABSOLUTE_TIMEOUT_MS;
+
+  if (tabWasClosed || idleExpired || absoluteExpired) {
+    clearStoredSession();
+    if (absoluteExpired) {
+      localStorage.setItem(SESSION_LOGOUT_REASON_KEY, 'absolute');
+    } else if (idleExpired) {
+      localStorage.setItem(SESSION_LOGOUT_REASON_KEY, 'idle');
+    }
+    return null;
+  }
+
+  return candidateUser;
+};
+
 function App() {
   const pageLoader = (
     <Box sx={{ minHeight: '50vh', display: 'grid', placeItems: 'center' }}>
@@ -243,23 +301,7 @@ function App() {
     </Box>
   );
 
-  const [user, setUser] = useState(() => {
-    // Initialize from Zustand persisted store first
-    const storedUser = useAuthStore.getState().user;
-    if (storedUser) return storedUser;
-    // Fallback to cookie
-    const match = document.cookie.split('; ').find((c) => c.startsWith('user='));
-    if (!match) {
-      return null;
-    }
-    try {
-      const value = decodeURIComponent(match.split('=')[1]);
-      return JSON.parse(value);
-    } catch (e) {
-      console.error('failed to parse user cookie', e);
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => getValidInitialUser());
 
   // Get company details from Zustand
   const companyDetails = useAuthStore((state) => state.companyDetails);
@@ -329,18 +371,13 @@ function App() {
 
     setUser(null);
     setActiveCategoryOverride(null);
-    // Clear Zustand stores + localStorage
-    useAuthStore.getState().clearUser();
-    useUsersStore.getState().clearUsers();
-    localStorage.removeItem(SESSION_LOGIN_AT_KEY);
-    localStorage.removeItem(SESSION_LAST_ACTIVITY_AT_KEY);
+    // Clear Zustand stores + localStorage + sessionStorage tab marker + cookie
+    clearStoredSession();
     if (reason === 'idle' || reason === 'absolute') {
       localStorage.setItem(SESSION_LOGOUT_REASON_KEY, reason);
     } else {
       localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
     }
-    // remove cookie by setting past expiration
-    document.cookie = `user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     navigate('/login');
   }, [navigate, user, logAttempt]);
 
@@ -367,6 +404,10 @@ function App() {
     if (!user) {
       return undefined;
     }
+
+    // Ensure this tab is marked active (covers the case where user was hydrated from a source
+    // other than getValidInitialUser, e.g. handleLogin/handlePasswordChanged already set it).
+    sessionStorage.setItem(TAB_SESSION_ACTIVE_KEY, '1');
 
     const loginAt = parseTimestamp(localStorage.getItem(SESSION_LOGIN_AT_KEY));
     const lastActivityAt = parseTimestamp(localStorage.getItem(SESSION_LAST_ACTIVITY_AT_KEY));
