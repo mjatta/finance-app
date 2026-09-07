@@ -4110,6 +4110,20 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/auth\/login/, '/api/auth/login'),
       },
+      // Proxy AuthOTP login endpoint (2FA step 1) to avoid CORS
+      '/api/AuthOTP/login': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/AuthOTP\/login/, '/api/AuthOTP/login'),
+      },
+      // Proxy AuthOTP verify-otp endpoint (2FA step 2) to avoid CORS
+      '/api/authOTP/verify-otp': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/authOTP\/verify-otp/, '/api/authOTP/verify-otp'),
+      },
       // Proxy auth GetAllUsers endpoint to avoid CORS
       '/api/auth/GetAllUsers': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

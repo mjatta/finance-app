@@ -49,6 +49,16 @@ const ENDPOINT_MAP = {
     dev: '/api/auth/login',
     prod: '/api/auth/login',
   },
+  // Authentication with OTP (2FA) - Step 1: username/password
+  'auth-otp-login': {
+    dev: '/api/AuthOTP/login',
+    prod: '/api/AuthOTP/login',
+  },
+  // Authentication with OTP (2FA) - Step 2: verify 6-digit code
+  'auth-otp-verify': {
+    dev: '/api/authOTP/verify-otp',
+    prod: '/api/authOTP/verify-otp',
+  },
   // Member
   'member-create': {
     dev: '/api/member/create',

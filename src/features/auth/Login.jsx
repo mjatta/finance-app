@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as Sentry from "@sentry/react";
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
 import testUsers from '../../data/test-users.json';
 import { useLogin } from './hooks/useLogin';
+import { useAuthOtp } from './hooks/useAuthOtp';
 import { useCreditUnionDetails } from './hooks/useCreditUnionDetails';
 import { useSaveLoginAttempt } from '../system/LoginAttempts/hooks/useSaveLoginAttempt';
 import { useAreas } from '../../hooks/useAreas';
@@ -27,6 +28,7 @@ const loginHighlights = [
 ];
 
 const SESSION_LOGOUT_REASON_KEY = 'microfinance_logout_reason';
+const MAX_OTP_ATTEMPTS = 5;
 
 const getInitialErrorMessage = () => {
   const logoutReason = localStorage.getItem(SESSION_LOGOUT_REASON_KEY);
@@ -50,11 +52,134 @@ function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState(() => getInitialErrorMessage());
   const { login: backendLogin, loading: loginLoading } = useLogin();
+  const { requestOtpLogin, verifyOtp, loading: otpLoading } = useAuthOtp();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const { saveLoginAttempt } = useSaveLoginAttempt();
   const { fetchAreas } = useAreas();
   const setAuthUser = useAuthStore((state) => state.setUser);
   const setCompanyDetails = useAuthStore((state) => state.setCompanyDetails);
+
+  // Two-factor authentication (OTP) state
+  const [otpStage, setOtpStage] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpTempToken, setOtpTempToken] = useState('');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
+  const [otpError, setOtpError] = useState('');
+  const [otpAttempts, setOtpAttempts] = useState(0);
+  const [otpLockedOut, setOtpLockedOut] = useState(false);
+  const otpInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!otpStage) {
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setOtpSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpStage]);
+
+  // Auto-focus the code field as soon as the OTP screen appears
+  useEffect(() => {
+    if (otpStage && otpInputRef.current) {
+      otpInputRef.current.focus();
+    }
+  }, [otpStage]);
+
+  const formatCountdown = (totalSeconds) => {
+    const safeSeconds = Math.max(0, totalSeconds);
+    const minutes = Math.floor(safeSeconds / 60);
+    const seconds = safeSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const finalizeLogin = async (apiUser, normalizedUsername, loginStartTime) => {
+    const features = (apiUser.features || '').split(',').map((f) => f.trim()).filter(Boolean);
+    const role = (apiUser.Role || '').split(',')[0].trim();
+
+    const safeUser = {
+      id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
+      name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
+      username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
+      mustChangePassword: Boolean(apiUser.MustChangePassword || apiUser.ResetPassword),
+      role: role || 'USER',
+      access: {
+        allPages: apiUser.Allpages ?? false,
+        features,
+        featurePermissions: apiUser.featurePermissions || {},
+        pagePermissions: apiUser.pagePermissions || {},
+      },
+      CompId: apiUser.CompId,
+      BranchId: apiUser.BranchId,
+      CashAccount: apiUser.CashAccount || '',
+      SuspenseAccount: apiUser.SuspenseAccount || '',
+      DebitLimit: apiUser.DebitLimit ?? 0,
+      CreditLimit: apiUser.CreditLimit ?? 0,
+      LoanLimit: apiUser.LoanLimit ?? 0,
+      AccessLevel: apiUser.AccessLevel ?? 0,
+      IsCashier: apiUser.IsCashier ?? false,
+      staffno: apiUser.staffno ? apiUser.staffno.trim() : '',
+      Dateforce: apiUser.Dateforce || '',
+    };
+
+    // Set Sentry user context for successful login
+    Sentry.setUser({
+      id: safeUser.id,
+      username: safeUser.username,
+      role: safeUser.role,
+      CompId: safeUser.CompId,
+    });
+
+    // Save to Zustand + localStorage
+    setAuthUser(safeUser);
+
+    // Fetch credit union details using CompId
+    if (apiUser.CompId) {
+      const companyDetails = await fetchCreditUnionDetails(apiUser.CompId);
+      if (companyDetails) {
+        setCompanyDetails(companyDetails);
+      }
+    }
+
+    // Log successful login attempt
+    saveLoginAttempt(normalizedUsername, true);
+
+    // Capture successful login in Sentry
+    Sentry.captureMessage('User login successful', 'info', {
+      contexts: {
+        login: {
+          username: normalizedUsername,
+          role,
+          CompId: apiUser.CompId,
+        },
+      },
+    });
+
+    // Emit metrics for successful login
+    const loginDuration = performance.now() - loginStartTime;
+    Sentry.metrics.count('login_success', 1);
+    Sentry.metrics.distribution('login_duration_ms', loginDuration);
+
+    setErrorMessage('');
+    setOtpStage(false);
+    setOtpCode('');
+    setOtpTempToken('');
+    setOtpEmail('');
+    setOtpSecondsLeft(0);
+    setOtpError('');
+    setOtpAttempts(0);
+    setOtpLockedOut(false);
+    // Pre-load counties lookup data after successful login
+    await fetchAreas();
+    onLogin(safeUser);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,80 +190,26 @@ function Login({ onLogin }) {
       // Emit metric for login attempt
       Sentry.metrics.count('login_attempts', 1);
 
+      // Try the OTP (2FA) login endpoint first
+      const otpLoginResult = await requestOtpLogin(normalizedUsername, password);
+      if (otpLoginResult.success && otpLoginResult.data && otpLoginResult.data.status === 'AWAITING_2FA') {
+        const otpData = otpLoginResult.data.data || {};
+        setOtpTempToken(otpData.tempToken || '');
+        setOtpEmail(otpData.email || '');
+        setOtpSecondsLeft(Number(otpData.expiresInSeconds) || 300);
+        setOtpCode('');
+        setOtpError('');
+        setOtpAttempts(0);
+        setOtpLockedOut(false);
+        setErrorMessage('');
+        setOtpStage(true);
+        return;
+      }
+
       // Try backend authentication
       const result = await backendLogin(normalizedUsername, password);
       if (result.success && result.data && result.data.Success) {
-        const apiUser = result.data;
-        const features = (apiUser.features || '').split(',').map((f) => f.trim()).filter(Boolean);
-        const role = (apiUser.Role || '').split(',')[0].trim();
-
-        const safeUser = {
-          id: apiUser.ExternalId ? apiUser.ExternalId.trim() : normalizedUsername,
-          name: apiUser.UserName ? apiUser.UserName.trim() : normalizedUsername,
-          username: apiUser.UserID ? apiUser.UserID.trim() : normalizedUsername,
-          mustChangePassword: Boolean(apiUser.MustChangePassword || apiUser.ResetPassword),
-          role: role || 'USER',
-          access: {
-            allPages: apiUser.Allpages ?? false,
-            features,
-            featurePermissions: apiUser.featurePermissions || {},
-            pagePermissions: apiUser.pagePermissions || {},
-          },
-          CompId: apiUser.CompId,
-          BranchId: apiUser.BranchId,
-          CashAccount: apiUser.CashAccount || '',
-          SuspenseAccount: apiUser.SuspenseAccount || '',
-          DebitLimit: apiUser.DebitLimit ?? 0,
-          CreditLimit: apiUser.CreditLimit ?? 0,
-          LoanLimit: apiUser.LoanLimit ?? 0,
-          AccessLevel: apiUser.AccessLevel ?? 0,
-          IsCashier: apiUser.IsCashier ?? false,
-          staffno: apiUser.staffno ? apiUser.staffno.trim() : '',
-          Dateforce: apiUser.Dateforce || '',
-        };
-
-        // Set Sentry user context for successful login
-        Sentry.setUser({
-          id: safeUser.id,
-          username: safeUser.username,
-          role: safeUser.role,
-          CompId: safeUser.CompId,
-        });
-
-        // Save to Zustand + localStorage
-        setAuthUser(safeUser);
-
-        // Fetch credit union details using CompId
-        if (apiUser.CompId) {
-          const companyDetails = await fetchCreditUnionDetails(apiUser.CompId);
-          if (companyDetails) {
-            setCompanyDetails(companyDetails);
-          }
-        }
-
-        // Log successful login attempt
-        saveLoginAttempt(normalizedUsername, true);
-
-        // Capture successful login in Sentry
-        Sentry.captureMessage('User login successful', 'info', {
-          contexts: {
-            login: {
-              username: normalizedUsername,
-              role,
-              CompId: apiUser.CompId,
-            },
-          },
-        });
-
-        // Emit metrics for successful login
-        const loginDuration = performance.now() - loginStartTime;
-        Sentry.metrics.count('login_success', 1);
-        Sentry.metrics.distribution('login_duration_ms', loginDuration);
-
-        setErrorMessage('');
-        // Pre-load counties lookup data after successful login
-        await fetchAreas();
-        onLogin(safeUser);
+        await finalizeLogin(result.data, normalizedUsername, loginStartTime);
         return;
       }
 
@@ -218,6 +289,83 @@ function Login({ onLogin }) {
       
       setErrorMessage('An error occurred during login. Please try again.');
     }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    await submitOtp(otpCode);
+  };
+
+  const submitOtp = async (codeToVerify) => {
+    if (otpLockedOut) {
+      return;
+    }
+    setOtpError('');
+
+    if (!/^\d{6}$/.test(codeToVerify)) {
+      setOtpError('Enter the 6-digit code sent to your email.');
+      return;
+    }
+
+    if (otpSecondsLeft <= 0) {
+      setOtpError('This code has expired. Please go back and sign in again.');
+      return;
+    }
+
+    const normalizedUsername = username.trim();
+    const loginStartTime = performance.now();
+
+    const verifyResult = await verifyOtp(otpTempToken, codeToVerify);
+    if (verifyResult.success) {
+      const payload = verifyResult.data || {};
+      const apiUser = payload.data || payload;
+      try {
+        await finalizeLogin(apiUser, normalizedUsername, loginStartTime);
+      } catch (error) {
+        Sentry.captureException(error, {
+          contexts: { login: { username: normalizedUsername, stage: 'otp-verify-finalize' } },
+        });
+        setOtpError('An error occurred completing sign-in. Please try again.');
+      }
+      return;
+    }
+
+    // Generic message on failure to avoid leaking backend details; track attempts client-side
+    const nextAttempts = otpAttempts + 1;
+    setOtpAttempts(nextAttempts);
+    setOtpCode('');
+
+    if (nextAttempts >= MAX_OTP_ATTEMPTS) {
+      setOtpLockedOut(true);
+      setOtpTempToken('');
+      setOtpError('Too many incorrect attempts. Please go back and sign in again.');
+      Sentry.captureMessage('OTP verification locked out after max attempts', 'warning', {
+        contexts: { login: { username: normalizedUsername } },
+      });
+      return;
+    }
+
+    const remaining = MAX_OTP_ATTEMPTS - nextAttempts;
+    setOtpError(`Invalid or expired code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
+  };
+
+  // Auto-submit as soon as a full 6-digit code has been entered
+  useEffect(() => {
+    if (otpStage && otpCode.length === 6 && !otpLoading && !otpLockedOut && otpSecondsLeft > 0) {
+      submitOtp(otpCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpCode]);
+
+  const handleBackToLogin = () => {
+    setOtpStage(false);
+    setOtpCode('');
+    setOtpTempToken('');
+    setOtpEmail('');
+    setOtpSecondsLeft(0);
+    setOtpError('');
+    setOtpAttempts(0);
+    setOtpLockedOut(false);
   };
 
   return (
@@ -403,7 +551,7 @@ function Login({ onLogin }) {
             background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)',
           }}
         >
-          <Stack component="form" onSubmit={handleSubmit} noValidate spacing={2.25} sx={{ width: '100%', maxWidth: 420, mx: 'auto' }}>
+          <Stack component="form" onSubmit={otpStage ? handleVerifyOtp : handleSubmit} noValidate spacing={2.25} sx={{ width: '100%', maxWidth: 420, mx: 'auto' }}>
             <Box>
               <Typography
                 sx={{
@@ -415,133 +563,249 @@ function Login({ onLogin }) {
                   mb: 1,
                 }}
               >
-                Sign In
+                {otpStage ? 'Verify It\u2019s You' : 'Sign In'}
               </Typography>
             </Box>
-            <Typography
-              id="login-heading"
-              variant="h4"
-              component="h2"
-              sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}
-            >
-              Welcome back
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.7 }}>
-              Enter your credentials to continue to the Microfinance Management workspace.
-            </Typography>
 
-            <TextField
-              id="username"
-              label="Username"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                if (errorMessage) {
-                  setErrorMessage('');
-                }
-              }}
-              fullWidth
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <FontAwesomeIcon icon={faUser} style={{ color: '#1565c0' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 3,
-                  bgcolor: 'rgba(247,250,255,0.96)',
-                },
-              }}
-              inputProps={{ 'aria-required': true, autoComplete: 'username' }}
-            />
+            {otpStage ? (
+              <>
+                <Typography
+                  id="login-heading"
+                  variant="h4"
+                  component="h2"
+                  sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}
+                >
+                  Enter verification code
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.7 }}>
+                  We&apos;ve sent a 6-digit code to <strong>{otpEmail || 'your email'}</strong>. Enter it below to continue.
+                </Typography>
 
-            <TextField
-              id="password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (errorMessage) {
-                  setErrorMessage('');
-                }
-              }}
-              fullWidth
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <FontAwesomeIcon icon={faLock} style={{ color: '#1565c0' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      edge="end"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 3,
-                  bgcolor: 'rgba(247,250,255,0.96)',
-                },
-              }}
-              inputProps={{ 'aria-required': true, autoComplete: 'current-password' }}
-            />
+                <TextField
+                  id="otp-code"
+                  label="6-digit code"
+                  value={otpCode}
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(digitsOnly);
+                    if (otpError && !otpLockedOut) {
+                      setOtpError('');
+                    }
+                  }}
+                  fullWidth
+                  required
+                  disabled={otpLockedOut || otpSecondsLeft <= 0}
+                  inputRef={otpInputRef}
+                  inputProps={{
+                    'aria-required': true,
+                    inputMode: 'numeric',
+                    autoComplete: 'one-time-code',
+                    maxLength: 6,
+                    style: { letterSpacing: '0.5em', textAlign: 'center', fontSize: '1.4rem', fontWeight: 700 },
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 3,
+                      bgcolor: 'rgba(247,250,255,0.96)',
+                    },
+                  }}
+                />
 
-            {errorMessage && (
-              <Typography
-                variant="body2"
-                color="error"
-                sx={{
-                  fontWeight: 600,
-                  px: 1.5,
-                  py: 1.2,
-                  borderRadius: 2.5,
-                  bgcolor: 'rgba(211, 47, 47, 0.08)',
-                  border: '1px solid rgba(211, 47, 47, 0.16)',
-                }}
-              >
-                {errorMessage}
-              </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    color: otpSecondsLeft > 0 ? '#1565c0' : 'error.main',
+                  }}
+                >
+                  {otpSecondsLeft > 0
+                    ? `Code expires in ${formatCountdown(otpSecondsLeft)}`
+                    : 'Code expired. Please go back and sign in again.'}
+                </Typography>
+
+                {otpError && (
+                  <Typography
+                    variant="body2"
+                    color="error"
+                    role="alert"
+                    sx={{
+                      fontWeight: 600,
+                      px: 1.5,
+                      py: 1.2,
+                      borderRadius: 2.5,
+                      bgcolor: 'rgba(211, 47, 47, 0.08)',
+                      border: '1px solid rgba(211, 47, 47, 0.16)',
+                    }}
+                  >
+                    {otpError}
+                  </Typography>
+                )}
+
+                {!otpLockedOut && (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={otpLoading || otpSecondsLeft <= 0 || otpCode.length !== 6}
+                    startIcon={otpLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                    sx={{
+                      mt: 1,
+                      py: 1.4,
+                      borderRadius: 3,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      background: 'linear-gradient(135deg, #0d47a1 0%, #1976d2 58%, #42a5f5 100%)',
+                      boxShadow: '0 16px 28px rgba(25, 118, 210, 0.24)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #0b3f91 0%, #1669c1 58%, #3b98e6 100%)',
+                        boxShadow: '0 18px 34px rgba(25, 118, 210, 0.28)',
+                      },
+                    }}
+                  >
+                    {otpLoading ? 'Verifying...' : 'Verify Code'}
+                  </Button>
+                )}
+
+                <Button
+                  type="button"
+                  variant="text"
+                  fullWidth
+                  onClick={handleBackToLogin}
+                  sx={{ fontWeight: 600, textTransform: 'none' }}
+                >
+                  Back to login
+                </Button>
+              </>
+            ) : (
+              <>
+                <Typography
+                  id="login-heading"
+                  variant="h4"
+                  component="h2"
+                  sx={{ fontWeight: 800, letterSpacing: '-0.03em' }}
+                >
+                  Welcome back
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.7 }}>
+                  Enter your credentials to continue to the Microfinance Management workspace.
+                </Typography>
+
+                <TextField
+                  id="username"
+                  label="Username"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (errorMessage) {
+                      setErrorMessage('');
+                    }
+                  }}
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <FontAwesomeIcon icon={faUser} style={{ color: '#1565c0' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 3,
+                      bgcolor: 'rgba(247,250,255,0.96)',
+                    },
+                  }}
+                  inputProps={{ 'aria-required': true, autoComplete: 'username' }}
+                />
+
+                <TextField
+                  id="password"
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errorMessage) {
+                      setErrorMessage('');
+                    }
+                  }}
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <FontAwesomeIcon icon={faLock} style={{ color: '#1565c0' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          edge="end"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 3,
+                      bgcolor: 'rgba(247,250,255,0.96)',
+                    },
+                  }}
+                  inputProps={{ 'aria-required': true, autoComplete: 'current-password' }}
+                />
+
+                {errorMessage && (
+                  <Typography
+                    variant="body2"
+                    color="error"
+                    sx={{
+                      fontWeight: 600,
+                      px: 1.5,
+                      py: 1.2,
+                      borderRadius: 2.5,
+                      bgcolor: 'rgba(211, 47, 47, 0.08)',
+                      border: '1px solid rgba(211, 47, 47, 0.16)',
+                    }}
+                  >
+                    {errorMessage}
+                  </Typography>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={loginLoading || otpLoading}
+                  startIcon={(loginLoading || otpLoading) ? <CircularProgress size={18} color="inherit" /> : null}
+                  sx={{
+                    mt: 1,
+                    py: 1.4,
+                    borderRadius: 3,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    background: 'linear-gradient(135deg, #0d47a1 0%, #1976d2 58%, #42a5f5 100%)',
+                    boxShadow: '0 16px 28px rgba(25, 118, 210, 0.24)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0b3f91 0%, #1669c1 58%, #3b98e6 100%)',
+                      boxShadow: '0 18px 34px rgba(25, 118, 210, 0.28)',
+                    },
+                  }}
+                >
+                  {(loginLoading || otpLoading) ? 'Signing in...' : 'Sign In'}
+                </Button>
+
+                <Typography sx={{ textAlign: 'center', color: 'text.secondary', fontSize: '0.9rem', pt: 0.5 }}>
+                  Secure sign-in for authorized users.
+                </Typography>
+              </>
             )}
-
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={loginLoading}
-              startIcon={loginLoading ? <CircularProgress size={18} color="inherit" /> : null}
-              sx={{
-                mt: 1,
-                py: 1.4,
-                borderRadius: 3,
-                fontWeight: 700,
-                textTransform: 'none',
-                fontSize: '1rem',
-                background: 'linear-gradient(135deg, #0d47a1 0%, #1976d2 58%, #42a5f5 100%)',
-                boxShadow: '0 16px 28px rgba(25, 118, 210, 0.24)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #0b3f91 0%, #1669c1 58%, #3b98e6 100%)',
-                  boxShadow: '0 18px 34px rgba(25, 118, 210, 0.28)',
-                },
-              }}
-            >
-              {loginLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-
-            <Typography sx={{ textAlign: 'center', color: 'text.secondary', fontSize: '0.9rem', pt: 0.5 }}>
-              Secure sign-in for authorized users.
-            </Typography>
           </Stack>
         </Box>
       </Paper>
