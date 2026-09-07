@@ -59,6 +59,11 @@ const ENDPOINT_MAP = {
     dev: '/api/authOTP/verify-otp',
     prod: '/api/authOTP/verify-otp',
   },
+  // Authentication with OTP (2FA) - Resend a new 6-digit code
+  'auth-otp-resend': {
+    dev: '/api/authOTP/resend-otp',
+    prod: '/api/authOTP/resend-otp',
+  },
   // Member
   'member-create': {
     dev: '/api/member/create',

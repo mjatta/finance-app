@@ -73,5 +73,36 @@ export function useAuthOtp() {
     }
   };
 
-  return { requestOtpLogin, verifyOtp, loading, error };
+  const resendOtp = async (tempToken) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = getApiUrl('auth-otp-resend');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tempToken}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = (data && data.message) || `HTTP ${response.status}`;
+        throw new Error(message);
+      }
+
+      return { success: true, data };
+    } catch (err) {
+      const message = err.message || 'Failed to resend code';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { requestOtpLogin, verifyOtp, resendOtp, loading, error };
 }

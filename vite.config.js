@@ -4124,6 +4124,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/authOTP\/verify-otp/, '/api/authOTP/verify-otp'),
       },
+      // Proxy AuthOTP resend-otp endpoint (2FA resend code) to avoid CORS
+      '/api/authOTP/resend-otp': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/authOTP\/resend-otp/, '/api/authOTP/resend-otp'),
+      },
       // Proxy auth GetAllUsers endpoint to avoid CORS
       '/api/auth/GetAllUsers': {
         target: 'https://alakuyateh-001-site10.atempurl.com',

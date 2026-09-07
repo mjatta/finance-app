@@ -528,6 +528,10 @@
       "source": "/api/authOTP/verify-otp",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/authOTP/verify-otp"
     },
+    {
+      "source": "/api/authOTP/resend-otp",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/authOTP/resend-otp"
+    },
           {
         "source": "/api/members/validate",
         "destination": "https://alakuyateh-001-site10.atempurl.com/api/members/validate"

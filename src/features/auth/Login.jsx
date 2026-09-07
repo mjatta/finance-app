@@ -52,7 +52,7 @@ function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState(() => getInitialErrorMessage());
   const { login: backendLogin, loading: loginLoading } = useLogin();
-  const { requestOtpLogin, verifyOtp, loading: otpLoading } = useAuthOtp();
+  const { requestOtpLogin, verifyOtp, resendOtp, loading: otpLoading } = useAuthOtp();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const { saveLoginAttempt } = useSaveLoginAttempt();
   const { fetchAreas } = useAreas();
@@ -68,6 +68,9 @@ function Login({ onLogin }) {
   const [otpError, setOtpError] = useState('');
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [otpLockedOut, setOtpLockedOut] = useState(false);
+  const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+  const [otpResendLoading, setOtpResendLoading] = useState(false);
+  const [otpResendMessage, setOtpResendMessage] = useState('');
   const otpInputRef = useRef(null);
 
   useEffect(() => {
@@ -85,6 +88,17 @@ function Login({ onLogin }) {
     }, 1000);
     return () => clearInterval(timer);
   }, [otpStage]);
+
+  // Cooldown timer to throttle how often the user can request a new code
+  useEffect(() => {
+    if (otpResendCooldown <= 0) {
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setOtpResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpResendCooldown]);
 
   // Auto-focus the code field as soon as the OTP screen appears
   useEffect(() => {
@@ -176,6 +190,8 @@ function Login({ onLogin }) {
     setOtpError('');
     setOtpAttempts(0);
     setOtpLockedOut(false);
+    setOtpResendCooldown(0);
+    setOtpResendMessage('');
     // Pre-load counties lookup data after successful login
     await fetchAreas();
     onLogin(safeUser);
@@ -201,6 +217,8 @@ function Login({ onLogin }) {
         setOtpError('');
         setOtpAttempts(0);
         setOtpLockedOut(false);
+        setOtpResendCooldown(0);
+        setOtpResendMessage('');
         setErrorMessage('');
         setOtpStage(true);
         return;
@@ -366,6 +384,45 @@ function Login({ onLogin }) {
     setOtpError('');
     setOtpAttempts(0);
     setOtpLockedOut(false);
+    setOtpResendCooldown(0);
+    setOtpResendLoading(false);
+    setOtpResendMessage('');
+  };
+
+  const handleResendOtp = async () => {
+    if (otpResendLoading || otpResendCooldown > 0 || !otpTempToken) {
+      return;
+    }
+
+    setOtpResendLoading(true);
+    setOtpResendMessage('');
+    setOtpError('');
+
+    const result = await resendOtp(otpTempToken);
+
+    if (result.success) {
+      const payload = result.data || {};
+      const otpData = payload.data || payload;
+
+      if (otpData.tempToken) {
+        setOtpTempToken(otpData.tempToken);
+      }
+      if (otpData.email) {
+        setOtpEmail(otpData.email);
+      }
+      setOtpSecondsLeft(Number(otpData.expiresInSeconds) || 300);
+      setOtpCode('');
+      setOtpAttempts(0);
+      setOtpResendCooldown(30);
+      setOtpResendMessage('A new code has been sent to your email.');
+      if (otpInputRef.current) {
+        otpInputRef.current.focus();
+      }
+    } else {
+      setOtpResendMessage('Could not resend the code. Please try again shortly.');
+    }
+
+    setOtpResendLoading(false);
   };
 
   return (
@@ -640,6 +697,38 @@ function Login({ onLogin }) {
                   >
                     {otpError}
                   </Typography>
+                )}
+
+                {otpResendMessage && !otpError && (
+                  <Typography
+                    variant="body2"
+                    role="status"
+                    sx={{
+                      textAlign: 'center',
+                      fontWeight: 600,
+                      color: '#1565c0',
+                    }}
+                  >
+                    {otpResendMessage}
+                  </Typography>
+                )}
+
+                {!otpLockedOut && (
+                  <Button
+                    type="button"
+                    variant="text"
+                    fullWidth
+                    onClick={handleResendOtp}
+                    disabled={otpResendLoading || otpResendCooldown > 0}
+                    startIcon={otpResendLoading ? <CircularProgress size={16} color="inherit" /> : null}
+                    sx={{ fontWeight: 600, textTransform: 'none' }}
+                  >
+                    {otpResendLoading
+                      ? 'Sending...'
+                      : otpResendCooldown > 0
+                        ? `Resend code (${otpResendCooldown}s)`
+                        : 'Resend code'}
+                  </Button>
                 )}
 
                 {!otpLockedOut && (
