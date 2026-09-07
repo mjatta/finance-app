@@ -64,6 +64,10 @@ function Login({ onLogin }) {
   const [otpCode, setOtpCode] = useState('');
   const [otpTempToken, setOtpTempToken] = useState('');
   const [otpEmail, setOtpEmail] = useState('');
+  // Full user profile (UserID, CompId, featurePermissions, pagePermissions, etc.) returned
+  // alongside the AWAITING_2FA response. Held in memory only until the code is verified,
+  // then persisted to localStorage exactly like the legacy /api/auth/login flow.
+  const [otpPendingUserData, setOtpPendingUserData] = useState(null);
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const [otpError, setOtpError] = useState('');
   const [otpAttempts, setOtpAttempts] = useState(0);
@@ -186,6 +190,7 @@ function Login({ onLogin }) {
     setOtpCode('');
     setOtpTempToken('');
     setOtpEmail('');
+    setOtpPendingUserData(null);
     setOtpSecondsLeft(0);
     setOtpError('');
     setOtpAttempts(0);
@@ -210,6 +215,9 @@ function Login({ onLogin }) {
       const otpLoginResult = await requestOtpLogin(normalizedUsername, password);
       if (otpLoginResult.success && otpLoginResult.data && otpLoginResult.data.status === 'AWAITING_2FA') {
         const otpData = otpLoginResult.data.data || {};
+        // Temp-save the full user profile now (featurePermissions, pagePermissions, CompId, etc.)
+        // so it can be written to localStorage once the OTP code is verified.
+        setOtpPendingUserData(otpData);
         setOtpTempToken(otpData.tempToken || '');
         setOtpEmail(otpData.email || '');
         setOtpSecondsLeft(Number(otpData.expiresInSeconds) || 300);
@@ -334,9 +342,12 @@ function Login({ onLogin }) {
     const loginStartTime = performance.now();
 
     const verifyResult = await verifyOtp(otpTempToken, codeToVerify);
-    if (verifyResult.success) {
-      const payload = verifyResult.data || {};
-      const apiUser = payload.data || payload;
+    const verifyPayload = verifyResult.data || {};
+    const isAuthenticated = verifyResult.success && verifyPayload.status === 'AUTHENTICATED';
+    if (isAuthenticated) {
+      // Use the profile saved from the first login response; the verify-otp step only
+      // confirms the code and may return minimal data (status/message), not the full user.
+      const apiUser = otpPendingUserData || verifyPayload.data || verifyPayload;
       try {
         await finalizeLogin(apiUser, normalizedUsername, loginStartTime);
       } catch (error) {
@@ -356,6 +367,7 @@ function Login({ onLogin }) {
     if (nextAttempts >= MAX_OTP_ATTEMPTS) {
       setOtpLockedOut(true);
       setOtpTempToken('');
+      setOtpPendingUserData(null);
       setOtpError('Too many incorrect attempts. Please go back and sign in again.');
       Sentry.captureMessage('OTP verification locked out after max attempts', 'warning', {
         contexts: { login: { username: normalizedUsername } },
@@ -380,6 +392,7 @@ function Login({ onLogin }) {
     setOtpCode('');
     setOtpTempToken('');
     setOtpEmail('');
+    setOtpPendingUserData(null);
     setOtpSecondsLeft(0);
     setOtpError('');
     setOtpAttempts(0);
