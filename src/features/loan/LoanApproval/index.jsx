@@ -497,7 +497,7 @@ export default function LoanApproval() {
       // Parse numeric values safely
       const approveAmountNum = parseFloat(String(approvalDetails.approveAmount).replace(/,/g, '')) || 0;
       const durationNum = parseInt(approvalDetails.duration, 10) || 0;
-      const interestRateNum = parseFloat(String(appliedLoanDetails.grossInterest).replace(/,/g, '')) || 0;
+      const interestRateNum = parseFloat(String(selectedLoan.totalInterest || appliedLoanDetails.grossInterest).replace(/,/g, '')) || 0;
       const compidNum = parseInt(authUser?.CompId, 10) || 30;
       const loanTypeNum = parseInt(selectedLoan.productId || selectedLoan.prd_id, 10) || 0;
       const loanIdNum = parseInt(selectedLoan.id || selectedLoan.loan_id || 0, 10);
