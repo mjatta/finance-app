@@ -119,6 +119,7 @@ export default function CustomerRegistration(props) {
     const [groupMembers, setGroupMembers] = useState([
       {
         id: Date.now() + Math.random(),
+        memberID: '',
         firstName: '',
         middleName: '',
         lastName: '',
@@ -131,6 +132,7 @@ export default function CustomerRegistration(props) {
         ...prev,
         {
           id: Date.now() + Math.random(),
+          memberID: '',
           firstName: '',
           middleName: '',
           lastName: '',
@@ -722,6 +724,7 @@ export default function CustomerRegistration(props) {
           if (Array.isArray(gmRaw) && gmRaw.length > 0) {
             const mappedGm = gmRaw.map((g, idx) => ({
               id: Date.now() + idx,
+              memberID: (g.MemID || g.memberID || g.memid || '').toString().trim(),
               firstName: (g.MemFname || g.firstName || g.fname || '').toString().trim(),
               middleName: (g.MemMname || g.middleName || g.mname || '').toString().trim(),
               lastName: (g.MemLname || g.lastName || g.lname || '').toString().trim(),
@@ -1473,6 +1476,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setGroupMembers([
       {
         id: Date.now() + Math.random(),
+        memberID: '',
         firstName: '',
         lastName: '',
         phoneNumber: '',
@@ -1532,6 +1536,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     setGroupMembers([
       {
         id: Date.now() + Math.random(),
+        memberID: '',
         firstName: '',
         lastName: '',
         phoneNumber: '',
@@ -1682,6 +1687,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       institutionPayload.GroupMembers = groupMembers.map(member => ({
         MemFname: member.firstName,
         MemLname: member.lastName,
+        MemID: member.memberID,
         PhoneNumber: member.phoneNumber,
         dob: member.dateOfBirth,
         CreationDate: dayjs().format('YYYY-MM-DD'),
@@ -3904,6 +3910,12 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                               Group Member {index + 1}
                             </Typography>
                             <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+                              <TextField
+                                required
+                                label="ID"
+                                value={member.memberID}
+                                onChange={e => handleGroupMemberChange(member.id, 'memberID', e.target.value)}
+                              />
                               <TextField
                                 required
                                 label="First Name"
