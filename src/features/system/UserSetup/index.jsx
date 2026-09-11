@@ -25,6 +25,7 @@ import { useGetAllUsers } from './hooks/useGetAllUsers';
 import { useGetBasicDetails } from './hooks/useGetBasicDetails';
 import { useRegions } from '../../../hooks/useRegions';
 import { getFullApiUrl } from '../../../utils/apiConfig';
+import { getCompanyNameById, getBranchNameById, getRegionNameById } from '../../../utils/idLookup';
 
 const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const BRANCHES_RAW_CACHE_KEY = 'userSetup_remoteBranchesRaw';
@@ -461,12 +462,6 @@ export default function UserSetup({ user }) {
     }
   };
 
-  const handleRoleFormChange = (event) => {
-    const { name, value } = event.target;
-    setStatusMessage('');
-    setRoleForm((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleFeaturePermissionChange = (feature, permission) => {
     setStatusMessage('');
     setRoleForm((prev) => {
@@ -507,11 +502,63 @@ export default function UserSetup({ user }) {
     return 'inherit';
   };
 
-  const handleEditSavedUser = (userRecord) => {
-    const selectedCompanyName = getCompanyName(userRecord);
-    const selectedBranch = getBranchName(userRecord);
-    const selectedRegion = userRecord?.Region || userRecord?.region || '';
-    const selectedRegionId = userRecord?.RegionId || userRecord?.regionId || userRecord?.coun_id || '';
+  const handleEditSavedUser = async (userRecord) => {
+    let selectedCompanyName = getCompanyName(userRecord);
+    let selectedBranch = getBranchName(userRecord);
+
+    // Resolve CompId and BranchId to names if they exist (using async lookups)
+    if (userRecord?.CompId && !selectedCompanyName) {
+      const resolvedCompanyName = await getCompanyNameById(userRecord.CompId);
+      if (resolvedCompanyName) {
+        selectedCompanyName = resolvedCompanyName;
+      }
+    }
+
+    if (userRecord?.BranchId && !selectedBranch) {
+      const resolvedBranchName = await getBranchNameById(userRecord.BranchId);
+      if (resolvedBranchName) {
+        selectedBranch = resolvedBranchName;
+      }
+    }
+
+    // Get region - try multiple field name variations
+    let selectedRegion = userRecord?.Region || userRecord?.region || '';
+    let selectedRegionId = userRecord?.RegionId || userRecord?.regionId || userRecord?.coun_id || '';
+
+    // Check if Region field is actually a number (ID) not a name
+    const regionIsNumeric = !isNaN(selectedRegion) && selectedRegion !== '';
+    if (!selectedRegionId && selectedRegion && regionIsNumeric) {
+      selectedRegionId = selectedRegion; // Keep the numeric ID
+      selectedRegion = ''; // Reset region to empty so we can look it up
+    }
+
+    // If region name is not provided but region ID is, look it up in the loaded regions array
+    if (!selectedRegion && selectedRegionId) {
+      if (regions && regions.length > 0) {
+        const foundRegion = regions.find((r) => {
+          const rId = String(r.coun_id);
+          const searchId = String(selectedRegionId);
+          return rId === searchId;
+        });
+        if (foundRegion) {
+          selectedRegion = foundRegion.coun_name?.trim() || '';
+        }
+      }
+
+      // If still not resolved (array empty or ID not found), fall back to direct API lookup
+      if (!selectedRegion) {
+        const resolvedRegionName = await getRegionNameById(selectedRegionId);
+        if (resolvedRegionName) {
+          selectedRegion = resolvedRegionName;
+        }
+      }
+    }
+
+    // Get email - try multiple field name variations
+    const email = userRecord?.Email || userRecord?.email || userRecord?.EmailAddress || userRecord?.emailAddress || '';
+
+    // Get phone - try multiple field name variations
+    const phone = userRecord?.Phone || userRecord?.phone || userRecord?.PhoneNumber || userRecord?.phoneNumber || '';
 
     setUserForm({
       companyName: selectedCompanyName,
@@ -522,8 +569,8 @@ export default function UserSetup({ user }) {
       staffNumber: userRecord?.StaffNo || userRecord?.staffNumber || '',
       userId: userRecord?.UserID || userRecord?.userId || '',
       userName: userRecord?.UserName || userRecord?.userName || '',
-      email: userRecord?.Email || userRecord?.email || '',
-      phone: userRecord?.Phone || userRecord?.phone || '',
+      email: email,
+      phone: phone,
       temporaryPassword: userRecord?.temporaryPassword || '',
       baseRole: userRecord?.Role || userRecord?.baseRole || '',
       cashAccount: userRecord?.CashAccount || userRecord?.cashAccount || '',
@@ -782,19 +829,28 @@ export default function UserSetup({ user }) {
 
   const savedUserRows = useMemo(
     () =>
-      allUsers.map((item, idx) => ({
-        id: `user-${idx}`,
-        userID: item.UserID || '-',
-        userName: item.UserName || '-',
-        staffNo: item.StaffNo || '-',
-        accessLevel: item.AccessLevel !== '' ? item.AccessLevel : '-',
-        cashAccount: item.CashAccount || '-',
-        features: item.Features || '-',
-        featurePermissions: item.FeaturePermissions,
-        pagePermissions: item.PagePermissions,
-        _originalData: item,
-      })),
-    [allUsers],
+      allUsers.map((item, idx) => {
+        // Find cash account name
+        const cashAccountNum = item.CashAccount || '-';
+        const cashAccountObj = cashAccounts.find(acc => acc.cacctnumb === cashAccountNum);
+        const cashAccountDisplay = cashAccountObj 
+          ? `${cashAccountObj.cacctnumb} - ${cashAccountObj.cacctname?.trim()}`
+          : cashAccountNum;
+
+        return {
+          id: `user-${idx}`,
+          userID: item.UserID || '-',
+          userName: item.UserName || '-',
+          staffNo: item.StaffNo || '-',
+          accessLevel: item.AccessLevel !== '' ? item.AccessLevel : '-',
+          cashAccount: cashAccountDisplay,
+          features: item.Features || '-',
+          featurePermissions: item.FeaturePermissions,
+          pagePermissions: item.PagePermissions,
+          _originalData: item,
+        };
+      }),
+    [allUsers, cashAccounts],
   );
 
   const isSaving = isSavingUser || isSavingRole;
@@ -884,7 +940,6 @@ export default function UserSetup({ user }) {
                   name="companyName"
                   value={userForm.companyName}
                   onChange={handleUserFormChange}
-                  disabled
                   size="small"
                   fullWidth
                 >
@@ -1042,7 +1097,11 @@ export default function UserSetup({ user }) {
                   helperText={cashAccountsLoading ? 'Loading cash accounts...' : ''}
                   SelectProps={{
                     displayEmpty: true,
-                    renderValue: (selected) => selected || 'Select Cash Account',
+                    renderValue: (selected) => {
+                      if (!selected) return 'Select Cash Account';
+                      const account = cashAccounts.find(item => item.cacctnumb === selected);
+                      return account ? `${account.cacctnumb} - ${account.cacctname?.trim()}` : selected;
+                    },
                   }}
                 >
                   <MenuItem value="" disabled>
@@ -1050,7 +1109,7 @@ export default function UserSetup({ user }) {
                   </MenuItem>
                   {cashAccounts.map((item) => (
                     <MenuItem key={item.cacctnumb} value={item.cacctnumb}>
-                      {item.cacctnumb}
+                      {item.cacctnumb} - {item.cacctname?.trim()}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -1280,11 +1339,13 @@ export default function UserSetup({ user }) {
                 columnVisibilityModel: { id: false },
               }}
               onRowClick={(params) => {
-                handleEditSavedUser(params.row._originalData);
+                handleEditSavedUser(params.row._originalData).catch((err) => {
+                  console.error('Error editing user:', err);
+                  setStatusMessage('Error loading user details');
+                });
                 const userId = params.row.userID;
-                setSelectedUserIds((prev) => 
-                  prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-                );
+                // Single select: only one row can be selected at a time
+                setSelectedUserIds([userId]);
               }}
               getRowClassName={(params) => {
                 if (selectedUserIds.includes(params.row.userID)) return 'selected-row';

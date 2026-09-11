@@ -43,6 +43,7 @@ export function useGetAllUsers() {
           IsCashier: Boolean(item?.IsCashier),
           CompId: item?.CompId,
           BranchId: item?.BranchId,
+          Region: item?.Region,
         }));
 
         if (isMounted) {

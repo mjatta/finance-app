@@ -4,6 +4,7 @@ import { Routes, Route, NavLink, useNavigate, Navigate, useLocation } from 'reac
 import { useAuthStore } from './store/authStore';
 import { useUsersStore } from './store/useUsersStore';
 import { useLoginLogger } from './hooks/useLoginLogger';
+import { initializeLookupCaches } from './utils/idLookup';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -399,6 +400,13 @@ function App() {
     handleCloseProfileMenu();
     handleLogout();
   };
+
+  // Initialize ID lookup caches on app startup
+  useEffect(() => {
+    initializeLookupCaches().catch((err) => {
+      console.warn('Failed to initialize lookup caches:', err);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user) {
