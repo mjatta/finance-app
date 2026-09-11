@@ -188,7 +188,7 @@ export default function ChangePassword({ user, onPasswordChanged, onLogout }) {
                   p: 1.5,
                   borderRadius: 1,
                   bgcolor: statusError ? 'error.light' : 'success.light',
-                  color: statusError ? 'error.dark' : 'success.dark',
+                  color: statusError ? '#fff' : 'success.dark',
                 }}
               >
                 {statusMessage}
