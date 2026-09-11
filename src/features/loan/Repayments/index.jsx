@@ -179,9 +179,9 @@ export default function Repayments() {
       return;
     }
 
-    if (formData.repaymentType === 'cheque' && !formData.checkNumber) {
-      setTouched((prev) => ({ ...prev, checkNumber: true }));
-      setStatusMessage('Please fill in all required fields: Check Number');
+    if (formData.repaymentType === 'cheque' && !formData.checkNumber && !formData.bbNumber) {
+      setTouched((prev) => ({ ...prev, checkNumber: true, bbNumber: true }));
+      setStatusMessage('Please fill in either Check Number or Bank Transfer Reference Number');
       setStatusError(true);
       return;
     }
@@ -227,7 +227,7 @@ export default function Repayments() {
         repaymentAmount: formData.repaymentAmount,
         totalAccruedInterest: formData.totalAccruedInterest || 0,
         transactionDate: formData.transactionDate,
-        checkNumber: formData.checkNumber,
+        checkNumber: formData.checkNumber || formData.bbNumber || '',
         username: resolvedUsername,
         branchId: resolvedBranchId,
         region: formData.selectedRegionId || '',
@@ -334,6 +334,8 @@ export default function Repayments() {
     repaymentType: '',
     checkNumber: '',
     checkDate: '',
+    bbNumber: '',
+    bbDate: '',
     bank: '',
     bankAccount: '',
     contraAccount: '',
@@ -358,6 +360,8 @@ export default function Repayments() {
           // Reset details on type change
           checkNumber: '',
           checkDate: '',
+          bbNumber: '',
+          bbDate: '',
           bank: '',
           bankAccount: '',
           contraAccount: '',
@@ -888,7 +892,7 @@ export default function Repayments() {
                   >
                     <MenuItem value="">Select Repayment Type</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
-                    <MenuItem value="cheque">Cheque</MenuItem>
+                    <MenuItem value="cheque">Cheque / Bank Transfer</MenuItem>
                     <MenuItem value="bank">Bank</MenuItem>
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
                   </TextField>
@@ -962,12 +966,12 @@ export default function Repayments() {
                         {formData.repaymentType === 'cheque' && (
                           <>
                             <TextField
-                              label={<span>Check Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
+                              label="Check Number"
                               name="checkNumber"
                               value={formData.checkNumber}
                               onChange={handleChange}
-                              error={isFieldInvalid('checkNumber')}
-                              helperText={isFieldInvalid('checkNumber') ? 'Check Number is required' : ''}
+                              error={isFieldInvalid('checkNumber') && !formData.bbNumber}
+                              helperText={isFieldInvalid('checkNumber') && !formData.bbNumber ? 'Check Number or Bank Transfer Reference is required' : ''}
                               size="small"
                               fullWidth
                             />
@@ -980,6 +984,29 @@ export default function Repayments() {
                               size="small"
                               fullWidth
                               InputLabelProps={{ shrink: true }}
+                              disabled={!formData.checkNumber}
+                            />
+                            <TextField
+                              label="Bank Transfer Reference Number"
+                              name="bbNumber"
+                              value={formData.bbNumber}
+                              onChange={handleChange}
+                              error={isFieldInvalid('bbNumber') && !formData.checkNumber}
+                              helperText={isFieldInvalid('bbNumber') && !formData.checkNumber ? 'Check Number or Bank Transfer Reference is required' : ''}
+                              size="small"
+                              fullWidth
+                              placeholder="Enter BB Number if using bank transfer"
+                            />
+                            <TextField
+                              label="Bank Transfer Date"
+                              name="bbDate"
+                              type="date"
+                              value={formData.bbDate}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              InputLabelProps={{ shrink: true }}
+                              disabled={!formData.bbNumber}
                             />
                           </>
                         )}
@@ -1055,7 +1082,7 @@ export default function Repayments() {
                   !formData.postingAccount ||
                   !formData.repaymentAmount ||
                   !formData.repaymentType ||
-                  (formData.repaymentType === 'cheque' && !formData.checkNumber) ||
+                  (formData.repaymentType === 'cheque' && !formData.checkNumber && !formData.bbNumber) ||
                   isSavingRepayment
                 }
                 onClick={handleSaveRepayment}

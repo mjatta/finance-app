@@ -26,7 +26,7 @@ export function useWithdrawalTransaction() {
         tnTranAmt: parseFloat(formData.withdrawalAmount) || 0,
         tnContAmt: -Math.abs(parseFloat(formData.withdrawalAmount)) || 0, // Negative of withdrawal amount
         dTranDate: formData.transactionDate || new Date().toISOString(),
-        tcChqno: formData.checkNumber || '', // Map to check number
+        tcChqno: formData.checkNumber || formData.bbNumber || '', // Map to check number or BB number
         lnServID: formData.productId || 5, // Product ID from Posting Account endpoint, default to 5
         gcUserid: userId,
         ncompid: compId,

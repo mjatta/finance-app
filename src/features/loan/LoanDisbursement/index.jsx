@@ -121,6 +121,8 @@ export default function LoanDisbursement() {
     topUpAmount: '',
     accruedInterest: '',
     chequeNumber: '',
+    bbNumber: '',
+    bbDate: dayjs(),
     region: '',
     selectedRegionId: '',
   });
@@ -420,7 +422,7 @@ export default function LoanDisbursement() {
         AccountNumber: String(selectedLoan.loanacct || selectedLoan.loan_id || ''),
         ContraAccount: paymentOption === 'cash' ? cashAccount : (selectedBankAccountNumber || ''),
         ControlAcct: String(selectedLoan.ControlAcct || '13100110101'),
-        ChequeNo: disbursementDetails.chequeNumber || '',
+        ChequeNo: disbursementDetails.chequeNumber || disbursementDetails.bbNumber || '',
         LoanProduct: 1,
         PaymentOption: paymentOptionMap[paymentOption] || 1,
         Amount: parseFloat(disbursementDetails.amount) || 0,
@@ -469,6 +471,8 @@ export default function LoanDisbursement() {
         topUpAmount: '',
         accruedInterest: '',
         chequeNumber: '',
+        bbNumber: '',
+        bbDate: dayjs(),
         region: '',
         selectedRegionId: '',
       });
@@ -890,7 +894,7 @@ export default function LoanDisbursement() {
                     <FormControlLabel
                       value="cheque"
                       control={<Radio sx={{ display: 'none' }} />}
-                      label="🏦 Cheque"
+                      label="🏦 Cheque / Bank Transfer"
                       sx={{
                         flex: 1,
                         m: 0,
@@ -986,12 +990,24 @@ export default function LoanDisbursement() {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
-                        label={<span>Cheque Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
+                        label="Cheque Number"
                         name="chequeNumber"
                         value={disbursementDetails.chequeNumber}
                         onChange={handleDisbursementDetailsChange}
                         variant="outlined"
                         size="small"
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Bank Transfer Reference Number"
+                        name="bbNumber"
+                        value={disbursementDetails.bbNumber}
+                        onChange={handleDisbursementDetailsChange}
+                        variant="outlined"
+                        size="small"
+                        placeholder="Enter BB Number if using bank transfer"
                       />
                     </Grid>
                   </Grid>

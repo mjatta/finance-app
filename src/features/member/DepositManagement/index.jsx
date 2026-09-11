@@ -70,6 +70,10 @@ export default function DepositManagement() {
     contraAccount: '',
     checkNumber: '',
     checkDate: todayIso,
+    bbNumber: '',
+    bbDate: todayIso,
+    bbNumber: '',
+    bbDate: todayIso,
     bank: '',
     bankAccount: '',
     cashAccount: '',
@@ -437,7 +441,7 @@ export default function DepositManagement() {
     if (!formData.postingAccount) missingFields.push('Posting Account');
     if (!formData.depositAmount) missingFields.push('Deposit Amount');
     if (!formData.transactionDate) missingFields.push('Transaction Date');
-    if (formData.depositType === 'cheque' && !formData.checkNumber) missingFields.push('Check Number');
+    if (formData.depositType === 'cheque' && !formData.checkNumber && !formData.bbNumber) missingFields.push('Check Number or Bank Transfer Reference Number');
 
     if (missingFields.length > 0) {
       setTouched({
@@ -1007,8 +1011,8 @@ export default function DepositManagement() {
                     // displayEmpty and renderValue removed
                   >
                     <MenuItem value="">Select Deposit Type</MenuItem>
-                    <MenuItem value="cash">Cash</MenuItem>
-                    <MenuItem value="cheque">Cheque</MenuItem>
+                    <MenuItem value="cash">Cash</MenuItem>\n                    <MenuItem value="cheque">Cheque / Bank Transfer</MenuItem>",
+"                    <MenuItem value="cash">Cash</MenuItem>\n                    <MenuItem value="cheque">Cheque</MenuItem>"
                     <MenuItem value="mobile-wallet">Mobile Wallet</MenuItem>
                   </TextField>
                   <TextField
@@ -1134,12 +1138,12 @@ export default function DepositManagement() {
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 2 }}>
                   <TextField
-                    label={<span>Check Number <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
+                    label="Check Number"
                     name="checkNumber"
                     value={formData.checkNumber}
                     onChange={handleChange}
-                    error={!!touched.checkNumber && !formData.checkNumber}
-                    helperText={touched.checkNumber && !formData.checkNumber ? 'Check Number is required' : ''}
+                    error={!!touched.checkNumber && !formData.checkNumber && !formData.bbNumber}
+                    helperText={touched.checkNumber && !formData.checkNumber && !formData.bbNumber ? 'Check Number or Bank Transfer Reference is required' : ''}
                     size="small"
                     fullWidth
                   />
@@ -1148,6 +1152,31 @@ export default function DepositManagement() {
                     value={formData.checkDate ? dayjs(formData.checkDate) : null}
                     onChange={(value) => handleDateChange('checkDate', value)}
                     maxDate={dayjs(todayIso)}
+                    disabled={!formData.checkNumber}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                  <TextField
+                    label="Bank Transfer Reference Number"
+                    name="bbNumber"
+                    value={formData.bbNumber}
+                    onChange={handleChange}
+                    error={!!touched.bbNumber && !formData.bbNumber && !formData.checkNumber}
+                    helperText={touched.bbNumber && !formData.bbNumber && !formData.checkNumber ? 'Check Number or Bank Transfer Reference is required' : ''}
+                    size="small"
+                    fullWidth
+                    placeholder="Enter BB Number if using bank transfer"
+                  />
+                  <DatePicker
+                    label="Bank Transfer Date"
+                    value={formData.bbDate ? dayjs(formData.bbDate) : null}
+                    onChange={(value) => handleDateChange('bbDate', value)}
+                    maxDate={dayjs(todayIso)}
+                    disabled={!formData.bbNumber}
                     slotProps={{
                       textField: {
                         size: 'small',
