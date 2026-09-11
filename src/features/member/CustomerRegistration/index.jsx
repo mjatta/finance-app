@@ -1003,7 +1003,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
   // Shared validation used by both the initial Save flow and the Update flows (edit-existing-member)
   // so required-field checks, format checks, and the tab-auto-switch/scroll-to-field behavior stay
   // consistent no matter which action the user takes.
-  const runFormValidation = (targetMainTab) => {
+  const runFormValidation = (targetMainTab, photoFileRef, signatureFileRef) => {
     const missingFields = [];
     const invalidMessages = [];
     let firstErrorTab = null;
@@ -1048,6 +1048,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         }
       });
       touchedFields.emailAddress = true;
+
+      // Check biometric photo upload (required)
+      if (!photoFileRef || !photoFileRef.current) {
+        missingFields.push('Biometric Photo');
+        noteError('biometricPhoto', 2);
+      }
+
+      // Check biometric signature upload (required)
+      if (!signatureFileRef || !signatureFileRef.current) {
+        missingFields.push('Biometric Signature');
+        noteError('biometricSignature', 2);
+      }
 
       if (formData.dateOfBirth && dayjs().diff(dayjs(formData.dateOfBirth), 'year') < 18) {
         invalidMessages.push('Date of Birth (must be 18 or older)');
@@ -1096,6 +1108,18 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       });
       touchedFields.emailAddress = true;
       touchedFields.chairEmailAddress = true;
+
+      // Check biometric photo upload (required)
+      if (!photoFileRef || !photoFileRef.current) {
+        missingFields.push('Biometric Photo');
+        noteError('biometricPhoto', 1);
+      }
+
+      // Check biometric signature upload (required)
+      if (!signatureFileRef || !signatureFileRef.current) {
+        missingFields.push('Biometric Signature');
+        noteError('biometricSignature', 1);
+      }
 
       if (formData.mobilePhoneNumber && !PHONE_REGEX.test(String(formData.mobilePhoneNumber).trim())) {
         invalidMessages.push('Tel (invalid format)');
@@ -1535,7 +1559,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
     setSaveValidationErrors(null);
 
-    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(mainTab);
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(mainTab, photoFileRef, signatureFileRef);
 
     if (missingFields.length > 0 || invalidMessages.length > 0) {
       // Touch all relevant fields for the current tab so red borders/helper text appear
@@ -1725,7 +1749,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     if (!isExistingMember || isSaving) return;
 
     setSaveValidationErrors(null);
-    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(0);
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(0, photoFileRef, signatureFileRef);
     if (missingFields.length > 0 || invalidMessages.length > 0) {
       setTouched(touchedFields);
       if (firstErrorTab !== null && detailTab !== firstErrorTab) {
@@ -1927,7 +1951,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
     if (!isExistingMember || isSaving) return;
 
     setSaveValidationErrors(null);
-    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(1);
+    const { missingFields, invalidMessages, firstErrorTab, firstErrorField, touchedFields } = runFormValidation(1, photoFileRef, signatureFileRef);
     if (missingFields.length > 0 || invalidMessages.length > 0) {
       setTouched(touchedFields);
       if (firstErrorTab !== null && detailTab !== firstErrorTab) {
@@ -3600,10 +3624,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
               {((mainTab === 1 && detailTab === 4) || (mainTab !== 1 && detailTab === 4)) && (
                 <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
                   {/* Biometric Tab Content */}
-                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: (touched.biometricPhotoName && !formData.biometricPhotoName) ? '#d32f2f' : 'divider', height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                        Biometric
+                        Biometric <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>*</span>
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 1.25 }}>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -3686,10 +3710,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                   </Card>
 
                   {/* Signature Card */}
-                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: (touched.biometricSignatureName && !formData.biometricSignatureName) ? '#d32f2f' : 'divider', height: '100%' }}>
                     <CardContent>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2, pb: 1.5, fontSize: '0.95rem', color: '#2c3e50', borderBottom: '2px solid', borderColor: '#bdbdbd' }}>
-                        Signature
+                        Signature <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>*</span>
                       </Typography>
                       <Box sx={{ display: 'grid', gap: 1.25 }}>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -4433,7 +4457,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
             <Button
               variant="contained"
               onClick={handleSave}
-              disabled={isSaving || isExistingMember}
+              disabled={isSaving || isExistingMember || !photoFileRef?.current || !signatureFileRef?.current}
               sx={{
                 backgroundColor: '#667eea',
                 '&:hover': { backgroundColor: '#5568d3' },
@@ -4450,7 +4474,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 variant="contained"
                 color="secondary"
                 onClick={handleUpdateCustomer}
-                disabled={isSaving}
+                disabled={isSaving || !photoFileRef?.current || !signatureFileRef?.current}
                 sx={{ backgroundColor: '#2e7d32', '&:hover': { backgroundColor: '#276c2a' }, fontWeight: 600, paddingX: 3 }}
               >
                 {isSaving ? (mainTab === 0 ? 'Updating...' : 'Updating...') : '🔄 Update Customer'}
@@ -4461,7 +4485,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 variant="contained"
                 color="secondary"
                 onClick={handleUpdateInstitution}
-                disabled={isSaving}
+                disabled={isSaving || !photoFileRef?.current || !signatureFileRef?.current}
                 sx={{ backgroundColor: '#2e7d32', '&:hover': { backgroundColor: '#276c2a' }, fontWeight: 600, paddingX: 3 }}
               >
                 {isSaving ? 'Updating...' : '🔄 Update Institution'}
