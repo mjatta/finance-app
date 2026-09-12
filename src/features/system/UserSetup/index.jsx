@@ -21,6 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
 import { useAddUser } from './hooks/useAddUser';
+import { useUpdateUser } from './hooks/useUpdateUser';
 import { useGetAllUsers } from './hooks/useGetAllUsers';
 import { useGetBasicDetails } from './hooks/useGetBasicDetails';
 import { useRegions } from '../../../hooks/useRegions';
@@ -203,6 +204,7 @@ export default function UserSetup({ user }) {
   const [isSavingRole, setIsSavingRole] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const { addUser } = useAddUser();
+  const { updateUser } = useUpdateUser();
   const { cashAccounts, loading: cashAccountsLoading } = useGetBasicDetails();
   const { users: allUsers, loading: allUsersLoading } = useGetAllUsers();
   const { regions, loading: regionsLoading } = useRegions();
@@ -221,6 +223,7 @@ export default function UserSetup({ user }) {
     () => Boolean(
       userForm.companyName
       && userForm.branch
+      && userForm.region
       && userForm.userId
       && userForm.userName
       && userForm.email
@@ -656,15 +659,20 @@ export default function UserSetup({ user }) {
         pagePermissions: roleForm.pagePermissions || {},
       };
 
-      // Call the backend API to create the user with role permissions
-      const result = await addUser({
-        userForm,
-        roleForm,
-        branchesData: rawBranchesData,
-      });
+      // Call the backend API to create or update the user with role permissions
+      const result = editingUserId
+        ? await updateUser({
+            userForm,
+            roleForm,
+          })
+        : await addUser({
+            userForm,
+            roleForm,
+            branchesData: rawBranchesData,
+          });
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to create user.');
+        throw new Error(result.error || (editingUserId ? 'Failed to update user.' : 'Failed to create user.'));
       }
 
       const payload = result.data;
@@ -733,7 +741,11 @@ export default function UserSetup({ user }) {
         setBaseRoles((prev) => Array.from(new Set([...prev, rolePayload.roleName])));
       }
 
-      setStatusMessage('User setup and role saved successfully.');
+      const isUpdate = !!editingUserId;
+      const actionLabel = isUpdate ? 'Update' : 'Save';
+      const actionMessageSuccess = isUpdate ? 'updated' : 'saved';
+
+      setStatusMessage(`User setup and role ${actionMessageSuccess} successfully.`);
       setEditingUserId(userForm.userId || '');
       setUserForm((prev) => ({
         ...createDefaultUserForm(prev.companyName),
@@ -750,15 +762,18 @@ export default function UserSetup({ user }) {
       setEditingRoleName('');
       notifySaveSuccess({
         page: 'System Administration / User Setup',
-        action: 'Save User Setup And Role',
-        message: 'User setup and role saved successfully.',
+        action: `${actionLabel} User Setup And Role`,
+        message: `User setup and role ${actionMessageSuccess} successfully.`,
       });
     } catch (error) {
-      setStatusMessage('Unable to save user setup and role data.');
+      const isUpdate = !!editingUserId;
+      const actionLabel = isUpdate ? 'Update' : 'Save';
+      const actionMessageFail = isUpdate ? 'update' : 'save';
+      setStatusMessage(`Unable to ${actionMessageFail} user setup and role data.`);
       notifySaveError({
         page: 'System Administration / User Setup',
-        action: 'Save User Setup And Role',
-        message: 'Unable to save user setup and role data.',
+        action: `${actionLabel} User Setup And Role`,
+        message: `Unable to ${actionMessageFail} user setup and role data.`,
         error,
       });
     } finally {
@@ -981,6 +996,7 @@ export default function UserSetup({ user }) {
                   onChange={handleUserFormChange}
                   size="small"
                   fullWidth
+                  required
                   disabled={regionsLoading}
                   SelectProps={{
                     displayEmpty: true,

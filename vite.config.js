@@ -4416,6 +4416,12 @@ export default defineConfig({
           changeOrigin: true,
           secure: false,
         },
+        // Proxy users update endpoint to avoid CORS
+        '/api/Users/UpdateUser': {
+          target: 'https://alakuyateh-001-site10.atempurl.com',
+          changeOrigin: true,
+          secure: false,
+        },
         '/api/changepassword/update': {
           target: 'https://alakuyateh-001-site10.atempurl.com',
           changeOrigin: true,

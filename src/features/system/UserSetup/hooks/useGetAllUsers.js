@@ -35,6 +35,8 @@ export function useGetAllUsers() {
           CashAccount: (item?.CashAccount || '').toString().trim(),
           Role: (item?.Role || '').toString().trim(),
           Features: (item?.Features || '').toString().trim(),
+          Email: (item?.Email || '').toString().trim(),
+          Phone: (item?.Phone || '').toString().trim(),
           FeaturePermissions: item?.FeaturePermissions && typeof item.FeaturePermissions === 'object' ? item.FeaturePermissions : {},
           PagePermissions: item?.PagePermissions && typeof item.PagePermissions === 'object' ? item.PagePermissions : {},
           CreditLimit: item?.CreditLimit ?? '',
