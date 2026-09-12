@@ -23,11 +23,18 @@ export const buildAuditTrailPrintHtml = (items, title = 'Audit Trail Report', me
   const fromLabel = meta.fromDate || ''
   const toLabel = meta.toDate || ''
 
+  const mapAuditType = (val) => {
+    const trimmed = String(val || '').trim()
+    if (trimmed === 'U') return 'Update'
+    if (trimmed === 'C') return 'Create'
+    return trimmed
+  }
+
   const tableRows = rows.map((r) => {
     const date = r.audit_date ? dayjs(r.audit_date).format('YYYY-MM-DD') : (r.audit_date || '')
     const time = r.audit_time || ''
     const user = (r.winusr || r.suserid || '').toString().trim()
-    const type = (r.audit_type || '').toString()
+    const type = mapAuditType(r.audit_type)
     const desc = (r.audit_desc || r.audit_desc || '').toString().trim()
     const orig = r.orig_value ?? r.orig_cvalue ?? ''
     const neu = r.new_value ?? r.new_cvalue ?? ''
