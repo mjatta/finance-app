@@ -41,7 +41,7 @@ export function useUpdateUser() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateUser = async ({ userForm, roleForm }) => {
+  const updateUser = async ({ userForm, roleForm, onSuccess }) => {
     setLoading(true);
     setError(null);
 
@@ -56,7 +56,6 @@ export function useUpdateUser() {
         Username: userForm.userName || '',
         Email: userForm.email || '',
         Phone: userForm.phone || '',
-        Userpassword: userForm.temporaryPassword || '',
         Dateforce: toDateOnly(new Date()),
         Branchid: Number(userForm.branchId),
         Cashaccont: (userForm.cashAccount || '').toString().trim(),
@@ -91,6 +90,11 @@ export function useUpdateUser() {
 
       if (!response.ok) {
         throw new Error(data.message || data.Message || `HTTP ${response.status}`);
+      }
+
+      // Call onSuccess callback to refresh users list
+      if (typeof onSuccess === 'function') {
+        onSuccess();
       }
 
       return {

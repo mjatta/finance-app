@@ -206,7 +206,7 @@ export default function UserSetup({ user }) {
   const { addUser } = useAddUser();
   const { updateUser } = useUpdateUser();
   const { cashAccounts, loading: cashAccountsLoading } = useGetBasicDetails();
-  const { users: allUsers, loading: allUsersLoading } = useGetAllUsers();
+  const { users: allUsers, loading: allUsersLoading, refetch: refetchAllUsers } = useGetAllUsers();
   const { regions, loading: regionsLoading } = useRegions();
 
   const [userForm, setUserForm] = useState(() => createDefaultUserForm(''));
@@ -664,6 +664,7 @@ export default function UserSetup({ user }) {
         ? await updateUser({
             userForm,
             roleForm,
+            onSuccess: refetchAllUsers,
           })
         : await addUser({
             userForm,
