@@ -28,15 +28,17 @@ export function useAuthOtp() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const message = (data && data.message) || `HTTP ${response.status}`;
-        throw new Error(message);
+        const message = (data && (data.message || data.Message)) || `HTTP ${response.status}`;
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
       }
 
       return { success: true, data };
     } catch (err) {
       const message = err.message || 'Login failed';
       setError(message);
-      return { success: false, error: message };
+      return { success: false, error: message, status: err.status };
     } finally {
       setLoading(false);
     }

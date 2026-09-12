@@ -13,8 +13,6 @@ import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
-import testUsers from '../../data/test-users.json';
-import { useLogin } from './hooks/useLogin';
 import { useAuthOtp } from './hooks/useAuthOtp';
 import { useCreditUnionDetails } from './hooks/useCreditUnionDetails';
 import { useSaveLoginAttempt } from '../system/LoginAttempts/hooks/useSaveLoginAttempt';
@@ -51,7 +49,6 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState(() => getInitialErrorMessage());
-  const { login: backendLogin, loading: loginLoading } = useLogin();
   const { requestOtpLogin, verifyOtp, resendOtp, loading: otpLoading } = useAuthOtp();
   const { fetchCreditUnionDetails } = useCreditUnionDetails();
   const { saveLoginAttempt } = useSaveLoginAttempt();
@@ -232,73 +229,38 @@ function Login({ onLogin }) {
         return;
       }
 
-      // Try backend authentication
-      const result = await backendLogin(normalizedUsername, password);
-      if (result.success && result.data && result.data.Success) {
-        await finalizeLogin(result.data, normalizedUsername, loginStartTime);
-        return;
-      }
-
-      // Fallback: check test-users for dev convenience
-      const foundDefaultUser = testUsers.users.find(
-        (u) => u.username === normalizedUsername && u.password === password,
-      );
-      if (foundDefaultUser) {
-        const { password: _, ...safeUser } = foundDefaultUser;
-        
-        // Set Sentry user context for test user
-        Sentry.setUser({
-          id: safeUser.id,
-          username: safeUser.username,
-          role: safeUser.role,
-        });
-
-        setAuthUser(safeUser);
-        
-        // Log successful login attempt
-        saveLoginAttempt(normalizedUsername, true);
-
-        // Capture successful test user login in Sentry
-        Sentry.captureMessage('Test user login successful', 'info', {
-          contexts: {
-            login: {
-              username: normalizedUsername,
-              isTestUser: true,
-            },
-          },
-        });
-
-        // Emit metrics for successful test user login
-        const testLoginDuration = performance.now() - loginStartTime;
-        Sentry.metrics.count('login_success', 1);
-        Sentry.metrics.count('test_user_login', 1);
-        Sentry.metrics.distribution('login_duration_ms', testLoginDuration);
-
-        setErrorMessage('');
-        // Pre-load counties lookup data after successful login
-        await fetchAreas();
-        onLogin(safeUser);
-        return;
-      }
+      // Distinguish a server-side/OTP-delivery failure (5xx, or no status info) from
+      // genuinely invalid credentials (4xx) so we can show an accurate, safe message —
+      // without ever falling back to a non-2FA login path.
+      const isServerSideFailure = !otpLoginResult.status || otpLoginResult.status >= 500;
 
       // Log failed login attempt
       saveLoginAttempt(normalizedUsername, false);
-      
+
       // Capture failed login attempt in Sentry
-      Sentry.captureMessage('Login attempt failed - invalid credentials', 'warning', {
-        contexts: {
-          login: {
-            username: normalizedUsername,
-            attemptedAt: new Date().toISOString(),
+      Sentry.captureMessage(
+        isServerSideFailure ? 'Login attempt failed - OTP service error' : 'Login attempt failed - invalid credentials',
+        'warning',
+        {
+          contexts: {
+            login: {
+              username: normalizedUsername,
+              attemptedAt: new Date().toISOString(),
+              status: otpLoginResult.status,
+            },
           },
         },
-      });
+      );
 
       // Emit metrics for failed login
       Sentry.metrics.count('login_failure', 1);
-      Sentry.metrics.count('invalid_credentials', 1);
+      Sentry.metrics.count(isServerSideFailure ? 'otp_service_error' : 'invalid_credentials', 1);
 
-      setErrorMessage('Invalid username or password');
+      setErrorMessage(
+        isServerSideFailure
+          ? 'We could not send your verification code right now. Please try again in a moment.'
+          : 'Invalid username or password',
+      );
     } catch (error) {
       // Capture login error in Sentry
       Sentry.captureException(error, {
@@ -883,8 +845,8 @@ function Login({ onLogin }) {
                   type="submit"
                   variant="contained"
                   fullWidth
-                  disabled={loginLoading || otpLoading}
-                  startIcon={(loginLoading || otpLoading) ? <CircularProgress size={18} color="inherit" /> : null}
+                  disabled={otpLoading}
+                  startIcon={otpLoading ? <CircularProgress size={18} color="inherit" /> : null}
                   sx={{
                     mt: 1,
                     py: 1.4,
@@ -900,7 +862,7 @@ function Login({ onLogin }) {
                     },
                   }}
                 >
-                  {(loginLoading || otpLoading) ? 'Signing in...' : 'Sign In'}
+                  {otpLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
 
                 <Typography sx={{ textAlign: 'center', color: 'text.secondary', fontSize: '0.9rem', pt: 0.5 }}>
