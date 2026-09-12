@@ -16,6 +16,7 @@ export const initialForm = {
   middleName: '',
   surname: '',
   memberType: '',
+  sector: '',
   memberCode: '',
   branch: '',
   memberEmployed: false,

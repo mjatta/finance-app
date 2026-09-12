@@ -19,6 +19,7 @@ export function buildIndividualPayload(formData, countries = [], cities = [], { 
     MName: formData.middleName,
     LName: formData.surname,
     MemType: mapMemberType(formData.memberType),
+    Sector: formData.sector ? Number(formData.sector) : '',
     Employed: !!formData.memberEmployed,
     Title: Number(formData.title) || '',
     NatCode: formData.nationality ? (countries.find(c => c.name === formData.nationality)?.id || 0) : 0,
@@ -77,6 +78,7 @@ export function buildInstitutionPayload(formData, cities = [], { compId, branchI
   return {
     CustName: formData.institutionName, // Mandatory
     BizCategory: Number(formData.institutionNature) || 0, // Mandatory (should be mapped from dropdown)
+    Sector: formData.sector ? Number(formData.sector) : '',
     Country: formData.country || '', // Mandatory
     City: formData.city ? (cities.find(c => c.name === formData.city)?.id || 0) : 0, // Mandatory
     Street: formData.address, // Mandatory

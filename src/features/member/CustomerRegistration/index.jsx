@@ -148,11 +148,41 @@ export default function CustomerRegistration(props) {
         )
       );
     };
+
+    const [sectorOptions, setSectorOptions] = useState([]);
+
   const { registerInstitution } = useRegisterInstitution();
   const { registerIndividual } = useRegisterIndividual();
   const { cities } = useCities();
   const { districts } = useDistricts();
   const { wards } = useWards();
+
+  // Fetch economic sectors from API on mount
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const url = getFullApiUrl('/api/loan-setup/details');
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.data && Array.isArray(data.data.sectors)) {
+            const sectors = data.data.sectors.map((item) => ({
+              value: String(item.sec_id),
+              label: String(item.sec_name || '').trim(),
+            }));
+            setSectorOptions(sectors);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching sectors:', error);
+      }
+    };
+    fetchSectors();
+  }, []);
+
   // Map numeric city id (or legacy ncity) to the city id string that the UI dropdown expects
   const mapCityById = (val) => {
     if (val === undefined || val === null || val === '') return '';
@@ -399,6 +429,7 @@ export default function CustomerRegistration(props) {
         middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
         surname: (m.ccustlname || m.LName || m.surname || '').trim(),
         memberType: (m.MemType || m.memberType || m.memtype || '').trim(),
+        sector: String(m.Sector || m.sector || '').trim(),
         memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
         branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
         memberEmployed: m.Employed === 1 || m.Employed === true || !!m.memberEmployed,
@@ -603,6 +634,7 @@ export default function CustomerRegistration(props) {
         institutionName: m.ccustname || m.CustName || m.custname || '',
         // Biz category / nature
         institutionNature: m.BizCategory || m.bizcategory || m.bizcat || m.institutionNature || '',
+        sector: String(m.Sector || m.sector || '').trim(),
         institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
         institutionBranch: (function () {
           const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
@@ -787,7 +819,7 @@ export default function CustomerRegistration(props) {
     setIsExistingMember(false);
     setFormData((prev) => {
       const keysToReset = [
-        'firstName','middleName','surname','memberType','memberCode','branch','institutionBranch','memberEmployed','sendSms','registerMobileWallet',
+        'firstName','middleName','surname','memberType','sector','memberCode','branch','institutionBranch','memberEmployed','sendSms','registerMobileWallet',
         'title','nationality','tribe','levelOfEducation','dateOfBirth','dateJoined','gender','maritalStatus','idType',
         'idNumber','placeIssue','dateIssued','expiryDate','povertyLevel','region','district','ward','country','city','address',
         'mobilePhoneNumber','emailAddress','refereeName','refereeAddress','refereeMobilePhone','refereeEmailAddress',
@@ -2424,6 +2456,26 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                     </TextField>
                     <TextField
                       select
+                      label="Economic Sector"
+                      name="sector"
+                      value={formData.sector}
+                      onChange={handleChange}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select sector',
+                      }}
+                    >
+                      <MenuItem value="" disabled>
+                        Select sector
+                      </MenuItem>
+                      {sectorOptions.map((sector) => (
+                        <MenuItem key={sector.value} value={sector.value}>
+                          {sector.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      select
                       required
                       label="Branch"
                       name="institutionBranch"
@@ -2553,6 +2605,26 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       <MenuItem value={2}>Association</MenuItem>
                       <MenuItem value={3}>NGO</MenuItem>
                       <MenuItem value={4}>Cooperative</MenuItem>
+                    </TextField>
+                    <TextField
+                      select
+                      label="Economic Sector"
+                      name="sector"
+                      value={formData.sector}
+                      onChange={handleChange}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select sector',
+                      }}
+                    >
+                      <MenuItem value="" disabled>
+                        Select sector
+                      </MenuItem>
+                      {sectorOptions.map((sector) => (
+                        <MenuItem key={sector.value} value={sector.value}>
+                          {sector.label}
+                        </MenuItem>
+                      ))}
                     </TextField>
                     {/* Company ID and Branch ID fields removed: set from backend/API only */}
                   </Box>
