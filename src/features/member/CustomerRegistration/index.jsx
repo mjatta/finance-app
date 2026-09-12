@@ -2529,10 +2529,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
                         <TextField
                           label="Find Institution"
-                          placeholder="Enter institution code"
+                          placeholder="Institution code or Address or ID Name"
                           size="small"
                           value={institutionSearchCode}
                           onChange={(e) => setInstitutionSearchCode(e.target.value)}
+                          sx={{ minWidth: 410 }}
                         />
                         <Button variant="contained" onClick={handleFillFromInstitution} disabled={loadingInstitutionDetails || !institutionSearchCode} sx={{ backgroundColor: '#667eea' }}>
                           {loadingInstitutionDetails ? 'Searching...' : 'Search'}
