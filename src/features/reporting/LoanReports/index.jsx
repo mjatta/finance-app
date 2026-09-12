@@ -24,6 +24,7 @@ import { useLoanReportCurrencies } from './hooks/useLoanReportCurrencies';
 import { useLoanReportPrintView } from './hooks/useLoanReportPrintView';
 import { buildLoanReportPrintHtml } from './printSetup';
 import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
+import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const ALL_BRANCHES_VALUE = 'ALL';
 const ALL_USERS_VALUE = 'ALL';
@@ -54,6 +55,8 @@ export default function LoanReports() {
   const [loanReason, setLoanReason] = useState(ALL_REASONS_VALUE);
   const [user, setUser] = useState(ALL_USERS_VALUE);
   const [currency, setCurrency] = useState('GMD');
+  const [sector, setSector] = useState('');
+  const [sectorOptions, setSectorOptions] = useState([]);
   const [checks, setChecks] = useState(initChecks());
   const [tranFrom, setTranFrom] = useState(() => dayjs('1980-01-01'));
   const [tranTo, setTranTo] = useState(() => dayjs());
@@ -68,6 +71,32 @@ export default function LoanReports() {
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
   useEffect(() => { fetchBranches(); }, [fetchBranches]);
   useEffect(() => { fetchCurrencies(); }, [fetchCurrencies]);
+
+  // Fetch economic sectors from API on mount
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const url = getFullApiUrl('/api/loan-setup/details');
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.data && Array.isArray(data.data.sectors)) {
+            const sectors = data.data.sectors.map((item) => ({
+              value: String(item.sec_id),
+              label: String(item.sec_name || '').trim(),
+            }));
+            setSectorOptions(sectors);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching sectors:', error);
+      }
+    };
+    fetchSectors();
+  }, []);
 
   const branchOptions = useMemo(() => (Array.isArray(branches) ? branches : []).map((b) => ({ id: b.id, name: b.name })), [branches]);
 
@@ -88,6 +117,7 @@ export default function LoanReports() {
     setLoanReason(ALL_REASONS_VALUE);
     setUser(ALL_USERS_VALUE);
     setCurrency('GMD');
+    setSector('');
     setChecks(initChecks());
     setTranFrom(dayjs('1980-01-01'));
     setTranTo(dayjs());
@@ -100,6 +130,7 @@ export default function LoanReports() {
     LoanReason: loanReason === ALL_REASONS_VALUE ? '' : loanReason || '',
     User: user === ALL_USERS_VALUE ? '' : user || '',
     Currency: currency || '',
+    Sector: sector ? Number(sector) : '',
     Types: Object.keys(checks).filter((k) => checks[k]),
     TranFrom: tranFrom ? (tranFrom.format ? tranFrom.format('YYYY-MM-DD') : String(tranFrom)) : '',
     TranTo: tranTo ? (tranTo.format ? tranTo.format('YYYY-MM-DD') : String(tranTo)) : '',
@@ -165,6 +196,7 @@ export default function LoanReports() {
         ProductType: uiPayload.Product || 0,
         LoanReason: uiPayload.LoanReason || 0,
         UserID: uiPayload.User || '',
+        Sector: uiPayload.Sector || '',
         LApply: checks.loanApplication ? 1 : 0,
         LApproved: checks.loanApproval ? 1 : 0,
         LIssued: checks.loanIssued ? 1 : 0,
@@ -258,6 +290,10 @@ export default function LoanReports() {
               <TextField select label="User" value={user} onChange={(e) => setUser(e.target.value)} size="small">
                 <MenuItem value={ALL_USERS_VALUE}>All users</MenuItem>
                 {userOptions.map((u) => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
+              </TextField>
+              <TextField select label="Economic Sector" value={sector} onChange={(e) => setSector(e.target.value)} size="small">
+                <MenuItem value="">All sectors</MenuItem>
+                {sectorOptions.map((s) => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
               </TextField>
             </Box>
 
