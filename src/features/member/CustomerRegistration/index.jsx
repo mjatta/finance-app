@@ -36,6 +36,7 @@ import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { useIdTypes } from './hooks/useIdTypes';
 import { useBanks } from './hooks/useBanks';
+import { useValidateGroupMemberId } from './hooks/useValidateGroupMemberId';
 import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
@@ -127,6 +128,9 @@ export default function CustomerRegistration(props) {
       },
     ]);
 
+    const [groupMemberValidationErrors, setGroupMemberValidationErrors] = useState({});
+    const { validateId: validateGroupMemberId } = useValidateGroupMemberId();
+
     const handleAddGroupMemberCard = () => {
       setGroupMembers(prev => [
         ...prev,
@@ -147,6 +151,22 @@ export default function CustomerRegistration(props) {
           member.id === id ? { ...member, [field]: value } : member
         )
       );
+    };
+
+    const handleValidateGroupMemberId = async (memberId, memberCardId) => {
+      const result = await validateGroupMemberId(memberId);
+      if (result.exists) {
+        setGroupMemberValidationErrors(prev => ({
+          ...prev,
+          [memberCardId]: result.error,
+        }));
+      } else {
+        setGroupMemberValidationErrors(prev => {
+          const updatedErrors = { ...prev };
+          delete updatedErrors[memberCardId];
+          return updatedErrors;
+        });
+      }
     };
 
     const [sectorOptions, setSectorOptions] = useState([]);
@@ -4018,6 +4038,13 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                 label="ID"
                                 value={member.memberID}
                                 onChange={e => handleGroupMemberChange(member.id, 'memberID', e.target.value)}
+                                onBlur={() => {
+                                  if (member.memberID) {
+                                    handleValidateGroupMemberId(member.memberID, member.id);
+                                  }
+                                }}
+                                error={!!groupMemberValidationErrors[member.id]}
+                                helperText={groupMemberValidationErrors[member.id] || 'Member ID will be validated when you move to the next field'}
                               />
                               <TextField
                                 required
