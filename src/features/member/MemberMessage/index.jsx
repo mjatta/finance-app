@@ -20,6 +20,7 @@ export default function MemberMessage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
+  const [editingMessage, setEditingMessage] = useState('');
 
   const { fetchMemberMessage, updateMemberMessage, loading, updating, error, updateError, data } = useMemberMessage();
 
@@ -32,7 +33,10 @@ export default function MemberMessage() {
 
     setStatusMessage('');
     setStatusError(false);
-    await fetchMemberMessage(customerCode);
+    const result = await fetchMemberMessage(customerCode);
+    if (result) {
+      setEditingMessage(result?.MemberMessage || '');
+    }
     setHasSearched(true);
   };
 
@@ -41,6 +45,7 @@ export default function MemberMessage() {
     setHasSearched(false);
     setStatusMessage('');
     setStatusError(false);
+    setEditingMessage('');
   };
 
   const handleKeyPress = (e) => {
@@ -50,7 +55,7 @@ export default function MemberMessage() {
   };
 
   const handleUpdate = async () => {
-    const result = await updateMemberMessage(data?.memberCode, data?.memberMessage);
+    const result = await updateMemberMessage(data?.memberCode, editingMessage);
     if (result) {
       setStatusMessage('Member message updated successfully!');
       setStatusError(false);
@@ -199,7 +204,7 @@ export default function MemberMessage() {
                   </Typography>
                 </Box>
 
-                {/* Member Message - BOLD */}
+                {/* Member Message - EDITABLE */}
                 <Box
                   sx={{
                     p: 2.5,
@@ -215,20 +220,29 @@ export default function MemberMessage() {
                       Member Message
                     </Typography>
                   </Stack>
-                  <Typography
-                    variant="body1"
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={editingMessage}
+                    onChange={(e) => setEditingMessage(e.target.value)}
+                    placeholder="Enter member message here..."
+                    variant="outlined"
+                    size="small"
+                    disabled={updating}
                     sx={{
-                      fontWeight: 700,
-                      color: '#7c2d12',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.6,
-                      wordBreak: 'break-word',
-                      minHeight: 50,
                       mt: 1,
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#fff',
+                        fontWeight: 600,
+                        color: '#7c2d12',
+                      },
+                      '& .MuiOutlinedInput-input': {
+                        fontSize: '1rem',
+                        lineHeight: 1.6,
+                      },
                     }}
-                  >
-                    {data.memberMessage || 'No message'}
-                  </Typography>
+                  />
                 </Box>
               </Stack>
             </CardContent>
