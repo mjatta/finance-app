@@ -44,24 +44,23 @@ export const buildLoanReportPrintHtml = (payload, context = {}) => {
     return {
       principal: acc.principal + toNumber(r?.PRINCIPAL_AMT),
       repayment: acc.repayment + toNumber(r?.REPAYMENT_AMT),
-      totalBalance: acc.totalBalance + toNumber(r?.TOTALBALANCE),
     };
-  }, { principal: 0, repayment: 0, totalBalance: 0 });
+  }, { principal: 0, repayment: 0 });
 
   const tableRows = rows.length > 0 ? rows.map((r) => `
     <tr>
       <td class="num">${escapeHtml(String(r?.LOAN_NUMBER || '').trim())}</td>
       <td>${escapeHtml(String(r?.ccustcode || '').trim())}</td>
-      <td>${escapeHtml(((r?.ccustfname || '') + ' ' + (r?.ccustmname || '') + ' ' + (r?.ccustlname || '')).trim())}</td>
+      <td>${escapeHtml(((r?.ccustfname || '') + ' ' + (r?.ccustmname || '') + ' ' + (r?.ccustlname || '') + ' ' + (r?.ccustname || '')).trim())}</td>
       <td>${escapeHtml(String(r?.prd_name || '').trim())}</td>
       <td class="amt">${formatAmount(r?.PRINCIPAL_AMT)}</td>
       <td class="amt">${formatAmount(r?.REPAYMENT_AMT)}</td>
       <td>${escapeHtml(formatDate(r?.loan_appl_date))}</td>
       <td>${escapeHtml(formatDate(r?.loan_appr_date))}</td>
-      <td>${escapeHtml(r?.ISSUED_DATE && r.ISSUED_DATE !== '1900-01-01T00:00:00' ? formatDate(r.ISSUED_DATE) : '')}</td>
+      <td>${escapeHtml(String(r?.capprovedby || '').trim())}</td>
       <td>${escapeHtml(formatDate(r?.MATURITY_DATE))}</td>
       <td>${escapeHtml(String(r?.br_name || '').trim())}</td>
-      <td class="amt">${formatAmount(r?.TOTALBALANCE)}</td>
+      <td>${escapeHtml(String(r?.cuserid || '').trim())}</td>
     </tr>
   `).join('') : `
     <tr><td colspan="12" class="no-data">No data found.</td></tr>
@@ -119,10 +118,10 @@ export const buildLoanReportPrintHtml = (payload, context = {}) => {
             <th>Repayment</th>
             <th>Applied</th>
             <th>Approved</th>
-            <th>Issued</th>
+            <th>Approve By</th>
             <th>Maturity</th>
             <th>Branch</th>
-            <th>Total Balance</th>
+            <th>User ID</th>
           </tr>
         </thead>
         <tbody>
@@ -133,8 +132,7 @@ export const buildLoanReportPrintHtml = (payload, context = {}) => {
             <td colspan="4">Totals</td>
             <td class="amt">${formatAmount(totals.principal)}</td>
             <td class="amt">${formatAmount(totals.repayment)}</td>
-            <td colspan="5"></td>
-            <td class="amt">${formatAmount(totals.totalBalance)}</td>
+            <td colspan="6"></td>
           </tr>
         </tfoot>
       </table>

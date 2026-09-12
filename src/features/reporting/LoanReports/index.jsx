@@ -167,20 +167,20 @@ export default function LoanReports() {
       };
 
       const convertToCSV = (rowsData) => {
-        const headers = ['Loan No', 'Client Code', 'Client Name', 'Product', 'Principal', 'Repayment', 'Applied', 'Approved', 'Issued', 'Maturity', 'Branch', 'Total Balance'];
+        const headers = ['Loan No', 'Client Code', 'Client Name', 'Product', 'Principal', 'Repayment', 'Applied', 'Approved', 'Approve By', 'Maturity', 'Branch', 'User ID'];
         const csvRows = (rowsData || []).map((r) => [
           String(r?.LOAN_NUMBER ?? '').trim(),
           String(r?.ccustcode ?? '').trim(),
-          `${String(r?.ccustfname ?? '').trim()} ${String(r?.ccustmname ?? '').trim()} ${String(r?.ccustlname ?? '').trim()}`.trim(),
+          `${String(r?.ccustfname ?? '').trim()} ${String(r?.ccustmname ?? '').trim()} ${String(r?.ccustlname ?? '').trim()} ${String(r?.ccustname ?? '').trim()}`.trim(),
           String(r?.prd_name ?? '').trim(),
           Number(r?.PRINCIPAL_AMT ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           Number(r?.REPAYMENT_AMT ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           formatDate(r?.loan_appl_date),
           formatDate(r?.loan_appr_date),
-          r?.ISSUED_DATE && r.ISSUED_DATE !== '1900-01-01T00:00:00' ? formatDate(r.ISSUED_DATE) : '',
+          String(r?.capprovedby ?? '').trim(),
           formatDate(r?.MATURITY_DATE),
           String(r?.br_name ?? '').trim(),
-          Number(r?.TOTALBALANCE ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          String(r?.cuserid ?? '').trim(),
         ]);
 
         return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
