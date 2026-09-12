@@ -33,18 +33,77 @@ export const buildJournalReportPrintHtml = (items, title = 'Journal Report', met
   const fromLabel = meta.fromDate || ''
   const toLabel = meta.toDate || ''
 
-  const tableRows = rows.map((r) => {
+  // Group rows by user
+  const userGroups = {}
+  rows.forEach((r) => {
     const f = r.Fields || {}
-    return `
-      <tr>
-        <td>${escapeHtml(formatDate(f.dtrandate))}</td>
-        <td>${escapeHtml(f.cacctnumb || '')}</td>
-        <td>${escapeHtml((f.ctrandesc || '').trim())}</td>
-        <td style="text-align:right">${formatAmount(f.ndebit ?? f.ntranamnt ?? 0)}</td>
-        <td style="text-align:right">${formatAmount(f.ncredit ?? (f.ntranamnt < 0 ? Math.abs(f.ntranamnt) : 0) ?? 0)}</td>
-        <td>${escapeHtml(f.cuserid || '')}</td>
-        <td>${escapeHtml(first.br_name || '')}</td>
+    const userId = f.cuserid || 'Unknown'
+    if (!userGroups[userId]) {
+      userGroups[userId] = []
+    }
+    userGroups[userId].push(r)
+  })
+
+  // Build a table for each user
+  const userTables = Object.keys(userGroups).map((userId) => {
+    const userRows = userGroups[userId]
+    
+    const tableRows = userRows.map((r) => {
+      const f = r.Fields || {}
+      const ntranamnt = Number(f.ntranamnt ?? 0)
+      const debitAmount = ntranamnt < 0 ? Math.abs(ntranamnt) : 0
+      const creditAmount = ntranamnt > 0 ? ntranamnt : 0
+      return `
+        <tr>
+          <td>${escapeHtml(formatDate(f.dtrandate))}</td>
+          <td>${escapeHtml(f.cacctnumb || '')}</td>
+          <td>${escapeHtml((f.ctrandesc || '').trim())}</td>
+          <td style="text-align:right">${formatAmount(debitAmount)}</td>
+          <td style="text-align:right">${formatAmount(creditAmount)}</td>
+        </tr>
+      `
+    }).join('')
+
+    // Calculate totals for this user
+    const totalDebit = userRows.reduce((sum, r) => {
+      const f = r.Fields || {}
+      const ntranamnt = Number(f.ntranamnt ?? 0)
+      const debitAmount = ntranamnt < 0 ? Math.abs(ntranamnt) : 0
+      return sum + (Number(debitAmount) || 0)
+    }, 0)
+    const totalCredit = userRows.reduce((sum, r) => {
+      const f = r.Fields || {}
+      const ntranamnt = Number(f.ntranamnt ?? 0)
+      const creditAmount = ntranamnt > 0 ? ntranamnt : 0
+      return sum + (Number(creditAmount) || 0)
+    }, 0)
+
+    const totalsRow = `
+      <tr style="font-weight:700;background:#f1f5f9;border-top:2px solid #0f172a">
+        <td colspan="3" style="text-align:right">TOTAL:</td>
+        <td style="text-align:right">${formatAmount(totalDebit)}</td>
+        <td style="text-align:right">${formatAmount(totalCredit)}</td>
       </tr>
+    `
+
+    return `
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:#0f172a">User: ${escapeHtml(userId)}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Account</th>
+              <th>Description</th>
+              <th style="text-align:right">Debit</th>
+              <th style="text-align:right">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}${totalsRow}
+          </tbody>
+        </table>
+      </div>
     `
   }).join('')
 
@@ -63,7 +122,7 @@ export const buildJournalReportPrintHtml = (items, title = 'Journal Report', met
     tbody tr:nth-child(even){background:#fbfdff}
     .amt{text-align:right;font-variant-numeric:tabular-nums}
     @media print{body{padding:8mm}}
-  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedAt)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Date</th><th>Account</th><th>Description</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th>User</th><th>Branch</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`
+  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedAt)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div>${userTables}</div></body></html>`
 }
 
 export default buildJournalReportPrintHtml

@@ -54,7 +54,7 @@ export default function JournalReport() {
   const buildPayload = () => ({
     company: company || '',
     branchId: branch ? branch : 0,
-    userId: user ? user : 0,
+    userId: user ? user : '',
     tranFrom: formatDate(tranFrom),
     tranTo: formatDate(tranTo),
   });
@@ -77,18 +77,39 @@ export default function JournalReport() {
       // Call the remote journal enquiry report API (returns array of { Fields: { ... } })
       const userObj = JSON.parse(localStorage.getItem('user') || '{}');
       const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || userObj?.compid || '';
-      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user ? user : 0), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
       const endpoint = `/api/journalenquiry/report?${params.toString()}`;
       const resp = await fetch(endpoint);
       if (!resp.ok) throw new Error(`Report API ${resp.status}`);
       const payload = await resp.json();
       const rows = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || []);
-      const headers = ['Date', 'Account', 'Description', 'Debit', 'Credit', 'User', 'Branch'];
+      const headers = ['Date', 'Account', 'Description', 'Debit', 'Credit', 'User'];
       const csvRows = rows.map((r) => {
         const f = r.Fields || r;
-        return [f.dtrandate || '', f.cacctnumb || '', (f.ctrandesc || '').trim(), f.ndebit ?? f.ntranamnt ?? '', f.ncredit ?? '', f.cuserid || '', f.br_name || ''];
+        const ntranamnt = Number(f.ntranamnt ?? 0);
+        const debitAmount = ntranamnt < 0 ? Math.abs(ntranamnt) : 0;
+        const creditAmount = ntranamnt > 0 ? ntranamnt : 0;
+        return [f.dtrandate || '', f.cacctnumb || '', (f.ctrandesc || '').trim(), debitAmount ?? '', creditAmount ?? '', f.cuserid || ''];
       });
-      const csv = [headers, ...csvRows].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      
+      // Calculate totals for Debit and Credit columns
+      const totalDebit = rows.reduce((sum, r) => {
+        const f = r.Fields || r;
+        const ntranamnt = Number(f.ntranamnt ?? 0);
+        const debitAmount = ntranamnt < 0 ? Math.abs(ntranamnt) : 0;
+        return sum + (Number(debitAmount) || 0);
+      }, 0);
+      const totalCredit = rows.reduce((sum, r) => {
+        const f = r.Fields || r;
+        const ntranamnt = Number(f.ntranamnt ?? 0);
+        const creditAmount = ntranamnt > 0 ? ntranamnt : 0;
+        return sum + (Number(creditAmount) || 0);
+      }, 0);
+      
+      // Add totals row
+      const totalsRow = ['', '', 'TOTAL', totalDebit.toFixed(2), totalCredit.toFixed(2), '', ''];
+      
+      const csv = [headers, ...csvRows, totalsRow].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       downloadFile(csv, `journal-report-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
       console.error(err);
@@ -111,7 +132,7 @@ export default function JournalReport() {
       // Call remote report API and build print view
       const userObj = JSON.parse(localStorage.getItem('user') || '{}');
       const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || '';
-      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user ? user : 0), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
       const endpoint = `/api/journalenquiry/report?${params.toString()}`;
       const resp = await fetch(endpoint);
       if (!resp.ok) throw new Error(`Report API ${resp.status}`);
