@@ -95,7 +95,35 @@ export default function SaveJournals() {
     debitTransactions.some((item) => String(item.amount).trim() !== '')
     && creditTransactions.some((item) => String(item.amount).trim() !== '');
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.0001;
-  const canSave = hasEnteredBothAmounts && isBalanced;
+
+  // Validation for required fields
+  const allDebitAccountsFilled = debitTransactions.every(
+    (item) => String(item.account || '').trim() !== ''
+  );
+  const allCreditAccountsFilled = creditTransactions.every(
+    (item) => String(item.account || '').trim() !== ''
+  );
+  const allDebitDescriptionsFilled = debitTransactions.every(
+    (item) => String(item.transactionDescription || '').trim() !== ''
+  );
+  const allCreditDescriptionsFilled = creditTransactions.every(
+    (item) => String(item.transactionDescription || '').trim() !== ''
+  );
+  const allDebitPaymentDetailsValid = debitTransactions.every((transaction) =>
+    transaction.paymentDetails.some((row) => String(row.transactionType || '').trim() !== '')
+  );
+  const allCreditPaymentDetailsValid = creditTransactions.every((transaction) =>
+    transaction.paymentDetails.some((row) => String(row.transactionType || '').trim() !== '')
+  );
+
+  const canSave = hasEnteredBothAmounts
+    && isBalanced
+    && allDebitAccountsFilled
+    && allCreditAccountsFilled
+    && allDebitDescriptionsFilled
+    && allCreditDescriptionsFilled
+    && allDebitPaymentDetailsValid
+    && allCreditPaymentDetailsValid;
 
   const getSetter = (type) => (type === 'debit' ? setDebitTransactions : setCreditTransactions);
   const getTransactions = (type) => (type === 'debit' ? debitTransactions : creditTransactions);
@@ -347,7 +375,7 @@ export default function SaveJournals() {
               onChange={(e) => handleTransactionChange(type, cardIndex, 'date', e.target.value)}
             />
             <TextField
-              label="Transaction Description"
+              label={<span>Transaction Description <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
               size="small"
               value={transaction.transactionDescription}
               onChange={(e) => handleTransactionChange(type, cardIndex, 'transactionDescription', e.target.value)}
@@ -401,13 +429,13 @@ export default function SaveJournals() {
             </Button>
 
             <Typography variant="body2" sx={{ fontWeight: 700, mt: 1 }}>
-              Payment Details
+              Payment Details <span style={{color: 'red', fontSize: '1.2em'}}>*</span>
             </Typography>
             {transaction.paymentDetails.map((row, idx) => (
               <Box key={`${type}-payment-${cardIndex}-${idx}`} sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr' } }}>
                 <TextField
                   select
-                  label="Transaction Type"
+                  label={<span>Transaction Type <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
                   size="small"
                   value={row.transactionType}
                   onChange={(e) => handlePaymentRowChange(type, cardIndex, idx, 'transactionType', e.target.value)}
@@ -490,6 +518,42 @@ export default function SaveJournals() {
       {!hasEnteredBothAmounts && (
         <Alert severity="info" sx={{ my: 2 }}>
           Enter both Debit Amount and Credit Amount to enable save.
+        </Alert>
+      )}
+
+      {!allDebitAccountsFilled && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Debit Accounts must be selected.
+        </Alert>
+      )}
+
+      {!allCreditAccountsFilled && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Credit Accounts must be selected.
+        </Alert>
+      )}
+
+      {!allDebitDescriptionsFilled && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Debit Transactions must have a description.
+        </Alert>
+      )}
+
+      {!allCreditDescriptionsFilled && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Credit Transactions must have a description.
+        </Alert>
+      )}
+
+      {!allDebitPaymentDetailsValid && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Debit Transactions must have Payment Details (Transaction Type).
+        </Alert>
+      )}
+
+      {!allCreditPaymentDetailsValid && (
+        <Alert severity="warning" sx={{ my: 2 }}>
+          All Credit Transactions must have Payment Details (Transaction Type).
         </Alert>
       )}
 
