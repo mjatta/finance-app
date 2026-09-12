@@ -24,12 +24,15 @@ import { useLoanReportCurrencies } from './hooks/useLoanReportCurrencies';
 import { useLoanReportPrintView } from './hooks/useLoanReportPrintView';
 import { buildLoanReportPrintHtml } from './printSetup';
 import useCreditUnionLookup from '../../../hooks/useCreditUnionLookup';
+import { useRegions } from '../../../hooks/useRegions';
 import { getFullApiUrl } from '../../../utils/apiConfig';
 
 const ALL_BRANCHES_VALUE = 'ALL';
 const ALL_USERS_VALUE = 'ALL';
 const ALL_PRODUCTS_VALUE = 'ALL';
 const ALL_REASONS_VALUE = 'ALL';
+const ALL_REGIONS_VALUE = 'ALL';
+const ALL_SECTORS_VALUE = 'ALL';
 
 const CHECKS = [
   { name: 'loanApplication', label: 'Loan Application' },
@@ -48,14 +51,16 @@ export default function LoanReports() {
   const { loanReasons, fetchLoanReasons } = useLoanReportLoanReasons();
   const { products, fetchProducts } = useLoanReportProducts();
   const { fetchCurrencies } = useLoanReportCurrencies();
+  const { regions, loading: regionsLoading } = useRegions();
   const { data: creditUnion } = useCreditUnionLookup(30);
 
   const [product, setProduct] = useState(ALL_PRODUCTS_VALUE);
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [loanReason, setLoanReason] = useState(ALL_REASONS_VALUE);
   const [user, setUser] = useState(ALL_USERS_VALUE);
+  const [region, setRegion] = useState(ALL_REGIONS_VALUE);
   const [currency, setCurrency] = useState('GMD');
-  const [sector, setSector] = useState('');
+  const [sector, setSector] = useState(ALL_SECTORS_VALUE);
   const [sectorOptions, setSectorOptions] = useState([]);
   const [checks, setChecks] = useState(initChecks());
   const [tranFrom, setTranFrom] = useState(() => dayjs('1980-01-01'));
@@ -116,8 +121,9 @@ export default function LoanReports() {
     setBranch(ALL_BRANCHES_VALUE);
     setLoanReason(ALL_REASONS_VALUE);
     setUser(ALL_USERS_VALUE);
+    setRegion(ALL_REGIONS_VALUE);
     setCurrency('GMD');
-    setSector('');
+    setSector(ALL_SECTORS_VALUE);
     setChecks(initChecks());
     setTranFrom(dayjs('1980-01-01'));
     setTranTo(dayjs());
@@ -130,7 +136,8 @@ export default function LoanReports() {
     LoanReason: loanReason === ALL_REASONS_VALUE ? '' : loanReason || '',
     User: user === ALL_USERS_VALUE ? '' : user || '',
     Currency: currency || '',
-    Sector: sector ? Number(sector) : '',
+    Sector: sector === ALL_SECTORS_VALUE ? 0 : Number(sector) || 0,
+    lregion: region === ALL_REGIONS_VALUE ? '' : region || '',
     Types: Object.keys(checks).filter((k) => checks[k]),
     TranFrom: tranFrom ? (tranFrom.format ? tranFrom.format('YYYY-MM-DD') : String(tranFrom)) : '',
     TranTo: tranTo ? (tranTo.format ? tranTo.format('YYYY-MM-DD') : String(tranTo)) : '',
@@ -197,6 +204,7 @@ export default function LoanReports() {
         LoanReason: uiPayload.LoanReason || 0,
         UserID: uiPayload.User || '',
         Sector: uiPayload.Sector || '',
+        lregion: uiPayload.lregion || '',
         LApply: checks.loanApplication ? 1 : 0,
         LApproved: checks.loanApproval ? 1 : 0,
         LIssued: checks.loanIssued ? 1 : 0,
@@ -292,8 +300,12 @@ export default function LoanReports() {
                 {userOptions.map((u) => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
               </TextField>
               <TextField select label="Economic Sector" value={sector} onChange={(e) => setSector(e.target.value)} size="small">
-                <MenuItem value="">All sectors</MenuItem>
+                <MenuItem value={ALL_SECTORS_VALUE}>All sectors</MenuItem>
                 {sectorOptions.map((s) => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
+              </TextField>
+              <TextField select label="Region" value={region} onChange={(e) => setRegion(e.target.value)} size="small" disabled={regionsLoading}>
+                <MenuItem value={ALL_REGIONS_VALUE}>All regions</MenuItem>
+                {regions.map((r) => <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>{r.coun_name?.trim()}</MenuItem>)}
               </TextField>
             </Box>
 
