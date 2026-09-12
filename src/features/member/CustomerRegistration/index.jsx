@@ -428,7 +428,7 @@ export default function CustomerRegistration(props) {
         firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
         middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
         surname: (m.ccustlname || m.LName || m.surname || '').trim(),
-        memberType: (m.MemType || m.memberType || m.memtype || '').trim(),
+        memberType: String(m.MemType || m.memberType || m.memtype || '').trim(),
         sector: String(m.Sector || m.sector || '').trim(),
         memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
         branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
@@ -2382,10 +2382,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                     <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
                       <TextField
                         label="Find Customer"
-                        placeholder="Enter member code"
+                        placeholder="Member code or Full Name or ID card number"
                         size="small"
                         value={individualSearchCode}
                         onChange={(e) => setIndividualSearchCode(e.target.value)}
+                        sx={{ minWidth: 410 }}
                       />
                       <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !individualSearchCode} sx={{ backgroundColor: '#667eea' }}>
                         {loadingMemberDetails ? 'Searching...' : 'Search'}
