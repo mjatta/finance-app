@@ -68,9 +68,13 @@ export default function DetailedJournalReport() {
       // Use GL statement API for exports when accountNumber provided
       const payload = await fetchStatement(accountNumber, formatDate(tranFrom), formatDate(tranTo));
       const rows = Array.isArray(payload) ? payload : (payload?.rows || payload?.data || []);
-      const headers = ['Account Number', 'Account Name', 'Date', 'Description', 'Debit', 'Credit'];
-      const csvRows = rows.map((r) => [r.AccountNumber || r.accountNumber || '', r.AccountName || r.accountName || '', r.Date || r.TransactionDate || r.dtrandate || '', r.Description || r.ctrandesc || '', r.Debit ?? r.debit ?? '', r.Credit ?? r.credit ?? '']);
-      const csv = [headers, ...csvRows].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const headers = ['Account Number', 'Account Name', 'Date', 'Description', 'Debit', 'Credit', 'Running Balance'];
+      const csvRows = rows.map((r) => [r.AccountNumber || r.accountNumber || '', r.AccountName || r.accountName || '', r.Date || r.TransactionDate || r.dtrandate || '', r.Description || r.ctrandesc || '', r.Debit ?? r.debit ?? '', r.Credit ?? r.credit ?? '', r.Balance ?? '']);
+      const totalDebit = rows.reduce((sum, r) => sum + (Number(r.Debit ?? r.debit ?? 0) || 0), 0);
+      const totalCredit = rows.reduce((sum, r) => sum + (Number(r.Credit ?? r.credit ?? 0) || 0), 0);
+      const lastBalance = rows.length > 0 ? (rows[rows.length - 1].Balance ?? '') : '';
+      const totalsRow = ['', '', '', 'Total', totalDebit, totalCredit, lastBalance];
+      const csv = [headers, ...csvRows, totalsRow].map((row) => row.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       downloadFile(csv, `detailed-journal-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
     } catch (err) {
       console.error(err);
@@ -109,8 +113,21 @@ export default function DetailedJournalReport() {
           <td>${escapeHtml(r.Reference || r.Description || r.ctrandesc || '')}</td>
           <td style="text-align:right">${formatAmount(r.Debit ?? r.debit ?? '')}</td>
           <td style="text-align:right">${formatAmount(r.Credit ?? r.credit ?? '')}</td>
+          <td style="text-align:right">${formatAmount(r.Balance ?? '')}</td>
         </tr>
       `}).join('');
+
+      const totalDebit = rows.reduce((sum, r) => sum + (Number(r.Debit ?? r.debit ?? 0) || 0), 0);
+      const totalCredit = rows.reduce((sum, r) => sum + (Number(r.Credit ?? r.credit ?? 0) || 0), 0);
+      const lastBalance = rows.length > 0 ? formatAmount(rows[rows.length - 1].Balance ?? '') : '';
+      const totalFooter = `
+        <tr style="font-weight:700;background:#f1f5f9">
+          <td colspan="2" style="border:1px solid var(--line);padding:7px">Total</td>
+          <td style="text-align:right;border:1px solid var(--line);padding:7px">${formatAmount(totalDebit)}</td>
+          <td style="text-align:right;border:1px solid var(--line);padding:7px">${formatAmount(totalCredit)}</td>
+          <td style="text-align:right;border:1px solid var(--line);padding:7px">${lastBalance}</td>
+        </tr>
+      `;
 
       const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
     :root{--text:#0f172a;--muted:#475569;--line:#e6eef8;--header-bg:#f1f5f9}
@@ -128,9 +145,10 @@ export default function DetailedJournalReport() {
     thead th{background:var(--header-bg);border:1px solid var(--line);padding:8px;text-align:left;font-weight:700}
     tbody td{border:1px solid var(--line);padding:7px;vertical-align:top}
     tbody tr:nth-child(even){background:#fbfdff}
+    tfoot td{border:1px solid var(--line);padding:7px;font-weight:700;background:#f1f5f9}
     .amt{text-align:right;font-variant-numeric:tabular-nums}
     @media print{body{padding:8mm}}
-  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedDate)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="account-info"><div class="account-detail"><span class="account-detail-label">Account Number:</span><span>${escapeHtml(accountNumber || 'N/A')}</span></div><div class="account-detail"><span class="account-detail-label">Member Name:</span><span>${escapeHtml(memberName || 'N/A')}</span></div></div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Date</th><th>Reference</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead><tbody>${tableRows}</tbody></table></div></body></html>`;
+  </style></head><body><div class="report"><div class="header"><div class="meta-right">Printed: ${escapeHtml(printedDate)}</div><div class="company">${escapeHtml(companyName)}</div>${address?`<div class="line">${escapeHtml(address)}</div>`:''}${telephone?`<div class="line">Tel: ${escapeHtml(telephone)}</div>`:''}${email?`<div class="line">Email: ${escapeHtml(email)}</div>`:''}<div class="title">${escapeHtml(title)}</div><div class="account-info"><div class="account-detail"><span class="account-detail-label">Account Number:</span><span>${escapeHtml(accountNumber || 'N/A')}</span></div><div class="account-detail"><span class="account-detail-label">Member Name:</span><span>${escapeHtml(memberName || 'N/A')}</span></div></div><div class="line">Period: ${escapeHtml(fromLabel)} to ${escapeHtml(toLabel)}</div></div><table><thead><tr><th>Date</th><th>Reference</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Running Balance</th></tr></thead><tbody>${tableRows}</tbody><tfoot>${totalFooter}</tfoot></table></div></body></html>`;
       const w = window.open('', '_blank', 'width=1000,height=800');
       if (!w) throw new Error('Popup blocked');
       w.document.open();
