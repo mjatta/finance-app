@@ -296,309 +296,319 @@ export default function CustomerRegistration(props) {
   const [individualSearchCode, setIndividualSearchCode] = useState('');
   const [institutionSearchCode, setInstitutionSearchCode] = useState('');
   const [isExistingMember, setIsExistingMember] = useState(false);
+  const [individualSearchResults, setIndividualSearchResults] = useState([]); // Multiple results from search
+  const [selectedMemberIndex, setSelectedMemberIndex] = useState(0); // Selected member from dropdown
   const { fetchInstitutionDetails, loading: loadingInstitutionDetails } = useInstitutionDetails();
   const { updateInstitution } = useUpdateInstitution();
+
+  // Helper function to apply a single member to the form
+  const applyIndividualMemberData = (m) => {
+    if (!m || typeof m !== 'object') return;
+
+    // Check if it's an institution record
+    const _first = String(m.ccustfname || '');
+    const _middle = String(m.ccustmname || '');
+    const _last = String(m.ccustlname || '');
+    if (_first.trim() === '' && _middle.trim() === '' && _last.trim() === '') {
+      setStatusError(true);
+      setStatusMessage('The customer code you entered appears to be for an institution, not an individual.');
+      return;
+    }
+
+    // Mapping functions
+    const mapDesignationCode = (val) => {
+      if (val === undefined || val === null || val === '') return '';
+      const n = Number(val);
+      if (Number.isNaN(n)) return String(val);
+      switch (n) {
+        case 1: return 'manager';
+        case 2: return 'supervisor';
+        case 3: return 'officer';
+        case 4: return 'assistant';
+        default: return String(val);
+      }
+    };
+
+    const mapMaritalCode = (val) => {
+      if (val === undefined || val === null || val === '') return '';
+      const n = Number(val);
+      if (Number.isNaN(n)) return String(val).toLowerCase();
+      switch (n) {
+        case 1: return 'single';
+        case 2: return 'married';
+        case 3: return 'divorced';
+        case 4: return 'widowed';
+        default: return '';
+      }
+    };
+
+    const mapDepartmentCode = (val) => {
+      if (val === undefined || val === null || val === '') return '';
+      const n = Number(val);
+      if (Number.isNaN(n)) return String(val);
+      switch (n) {
+        case 1: return 'finance';
+        case 2: return 'operations';
+        case 3: return 'hr';
+        case 4: return 'it';
+        default: return String(val);
+      }
+    };
+
+    // Create mapped object with all fields
+    const mapped = {
+      institutionType: (function () {
+        const mem = Number(m.mem_type ?? m.MemType ?? m.memtype ?? m.Memtype ?? NaN);
+        if (mem === 2) return 'Group';
+        if (mem === 3) return 'Corporate / Institution';
+        return '';
+      })(),
+      institutionName: m.CustName || m.custname || '',
+      institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
+      institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
+      institutionBranch: (function () {
+        const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
+        const num = Number(raw);
+        if (!Number.isNaN(num) && num > 0) {
+          if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
+            const byIndex = institutionBranches[num - 1];
+            if (byIndex) return byIndex;
+          }
+          setPendingBranchId(num);
+          return String(num);
+        }
+        return String(raw || '');
+      })(),
+      institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
+      institutionTIN: m.Tin || m.tin || m.tinno || '',
+      institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
+      institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
+      institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
+      institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
+      institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
+      institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
+
+      firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
+      middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
+      surname: (m.ccustlname || m.LName || m.surname || '').trim(),
+      memberType: (m.MemType || m.memberType || m.memtype || '').trim(),
+      sector: String(m.Sector || m.sector || '').trim(),
+      memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
+      branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
+      memberEmployed: m.Employed === 1 || m.Employed === true || !!m.memberEmployed,
+      sendSms: !!m.sendSms,
+      registerMobileWallet: !!m.registerMobileWallet,
+      title: m.ccusttitle || m.Title || '',
+      nationality: (function () {
+        const raw = m.cou_id ?? m.NatCode ?? m.Country ?? '';
+        const num = Number(raw);
+        if (!Number.isNaN(num) && num > 0) {
+          if (Array.isArray(countries) && countries.length > 0) {
+            const found = countries.find((c) => Number(c.id) === num || String(c.id) === String(raw));
+            if (found) return String(found.name);
+            if (num > 0 && num <= countries.length) return String(countries[num - 1].name);
+          }
+          setPendingCouId(num);
+          return String(num);
+        }
+        return mapCountryById(raw) || (m.Country || '');
+      })(),
+      tribe: m.tribe || '',
+      levelOfEducation: m.levelOfEducation || m.levelofedu || '',
+      dateOfBirth: m.ddatebirth && m.ddatebirth !== '1900-01-01T00:00:00' ? (String(m.ddatebirth).split('T')[0]) : (m.DOB || ''),
+      dateJoined: m.datejoin || m.DateJoin || '',
+      gender: (typeof m.gender === 'boolean') ? (m.gender ? '1' : '2') : (m.gender ? String(m.gender) : ''),
+      maritalStatus: mapMaritalCode(m.Marital ?? m.marital),
+      idType: mapIdTypeToOption(m.IDType ?? m.idtype),
+      idNumber: m.IDNumber || m.cpassno || m.idNumber || '',
+      placeIssue: m.PlaceIssued || m.cplacissue || '',
+      dateIssued: m.DateIssue && m.DateIssue !== '1900-01-01T00:00:00' ? String(m.DateIssue).split('T')[0] : (m.ddateissue && m.ddateissue !== '1900-01-01T00:00:00' ? String(m.ddateissue).split('T')[0] : ''),
+      expiryDate: m.DateExpire && m.DateExpire !== '1900-01-01T00:00:00' ? String(m.DateExpire).split('T')[0] : (m.ddateexpire && m.ddateexpire !== '1900-01-01T00:00:00' ? String(m.ddateexpire).split('T')[0] : ''),
+      povertyLevel: m.povertyLevel || '',
+      region: m.Region ? String(m.Region) : (m.region ? String(m.region) : (m.nregion ? String(m.nregion) : '')),
+      district: m.District ? String(m.District) : (m.district ? String(m.district) : (m.ndist ? String(m.ndist) : '')),
+      ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : (m.nward ? String(m.nward) : '')),
+      country: m.cou_id ? Number(m.cou_id) : (m.Country || ''),
+      city: mapCityById(m.ncity) || (m.City || m.city || ''),
+      address: m.caddr1 || m.Street || m.address || '',
+      mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
+      emailAddress: m.cemail || m.Email || '',
+
+      refereeName: m.cname1 || m.Ref1Name || '',
+      refereeAddress: m.caddr1 || m.Ref1Address || '',
+      refereeMobilePhone: m.cmobile1 || m.Ref1Tel || '',
+      refereeEmailAddress: m.cemail1 || m.Ref1Mail || '',
+      nextOfKinName: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].name || m.nextOfKins[0].Name)) || m.NokName || m.Nok || '',
+      nextOfKinAddress: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].address || '')) || '',
+      nextOfKinRelationship: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].relationship || '')) || '',
+      nextOfKinMobilePhone: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].mobilePhone || '')) || '',
+
+      employer: m.nEmployer || m.Employer || '',
+      employmentCountry: m.employmentCountry || '',
+      employmentCity: m.employmentCity || m.employment_city || '',
+      employmentAddress: m.employmentAddress || '',
+      employmentMobilePhone: m.employmentMobilePhone || '',
+      employmentEmailAddress: m.employmentEmailAddress || '',
+      employmentNumber: m.payroll_id || m.StaffNo || m.employmentNumber || '',
+      designation: mapDesignationCode(m.nDesig ?? m.designation),
+      department: mapDepartmentCode(m.ndept ?? m.department),
+      yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || m.nyears || '',
+      currentSalary: m.Salary || m.nSal || m.currentSalary || '',
+
+      biometricPhotoName: m.MemberPictureName || m.biometricPhotoName || m.memPict || m.memPictName || '',
+      biometricSignatureName: m.MemberSignatureName || m.biometricSignatureName || m.memsign || m.memSign || '',
+
+      registrationFee: m.RegFee || m.registrationFee || '',
+      contributionAccountNumber: m.contributionAccountNumber || '',
+      contributionAccountName: m.contributionAccountName || '',
+      sharePrice: m.SharePrice || m.nSharePrice || m.sharePrice || '',
+      sharesPurchase: m.Shares || m.sharesPurchase || '',
+      shareValue: m.shareValue || '',
+      savingMode: m.SaveType ? (m.SaveType ? 'fixed' : '') : (m.savingMode || ''),
+      savingAmount: m.SaveAmount || m.nSaveAmt || m.savingAmount || '',
+      accountSignatory: !!m.accountSignatory,
+      deductedFromSourcePayroll: !!m.deductedFromSourcePayroll,
+      residency: (m.Residents === true || m.residents === true || m.residency) ? 'resident' : '',
+
+      chairName: m.ChairName || m.chairName || '',
+      chairTIN: m.ChairTin || m.chairTIN || '',
+      chairMobilePhone: m.ChairTel || m.chairMobilePhone || '',
+      chairEmailAddress: m.ChairMail || m.chairEmailAddress || '',
+      chairAccountSignatory: !!m.ChairSign || !!m.chairAccountSignatory,
+      viceChairName: m.ViceName || m.viceChairName || '',
+      viceChairTIN: m.ViceTin || m.viceChairTIN || '',
+      viceChairMobilePhone: m.ViceTel || m.viceChairMobilePhone || '',
+      viceChairEmailAddress: m.ViceMail || m.viceChairEmailAddress || '',
+      viceChairAccountSignatory: !!m.ViceSign || !!m.viceChairAccountSignatory,
+      treasurerName: m.TreasurerName || m.treasurerName || '',
+      treasurerTIN: m.TreasurerTin || m.treasurerTIN || '',
+      treasurerMobilePhone: m.TreasurerTel || m.treasurerMobilePhone || '',
+      treasurerEmailAddress: m.TreasurerMail || m.treasurerEmailAddress || '',
+      treasurerAccountSignatory: !!m.TreasurerSign || !!m.treasurerAccountSignatory,
+      secretaryName: m.SecName || m.secretaryName || '',
+      secretaryTIN: m.SecTin || m.secretaryTIN || '',
+      secretaryMobilePhone: m.SecTel || m.secretaryMobilePhone || '',
+      secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
+      secretaryAccountSignatory: !!m.SecSign || !!m.secretaryAccountSignatory,
+
+      referenceDetailsName: m.Ref1Name || m.referenceDetailsName || '',
+      referenceDetailsAddress: m.Ref1Address || m.referenceDetailsAddress || '',
+      referenceDetailsMobilePhone: m.Ref1Tel || m.referenceDetailsMobilePhone || '',
+      referenceDetailsEmailAddress: m.Ref1Mail || m.referenceDetailsEmailAddress || '',
+
+      signatory1: m.cSignatory || m.Sign1 || m.signatory1 || '',
+      signatory3: m.Sign3 || m.signatory3 || '',
+      defaultBatch: m.BatId || m.defaultBatch || '',
+    };
+
+    const trimAllStrings = (obj) => {
+      const out = {};
+      if (!obj || typeof obj !== 'object') return out;
+      Object.keys(obj).forEach((k) => {
+        const v = obj[k];
+        out[k] = (typeof v === 'string') ? v.trim() : v;
+      });
+      return out;
+    };
+
+    if (isLikelyBase64Image(mapped.biometricPhotoName)) mapped.biometricPhotoName = 'server-photo.jpg';
+    if (isLikelyBase64Image(mapped.biometricSignatureName)) mapped.biometricSignatureName = 'server-signature.png';
+
+    setFormData((prev) => ({ ...prev, ...trimAllStrings(mapped) }));
+    
+    try {
+      const maybePhoto = m.memPict || m.MemberPicture || mapped.biometricPhotoName || '';
+      const maybeSign = m.memsign || m.MemberSignature || mapped.biometricSignatureName || '';
+      const photoUrl = toDataUrl(maybePhoto);
+      const signUrl = toDataUrl(maybeSign);
+      if (photoUrl) setPhotoPreviewUrl(photoUrl);
+      if (signUrl) setSignaturePreviewUrl(signUrl);
+    } catch {
+      // ignore preview generation errors
+    }
+    
+    setIsExistingMember(true);
+    if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
+      setAdditionalNextOfKins(m.nextOfKins.map((k, idx) => ({
+        id: Date.now() + idx,
+        name: (k.name || k.Name || '').toString().trim(),
+        address: (k.address || '').toString().trim(),
+        relationship: (k.relationship || '').toString().trim(),
+        mobilePhone: (k.mobilePhone || k.mobile || '').toString().trim(),
+      })));
+    }
+    if (Array.isArray(m.references) && m.references.length > 0) {
+      setAdditionalReferences(m.references.map((r, idx) => ({
+        id: Date.now() + idx,
+        name: (r.name || r.Name || '').toString().trim(),
+        address: (r.address || '').toString().trim(),
+        mobilePhone: (r.mobilePhone || r.mobile || '').toString().trim(),
+        emailAddress: (r.email || r.emailAddress || '').toString().trim(),
+      })));
+    }
+    setStatusError(false);
+    setStatusMessage('Member data loaded. Edit fields as needed.');
+    setIndividualSearchResults([]);
+    setDetailTab(0);
+  };
 
   const handleFillFromMember = async () => {
     setSaveValidationErrors(null);
     if (!individualSearchCode) return setStatusMessage('Enter member code to search');
     setStatusMessage('');
+    setIndividualSearchResults([]);
     try {
-      // If the user entered only digits, pad to 6 characters with leading zeros (e.g., 1 -> 000001)
       const codeToUse = String(individualSearchCode || '').trim();
       const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
       const resp = await fetchMemberDetails(paddedCode);
+      
       if (!resp.success) {
         setStatusError(true);
         setStatusMessage(resp.error || 'Member not found');
         return;
       }
 
-      const m = resp.data;
-      if (!m) {
+      // Handle array of results (multiple matches)
+      if (Array.isArray(resp.data)) {
+        const results = resp.data.filter((item) => item && typeof item === 'object');
+        if (results.length === 0) {
+          setStatusError(true);
+          setStatusMessage('No members found matching your search.');
+          return;
+        }
+        if (results.length === 1) {
+          // Single result in array—apply directly
+          applyIndividualMemberData(results[0]);
+          return;
+        }
+        // Multiple results—show dropdown
+        setIndividualSearchResults(results);
+        setSelectedMemberIndex(0);
+        setStatusError(false);
+        setStatusMessage(`Found ${results.length} members. Please select one from the dropdown below.`);
+        return;
+      }
+
+      // Handle single object response
+      if (!resp.data) {
         setStatusError(true);
         setStatusMessage('Member not found');
         return;
       }
-
-      // If backend returned an entry whose name fields are empty or whitespace-only,
-      // it is likely an institution record — don't refill individual form.
-      const _first = String(m.ccustfname || '');
-      const _middle = String(m.ccustmname || '');
-      const _last = String(m.ccustlname || '');
-      if (_first.trim() === '' && _middle.trim() === '' && _last.trim() === '') {
-        setStatusError(true);
-        setStatusMessage('The customer code you entered appears to be for an institution, not an individual.');
-        return;
-      }
-
-      // Map response fields to formData keys (best-effort, follow payload builders)
       
-
-      
-
-      const mapDesignationCode = (val) => {
-        if (val === undefined || val === null || val === '') return '';
-        const n = Number(val);
-        if (Number.isNaN(n)) return String(val);
-        switch (n) {
-          case 1:
-            return 'manager';
-          case 2:
-            return 'supervisor';
-          case 3:
-            return 'officer';
-          case 4:
-            return 'assistant';
-          default:
-            return String(val);
-        }
-      };
-
-      const mapMaritalCode = (val) => {
-        if (val === undefined || val === null || val === '') return '';
-        const n = Number(val);
-        if (Number.isNaN(n)) return String(val).toLowerCase();
-        switch (n) {
-          case 1:
-            return 'single';
-          case 2:
-            return 'married';
-          case 3:
-            return 'divorced';
-          case 4:
-            return 'widowed';
-          default:
-            return '';
-        }
-      };
-
-      const mapDepartmentCode = (val) => {
-        if (val === undefined || val === null || val === '') return '';
-        const n = Number(val);
-        if (Number.isNaN(n)) return String(val);
-        switch (n) {
-          case 1:
-            return 'finance';
-          case 2:
-            return 'operations';
-          case 3:
-            return 'hr';
-          case 4:
-            return 'it';
-          default:
-            return String(val);
-        }
-      };
-
-      const mapped = {
-        // Institution fields
-        institutionType: (function () {
-          const mem = Number(m.mem_type ?? m.MemType ?? m.memtype ?? m.Memtype ?? NaN);
-          if (mem === 2) return 'Group';
-          if (mem === 3) return 'Corporate / Institution';
-          return '';
-        })(),
-        institutionName: m.CustName || m.custname || '',
-        institutionNature: m.BizCategory || m.bizcategory || m.institutionNature || '',
-        institutionMemberCode: m.companyId || m.companyCode || m.ccustcode || '',
-        institutionBranch: (function () {
-          const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
-          const num = Number(raw);
-          if (!Number.isNaN(num) && num > 0) {
-            if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
-              const byIndex = institutionBranches[num - 1];
-              if (byIndex) return byIndex;
-            }
-            setPendingBranchId(num);
-            return String(num);
-          }
-          return String(raw || '');
-        })(),
-        institutionIncoporationNumber: m.IncorporationNo || m.incorporationNo || m.incoporationNo || '',
-        institutionTIN: m.Tin || m.tin || m.tinno || '',
-        institutionIncoporationDate: m.IncorporationDate || m.incorporationDate || '',
-        institutionDateJoined: m.DateJoin || m.datejoin || m.datejoin_raw || '',
-        institutionRegion: m.Region ? String(m.Region) : (m.region ? String(m.region) : ''),
-        institutionDistrict: m.District ? String(m.District) : (m.district ? String(m.district) : ''),
-        institutionWard: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : ''),
-        institutionResidency: (m.Residents === true || m.Residents === 1) ? 'resident' : (m.residency || ''),
-
-        // Individual / common fields
-        firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
-        middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
-        surname: (m.ccustlname || m.LName || m.surname || '').trim(),
-        memberType: (m.MemType || m.memberType || m.memtype || '').trim(),
-        sector: String(m.Sector || m.sector || '').trim(),
-        memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
-        branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
-        memberEmployed: m.Employed === 1 || m.Employed === true || !!m.memberEmployed,
-        sendSms: !!m.sendSms,
-        registerMobileWallet: !!m.registerMobileWallet,
-        title: m.ccusttitle || m.Title || '',
-        nationality: (function () {
-          const raw = m.cou_id ?? m.NatCode ?? m.Country ?? '';
-          const num = Number(raw);
-          if (!Number.isNaN(num) && num > 0) {
-            if (Array.isArray(countries) && countries.length > 0) {
-              const found = countries.find((c) => Number(c.id) === num || String(c.id) === String(raw));
-              if (found) return String(found.name);
-              if (num > 0 && num <= countries.length) return String(countries[num - 1].name);
-            }
-            setPendingCouId(num);
-            return String(num);
-          }
-          return mapCountryById(raw) || (m.Country || '');
-        })(),
-        tribe: m.tribe || '',
-        levelOfEducation: m.levelOfEducation || m.levelofedu || '',
-        dateOfBirth: m.ddatebirth && m.ddatebirth !== '1900-01-01T00:00:00' ? (String(m.ddatebirth).split('T')[0]) : (m.DOB || ''),
-        dateJoined: m.datejoin || m.DateJoin || '',
-        gender: (typeof m.gender === 'boolean') ? (m.gender ? '1' : '2') : (m.gender ? String(m.gender) : ''),
-        maritalStatus: mapMaritalCode(m.Marital ?? m.marital),
-        idType: mapIdTypeToOption(m.IDType ?? m.idtype),
-        idNumber: m.IDNumber || m.cpassno || m.idNumber || '',
-        placeIssue: m.PlaceIssued || m.cplacissue || '',
-        dateIssued: m.DateIssue && m.DateIssue !== '1900-01-01T00:00:00' ? String(m.DateIssue).split('T')[0] : (m.ddateissue && m.ddateissue !== '1900-01-01T00:00:00' ? String(m.ddateissue).split('T')[0] : ''),
-        expiryDate: m.DateExpire && m.DateExpire !== '1900-01-01T00:00:00' ? String(m.DateExpire).split('T')[0] : (m.ddateexpire && m.ddateexpire !== '1900-01-01T00:00:00' ? String(m.ddateexpire).split('T')[0] : ''),
-        povertyLevel: m.povertyLevel || '',
-        region: m.Region ? String(m.Region) : (m.region ? String(m.region) : (m.nregion ? String(m.nregion) : '')),
-        district: m.District ? String(m.District) : (m.district ? String(m.district) : (m.ndist ? String(m.ndist) : '')),
-        ward: m.Ward ? String(m.Ward) : (m.ward ? String(m.ward) : (m.nward ? String(m.nward) : '')),
-        country: m.cou_id ? Number(m.cou_id) : (m.Country || ''),
-        city: mapCityById(m.ncity) || (m.City || m.city || ''),
-        address: m.caddr1 || m.Street || m.address || '',
-        mobilePhoneNumber: m.cmobile1 || m.cmobile || m.Tel || '',
-        emailAddress: m.cemail || m.Email || '',
-
-        // Referees and next of kin
-        refereeName: m.cname1 || m.Ref1Name || '',
-        refereeAddress: m.caddr1 || m.Ref1Address || '',
-        refereeMobilePhone: m.cmobile1 || m.Ref1Tel || '',
-        refereeEmailAddress: m.cemail1 || m.Ref1Mail || '',
-        nextOfKinName: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].name || m.nextOfKins[0].Name)) || m.NokName || m.Nok || '',
-        nextOfKinAddress: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].address || '')) || '',
-        nextOfKinRelationship: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].relationship || '')) || '',
-        nextOfKinMobilePhone: (m.nextOfKins && m.nextOfKins[0] && (m.nextOfKins[0].mobilePhone || '')) || '',
-
-        // Employment
-        employer: m.nEmployer || m.Employer || '',
-        employmentCountry: m.employmentCountry || '',
-        employmentCity: m.employmentCity || m.employment_city || '',
-        employmentAddress: m.employmentAddress || '',
-        employmentMobilePhone: m.employmentMobilePhone || '',
-        employmentEmailAddress: m.employmentEmailAddress || '',
-        employmentNumber: m.payroll_id || m.StaffNo || m.employmentNumber || '',
-        // Prefer legacy numeric fields from backend: nDesig maps to designation, ndept maps to department
-        designation: mapDesignationCode(m.nDesig ?? m.designation),
-        department: mapDepartmentCode(m.ndept ?? m.department),
-        yearsWithCurrentEmployment: m.yearsWithCurrentEmployment || m.nyears || '',
-        currentSalary: m.Salary || m.nSal || m.currentSalary || '',
-
-        // Biometric / files
-        biometricPhotoName: m.MemberPictureName || m.biometricPhotoName || m.memPict || m.memPictName || '',
-        biometricSignatureName: m.MemberSignatureName || m.biometricSignatureName || m.memsign || m.memSign || '',
-
-        // Financial / membership
-        registrationFee: m.RegFee || m.registrationFee || '',
-        contributionAccountNumber: m.contributionAccountNumber || '',
-        contributionAccountName: m.contributionAccountName || '',
-        sharePrice: m.SharePrice || m.nSharePrice || m.sharePrice || '',
-        sharesPurchase: m.Shares || m.sharesPurchase || '',
-        shareValue: m.shareValue || '',
-        savingMode: m.SaveType ? (m.SaveType ? 'fixed' : '') : (m.savingMode || ''),
-        savingAmount: m.SaveAmount || m.nSaveAmt || m.savingAmount || '',
-        accountSignatory: !!m.accountSignatory,
-        deductedFromSourcePayroll: !!m.deductedFromSourcePayroll,
-        residency: (m.Residents === true || m.residents === true || m.residency) ? 'resident' : '',
-
-        // Institution officers / signatories
-        chairName: m.ChairName || m.chairName || '',
-        chairTIN: m.ChairTin || m.chairTIN || '',
-        chairMobilePhone: m.ChairTel || m.chairMobilePhone || '',
-        chairEmailAddress: m.ChairMail || m.chairEmailAddress || '',
-        chairAccountSignatory: !!m.ChairSign || !!m.chairAccountSignatory,
-        viceChairName: m.ViceName || m.viceChairName || '',
-        viceChairTIN: m.ViceTin || m.viceChairTIN || '',
-        viceChairMobilePhone: m.ViceTel || m.viceChairMobilePhone || '',
-        viceChairEmailAddress: m.ViceMail || m.viceChairEmailAddress || '',
-        viceChairAccountSignatory: !!m.ViceSign || !!m.viceChairAccountSignatory,
-        treasurerName: m.TreasurerName || m.treasurerName || '',
-        treasurerTIN: m.TreasurerTin || m.treasurerTIN || '',
-        treasurerMobilePhone: m.TreasurerTel || m.treasurerMobilePhone || '',
-        treasurerEmailAddress: m.TreasurerMail || m.treasurerEmailAddress || '',
-        treasurerAccountSignatory: !!m.TreasurerSign || !!m.treasurerAccountSignatory,
-        secretaryName: m.SecName || m.secretaryName || '',
-        secretaryTIN: m.SecTin || m.secretaryTIN || '',
-        secretaryMobilePhone: m.SecTel || m.secretaryMobilePhone || '',
-        secretaryEmailAddress: m.SecMail || m.secretaryEmailAddress || '',
-        secretaryAccountSignatory: !!m.SecSign || !!m.secretaryAccountSignatory,
-
-        // References
-        referenceDetailsName: m.Ref1Name || m.referenceDetailsName || '',
-        referenceDetailsAddress: m.Ref1Address || m.referenceDetailsAddress || '',
-        referenceDetailsMobilePhone: m.Ref1Tel || m.referenceDetailsMobilePhone || '',
-        referenceDetailsEmailAddress: m.Ref1Mail || m.referenceDetailsEmailAddress || '',
-
-        // Signatories / defaults
-        signatory1: m.cSignatory || m.Sign1 || m.signatory1 || '',
-        signatory3: m.Sign3 || m.signatory3 || '',
-        defaultBatch: m.BatId || m.defaultBatch || '',
-      };
-
-      // Trim all top-level string fields returned from backend before setting form data
-      const trimAllStrings = (obj) => {
-        const out = {};
-        if (!obj || typeof obj !== 'object') return out;
-        Object.keys(obj).forEach((k) => {
-          const v = obj[k];
-          out[k] = (typeof v === 'string') ? v.trim() : v;
-        });
-        return out;
-      };
-
-      // If backend returned inline base64 in the biometric name fields, don't put that huge string
-      // into the file-name form fields — replace with a friendly placeholder and set preview separately.
-      if (isLikelyBase64Image(mapped.biometricPhotoName)) mapped.biometricPhotoName = 'server-photo.jpg';
-      if (isLikelyBase64Image(mapped.biometricSignatureName)) mapped.biometricSignatureName = 'server-signature.png';
-
-      setFormData((prev) => ({ ...prev, ...trimAllStrings(mapped) }));
-      // If backend returned inline base64 images (or data URLs), convert and set previews
-      try {
-        const maybePhoto = m.memPict || m.MemberPicture || mapped.biometricPhotoName || '';
-        const maybeSign = m.memsign || m.MemberSignature || mapped.biometricSignatureName || '';
-        const photoUrl = toDataUrl(maybePhoto);
-        const signUrl = toDataUrl(maybeSign);
-        if (photoUrl) setPhotoPreviewUrl(photoUrl);
-        if (signUrl) setSignaturePreviewUrl(signUrl);
-      } catch {
-        // ignore preview generation errors
-      }
-      setIsExistingMember(true);
-      // Populate additional next-of-kins and references if present in response
-      if (Array.isArray(m.nextOfKins) && m.nextOfKins.length > 0) {
-        setAdditionalNextOfKins(m.nextOfKins.map((k, idx) => ({
-          id: Date.now() + idx,
-          name: (k.name || k.Name || '').toString().trim(),
-          address: (k.address || '').toString().trim(),
-          relationship: (k.relationship || '').toString().trim(),
-          mobilePhone: (k.mobilePhone || k.mobile || '').toString().trim(),
-        })));
-      }
-      if (Array.isArray(m.references) && m.references.length > 0) {
-        setAdditionalReferences(m.references.map((r, idx) => ({
-          id: Date.now() + idx,
-          name: (r.name || r.Name || '').toString().trim(),
-          address: (r.address || '').toString().trim(),
-          mobilePhone: (r.mobilePhone || r.mobile || '').toString().trim(),
-          emailAddress: (r.email || r.emailAddress || '').toString().trim(),
-        })));
-      }
-      setStatusError(false);
-      setStatusMessage('Member data loaded. Edit fields as needed.');
+      applyIndividualMemberData(resp.data);
     } catch (err) {
       setStatusError(true);
-      setStatusMessage(err.message || 'Failed to load member details');
+      setStatusMessage(err.message || 'An error occurred while searching.');
+    }
+  };
+
+  // Handle selecting a member from the dropdown
+  const handleSelectAndApplyMember = () => {
+    if (individualSearchResults.length === 0 || selectedMemberIndex >= individualSearchResults.length) return;
+    const selectedMember = individualSearchResults[selectedMemberIndex];
+    if (selectedMember) {
+      applyIndividualMemberData(selectedMember);
     }
   };
 
@@ -815,6 +825,8 @@ export default function CustomerRegistration(props) {
 
   const clearIndividualFields = () => {
     setIndividualSearchCode('');
+    setIndividualSearchResults([]);
+    setSelectedMemberIndex(0);
     setStatusMessage('');
     setIsExistingMember(false);
     setFormData((prev) => {
@@ -2394,6 +2406,28 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         Clear
                       </Button>
                     </Box>
+                    {/* Multi-result dropdown */}
+                    {individualSearchResults.length > 1 && (
+                      <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center', mt: 1, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                        <TextField
+                          select
+                          label="Select Member"
+                          value={selectedMemberIndex}
+                          onChange={(e) => setSelectedMemberIndex(Number(e.target.value))}
+                          size="small"
+                          sx={{ minWidth: 300 }}
+                        >
+                          {individualSearchResults.map((member, idx) => (
+                            <MenuItem key={idx} value={idx}>
+                              {`${member.ccustcode || 'N/A'} - ${member.ccustfname || ''} ${member.ccustlname || ''}`}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Button variant="contained" onClick={handleSelectAndApplyMember} sx={{ backgroundColor: '#667eea' }}>
+                          Select & Apply
+                        </Button>
+                      </Box>
+                    )}
                     <TextField
                       required
                       label="First Name"

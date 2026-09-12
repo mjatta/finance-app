@@ -2,20 +2,21 @@ import { useCallback, useState } from 'react';
 import { getFullApiUrl } from '../utils/apiConfig';
 
 /**
- * Hook to fetch member details by member code
- * GET /api/getmemberdetails/{memberCode}
+ * Hook to fetch member details by search query
+ * GET /api/getmemberdetails?search={searchValue}
+ * Supports searching by: member code, first name, last name, ID
  */
 export const useMemberDetails = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMemberDetails = useCallback(async (memberCode) => {
+  const fetchMemberDetails = useCallback(async (searchValue) => {
     setLoading(true);
     setError(null);
 
     try {
-      if (!memberCode) throw new Error('Member code is required');
-      const url = getFullApiUrl(`/api/getmemberdetails/${encodeURIComponent(String(memberCode).trim())}`);
+      if (!searchValue) throw new Error('Search value is required');
+      const url = getFullApiUrl(`/api/getmemberdetails?search=${encodeURIComponent(String(searchValue).trim())}`);
       const res = await fetch(url);
       if (!res.ok) {
         const txt = await res.text();

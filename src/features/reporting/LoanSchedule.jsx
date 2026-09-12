@@ -116,7 +116,7 @@ export default function LoanSchedule() {
     setIsLoadingCustomer(true);
 
     try {
-      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${customerCode.trim()}`), {
+      const response = await fetch(getFullApiUrl(`/api/getmemberdetails?search=${encodeURIComponent(customerCode.trim())}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
