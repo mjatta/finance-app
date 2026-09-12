@@ -247,6 +247,33 @@ export default function Repayments() {
             shouldAutoPrint.current = true;
           }
         }
+        
+        // Call accrued interest balance API if total accrued > repayment amount
+        const totalAccrued = parseFloat(formData.totalAccruedInterest) || 0;
+        const repaymentAmt = parseFloat(formData.repaymentAmount) || 0;
+        if (totalAccrued > repaymentAmt) {
+          try {
+            const accruedBalance = totalAccrued - repaymentAmt;
+            const accruedPayload = {
+              AccountNumber: formData.accountNumber,
+              accruedInterestBalance: accruedBalance,
+            };
+            const accruedResponse = await fetch(
+              '/api/LoanRepayment/accruedInterestBalance',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(accruedPayload),
+              }
+            );
+            if (!accruedResponse.ok) {
+              console.error('Failed to update accrued interest balance:', accruedResponse.status);
+            }
+          } catch (err) {
+            console.error('Error calling accrued interest balance API:', err);
+          }
+        }
+        
         // Reset all fields after 7 seconds, like deposit
         setTimeout(() => {
           setFormData({

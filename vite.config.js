@@ -1199,6 +1199,51 @@ const loanRepaymentInsertApiPlugin = () => ({
   },
 })
 
+// Loan Repayment Accrued Interest Balance API Plugin (dev server middleware, backend only)
+const loanRepaymentAccruedInterestApiPlugin = () => ({
+  name: 'loan-repayment-accrued-interest-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/LoanRepayment/accruedInterestBalance', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        // Forward POST to backend
+        if (req.method === 'POST') {
+          const body = await parseRequestBody(req)
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/accruedInterestBalance', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process accrued interest balance update.' }))
+      }
+    })
+  },
+})
+
 const loanRepaymentAccountApiPlugin = () => ({
   name: 'loan-repayment-account-api-plugin',
   configureServer(server) {
@@ -3841,6 +3886,7 @@ export default defineConfig({
     productDefinitionApiPlugin(),
     productUpdateApiPlugin(),
     loanRepaymentInsertApiPlugin(),
+    loanRepaymentAccruedInterestApiPlugin(),
     loanReportApiPlugin(),
     loansTopupApiPlugin(),
     loansDetailsApiPlugin(),
@@ -4269,6 +4315,11 @@ export default defineConfig({
         secure: false,
       },
       '/api/loanRepayment/InsertLoanRepayment': {
+        target: 'https://alakuyateh-001-site10.atempurl.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/LoanRepayment/accruedInterestBalance': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,

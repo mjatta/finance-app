@@ -589,6 +589,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanRepayment/InsertLoanRepayment"
     },
     {
+      "source": "/api/LoanRepayment/accruedInterestBalance",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/LoanRepayment/accruedInterestBalance"
+    },
+    {
       "source": "/api/Setup/accounttypes",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/Setup/accounttypes"
     },
