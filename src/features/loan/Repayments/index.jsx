@@ -426,14 +426,14 @@ export default function Repayments() {
           controlAccount: data.Details?.ControlAccount || '',
           interestAccount: data.Details?.InterestAccount || '',
           badDebtAccount: data.Details?.BadDebtAccount || '',
-          loanBalance: data.AccruedInterest?.LoanBalance ?? '',
-          calculatedInterest: data.AccruedInterest?.CalculatedInterest ?? '',
-          storedAccruedInterest: data.AccruedInterest?.StoredAccruedInterest ?? '',
+          loanBalance: data.Interest?.LoanBalance ?? '',
+          calculatedInterest: data.Interest?.TotalAccruedInterest ?? '',
+          storedAccruedInterest: data.Interest?.StoredAccruedInterest ?? '',
           repayment: data.Loan?.Repayment ?? '',
           duration: data.Loan?.Duration ?? '',
           startDate: data.Loan?.StartDate || '',
           loanProductId: data.Loan?.ProductID ?? '',
-          totalAccruedInterest: data.AccruedInterest?.TotalAccruedInterest ?? 0,
+          totalAccruedInterest: data.Interest?.TotalAccruedInterest ?? 0,
         }));
       } finally {
         setLoadingAccountDetails(false);
@@ -604,14 +604,14 @@ export default function Repayments() {
             controlAccount: result.Details?.ControlAccount || '',
             interestAccount: result.Details?.InterestAccount || '',
             badDebtAccount: result.Details?.BadDebtAccount || '',
-            loanBalance: result.AccruedInterest?.LoanBalance ?? '',
-            calculatedInterest: result.AccruedInterest?.CalculatedInterest ?? '',
-            storedAccruedInterest: result.AccruedInterest?.StoredAccruedInterest ?? '',
+            loanBalance: result.Interest?.LoanBalance ?? '',
+            calculatedInterest: result.Interest?.TotalAccruedInterest ?? '',
+            storedAccruedInterest: result.Interest?.StoredAccruedInterest ?? '',
             repayment: result.Loan?.Repayment ?? '',
             duration: result.Loan?.Duration ?? '',
             startDate: result.Loan?.StartDate || '',
             loanProductId: result.Loan?.ProductID ?? '',
-            totalAccruedInterest: result.AccruedInterest?.TotalAccruedInterest ?? 0,
+            totalAccruedInterest: result.Interest?.TotalAccruedInterest ?? 0,
           }));
         }
         setLoadingAccountDetails(false);
