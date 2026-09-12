@@ -13,6 +13,15 @@ const formatAmount = (value) => {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const formatDate = (value) => {
+  if (!value) return ''
+  try {
+    return dayjs(value).format('DD-MM-YYYY')
+  } catch {
+    return String(value)
+  }
+}
+
 export const buildJournalReportPrintHtml = (items, title = 'Journal Report', meta = {}) => {
   const rows = Array.isArray(items) ? items : []
   const first = rows[0]?.Fields || {}
@@ -28,7 +37,7 @@ export const buildJournalReportPrintHtml = (items, title = 'Journal Report', met
     const f = r.Fields || {}
     return `
       <tr>
-        <td>${escapeHtml(f.dtrandate || '')}</td>
+        <td>${escapeHtml(formatDate(f.dtrandate))}</td>
         <td>${escapeHtml(f.cacctnumb || '')}</td>
         <td>${escapeHtml((f.ctrandesc || '').trim())}</td>
         <td style="text-align:right">${formatAmount(f.ndebit ?? f.ntranamnt ?? 0)}</td>

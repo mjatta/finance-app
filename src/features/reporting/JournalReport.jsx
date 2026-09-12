@@ -53,8 +53,8 @@ export default function JournalReport() {
 
   const buildPayload = () => ({
     company: company || '',
-    branch: branch || '',
-    user: user || '',
+    branchId: branch ? branch : 0,
+    userId: user ? user : 0,
     tranFrom: formatDate(tranFrom),
     tranTo: formatDate(tranTo),
   });
@@ -77,7 +77,7 @@ export default function JournalReport() {
       // Call the remote journal enquiry report API (returns array of { Fields: { ... } })
       const userObj = JSON.parse(localStorage.getItem('user') || '{}');
       const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || userObj?.compid || '';
-      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch || ''), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user ? user : 0), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
       const endpoint = `/api/journalenquiry/report?${params.toString()}`;
       const resp = await fetch(endpoint);
       if (!resp.ok) throw new Error(`Report API ${resp.status}`);
@@ -111,7 +111,7 @@ export default function JournalReport() {
       // Call remote report API and build print view
       const userObj = JSON.parse(localStorage.getItem('user') || '{}');
       const compId = authUser?.CompId || userObj.CompId || userObj.compid || userObj.Compid || userObj.compId || '';
-      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch || ''), userId: String(user || ''), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
+      const params = new URLSearchParams({ companyId: String(compId || ''), branchId: String(branch ? branch : 0), userId: String(user ? user : 0), fromDate: formatDate(tranFrom), toDate: formatDate(tranTo) });
       const endpoint = `/api/journalenquiry/report?${params.toString()}`;
       const resp = await fetch(endpoint);
       if (!resp.ok) throw new Error(`Report API ${resp.status}`);
@@ -159,16 +159,46 @@ export default function JournalReport() {
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, mb: 3 }}>
             <TextField label="Company" size="small" value={company} onChange={(e) => setCompany(e.target.value)} fullWidth sx={{ display: 'none' }} />
-            <TextField select label="Branch" size="small" value={branch} onChange={(e) => setBranch(e.target.value)} fullWidth disabled={branchesLoading}>
+            <TextField 
+              select 
+              label="Branch" 
+              size="small" 
+              value={branch || ''} 
+              onChange={(e) => setBranch(e.target.value)} 
+              fullWidth 
+              disabled={branchesLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (value) => (value === '' || value === undefined ? 'All Branches' : value),
+              }}
+            >
               <MenuItem value="">All Branches</MenuItem>
-              {branchOptions.map((b) => (<MenuItem key={b.br_id || b.id || b.branchid || b.br_id} value={b.br_id || b.id || b.branchid || b.br_id}>{b.branchName || b.br_name || b.branch || b.name}</MenuItem>))}
+              {branchOptions.map((b) => {
+                const branchId = String(b.br_id || b.id || b.branchid || '').trim();
+                if (!branchId) return null; // Skip branches without valid IDs
+                const branchName = b.branchName || b.br_name || b.branch || b.name || '';
+                return (<MenuItem key={branchId} value={branchId}>{branchName}</MenuItem>)
+              })}
             </TextField>
-            <TextField select label="User" size="small" value={user} onChange={(e) => setUser(e.target.value)} fullWidth disabled={usersLoading}>
+            <TextField 
+              select 
+              label="User" 
+              size="small" 
+              value={user || ''} 
+              onChange={(e) => setUser(e.target.value)} 
+              fullWidth 
+              disabled={usersLoading}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (value) => (value === '' || value === undefined ? 'All Users' : value),
+              }}
+            >
               <MenuItem value="">All Users</MenuItem>
               {Array.isArray(users) && users.map((u) => {
-                const idVal = (u.UserID || u.UserId || u.userId || u.id || u.UserID)?.toString().trim();
-                const label = (u.username || u.oprcode || u.UserID || u.UserId || idVal || '').toString().trim();
-                return (<MenuItem key={idVal || label} value={idVal || label}>{label}</MenuItem>)
+                const idVal = String(u.UserID || u.UserId || u.userId || u.id || '').trim();
+                if (!idVal) return null; // Skip users without valid IDs
+                const label = (u.username || u.oprcode || u.UserID || u.UserId || '').toString().trim() || idVal;
+                return (<MenuItem key={idVal} value={idVal}>{label}</MenuItem>)
               })}
             </TextField>
           </Box>
