@@ -341,6 +341,28 @@ export default function LoanDisbursement() {
       return;
     }
 
+    // Smart field disabling logic for chequeNumber and bbNumber
+    // When one field has a value, disable the other; when cleared, enable both
+    if (name === 'chequeNumber') {
+      setDisbursementDetails((prev) => ({
+        ...prev,
+        chequeNumber: value,
+        // If chequeNumber is empty, keep bbNumber; if filled, clear bbNumber
+        bbNumber: value.trim() === '' ? prev.bbNumber : '',
+      }));
+      return;
+    }
+
+    if (name === 'bbNumber') {
+      setDisbursementDetails((prev) => ({
+        ...prev,
+        bbNumber: value,
+        // If bbNumber is empty, keep chequeNumber; if filled, clear chequeNumber
+        chequeNumber: value.trim() === '' ? prev.chequeNumber : '',
+      }));
+      return;
+    }
+
     setDisbursementDetails((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -996,6 +1018,7 @@ export default function LoanDisbursement() {
                         onChange={handleDisbursementDetailsChange}
                         variant="outlined"
                         size="small"
+                        disabled={disbursementDetails.bbNumber.trim() !== ''}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
@@ -1008,6 +1031,7 @@ export default function LoanDisbursement() {
                         variant="outlined"
                         size="small"
                         placeholder="Enter BB Number if using bank transfer"
+                        disabled={disbursementDetails.chequeNumber.trim() !== ''}
                       />
                     </Grid>
                   </Grid>

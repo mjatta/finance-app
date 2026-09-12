@@ -552,6 +552,28 @@ export default function Repayments() {
       return;
     }
 
+    // Smart field disabling logic for checkNumber and bbNumber
+    // When one field has a value, disable the other; when cleared, enable both
+    if (name === 'checkNumber') {
+      setFormData((prev) => ({
+        ...prev,
+        checkNumber: value,
+        // If checkNumber is empty, keep bbNumber; if filled, clear bbNumber
+        bbNumber: value.trim() === '' ? prev.bbNumber : '',
+      }));
+      return;
+    }
+
+    if (name === 'bbNumber') {
+      setFormData((prev) => ({
+        ...prev,
+        bbNumber: value,
+        // If bbNumber is empty, keep checkNumber; if filled, clear checkNumber
+        checkNumber: value.trim() === '' ? prev.checkNumber : '',
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -974,6 +996,7 @@ export default function Repayments() {
                               helperText={isFieldInvalid('checkNumber') && !formData.bbNumber ? 'Check Number or Bank Transfer Reference is required' : ''}
                               size="small"
                               fullWidth
+                              disabled={formData.bbNumber.trim() !== ''}
                             />
                             <TextField
                               label={<span>Check Date <span style={{color: 'red', fontSize: '1.2em'}}>*</span></span>}
@@ -996,6 +1019,7 @@ export default function Repayments() {
                               size="small"
                               fullWidth
                               placeholder="Enter BB Number if using bank transfer"
+                              disabled={formData.checkNumber.trim() !== ''}
                             />
                             <TextField
                               label="Bank Transfer Date"
