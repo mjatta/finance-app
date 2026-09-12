@@ -19,7 +19,7 @@ export function useGetMemberDetails() {
     setError(null);
 
     try {
-      const response = await fetch(getFullApiUrl(`/api/getmemberdetails?search=${encodeURIComponent(memberCode.trim())}`), {
+      const response = await fetch(getFullApiUrl(`/api/remote-member/details/${memberCode.trim()}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

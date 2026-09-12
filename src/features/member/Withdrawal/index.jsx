@@ -47,6 +47,7 @@ export default function Withdrawal() {
   const resetFormState = {
     transactionType: 'withdrawals',
     memberCode: '',
+    payrollNumber: '',
     profilePicture: '',
     memberSignature: '',
     phoneNumber: '',
@@ -78,6 +79,7 @@ export default function Withdrawal() {
   const [formData, setFormData] = useState({
     transactionType: 'withdrawals',
     memberCode: '',
+    payrollNumber: '',
     profilePicture: '',
     memberSignature: '',
     phoneNumber: '',
@@ -194,6 +196,7 @@ export default function Withdrawal() {
     setFormData((prev) => ({
       ...prev,
       memberCode: member.memberCode,
+      payrollNumber: member.payrollNumber,
       profilePicture: member.profilePicture,
       memberSignature: member.memberSignature,
       phoneNumber: member.phoneNumber,
@@ -238,8 +241,8 @@ export default function Withdrawal() {
     }
   }, [formData.depositType, user]);
 
-  const searchMember = async () => {
-    const rawValue = formData.memberCode;
+  const searchMember = async (searchBy) => {
+    const rawValue = searchBy === 'memberCode' ? formData.memberCode : formData.payrollNumber;
     if (!rawValue.trim()) {
       return;
     }
@@ -251,8 +254,8 @@ export default function Withdrawal() {
     try {
       let member = null;
 
-      // Fetch member details from backend API using flexible search (code, name, or ID)
-      {
+      // For member code, try fetching from backend API
+      if (searchBy === 'memberCode') {
         const remoteMemberData = await fetchMemberDetails(rawValue.trim());
         if (remoteMemberData) {
           // Transform API response to match our local member structure
@@ -267,6 +270,7 @@ export default function Withdrawal() {
           
           member = {
             memberCode: remoteMemberData.memberCode || rawValue.trim(),
+            payrollNumber: remoteMemberData.payrollNumber || '',
             profilePicture: formatProfileImage(remoteMemberData.MemberPicture),
             memberSignature: formatProfileImage(remoteMemberData.MemberSignature),
             phoneNumber: remoteMemberData.Phone || '',
@@ -279,6 +283,24 @@ export default function Withdrawal() {
             memberRegion: remoteMemberData.region != null ? String(remoteMemberData.region) : '',
           };
         }
+      } else {
+        // Payroll number search only from backend - no fallback
+        // setRows([]); // rows state removed
+        setFormData((prev) => ({
+          ...prev,
+          profilePicture: '',
+          memberSignature: '',
+          phoneNumber: '',
+          memberAccounts: [],
+          accountBalance: '',
+          accountNumber: '',
+          clearedBalance: '',
+          unclearedBalance: '',
+        }));
+        setStatusMessage('Member not found for provided search details.');
+        setStatusError(true);
+        setIsLoadingMember(false);
+        return;
       }
 
       if (!member) {
@@ -739,16 +761,25 @@ export default function Withdrawal() {
                   name="memberCode"
                   value={formData.memberCode}
                   onChange={handleChange}
-                  onBlur={() => searchMember()}
+                  onBlur={() => searchMember('memberCode')}
                   disabled={isLoadingMember}
-                  placeholder="Member Code or Full Name or ID Card Number"
-                  helperText="Enter member code, full name, or ID card number and press Tab to load member details."
+                  placeholder="Member Code"
+                  helperText="Enter customer code and press Tab to load member details."
                   FormHelperTextProps={{
                     sx: {
                       fontWeight: 800,
                       color: '#b45309',
                     },
                   }}
+                />
+                <TextField
+                  label="Payroll Number"
+                  name="payrollNumber"
+                  value={formData.payrollNumber}
+                  onChange={handleChange}
+                  onBlur={() => searchMember('payrollNumber')}
+                  disabled={isLoadingMember}
+                  placeholder="e.g. PAY001"
                 />
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button
