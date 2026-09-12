@@ -162,6 +162,8 @@ export default function CustomerEnquiries() {
     individual: false,
     group: false,
     corporate: false,
+    guarantors: false,
+    members: false,
   });
 
   // Age range (defaults)
@@ -231,6 +233,8 @@ export default function CustomerEnquiries() {
       CustType: customerType.individual ? 1 : 0,
       CustType1: customerType.group ? 2 : 0,
       CustType2: customerType.corporate ? 3 : 0,
+      CustType3: customerType.guarantors ? 4 : 0,
+      CustType4: customerType.members ? 1 : 0,
       ActiveMember: activeAccount ? 1 : '',
       CloseMember: closedAccount ? 0 : '',
       GenderMale: gender.male ? 1 : 0,
@@ -341,7 +345,7 @@ export default function CustomerEnquiries() {
     setOpenDateTo(dayjs('2089-12-31'));
     setCloseDateFrom(dayjs('1900-01-01'));
     setCloseDateTo(dayjs('2089-12-31'));
-    setCustomerType({ individual: false, group: false, corporate: false });
+    setCustomerType({ individual: false, group: false, corporate: false, guarantors: false, members: false });
     setAgeFrom(0);
     setAgeTo(999);
     setGender({ male: false, female: false });
@@ -544,6 +548,14 @@ export default function CustomerEnquiries() {
                 <FormControlLabel
                   control={<Checkbox checked={customerType.corporate} onChange={handleCustomerTypeChange} name="corporate" />}
                   label="Corporate"
+                />
+                <FormControlLabel
+                  control={<Checkbox checked={customerType.guarantors} onChange={handleCustomerTypeChange} name="guarantors" />}
+                  label="Guarantors"
+                />
+                <FormControlLabel
+                  control={<Checkbox checked={customerType.members} onChange={handleCustomerTypeChange} name="members" />}
+                  label="Members"
                 />
               </Box>
             </Box>
