@@ -57,14 +57,63 @@ const escapeCSV = (value) => {
 };
 
 const convertToCSV = (rows) => {
-  const headers = ['Account Number', 'Account Name', 'Loan Balance', 'Age'];
-  const csvRows = rows.map((row) => [
-    row?.cacctnumb ?? '',
-    row?.cacctname ?? '',
-    formatAmount(row?.LoanBalance ?? row?.nbookbal ?? 0),
-    row?.nage ?? row?.age ?? row?.days_outstanding ?? '0',
-  ]);
-  return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
+  // Group rows by Product
+  const productGroups = {};
+  rows.forEach((row) => {
+    const product = String(row?.prd_name ?? row?.productName ?? row?.product ?? '').trim() || 'Unknown';
+    if (!productGroups[product]) {
+      productGroups[product] = [];
+    }
+    productGroups[product].push(row);
+  });
+
+  // Sort each product's rows by Grand Total (descending)
+  Object.keys(productGroups).forEach((product) => {
+    productGroups[product].sort((a, b) => {
+      const balA = Number(a?.LoanBalance ?? a?.nbookbal ?? 0);
+      const balB = Number(b?.LoanBalance ?? b?.nbookbal ?? 0);
+      return balB - balA;
+    });
+  });
+
+  const csvRows = [];
+  const headers = ['Product', 'Account Number', 'Account Name', 'Grand Total', 'Age'];
+
+  // Add headers
+  csvRows.push(headers.map(escapeCSV).join(','));
+
+  // Sort products alphabetically and build CSV
+  Object.keys(productGroups)
+    .sort()
+    .forEach((product) => {
+      // Add product header row
+      csvRows.push(escapeCSV(product));
+
+      // Add rows for this product
+      productGroups[product].forEach((row) => {
+        csvRows.push(
+          [
+            row?.prd_name ?? row?.productName ?? row?.product ?? '',
+            row?.cacctnumb ?? '',
+            row?.cacctname ?? '',
+            formatAmount(row?.LoanBalance ?? row?.nbookbal ?? 0),
+            row?.nage ?? row?.age ?? row?.days_outstanding ?? '0',
+          ].map(escapeCSV).join(',')
+        );
+      });
+
+      // Add product total row
+      const productTotal = productGroups[product].reduce(
+        (sum, r) => sum + Number(r?.LoanBalance ?? r?.nbookbal ?? 0),
+        0
+      );
+      csvRows.push(
+        ['', '', 'Product Total:', formatAmount(productTotal), ''].map(escapeCSV).join(',')
+      );
+      csvRows.push(''); // Blank line between products
+    });
+
+  return csvRows.join('\n');
 };
 
 const downloadFile = (content, filename, mimeType) => {
@@ -85,7 +134,7 @@ export default function LoanBalance() {
   const { fetchLoanBalance, loading: printLoading } = useGetLoanBalancePrint();
   const [branch, setBranch] = useState('0');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [productType, setProductType] = useState('');
+  const [productType, setProductType] = useState('0');
   const [region, setRegion] = useState('');
   const [selectedRegionId, setSelectedRegionId] = useState('');
   const [productOptions, setProductOptions] = useState([]);
@@ -190,8 +239,8 @@ export default function LoanBalance() {
   };
 
   const handleFetchAndExport = async (exportType) => {
-    if (branch === '' || !date || !productType) {
-      setStatusMessage('Please select a date and product type before exporting.');
+    if (branch === '' || !date) {
+      setStatusMessage('Please select a date before exporting.');
       return;
     }
 
@@ -358,6 +407,9 @@ export default function LoanBalance() {
               SelectProps={{
                 displayEmpty: true,
                 renderValue: (selected) => {
+                  if (selected === '0') {
+                    return 'All Products';
+                  }
                   if (!selected) {
                     return 'Select a product';
                   }
@@ -367,8 +419,8 @@ export default function LoanBalance() {
                 },
               }}
             >
-              <MenuItem value="" disabled>
-                Select a product
+              <MenuItem value="0">
+                All Products
               </MenuItem>
               {productOptions.map((item) => (
                 <MenuItem key={item.value} value={item.value}>
@@ -516,7 +568,7 @@ export default function LoanBalance() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('pdf')}
-              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
+              disabled={branch === '' || !date || branchesLoading || printLoading}
               sx={{ backgroundColor: '#667eea', '&:hover': { backgroundColor: '#5568d3' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               {printLoading ? 'Processing...' : 'PDF'}
@@ -524,7 +576,7 @@ export default function LoanBalance() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('excel')}
-              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
+              disabled={branch === '' || !date || branchesLoading || printLoading}
               sx={{ backgroundColor: '#27ae60', '&:hover': { backgroundColor: '#229954' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               Excel
@@ -532,7 +584,7 @@ export default function LoanBalance() {
             <Button
               variant="contained"
               onClick={() => handleFetchAndExport('csv')}
-              disabled={branch === '' || !date || !productType || branchesLoading || printLoading}
+              disabled={branch === '' || !date || branchesLoading || printLoading}
               sx={{ backgroundColor: '#3498db', '&:hover': { backgroundColor: '#2980b9' }, fontWeight: 600, textTransform: 'none', boxShadow: 'none', px: 3 }}
             >
               CSV

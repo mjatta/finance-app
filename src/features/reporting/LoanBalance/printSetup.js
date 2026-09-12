@@ -39,7 +39,27 @@ const normalizeRows = (payload) => {
 };
 
 export const buildLoanBalancePrintHtml = (payload, context = {}) => {
-  const rows = normalizeRows(payload);
+  let rows = normalizeRows(payload);
+  
+  // Group rows by Product
+  const productGroups = {};
+  rows.forEach((row) => {
+    const product = String(row?.prd_name ?? row?.productName ?? row?.product ?? '').trim() || 'Unknown';
+    if (!productGroups[product]) {
+      productGroups[product] = [];
+    }
+    productGroups[product].push(row);
+  });
+
+  // Sort each product's rows by Grand Total (descending)
+  Object.keys(productGroups).forEach((product) => {
+    productGroups[product].sort((a, b) => {
+      const balA = toNumber(a?.LoanBalance ?? a?.nbookbal);
+      const balB = toNumber(b?.LoanBalance ?? b?.nbookbal);
+      return balB - balA;
+    });
+  });
+  
   const firstRow = rows[0] ?? {};
   const companyName = String(firstRow?.com_name ?? '').trim() || 'Company';
   const branchName = (firstRow?.br_name ?? firstRow?.branchName ?? '').trim();
@@ -48,31 +68,66 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
   const email = String(firstRow?.email ?? '').trim();
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-  const totals = rows.reduce((acc, row) => {
-    const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
-    return { loanBalance: acc.loanBalance + bal };
-  }, {
-    loanBalance: 0,
-  });
+  // Build product tables
+  const productTables = Object.keys(productGroups)
+    .sort()
+    .map((product) => {
+      const productRows = productGroups[product];
+      const productTotal = productRows.reduce((sum, row) => {
+        const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
+        return sum + bal;
+      }, 0);
 
-  const tableRows = rows.length > 0
-    ? rows.map((row) => {
-      const age = (row?.nage ?? row?.age ?? row?.days_outstanding ?? '0').toString().trim();
-      const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
+      const tableRows = productRows.length > 0
+        ? productRows.map((row) => {
+          const age = (row?.nage ?? row?.age ?? row?.days_outstanding ?? '0').toString().trim();
+          const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
+          return `
+            <tr>
+              <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
+              <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
+              <td class="amt">${formatAmount(bal)}</td>
+              <td class="num">${escapeHtml(age)}</td>
+            </tr>
+          `;
+        }).join('')
+        : `
+          <tr>
+            <td colspan="4" class="no-data">No data for this product.</td>
+          </tr>
+        `;
+
       return `
-        <tr>
-          <td class="num">${escapeHtml(String(row?.cacctnumb ?? '').trim())}</td>
-          <td>${escapeHtml(String(row?.cacctname ?? '').trim())}</td>
-          <td class="amt">${formatAmount(bal)}</td>
-          <td class="num">${escapeHtml(age)}</td>
-        </tr>
+        <div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:#0f172a">Product: ${escapeHtml(product)}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Account Number</th>
+                <th>Account Name</th>
+                <th>Total</th>
+                <th>Age</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Product Total:</td>
+                <td class="amt">${formatAmount(productTotal)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       `;
-    }).join('')
-    : `
-      <tr>
-        <td colspan="4" class="no-data">No loan balance data found.</td>
-      </tr>
-    `;
+    }).join('');
+
+  const grandTotal = rows.reduce((acc, row) => {
+    const bal = Math.abs(toNumber(row?.LoanBalance ?? row?.nbookbal));
+    return acc + bal;
+  }, 0);
 
   return `
     <!DOCTYPE html>
@@ -150,6 +205,10 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
           text-align: left;
           font-weight: 700;
         }
+        thead th:nth-child(4),
+        thead th:nth-child(5) {
+          text-align: right;
+        }
         tbody td, tfoot td {
           border: 1px solid var(--line);
           padding: 7px 10px;
@@ -198,23 +257,14 @@ export const buildLoanBalancePrintHtml = (payload, context = {}) => {
           <div class="sub-title">As of: ${escapeHtml(context.date || '')}</div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Account Number</th>
-              <th>Account Name</th>
-              <th>Loan Balance</th>
-              <th>Age</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
+        ${productTables}
+
+        <table style="margin-top: 20px;">
           <tfoot>
             <tr>
-              <td colspan="2">Total</td>
-              <td class="amt">${formatAmount(totals.loanBalance)}</td>
-              <td></td>
+              <td colspan="2" style="font-weight: 700; background: #f1f5f9; border: 1px solid var(--line); padding: 7px 10px;">Grand Total:</td>
+              <td class="amt" style="font-weight: 700; background: #f1f5f9; border: 1px solid var(--line); padding: 7px 10px;">${formatAmount(grandTotal)}</td>
+              <td style="font-weight: 700; background: #f1f5f9; border: 1px solid var(--line); padding: 7px 10px;"></td>
             </tr>
           </tfoot>
         </table>
