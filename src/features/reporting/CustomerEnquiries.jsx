@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Alert,
   Backdrop,
@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import { useBranches } from '../../hooks/useBranches';
 import { useRegions } from '../../hooks/useRegions';
 import { buildCustomerEnquiriesPrintHtml } from './CustomerEnquiries/printSetup';
+import { getFullApiUrl } from '../../utils/apiConfig';
 
 const normalizeBranchName = (branch) => (
   branch?.branchName
@@ -88,6 +89,8 @@ const dateOfBirthOf = (row) => normalizeText(row?.dateOfBirth || row?.dob || row
 
 const phoneOf = (row) => normalizeText(row?.phone || row?.telephone || row?.mobile || row?.tel || row?.Expr1);
 
+const sectorOf = (row) => normalizeText(row?.Sector || row?.sector || row?.sec_name || row?.SecName || row?.economicSector);
+
 const escapeCSV = (value) => {
   const str = String(value ?? '');
   return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
@@ -113,6 +116,34 @@ export default function CustomerEnquiries() {
   const [branch, setBranch] = useState('');
   const [region, setRegion] = useState('');
   const [selectedRegionId, setSelectedRegionId] = useState('');
+  const [sector, setSector] = useState('');
+  const [sectorOptions, setSectorOptions] = useState([]);
+
+  // Fetch economic sectors from API on mount
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const url = getFullApiUrl('/api/loan-setup/details');
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.data && Array.isArray(data.data.sectors)) {
+            const sectors = data.data.sectors.map((item) => ({
+              value: String(item.sec_id),
+              label: String(item.sec_name || '').trim(),
+            }));
+            setSectorOptions(sectors);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching sectors:', error);
+      }
+    };
+    fetchSectors();
+  }, []);
 
   // Profile filters
   const [maritalStatus, setMaritalStatus] = useState('');
@@ -176,7 +207,7 @@ export default function CustomerEnquiries() {
   };
 
   const convertToCSV = (rows) => {
-    const headers = ['Customer Code', 'Customer Name', 'Date Joined', 'Gender', 'Date of Birth', 'Phone'];
+    const headers = ['Customer Code', 'Customer Name', 'Date Joined', 'Gender', 'Date of Birth', 'Phone', 'Economic Sector'];
     const csvRows = rows.map((row) => [
       customerCodeOf(row),
       customerNameOf(row),
@@ -184,6 +215,7 @@ export default function CustomerEnquiries() {
       genderOf(row),
       dateOfBirthOf(row),
       phoneOf(row),
+      sectorOf(row),
     ]);
 
     return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
@@ -214,6 +246,7 @@ export default function CustomerEnquiries() {
       ClosedFromDate: formatDate(closeDateFrom, '1900-01-01'),
       ClosedToDate: formatDate(closeDateTo, '2089-12-31'),
       region: selectedRegionId || '',
+      Sector: sector ? Number(sector) : '',
     };
 
     const response = await fetch('/api/memberreport/get', {
@@ -301,6 +334,7 @@ export default function CustomerEnquiries() {
   const handleClear = () => {
     setBranch('');
     setRegion('');
+    setSector('');
     // District and Ward removed
     setMaritalStatus('');
     setEducationalLevel('');
@@ -386,6 +420,21 @@ export default function CustomerEnquiries() {
                 <MenuItem value="" disabled>Select a region</MenuItem>
                 {regions.map((r) => (
                   <MenuItem key={r.coun_id} value={r.coun_name?.trim()}>{r.coun_name?.trim()}</MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                select
+                label="Economic Sector"
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                size="small"
+                fullWidth
+                SelectProps={{ displayEmpty: true, renderValue: (v) => v ? sectorOptions.find(s => s.value === v)?.label || v : 'Select a sector' }}
+              >
+                <MenuItem value="" disabled>Select a sector</MenuItem>
+                {sectorOptions.map((s) => (
+                  <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
                 ))}
               </TextField>
 
