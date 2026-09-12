@@ -398,6 +398,7 @@ export default function CustomerRegistration(props) {
         firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
         middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
         surname: (m.ccustlname || m.LName || m.surname || '').trim(),
+        memberType: (m.MemType || m.memberType || m.memtype || '').trim(),
         memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
         branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
         memberEmployed: m.Employed === 1 || m.Employed === true || !!m.memberEmployed,
@@ -786,7 +787,7 @@ export default function CustomerRegistration(props) {
     setIsExistingMember(false);
     setFormData((prev) => {
       const keysToReset = [
-        'firstName','middleName','surname','memberCode','branch','institutionBranch','memberEmployed','sendSms','registerMobileWallet',
+        'firstName','middleName','surname','memberType','memberCode','branch','institutionBranch','memberEmployed','sendSms','registerMobileWallet',
         'title','nationality','tribe','levelOfEducation','dateOfBirth','dateJoined','gender','maritalStatus','idType',
         'idNumber','placeIssue','dateIssued','expiryDate','povertyLevel','region','district','ward','country','city','address',
         'mobilePhoneNumber','emailAddress','refereeName','refereeAddress','refereeMobilePhone','refereeEmailAddress',
@@ -1021,6 +1022,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       const requiredChecks = [
         ['firstName', 'First Name', null],
         ['surname', 'Surname', null],
+        ['memberType', 'Member Type', null],
         ['institutionBranch', 'Branch', null],
         ['city', 'City', 1],
         ['address', 'Address', 1],
@@ -2393,6 +2395,33 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         },
                       }}
                     />
+                    <TextField
+                      select
+                      required
+                      label="Member Type"
+                      name="memberType"
+                      value={formData.memberType}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur('memberType')}
+                      error={isFieldInvalid('memberType')}
+                      helperText={isFieldInvalid('memberType') ? 'Member Type is required' : ''}
+                      SelectProps={{
+                        displayEmpty: true,
+                        renderValue: (selected) => selected || 'Select member type',
+                      }}
+                      sx={{
+                        '& .MuiFormLabel-root.Mui-required::after': {
+                          color: '#fff',
+                          fontWeight: 'bold',
+                        },
+                      }}
+                    >
+                      <MenuItem value="" disabled>
+                        Select member type
+                      </MenuItem>
+                      <MenuItem value="normalMember">Normal Member</MenuItem>
+                      <MenuItem value="guarantorMember">Guarantor Member</MenuItem>
+                    </TextField>
                     <TextField
                       select
                       required

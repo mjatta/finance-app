@@ -7,10 +7,18 @@
  * @returns {Object} Individual payload ready for API submission
  */
 export function buildIndividualPayload(formData, countries = [], cities = [], { compId, branchId, username } = {}) {
+  // Map member type to numeric values
+  const mapMemberType = (memberType) => {
+    if (memberType === 'normalMember') return 1;
+    if (memberType === 'guarantorMember') return 4;
+    return '';
+  };
+
   return {
     FName: formData.firstName,
     MName: formData.middleName,
     LName: formData.surname,
+    MemType: mapMemberType(formData.memberType),
     Employed: !!formData.memberEmployed,
     Title: Number(formData.title) || '',
     NatCode: formData.nationality ? (countries.find(c => c.name === formData.nationality)?.id || 0) : 0,
