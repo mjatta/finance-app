@@ -33,12 +33,17 @@ const getInitialErrorMessage = () => {
 
   if (logoutReason === 'idle') {
     localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
-    return 'Session expired after 15 minutes of inactivity. Please sign in again.';
+    return 'Session expired after 10 minutes of inactivity. Please sign in again.';
   }
 
   if (logoutReason === 'absolute') {
     localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
     return 'Session expired after 5 hours. Please sign in again.';
+  }
+
+  if (logoutReason === 'tab-closed') {
+    localStorage.removeItem(SESSION_LOGOUT_REASON_KEY);
+    return 'Session closed. Please sign in again.';
   }
 
   return '';

@@ -288,6 +288,8 @@ const getValidInitialUser = () => {
       localStorage.setItem(SESSION_LOGOUT_REASON_KEY, 'absolute');
     } else if (idleExpired) {
       localStorage.setItem(SESSION_LOGOUT_REASON_KEY, 'idle');
+    } else if (tabWasClosed) {
+      localStorage.setItem(SESSION_LOGOUT_REASON_KEY, 'tab-closed');
     }
     return null;
   }
