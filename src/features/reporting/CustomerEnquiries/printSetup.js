@@ -43,15 +43,16 @@ const customerNameOf = (row) => {
 };
 
 const dateJoinedOf = (row) => (
-  formatDate(row?.dateJoined || row?.djoindate || row?.dopendate || row?.dcreatedate)
+  formatDate(row?.dateJoined || row?.djoindate || row?.datejoin || row?.dopendate || row?.dcreatedate)
 );
 
 const dateOfBirthOf = (row) => (
-  formatDate(row?.dateOfBirth || row?.dob || row?.ddob)
+  formatDate(row?.dateOfBirth || row?.ddatebirth || row?.dob || row?.ddob)
 );
 
 const phoneOf = (row) => normalizeText(
   row?.phone
+  || row?.ctel
   || row?.telephone
   || row?.mobile
   || row?.tel

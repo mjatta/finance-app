@@ -163,7 +163,6 @@ export default function CustomerEnquiries() {
     group: false,
     corporate: false,
     guarantors: false,
-    members: false,
   });
 
   // Age range (defaults)
@@ -234,7 +233,6 @@ export default function CustomerEnquiries() {
       CustType1: customerType.group ? 2 : 0,
       CustType2: customerType.corporate ? 3 : 0,
       CustType3: customerType.guarantors ? 4 : 0,
-      CustType4: customerType.members ? 1 : 0,
       ActiveMember: activeAccount ? 1 : '',
       CloseMember: closedAccount ? 0 : '',
       GenderMale: gender.male ? 1 : 0,
@@ -539,7 +537,7 @@ export default function CustomerEnquiries() {
               <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                 <FormControlLabel
                   control={<Checkbox checked={customerType.individual} onChange={handleCustomerTypeChange} name="individual" />}
-                  label="Individual"
+                  label="Individuals Members"
                 />
                 <FormControlLabel
                   control={<Checkbox checked={customerType.group} onChange={handleCustomerTypeChange} name="group" />}
@@ -552,10 +550,6 @@ export default function CustomerEnquiries() {
                 <FormControlLabel
                   control={<Checkbox checked={customerType.guarantors} onChange={handleCustomerTypeChange} name="guarantors" />}
                   label="Guarantors"
-                />
-                <FormControlLabel
-                  control={<Checkbox checked={customerType.members} onChange={handleCustomerTypeChange} name="members" />}
-                  label="Members"
                 />
               </Box>
             </Box>
