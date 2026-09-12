@@ -38,7 +38,6 @@ const normalizeBranchId = (branch) => (
 
 const ALL_BRANCHES_VALUE = '__ALL_BRANCHES__';
 const MARITAL_STATUS_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'];
-const EDUCATION_LEVEL_OPTIONS = ['No Formal Education', 'Primary', 'Secondary', 'Vocational / Technical', 'Diploma', 'Bachelor\'s Degree', 'Master\'s Degree', 'PhD'];
 
 const normalizeReportRows = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -147,7 +146,6 @@ export default function CustomerEnquiries() {
 
   // Profile filters
   const [maritalStatus, setMaritalStatus] = useState('');
-  const [educationalLevel, setEducationalLevel] = useState('');
 
   // Account status
   const [activeAccount, setActiveAccount] = useState(false);
@@ -337,7 +335,6 @@ export default function CustomerEnquiries() {
     setSector('');
     // District and Ward removed
     setMaritalStatus('');
-    setEducationalLevel('');
     setActiveAccount(false);
     setClosedAccount(false);
     setOpenDateFrom(dayjs('1900-01-01'));
@@ -455,20 +452,7 @@ export default function CustomerEnquiries() {
                 ))}
               </TextField>
 
-              <TextField
-                select
-                label="Educational Level"
-                value={educationalLevel}
-                onChange={(e) => setEducationalLevel(e.target.value)}
-                size="small"
-                fullWidth
-                SelectProps={{ displayEmpty: true, renderValue: (v) => v || 'Select educational level' }}
-              >
-                <MenuItem value="" disabled>Select educational level</MenuItem>
-                {EDUCATION_LEVEL_OPTIONS.map((l) => (
-                  <MenuItem key={l} value={l}>{l}</MenuItem>
-                ))}
-              </TextField>
+              {/* Educational Level field removed */}
             </Box>
           </CardContent>
         </Card>
