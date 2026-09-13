@@ -33,12 +33,18 @@ export default function useGetAgingCategories() {
           : [];
 
       const options = raw
-        .map((item, index) => ({
-          value: String(item?.Category ?? item?.category ?? item?.Id ?? item?.id ?? index + 1),
-          label: String(item?.LoanAgeCategory ?? '').trim(),
-        }))
+        .map((item) => {
+          const label = String(item?.LoanAgeCategory ?? '').trim();
+          // Extract the first number from the label (e.g., "31 - 90 Days" → "31")
+          const firstNumber = label.match(/\d+/)?.[0] ?? '';
+          return {
+            value: firstNumber,
+            label: label,
+          };
+        })
         .filter((item) => item.value && item.label);
 
+      console.log('Aging Categories loaded:', options);
       setCategories(options);
     } catch (err) {
       setError(err.message);

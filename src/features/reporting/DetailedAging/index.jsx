@@ -196,6 +196,8 @@ export default function DetailedAging() {
       Category: Number(category) || 0,
     };
 
+    console.log('Report payload:', payload, 'category state value:', category);
+
     const response = await generateReport(payload);
     if (!response.success) {
       setStatusMessage('Failed to generate detailed aging report. Please try again.');
