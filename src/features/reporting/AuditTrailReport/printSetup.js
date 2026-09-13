@@ -24,7 +24,7 @@ export const buildAuditTrailPrintHtml = (items, title = 'Audit Trail Report', me
   const toLabel = meta.toDate || ''
 
   const mapAuditType = (val) => {
-    const trimmed = String(val || '').trim()
+    const trimmed = String(val || '').trim().toUpperCase()
     if (trimmed === 'U') return 'Update'
     if (trimmed === 'C') return 'Create'
     return trimmed
@@ -33,8 +33,8 @@ export const buildAuditTrailPrintHtml = (items, title = 'Audit Trail Report', me
   const tableRows = rows.map((r) => {
     const date = r.audit_date ? dayjs(r.audit_date).format('YYYY-MM-DD') : (r.audit_date || '')
     const time = r.audit_time || ''
-    const user = (r.winusr || r.suserid || '').toString().trim()
-    const type = mapAuditType(r.audit_type)
+    const user = String(r.suserid || '').trim().replace(/\s+/g, ' ')
+    const type = mapAuditType(r.audit_type || r.type || r.auditType || r.audit_Code)
     const desc = (r.audit_desc || r.audit_desc || '').toString().trim()
     const orig = r.orig_value ?? r.orig_cvalue ?? ''
     const neu = r.new_value ?? r.new_cvalue ?? ''
