@@ -1018,7 +1018,7 @@ export default function LoanDisbursement() {
                         onChange={handleDisbursementDetailsChange}
                         variant="outlined"
                         size="small"
-                        disabled={disbursementDetails.bbNumber.trim() !== ''}
+                        disabled={(disbursementDetails.bbNumber || '').trim() !== ''}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
@@ -1031,7 +1031,7 @@ export default function LoanDisbursement() {
                         variant="outlined"
                         size="small"
                         placeholder="Enter BB Number if using bank transfer"
-                        disabled={disbursementDetails.chequeNumber.trim() !== ''}
+                        disabled={(disbursementDetails.chequeNumber || '').trim() !== ''}
                       />
                     </Grid>
                   </Grid>
