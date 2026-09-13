@@ -274,13 +274,13 @@ export default function CustomerRegistration(props) {
         const response = await fetch(url);
         if (!response.ok) return;
         const payload = await response.json();
-        const branchOptions = Array.from(
-          new Set(
-            (Array.isArray(payload) ? payload : [])
-              .map((item) => (item?.br_name || item?.branchName || item?.name || '').trim())
-              .filter(Boolean)
-          )
-        );
+        const seenNames = new Set();
+        const branchOptions = (Array.isArray(payload) ? payload : [])
+          .map((item) => ({
+            id: item?.branchid ?? item?.br_id ?? item?.branchId ?? item?.id ?? 0,
+            name: (item?.br_name || item?.branchName || item?.name || '').trim(),
+          }))
+          .filter((item) => item.name && !seenNames.has(item.name) && seenNames.add(item.name));
         setInstitutionBranches(branchOptions);
       } catch {
         setInstitutionBranches([]);
@@ -318,6 +318,14 @@ export default function CustomerRegistration(props) {
   const [isExistingMember, setIsExistingMember] = useState(false);
   const { fetchInstitutionDetails, loading: loadingInstitutionDetails } = useInstitutionDetails();
   const { updateInstitution } = useUpdateInstitution();
+
+  // Resolve a numeric branch id (legacy branch_id) to its display name using the loaded branches list
+  const getBranchNameById = (id) => {
+    const num = Number(id);
+    if (Number.isNaN(num) || num <= 0) return '';
+    const found = institutionBranches.find((b) => Number(b.id) === num);
+    return found ? found.name : '';
+  };
 
   const handleFillFromMember = async () => {
     setSaveValidationErrors(null);
@@ -375,6 +383,21 @@ export default function CustomerRegistration(props) {
         }
       };
 
+      // Backend MemType codes: 1 = Normal Member, 4 = Guarantor Member
+      const mapMemberTypeCode = (val) => {
+        if (val === undefined || val === null || val === '') return '';
+        const n = Number(val);
+        if (Number.isNaN(n)) return String(val);
+        switch (n) {
+          case 1:
+            return 'normalMember';
+          case 4:
+            return 'guarantorMember';
+          default:
+            return '';
+        }
+      };
+
       const mapMaritalCode = (val) => {
         if (val === undefined || val === null || val === '') return '';
         const n = Number(val);
@@ -426,10 +449,8 @@ export default function CustomerRegistration(props) {
           const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
           const num = Number(raw);
           if (!Number.isNaN(num) && num > 0) {
-            if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
-              const byIndex = institutionBranches[num - 1];
-              if (byIndex) return byIndex;
-            }
+            const name = getBranchNameById(num);
+            if (name) return name;
             setPendingBranchId(num);
             return String(num);
           }
@@ -448,7 +469,7 @@ export default function CustomerRegistration(props) {
         firstName: (m.ccustfname || m.FName || m.firstName || '').trim(),
         middleName: (m.ccustmname || m.MName || m.middleName || '').trim(),
         surname: (m.ccustlname || m.LName || m.surname || '').trim(),
-        memberType: String(m.MemType || m.memberType || m.memtype || '').trim(),
+        memberType: mapMemberTypeCode(m.MemType ?? m.memberType ?? m.memtype),
         sector: String(m.Sector || m.sector || '').trim(),
         memberCode: (m.ccustcode || m.memberCode || m.clientCode || '').trim(),
         branch: m.branch || m.branch_name || (m.branch_id ? String(m.branch_id) : ''),
@@ -660,10 +681,8 @@ export default function CustomerRegistration(props) {
           const raw = m.branch_id ?? m.branchid ?? m.branch ?? '';
           const num = Number(raw);
           if (!Number.isNaN(num) && num > 0) {
-            if (Array.isArray(institutionBranches) && institutionBranches.length > 0) {
-              const byIndex = institutionBranches[num - 1];
-              if (byIndex) return byIndex;
-            }
+            const name = getBranchNameById(num);
+            if (name) return name;
             setPendingBranchId(num);
             return String(num);
           }
@@ -883,15 +902,10 @@ function formatRecentMemberRow(row, institutionBranches = []) {
 
   // Branch: try string, fallback to branch id (number)
   let branchVal = row.branch || row.bracnh || row.branchid || row.branch_id || '';
-  // If branchVal is a number and institutionBranches is available, map to branch name
+  // If branchVal is a number and institutionBranches is available, map to branch name by id
   if (typeof branchVal === 'number' && Array.isArray(institutionBranches) && institutionBranches.length > 0) {
-    // Assume branchVal is 1-based index or matches the order in institutionBranches
-    // If your branch IDs map differently, adjust this logic accordingly
-    if (branchVal > 0 && branchVal <= institutionBranches.length) {
-      branchVal = institutionBranches[branchVal - 1] || branchVal.toString();
-    } else {
-      branchVal = branchVal.toString();
-    }
+    const foundBranch = institutionBranches.find((b) => Number(b?.id) === branchVal);
+    branchVal = foundBranch ? foundBranch.name : branchVal.toString();
   }
   if (typeof branchVal === 'number' && branchVal === 0) branchVal = '';
 
@@ -1236,9 +1250,9 @@ function formatRecentMemberRow(row, institutionBranches = []) {
       setPendingBranchId(null);
       return;
     }
-    const branchName = institutionBranches[idx - 1];
-    if (branchName) {
-      setFormData((prev) => ({ ...prev, institutionBranch: branchName }));
+    const foundBranch = institutionBranches.find((b) => Number(b.id) === idx);
+    if (foundBranch) {
+      setFormData((prev) => ({ ...prev, institutionBranch: foundBranch.name }));
     }
     setPendingBranchId(null);
   }, [institutionBranches, pendingBranchId]);
@@ -2460,7 +2474,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       helperText={isFieldInvalid('memberType') ? 'Member Type is required' : ''}
                       SelectProps={{
                         displayEmpty: true,
-                        renderValue: (selected) => selected || 'Select member type',
+                        renderValue: (selected) => {
+                          if (selected === 'normalMember') return 'Normal Member';
+                          if (selected === 'guarantorMember') return 'Guarantor Member';
+                          return 'Select member type';
+                        },
                       }}
                       sx={{
                         '& .MuiFormLabel-root.Mui-required::after': {
@@ -2520,8 +2538,8 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                         Select branch
                       </MenuItem>
                       {institutionBranches.map((item) => (
-                        <MenuItem key={item} value={item}>
-                          {item}
+                        <MenuItem key={item.id ?? item.name} value={item.name}>
+                          {item.name}
                         </MenuItem>
                       ))}
                     </TextField>
