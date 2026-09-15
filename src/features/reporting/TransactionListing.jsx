@@ -19,6 +19,7 @@ import { useBranches } from '../../hooks/useBranches';
 import { useUsers } from '../../hooks/useUsers';
 import { useRegions } from '../../hooks/useRegions';
 import { buildTransactionListingPrintHtml } from './TransactionListing/printSetup';
+import useGetAgingProducts from './DetailedAging/hooks/useGetAgingProducts';
 
 const REGIONS = ['West Coast Region', 'Lower River Region', 'North Bank Region', 'Central River Region', 'Upper River Region'];
 
@@ -135,6 +136,7 @@ export default function TransactionListing() {
   const { branches, loading: branchesLoading } = useBranches();
   const { users, isLoading: usersLoading, fetchUsers } = useUsers();
   const { regions, loading: regionsLoading } = useRegions();
+  const { products: productOptions, loading: productLoading } = useGetAgingProducts();
   const [branch, setBranch] = useState(ALL_BRANCHES_VALUE);
   const [user, setUser] = useState('');
   const [transactionRange, setTransactionRange] = useState('');
@@ -215,7 +217,7 @@ export default function TransactionListing() {
     Currency: '',
     BranchID: branch === ALL_BRANCHES_VALUE ? 0 : parseInt(branch, 10) || 0,
     BatchID: selectedBatch ? parseInt(selectedBatch.replace('batch-', '')) || 0 : 0,
-    ProductID: 0,
+    ProductID: selectedProduct ? Number(selectedProduct) || 0 : 0,
     UserID: user || '',
     cUserID: user || '',
     region: selectedRegionId || '',
@@ -617,14 +619,13 @@ export default function TransactionListing() {
                 SelectProps={{ displayEmpty: true, renderValue: (v) => v || 'Select product' }}
               >
                 <MenuItem value="" disabled>Select product</MenuItem>
-                <MenuItem value="Development Loan">Development Loan</MenuItem>
-                <MenuItem value="Emergency Loan">Emergency Loan</MenuItem>
-                <MenuItem value="Regular Loan">Regular Loan</MenuItem>
-                <MenuItem value="Consumer Loan">Consumer Loan</MenuItem>
-                <MenuItem value="Building Loan">Building Loan</MenuItem>
-                <MenuItem value="Tobaski Loan">Tobaski Loan</MenuItem>
-                <MenuItem value="Regular Saving">Regular Saving</MenuItem>
-                <MenuItem value="Shares">Shares</MenuItem>
+                {Array.isArray(productOptions) && productOptions.length > 0 ? (
+                  productOptions.map((p) => (
+                    <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value="" disabled>{productLoading ? 'Loading products...' : 'No products'}</MenuItem>
+                )}
               </TextField>
             </Box>
           </CardContent>
