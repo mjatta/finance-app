@@ -96,7 +96,6 @@ export default function LoanProvision() {
           daysTo: row.DaysTo,
           ageCategory: row.LoanAgeCategory || '',
           rows: [],
-          savingsBalance: 0,
           loanBalance: 0,
           netLoan: 0,
           provisioningAmount: 0,
@@ -106,25 +105,29 @@ export default function LoanProvision() {
 
       const group = groupedData[key];
       group.rows.push(row);
-      group.savingsBalance += Number(row.SavingsBalance ?? 0);
       group.loanBalance += Number(row.LoanBalance ?? 0);
       group.netLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
       group.provisioningAmount += Number(row.LoanProvision ?? 0);
     });
 
-    let totalSavingsBalance = 0;
+    // Sort ageRanges by daysTo from lowest to highest
+    ageRanges.sort((keyA, keyB) => {
+      const daysToA = Number(groupedData[keyA].daysTo) || 0;
+      const daysToB = Number(groupedData[keyB].daysTo) || 0;
+      return daysToA - daysToB;
+    });
+
     let totalLoanBalance = 0;
     let totalNetLoan = 0;
     let totalProvisioningAmount = 0;
 
     data.forEach((row) => {
-      totalSavingsBalance += Number(row.SavingsBalance ?? 0);
       totalLoanBalance += Number(row.LoanBalance ?? 0);
       totalNetLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
       totalProvisioningAmount += Number(row.LoanProvision ?? 0);
     });
 
-    const headers = ['Days (from - to)', 'Savings Balance', 'Loan Balance', 'Net Loan', 'Provisioning Amount', 'Percentage (%)'];
+    const headers = ['Days (from - to)', 'Loan Balance', 'Net Loan', 'Provisioning Amount', 'Percentage (%)'];
     const csvRows = ageRanges.map((key) => {
       const group = groupedData[key];
       const daysLabel = group.ageCategory || `${group.daysFrom || 'N/A'}-${group.daysTo || 'N/A'}`;
@@ -134,7 +137,6 @@ export default function LoanProvision() {
 
       return [
         daysLabel,
-        formatAmount(group.savingsBalance),
         formatAmount(group.loanBalance),
         formatAmount(group.netLoan),
         formatAmount(group.provisioningAmount),
@@ -142,17 +144,12 @@ export default function LoanProvision() {
       ];
     });
 
-    const totalPercentageCalc = totalLoanBalance !== 0 && totalProvisioningAmount !== 0
-      ? ((Math.abs(totalProvisioningAmount) / Math.abs(totalLoanBalance)) * 100).toFixed(2)
-      : '0.00';
-
     csvRows.push([
       'TOTAL',
-      formatAmount(totalSavingsBalance),
       formatAmount(totalLoanBalance),
       formatAmount(totalNetLoan),
       formatAmount(totalProvisioningAmount),
-      `${totalPercentageCalc}%`,
+      '',
     ]);
 
     return [headers, ...csvRows].map((row) => row.map(escapeCSV).join(',')).join('\n');

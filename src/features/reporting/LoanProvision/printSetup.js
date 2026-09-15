@@ -29,7 +29,6 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
         daysTo: row.DaysTo,
         ageCategory: row.LoanAgeCategory || '',
         rows: [],
-        savingsBalance: 0,
         loanBalance: 0,
         netLoan: 0,
         provisioningAmount: 0,
@@ -40,21 +39,24 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
 
     const group = groupedData[key];
     group.rows.push(row);
-    group.savingsBalance += Number(row.SavingsBalance ?? 0);
     group.loanBalance += Number(row.LoanBalance ?? 0);
     group.netLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
     group.provisioningAmount += Number(row.LoanProvision ?? 0);
   });
 
+  // Sort ageRanges by daysTo from lowest to highest
+  ageRanges.sort((keyA, keyB) => {
+    const daysToA = Number(groupedData[keyA].daysTo) || 0;
+    const daysToB = Number(groupedData[keyB].daysTo) || 0;
+    return daysToA - daysToB;
+  });
+
   // Calculate totals
-  let totalSavingsBalance = 0;
   let totalLoanBalance = 0;
   let totalNetLoan = 0;
   let totalProvisioningAmount = 0;
-  let totalPercentage = 0;
 
   data.forEach((row) => {
-    totalSavingsBalance += Number(row.SavingsBalance ?? 0);
     totalLoanBalance += Number(row.LoanBalance ?? 0);
     totalNetLoan += Number(row.nnewbal ?? 0) - Number(row.nbookbal ?? 0);
     totalProvisioningAmount += Number(row.LoanProvision ?? 0);
@@ -71,7 +73,6 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
       return `
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd; text-align: left;">${daysLabel}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatAmount(group.savingsBalance)}</td>
           <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatAmount(group.loanBalance)}</td>
           <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatAmount(group.netLoan)}</td>
           <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${formatAmount(group.provisioningAmount)}</td>
@@ -210,7 +211,6 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
           <thead>
             <tr>
               <th>Days (from - to)</th>
-              <th style="text-align: right;">Savings Balance</th>
               <th style="text-align: right;">Loan Balance</th>
               <th style="text-align: right;">Net Loan</th>
               <th style="text-align: right;">Provisioning Amount</th>
@@ -223,11 +223,10 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
           <tfoot>
             <tr>
               <td>TOTAL</td>
-              <td class="text-right">${formatAmount(totalSavingsBalance)}</td>
               <td class="text-right">${formatAmount(totalLoanBalance)}</td>
               <td class="text-right">${formatAmount(totalNetLoan)}</td>
               <td class="text-right">${formatAmount(totalProvisioningAmount)}</td>
-              <td class="text-right">${totalPercentageCalc}%</td>
+              <td class="text-right"></td>
             </tr>
           </tfoot>
         </table>
