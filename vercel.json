@@ -313,6 +313,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/GuaranteeHistorySoFar/:path*"
     },
     {
+      "source": "/api/loanguarantors/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/loanguarantors/:path*"
+    },
+    {
       "source": "/api/member/enquiry/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry/:path*"
     },

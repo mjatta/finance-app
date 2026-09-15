@@ -117,6 +117,7 @@ const LoanProvision = lazy(() => import('./features/reporting/LoanProvision'));
 const LoanReports = lazy(() => import('./features/reporting/LoanReports/index.jsx'));
 const BankReconciliationReport = lazy(() => import('./features/reporting/BankReconciliationReport'));
 const AuditTrailReport = lazy(() => import('./features/reporting/AuditTrailReport'));
+const GuarantorsReport = lazy(() => import('./features/reporting/GuarantorsReport'));
 const TransactionListing = lazy(() => import('./features/reporting/TransactionListing'));
 const CustomerEnquiries = lazy(() => import('./features/reporting/CustomerEnquiries'));
 const DetailedJournalReport = lazy(() => import('./features/reporting/DetailedJournalReport'));
@@ -1124,6 +1125,10 @@ function App() {
                     <Route
                       path="/reporting/customer-enquiries"
                       element={renderWithAccess('reporting', <CustomerEnquiries />)}
+                    />
+                    <Route
+                      path="/reporting/guarantors-report"
+                      element={renderWithAccess('reporting', <GuarantorsReport />)}
                     />
 
                     <Route path="*" element={<Navigate to="/home" replace />} />

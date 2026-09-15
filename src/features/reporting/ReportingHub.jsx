@@ -16,6 +16,7 @@ import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded'
 import VerifiedUserRoundedIcon from '@mui/icons-material/VerifiedUserRounded'
 import TimelineRoundedIcon from '@mui/icons-material/TimelineRounded'
 import PersonSearchRoundedIcon from '@mui/icons-material/PersonSearchRounded'
+import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded'
 
 const reportCards = [
   { title: 'Trial Balance', description: 'View trial balance summary', path: '/reporting/trial-balance', icon: BalanceRoundedIcon, color: '#667eea', bgGradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%)' },
@@ -34,6 +35,7 @@ const reportCards = [
   { title: 'Loan Reports', description: 'View loan reports', path: '/reporting/loan-reports', icon: TrendingUpRoundedIcon, color: '#10b981', bgGradient: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)' },
   { title: 'Customer Enquiries', description: 'View customer enquiries', path: '/reporting/customer-enquiries', icon: PersonSearchRoundedIcon, color: '#f59e0b', bgGradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)' },
   { title: 'Audit Trail Report', description: 'View audit trail activities', path: '/reporting/audit-trail-report', icon: VerifiedUserRoundedIcon, color: '#ef4444', bgGradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)' },
+  { title: 'Guarantors Report', description: 'View guarantor information', path: '/reporting/guarantors-report', icon: PeopleRoundedIcon, color: '#a855f7', bgGradient: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)' },
 ]
 
 export default function ReportingHub() {
