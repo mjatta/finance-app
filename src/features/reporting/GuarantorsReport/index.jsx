@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -79,10 +79,8 @@ export default function GuarantorsReport() {
     transactionToDate: dayjs(),
   });
 
-  const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [hasSearched, setHasSearched] = useState(false);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -135,7 +133,7 @@ export default function GuarantorsReport() {
         email: data[0].email || '',
       } : {};
 
-      const html = buildGuarantorsReportHtml(data, searchFilters, companyInfo);
+      const html = buildGuarantorsReportHtml(data, searchFilters, companyInfo, regions, productTypes);
 
       // Open print view in a new window
       const printWindow = window.open('', '_blank', 'width=1200,height=900');
@@ -149,9 +147,6 @@ export default function GuarantorsReport() {
       printWindow.document.close();
       printWindow.focus();
       printWindow.print();
-
-      setReportData(data);
-      setHasSearched(true);
     } catch (err) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -216,9 +211,6 @@ export default function GuarantorsReport() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      setReportData(data);
-      setHasSearched(true);
     } catch (err) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -283,24 +275,12 @@ export default function GuarantorsReport() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      setReportData(data);
-      setHasSearched(true);
     } catch (err) {
       setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
-
-  const totalGuaranteeAmount = useMemo(
-    () =>
-      reportData.reduce((sum, row) => {
-        const amount = Number(row.guaramt ?? 0);
-        return sum + (Number.isNaN(amount) ? 0 : amount);
-      }, 0),
-    [reportData]
-  );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -334,6 +314,11 @@ export default function GuarantorsReport() {
               disabled={loading}
               SelectProps={{
                 displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) return 'All Regions';
+                  const region = regions.find((r) => (r.coun_id || r.id) == selected);
+                  return region ? region.coun_name?.trim() || region.name : selected;
+                },
               }}
             >
               <MenuItem value="">All Regions</MenuItem>
@@ -356,6 +341,11 @@ export default function GuarantorsReport() {
               disabled={loading || productsLoading}
               SelectProps={{
                 displayEmpty: true,
+                renderValue: (selected) => {
+                  if (!selected) return 'All Products';
+                  const product = productTypes.find((p) => p.value === selected);
+                  return product ? product.label : selected;
+                },
               }}
             >
               <MenuItem value="">All Products</MenuItem>

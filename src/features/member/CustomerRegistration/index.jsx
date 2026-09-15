@@ -125,6 +125,7 @@ export default function CustomerRegistration(props) {
         middleName: '',
         lastName: '',
         phoneNumber: '',
+        sector: '',
       },
     ]);
 
@@ -141,6 +142,7 @@ export default function CustomerRegistration(props) {
           middleName: '',
           lastName: '',
           phoneNumber: '',
+          sector: '',
         },
       ]);
     };
@@ -801,6 +803,7 @@ export default function CustomerRegistration(props) {
               middleName: (g.MemMname || g.middleName || g.mname || '').toString().trim(),
               lastName: (g.MemLname || g.lastName || g.lname || '').toString().trim(),
               phoneNumber: (g.PhoneNumber || g.phone || g.tel || '').toString().trim(),
+              sector: String(g.Sector || g.sector || '').trim(),
             }));
             if (mappedGm.length > 0) setGroupMembers(mappedGm);
           }
@@ -1549,6 +1552,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         lastName: '',
         phoneNumber: '',
         dateOfBirth: '',
+        sector: '',
       },
     ]);
     photoFileRef.current = null;
@@ -1609,6 +1613,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         lastName: '',
         phoneNumber: '',
         dateOfBirth: '',
+        sector: '',
       },
     ]);
     photoFileRef.current = null;
@@ -1758,6 +1763,7 @@ function formatRecentMemberRow(row, institutionBranches = []) {
         MemID: member.memberID,
         PhoneNumber: member.phoneNumber,
         dob: member.dateOfBirth,
+        Sector: member.sector,
         CreationDate: dayjs().format('YYYY-MM-DD'),
         compid: companyId,
       }));
@@ -2501,7 +2507,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       onChange={handleChange}
                       SelectProps={{
                         displayEmpty: true,
-                        renderValue: (selected) => selected || 'Select sector',
+                        renderValue: (selected) => {
+                          if (!selected) return 'Select sector';
+                          const sector = sectorOptions.find((s) => s.value === selected);
+                          return sector ? sector.label : selected;
+                        },
                       }}
                     >
                       <MenuItem value="" disabled>
@@ -2654,7 +2664,11 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                       onChange={handleChange}
                       SelectProps={{
                         displayEmpty: true,
-                        renderValue: (selected) => selected || 'Select sector',
+                        renderValue: (selected) => {
+                          if (!selected) return 'Select sector';
+                          const sector = sectorOptions.find((s) => s.value === selected);
+                          return sector ? sector.label : selected;
+                        },
                       }}
                     >
                       <MenuItem value="" disabled>
@@ -4090,6 +4104,29 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                                 value={member.phoneNumber}
                                 onChange={e => handleGroupMemberChange(member.id, 'phoneNumber', e.target.value)}
                               />
+                              <TextField
+                                select
+                                label="Economic Sector"
+                                value={member.sector}
+                                onChange={e => handleGroupMemberChange(member.id, 'sector', e.target.value)}
+                                SelectProps={{
+                                  displayEmpty: true,
+                                  renderValue: (selected) => {
+                                    if (!selected) return 'Select sector';
+                                    const sector = sectorOptions.find((s) => s.value === selected);
+                                    return sector ? sector.label : selected;
+                                  },
+                                }}
+                              >
+                                <MenuItem value="" disabled>
+                                  Select sector
+                                </MenuItem>
+                                {sectorOptions.map((sector) => (
+                                  <MenuItem key={sector.value} value={sector.value}>
+                                    {sector.label}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
                             </Box>
                           </CardContent>
                         </Card>

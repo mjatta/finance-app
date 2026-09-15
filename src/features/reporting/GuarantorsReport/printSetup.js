@@ -20,9 +20,23 @@ const formatDate = (dateString) => {
   }
 };
 
-export const buildGuarantorsReportHtml = (data, filters, companyInfo = {}) => {
+export const buildGuarantorsReportHtml = (data, filters, companyInfo = {}, regions = [], productTypes = []) => {
   const { region = '', productType = '', transactionFromDate = '', transactionToDate = '' } = filters;
   const { com_name = '', caddress = '', tel = '', email = '' } = companyInfo;
+
+  // Map numeric region ID to region name
+  const getRegionName = (regionId) => {
+    if (!regionId) return '';
+    const foundRegion = Array.isArray(regions) ? regions.find((r) => (r.coun_id || r.id) == regionId) : null;
+    return foundRegion ? (foundRegion.coun_name?.trim() || foundRegion.name || regionId) : regionId;
+  };
+
+  // Map numeric product ID to product name
+  const getProductName = (productId) => {
+    if (!productId) return '';
+    const foundProduct = Array.isArray(productTypes) ? productTypes.find((p) => p.value == productId) : null;
+    return foundProduct ? foundProduct.label : productId;
+  };
 
   // Group data by institution (ccustname)
   const groupedByInstitution = {};
@@ -52,7 +66,6 @@ export const buildGuarantorsReportHtml = (data, filters, companyInfo = {}) => {
             text-align: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #667eea;
           }
           .company-header h2 {
             margin: 0 0 8px 0;
@@ -178,18 +191,18 @@ export const buildGuarantorsReportHtml = (data, filters, companyInfo = {}) => {
         </div>
 
         <div class="filters">
-          ${
+          ${(
             (() => {
               const filterParts = [];
-              if (region) filterParts.push(`Region: ${region}`);
-              if (productType) filterParts.push(`Product Type: ${productType}`);
+              if (region) filterParts.push(`Region: ${getRegionName(region)}`);
+              if (productType) filterParts.push(`Product Type: ${getProductName(productType)}`);
               if (transactionFromDate) filterParts.push(`From Date: ${transactionFromDate}`);
               if (transactionToDate) filterParts.push(`To Date: ${transactionToDate}`);
               
               const filtersText = filterParts.length > 0 ? filterParts.join(' | ') : 'No filters applied';
               return `<p><strong>Report Filters:</strong> ${filtersText}</p>`;
             })()
-          }
+          )}
         </div>
 
         ${
