@@ -78,8 +78,18 @@ export const buildCustomerEnquiriesPrintHtml = (payload) => {
   const firstRow = safeRows[0] ?? {};
   const companyName = normalizeText(firstRow?.com_name) || 'Company';
   const address = normalizeText(firstRow?.caddress);
-  const telephone = normalizeText(firstRow?.tel || firstRow?.Expr1);
-  const email = normalizeText(firstRow?.email);
+  const telephone = normalizeText(
+    firstRow?.tel
+    || firstRow?.CompanyTel
+    || firstRow?.companytel
+    || firstRow?.Expr1
+    || firstRow?.fax
+  );
+  const email = normalizeText(
+    firstRow?.email
+    || firstRow?.CompanyEmail
+    || firstRow?.companyemail
+  );
   const printedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
   const tableRows = safeRows.map((row) => `
@@ -98,6 +108,35 @@ export const buildCustomerEnquiriesPrintHtml = (payload) => {
       <td colspan="6" style="text-align:center; color:#475569; padding: 18px;">No customer records found.</td>
     </tr>
   `;
+  // Build unique customer codes mapped to gender (first occurrence wins)
+  const codeGenderMap = new Map();
+  safeRows.forEach((r) => {
+    const code = customerCodeOf(r);
+    if (!code) return;
+    if (!codeGenderMap.has(code)) {
+      codeGenderMap.set(code, formatGender(r));
+    }
+  });
+
+  const uniqueCodes = Array.from(codeGenderMap.keys());
+  const EXCLUDE_CODES = new Set([
+    '000375','000376','000378','000379','000380','000381','000382','000384','000385','000386',
+    '000388','000389','000390','000391','000392','000393','000394','000395','000396','000397',
+    '000398','000399','000401','000403','000417','000418','000423','000424','000425','000426',
+    '000427','000428','000429','000430','000431','000433','000438','000440','000441','000442',
+    '000443','000444','000446','000447','000448','000449','000450'
+  ]);
+
+  const filteredCodes = uniqueCodes.filter((c) => !EXCLUDE_CODES.has(c));
+  const totalFiltered = filteredCodes.length;
+  const totalAll = uniqueCodes.length;
+  const filteredCodesHtml = filteredCodes.map((code) => `
+    <span style="display:inline-block; padding:6px 8px; background:#f1f5f9; border:1px solid var(--line); border-radius:4px; font-size:12px; color:var(--text);">${escapeHtml(code)}</span>
+  `).join('');
+
+  // Totals by gender (unique customer codes)
+  const maleCount = Array.from(codeGenderMap.values()).filter((g) => String(g).toLowerCase() === 'male').length;
+  const femaleCount = Array.from(codeGenderMap.values()).filter((g) => String(g).toLowerCase() === 'female').length;
 
   return `
     <!DOCTYPE html>
@@ -213,6 +252,16 @@ export const buildCustomerEnquiriesPrintHtml = (payload) => {
             ${tableRows || emptyState}
           </tbody>
         </table>
+        <div style="margin-top:12px;">
+          <div style="font-size:13px; color:var(--muted); margin-bottom:6px; display:flex; gap:16px; align-items:center;">
+            <div><strong>Total Customers:</strong> ${escapeHtml(String(totalAll))}</div>
+            <div><strong>Male:</strong> ${escapeHtml(String(maleCount))}</div>
+            <div><strong>Female:</strong> ${escapeHtml(String(femaleCount))}</div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${filteredCodesHtml}
+          </div>
+        </div>
       </div>
     </body>
     </html>
