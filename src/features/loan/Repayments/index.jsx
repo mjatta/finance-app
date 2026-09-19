@@ -29,8 +29,17 @@ import { CurrencyAdornment } from '../../../components/FieldAdornments';
 
 
 
-// Placeholder for profile/signature images
-const defaultProfileImage = '/src/assets/company-logo.jpg';
+// Placeholder for profile/signature images (data-URI safe for prod)
+const defaultProfileImage = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="130" viewBox="0 0 180 130"><rect width="180" height="130" fill="#f1f5f9"/><circle cx="90" cy="48" r="18" fill="#cbd5e1"/><rect x="52" y="76" width="76" height="30" rx="15" fill="#cbd5e1"/></svg>',
+)} `;
+
+const formatProfileImage = (imageData) => {
+  if (!imageData) return defaultProfileImage;
+  if (typeof imageData !== 'string') return defaultProfileImage;
+  if (imageData.startsWith('data:')) return imageData;
+  return `data:image/jpeg;base64,${imageData}`;
+};
 
 export default function Repayments() {
 
@@ -517,11 +526,11 @@ export default function Repayments() {
         setStatusError(true);
         return;
       }
-      // Map payload fields
+      // Map payload fields and normalize images
       setFormData((prev) => ({
         ...prev,
-        profilePicture: member.MemberPicture ? `data:image/jpeg;base64,${member.MemberPicture}` : '',
-        memberSignature: member.MemberSignature ? `data:image/jpeg;base64,${member.MemberSignature}` : '',
+        profilePicture: formatProfileImage(member.MemberPicture),
+        memberSignature: formatProfileImage(member.MemberSignature),
         phoneNumber: member.Phone || '',
         memberAccounts: Array.isArray(member.Accounts) ? member.Accounts : [],
         loanAccounts: Array.isArray(member.LoanAccounts) ? member.LoanAccounts : [],
