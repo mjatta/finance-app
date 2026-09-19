@@ -139,10 +139,7 @@ export default function LoanBalance() {
   const [selectedRegionId, setSelectedRegionId] = useState('');
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
-  const [memberStatus, setMemberStatus] = useState({
-    active: false,
-    closed: false,
-  });
+  
   const [customerType, setCustomerType] = useState({
     individual: false,
     group: false,
@@ -293,13 +290,7 @@ export default function LoanBalance() {
     }
   };
 
-  const handleMemberStatusChange = (event) => {
-    const { name, checked } = event.target;
-    setMemberStatus((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
+  
 
   const handleCustomerTypeChange = (event) => {
     const { name, checked } = event.target;
@@ -457,34 +448,7 @@ export default function LoanBalance() {
             </TextField>
           </Box>
 
-          {/* Row 3: Member Status Checkboxes */}
-          <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#555' }}>
-              Member Status
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 3 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={memberStatus.active}
-                    onChange={handleMemberStatusChange}
-                    name="active"
-                  />
-                }
-                label="Active Member"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={memberStatus.closed}
-                    onChange={handleMemberStatusChange}
-                    name="closed"
-                  />
-                }
-                label="Closed Members"
-              />
-            </Box>
-          </Box>
+          
 
           {/* Row 4: Customer Type Checkboxes */}
           <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
