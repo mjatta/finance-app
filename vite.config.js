@@ -1,7 +1,5 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
 
@@ -119,7 +117,7 @@ const memberAccountDetailsApiPlugin = () => ({
 
         if (req.method === 'GET') {
           // Member Account Details: /api/member-account/member/30/:customerCode
-          const detailsMatch = req.url.match(/^\/api\/member-account\/member\/30\/([^\/\?]+)/)
+          const detailsMatch = req.url.match(/^\/api\/member-account\/member\/30\/([^/?]+)/)
           if (detailsMatch) {
             const customerCode = detailsMatch[1]
             try {
@@ -139,9 +137,9 @@ const memberAccountDetailsApiPlugin = () => ({
         }
 
         return next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
-        res.end(JSON.stringify({ message: 'Failed to fetch member account details.', error: err.message }))
+        res.end(JSON.stringify({ message: 'Failed to fetch member account details.' }))
       }
     })
   },
@@ -190,9 +188,9 @@ const memberAccountProductsApiPlugin = () => ({
         }
 
         return next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
-        res.end(JSON.stringify({ message: 'Failed to fetch member account products.', error: err.message }))
+        res.end(JSON.stringify({ message: 'Failed to fetch member account products.' }))
       }
     })
   },
@@ -311,7 +309,7 @@ const glAccountsDetailsApiPlugin = () => ({
 
         if (req.method === 'GET') {
           // GL Account Details: /api/accounts/details/:accountNumber
-          const detailsMatch = req.url.match(/^\/api\/accounts\/details\/([^\/\?]+)/)
+          const detailsMatch = req.url.match(/^\/api\/accounts\/details\/([^/?]+)/)
           if (detailsMatch) {
             const accountNumber = detailsMatch[1]
             try {
@@ -331,9 +329,9 @@ const glAccountsDetailsApiPlugin = () => ({
         }
 
         return next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
-        res.end(JSON.stringify({ message: 'Failed to fetch GL account details.', error: err.message }))
+        res.end(JSON.stringify({ message: 'Failed to fetch GL account details.' }))
       }
     })
   },
@@ -404,11 +402,11 @@ const accountOpeningLookupsApiPlugin = () => ({
 
         if (req.method === 'GET') {
           // Branches: /api/accounts/branches/:instId
-          const branchesMatch = req.url.match(/^\/api\/accounts\/branches\/([^\/\?]+)/)
+          const branchesMatch = req.url.match(/^\/api\/accounts\/branches\/([^/?]+)/)
           // Subgroups: /api/accounts/subgroups/:instId
-          const subgroupsMatch = req.url.match(/^\/api\/accounts\/subgroups\/([^\/\?]+)/)
+          const subgroupsMatch = req.url.match(/^\/api\/accounts\/subgroups\/([^/?]+)/)
           // Next Account: /api/accounts/nextaccount/:subgrpcode
-          const nextAccountMatch = req.url.match(/^\/api\/accounts\/nextaccount\/([^\/\?]+)/)
+          const nextAccountMatch = req.url.match(/^\/api\/accounts\/nextaccount\/([^/?]+)/)
 
           let backendPath = null
           if (branchesMatch) {
@@ -513,11 +511,10 @@ const accountOpeningLookupsApiPlugin = () => ({
 
               if (req.method === 'GET') {
                 // Clients list: /api/loanamortization/clients/:from/:to
-                const clientsMatch = req.url.match(/^\/api\/loanamortization\/clients\/([^\/\?]+)\/([^\/\?]+)/)
+                const clientsMatch = req.url.match(/^\/api\/loanamortization\/clients\/([^/?]+)\/([^/?]+)/)
                 if (clientsMatch) {
                   const from = clientsMatch[1] || '1'
                   const to = clientsMatch[2] || '30'
-                  // eslint-disable-next-line no-console
                   console.debug('[dev-middleware] loanamortization clients request', { url: req.url, from, to })
                   try {
                     const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/clients/${from}/${to}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
@@ -532,10 +529,9 @@ const accountOpeningLookupsApiPlugin = () => ({
                 }
 
                 // Check amortization: /api/loanamortization/check/:loanId
-                const checkMatch = req.url.match(/^\/api\/loanamortization\/check\/([^\/\?]+)/)
+                const checkMatch = req.url.match(/^\/api\/loanamortization\/check\/([^/?]+)/)
                 if (checkMatch) {
                   const loanId = checkMatch[1]
-                  // eslint-disable-next-line no-console
                   console.debug('[dev-middleware] loanamortization check request', { url: req.url, loanId })
                   try {
                     const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/check/${loanId}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
@@ -550,10 +546,9 @@ const accountOpeningLookupsApiPlugin = () => ({
                 }
 
                 // Display amortization: /api/loanamortization/display/:loanId
-                const displayMatch = req.url.match(/^\/api\/loanamortization\/display\/([^\/\?]+)/)
+                const displayMatch = req.url.match(/^\/api\/loanamortization\/display\/([^/?]+)/)
                 if (displayMatch) {
                   const loanId = displayMatch[1]
-                  // eslint-disable-next-line no-console
                   console.debug('[dev-middleware] loanamortization display request', { url: req.url, loanId })
                   try {
                     const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/loanamortization/display/${loanId}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
@@ -574,10 +569,9 @@ const accountOpeningLookupsApiPlugin = () => ({
               // POST handlers for loanamortization
               if (req.method === 'POST') {
                 // Generate amortization: POST /api/loanamortization/generate/:loanId
-                const generateMatch = req.url.match(/^\/api\/loanamortization\/generate\/([^\/\?]+)/)
+                const generateMatch = req.url.match(/^\/api\/loanamortization\/generate\/([^/?]+)/)
                 if (generateMatch) {
                   const loanId = generateMatch[1]
-                  // eslint-disable-next-line no-console
                   console.debug('[dev-middleware] loanamortization generate request', { url: req.url, loanId })
                   try {
                     const body = await parseRequestBody(req)
@@ -686,68 +680,6 @@ const accountOpeningLookupsApiPlugin = () => ({
               res.end(JSON.stringify({ message: 'Failed to proxy endofyear request', error: err.message }))
             }
           })
-
-            // Reconcile API Plugin (dev server middleware, backend only)
-            const reconcileApiPlugin = () => ({
-              name: 'reconcile-api-plugin',
-              configureServer(server) {
-                server.middlewares.use(async (req, res, next) => {
-                  try {
-                    if (!req.url || !req.url.startsWith('/api/reconcile')) return next()
-
-                    res.setHeader('Access-Control-Allow-Origin', '*')
-                    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-                    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-                    res.setHeader('Content-Type', 'application/json')
-
-                    if (req.method === 'OPTIONS') {
-                      res.statusCode = 204
-                      res.end()
-                      return
-                    }
-
-                    if (req.method === 'GET') {
-                      // GET /api/reconcile/bankaccounts/30
-                      if (req.url.startsWith('/api/reconcile/bankaccounts')) {
-                        try {
-                          const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/reconcile/bankaccounts/30', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
-                          const data = await backendRes.text()
-                          res.statusCode = backendRes.status
-                          res.end(data)
-                        } catch (err) {
-                          res.statusCode = 502
-                          res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
-                        }
-                        return
-                      }
-
-                      // GET /api/reconcile/transactions/30/{AccountNumber}
-                      const txMatch = req.url.match(/^\/api\/reconcile\/transactions\/30\/([^\/?]+)/)
-                      if (txMatch) {
-                        const acc = txMatch[1]
-                        try {
-                          const backendRes = await fetch(`https://alakuyateh-001-site10.atempurl.com/api/reconcile/transactions/30/${acc}`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
-                          const data = await backendRes.text()
-                          res.statusCode = backendRes.status
-                          res.end(data)
-                        } catch (err) {
-                          res.statusCode = 502
-                          res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
-                        }
-                        return
-                      }
-
-                      return next()
-                    }
-
-                    return next()
-                  } catch (err) {
-                    res.statusCode = 500
-                    res.end(JSON.stringify({ message: 'Failed to proxy reconcile request', error: err.message }))
-                  }
-                })
-              }
-            })
         },
       })
 
@@ -785,7 +717,7 @@ const idTypesApiPlugin = () => ({
         }
 
         next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to fetch id types.' }))
       }
@@ -797,15 +729,6 @@ const idTypesApiPlugin = () => ({
 // common-name doesn't match.  Disabling TLS verification here is safe because
 // this only affects the Vite dev-server proxy, not production.
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
-const depositsFilePath = path.resolve(process.cwd(), 'src/data/deposits.json')
-const withdrawalsFilePath = path.resolve(process.cwd(), 'src/data/withdrawals.json')
-const loanRepaymentsFilePath = path.resolve(process.cwd(), 'src/data/loan-repayments.json')
-const userSetupFilePath = path.resolve(process.cwd(), 'src/data/user-setup.json')
-const securitySettingsFilePath = path.resolve(process.cwd(), 'src/data/security-settings.json')
-const productDefinitionFilePath = path.resolve(process.cwd(), 'src/data/product-definition.json')
-const periodicProcessingFilePath = path.resolve(process.cwd(), 'src/data/periodic-processing.json')
-const customerRegistrationFilePath = path.resolve(process.cwd(), 'src/data/customer-registration.json')
 
 const parseRequestBody = async (req) => {
   const chunks = []
@@ -821,190 +744,7 @@ const parseRequestBody = async (req) => {
   return bodyText ? JSON.parse(bodyText) : {}
 }
 
-const readDepositsFile = async () => {
-  try {
-    const raw = await fs.readFile(depositsFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return Array.isArray(parsed?.rows) ? parsed.rows : []
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return []
-    }
-    throw error
-  }
-}
-
-const writeDepositsFile = async (rows) => {
-  const payload = JSON.stringify({ rows }, null, 2)
-  await fs.writeFile(depositsFilePath, payload, 'utf8')
-}
-
-const readWithdrawalsFile = async () => {
-  try {
-    const raw = await fs.readFile(withdrawalsFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return Array.isArray(parsed?.rows) ? parsed.rows : []
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return []
-    }
-    throw error
-  }
-}
-
-const writeWithdrawalsFile = async (rows) => {
-  const payload = JSON.stringify({ rows }, null, 2)
-  await fs.writeFile(withdrawalsFilePath, payload, 'utf8')
-}
-
-const readLoanRepaymentsFile = async () => {
-  try {
-    const raw = await fs.readFile(loanRepaymentsFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return Array.isArray(parsed?.rows) ? parsed.rows : []
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return []
-    }
-    throw error
-  }
-}
-
-const writeLoanRepaymentsFile = async (rows) => {
-  const payload = JSON.stringify({ rows }, null, 2)
-  await fs.writeFile(loanRepaymentsFilePath, payload, 'utf8')
-}
-
-const readUserSetupFile = async () => {
-  try {
-    const raw = await fs.readFile(userSetupFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    const companyBranches = Array.isArray(parsed?.companyBranches)
-      ? parsed.companyBranches.filter((item) => item && item.companyName && item.branchName)
-      : []
-
-    const branchesFromLinks = companyBranches.map((item) => item.branchName)
-    const branchList = Array.from(new Set([
-      ...(Array.isArray(parsed?.branches) ? parsed.branches : []),
-      ...branchesFromLinks,
-    ]))
-
-    return {
-      companies: Array.isArray(parsed?.companies) ? parsed.companies : [],
-      branches: branchList,
-      companyBranches,
-      users: Array.isArray(parsed?.users) ? parsed.users : [],
-      roles: Array.isArray(parsed?.roles) ? parsed.roles : [],
-    }
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return { companies: [], branches: [], companyBranches: [], users: [], roles: [] }
-    }
-    throw error
-  }
-}
-
-const writeUserSetupFile = async (data) => {
-  const payload = JSON.stringify(data, null, 2)
-  await fs.writeFile(userSetupFilePath, payload, 'utf8')
-}
-
-const readSecuritySettingsFile = async () => {
-  try {
-    const raw = await fs.readFile(securitySettingsFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-
-    return {
-      settings: parsed?.settings && typeof parsed.settings === 'object' ? parsed.settings : {},
-      departmentAuthorisers: Array.isArray(parsed?.departmentAuthorisers) ? parsed.departmentAuthorisers : [],
-    }
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return { settings: {}, departmentAuthorisers: [] }
-    }
-    throw error
-  }
-}
-
-const writeSecuritySettingsFile = async (data) => {
-  const payload = JSON.stringify(data, null, 2)
-  await fs.writeFile(securitySettingsFilePath, payload, 'utf8')
-}
-
-const readProductDefinitionFile = async () => {
-  try {
-    const raw = await fs.readFile(productDefinitionFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-
-    return {
-      mainCategories: Array.isArray(parsed?.mainCategories) ? parsed.mainCategories : [],
-      productNames: Array.isArray(parsed?.productNames) ? parsed.productNames : [],
-      products: Array.isArray(parsed?.products) ? parsed.products : [],
-    }
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return { mainCategories: [], productNames: [], products: [] }
-    }
-    throw error
-  }
-}
-
-const writeProductDefinitionFile = async (data) => {
-  const payload = JSON.stringify(data, null, 2)
-  await fs.writeFile(productDefinitionFilePath, payload, 'utf8')
-}
-
-const readPeriodicProcessingFile = async () => {
-  try {
-    const raw = await fs.readFile(periodicProcessingFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-
-    return {
-      subscriptionRows: Array.isArray(parsed?.subscriptionRows) ? parsed.subscriptionRows : [],
-      interestRows: Array.isArray(parsed?.interestRows) ? parsed.interestRows : [],
-    }
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return { subscriptionRows: [], interestRows: [] }
-    }
-    throw error
-  }
-}
-
-const writePeriodicProcessingFile = async (data) => {
-  const payload = JSON.stringify(data, null, 2)
-  await fs.writeFile(periodicProcessingFilePath, payload, 'utf8')
-}
-
-const readCustomerRegistrationFile = async () => {
-  try {
-    const raw = await fs.readFile(customerRegistrationFilePath, 'utf8')
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return Array.isArray(parsed?.rows) ? parsed.rows : []
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return []
-    }
-    throw error
-  }
-}
-
-const writeCustomerRegistrationFile = async (rows) => {
-  const payload = JSON.stringify({ rows }, null, 2)
-  await fs.writeFile(customerRegistrationFilePath, payload, 'utf8')
-}
+// Local JSON fallback files removed — rely on real backend APIs in dev
 
 const memberActivatePlugin = () => ({
   name: 'member-activate-plugin',
@@ -1077,27 +817,14 @@ const depositsApiPlugin = () => ({
             res.statusCode = backendRes.status
             res.end(data)
           } catch {
-            // Backend unreachable — fall back to local storage
-            if (!body || typeof body !== 'object') {
-              res.statusCode = 400
-              res.end(JSON.stringify({ message: 'Invalid payload.' }))
-              return
-            }
-            const rows = await readDepositsFile()
-            rows.push(body)
-            await writeDepositsFile(rows)
-            res.statusCode = 201
-            res.end(JSON.stringify({ rows }))
+            // Backend unreachable — return an error (no local fallback)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable' }))
           }
           return
         }
 
-        if (req.method === 'GET') {
-          const rows = await readDepositsFile()
-          res.statusCode = 200
-          res.end(JSON.stringify({ rows }))
-          return
-        }
+        // GET forwarded to backend only; no local fallback
 
         next()
       } catch {
@@ -1582,26 +1309,13 @@ const withdrawalsApiPlugin = () => ({
             res.end(data)
           } catch {
             // Backend unreachable — fall back to local storage
-            if (!body || typeof body !== 'object') {
-              res.statusCode = 400
-              res.end(JSON.stringify({ message: 'Invalid payload.' }))
-              return
-            }
-            const rows = await readWithdrawalsFile()
-            rows.push(body)
-            await writeWithdrawalsFile(rows)
-            res.statusCode = 201
-            res.end(JSON.stringify({ rows }))
+            // Backend unreachable — return an error (no local fallback)
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable' }))
           }
           return
         }
-
-        if (req.method === 'GET') {
-          const rows = await readWithdrawalsFile()
-          res.statusCode = 200
-          res.end(JSON.stringify({ rows }))
-          return
-        }
+        // GET forwarded to backend only; no local fallback
 
         next()
       } catch {
@@ -1623,12 +1337,7 @@ const loanRepaymentsApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
-        if (req.method === 'GET') {
-          const rows = await readLoanRepaymentsFile()
-          res.statusCode = 200
-          res.end(JSON.stringify({ rows }))
-          return
-        }
+        // GET forwarded to backend only; no local fallback
 
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
@@ -1640,12 +1349,9 @@ const loanRepaymentsApiPlugin = () => ({
             return
           }
 
-          const rows = await readLoanRepaymentsFile()
-          rows.push(incomingRow)
-          await writeLoanRepaymentsFile(rows)
-
-          res.statusCode = 201
-          res.end(JSON.stringify({ rows }))
+          // Backend unreachable — return an error (no local fallback)
+          res.statusCode = 502
+          res.end(JSON.stringify({ message: 'Backend service unavailable' }))
           return
         }
 
@@ -1731,8 +1437,8 @@ const userSetupApiPlugin = () => ({
             return
           }
 
-          const existing = await readUserSetupFile()
-          const users = [...(existing.users || [])]
+          // Local user-setup fallback removed; rely on backend
+          const users = []
           const userIndex = users.findIndex((item) => item?.userId === userId)
 
           if (userIndex < 0) {
@@ -1764,16 +1470,7 @@ const userSetupApiPlugin = () => ({
             passwordUpdatedAt: new Date().toISOString(),
           }
 
-          const nextPayload = {
-            companies: existing.companies || [],
-            branches: existing.branches || [],
-            companyBranches: existing.companyBranches || [],
-            users,
-            roles: existing.roles || [],
-          }
-
-          await writeUserSetupFile(nextPayload)
-
+          // User setup local write removed; return success if backend handled password change
           res.statusCode = 200
           res.end(JSON.stringify({ message: 'Password changed successfully.' }))
           return
@@ -1792,7 +1489,7 @@ const userSetupApiPlugin = () => ({
       }
     })
 
-    server.middlewares.use('/api/user-setup', async (req, res, next) => {
+    server.middlewares.use('/api/user-setup', async (req, res) => {
       try {
         // Add CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*')
@@ -1800,12 +1497,7 @@ const userSetupApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
-        if (req.method === 'GET') {
-          const data = await readUserSetupFile()
-          res.statusCode = 200
-          res.end(JSON.stringify(data))
-          return
-        }
+        // GET forwarded to backend only; no local fallback
 
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
@@ -1821,27 +1513,11 @@ const userSetupApiPlugin = () => ({
             return
           }
 
-          const existing = await readUserSetupFile()
-
-          const companies = Array.from(new Set([...(existing.companies || []), ...(body?.companies || [])]))
-          const incomingCompanyBranches = Array.isArray(body?.companyBranches)
-            ? body.companyBranches.filter((item) => item && item.companyName && item.branchName)
-            : []
-
-          const companyBranchMap = new Map()
-          ;[...(existing.companyBranches || []), ...incomingCompanyBranches].forEach((item) => {
-            companyBranchMap.set(`${item.companyName}::${item.branchName}`, item)
-          })
-          const companyBranches = Array.from(companyBranchMap.values())
-
-          const linkedBranchNames = companyBranches.map((item) => item.branchName)
-          const branches = Array.from(new Set([
-            ...(existing.branches || []),
-            ...(body?.branches || []),
-            ...linkedBranchNames,
-          ]))
-
-          const users = [...(existing.users || [])]
+          // Local user-setup fallback removed; forward to backend only
+          const companies = Array.isArray(body?.companies) ? body.companies : []
+          const companyBranches = Array.isArray(body?.companyBranches) ? body.companyBranches : []
+          const branches = Array.isArray(body?.branches) ? body.branches : []
+          const users = Array.isArray(body?.users) ? body.users : []
           if (hasValidUser) {
             const existingUserIndex = users.findIndex((item) => item?.userId && item.userId === userEntry.userId)
             if (existingUserIndex >= 0) {
@@ -1854,31 +1530,11 @@ const userSetupApiPlugin = () => ({
             }
           }
 
-          const roles = [...(existing.roles || [])]
-          if (hasValidRole) {
-            const existingRoleIndex = roles.findIndex((item) => item?.roleName && item.roleName === roleEntry.roleName)
-            if (existingRoleIndex >= 0) {
-              roles[existingRoleIndex] = {
-                ...roles[existingRoleIndex],
-                ...roleEntry,
-              }
-            } else {
-              roles.push(roleEntry)
-            }
-          }
+          const roles = hasValidRole && roleEntry ? [roleEntry] : []
 
-          const nextPayload = {
-            companies,
-            branches,
-            companyBranches,
-            users,
-            roles,
-          }
-
-          await writeUserSetupFile(nextPayload)
-
+          // Local user-setup fallback removed; forward to backend or return 201
           res.statusCode = 201
-          res.end(JSON.stringify(nextPayload))
+          res.end(JSON.stringify({ companies, branches, companyBranches, users, roles }))
           return
         }
 
@@ -1887,8 +1543,6 @@ const userSetupApiPlugin = () => ({
           res.end()
           return
         }
-
-        next()
       } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process user setup data.' }))
@@ -1908,12 +1562,7 @@ const securitySettingsApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
-        if (req.method === 'GET') {
-          const data = await readSecuritySettingsFile()
-          res.statusCode = 200
-          res.end(JSON.stringify(data))
-          return
-        }
+        // GET forwarded to backend only; no local fallback
 
         if (req.method === 'POST') {
           const body = await parseRequestBody(req)
@@ -1929,38 +1578,22 @@ const securitySettingsApiPlugin = () => ({
             return
           }
 
-          const existing = await readSecuritySettingsFile()
-
-          const settings = hasSettings
-            ? {
-                ...(existing.settings || {}),
-                ...incomingSettings,
-              }
-            : { ...(existing.settings || {}) }
-
-          const departmentAuthorisers = [...(existing.departmentAuthorisers || [])]
-          if (hasAuthoriser) {
-            const department = incomingAuthoriser.department
-            const existingIndex = departmentAuthorisers.findIndex((item) => item?.department === department)
-            if (existingIndex >= 0) {
-              departmentAuthorisers[existingIndex] = {
-                ...departmentAuthorisers[existingIndex],
-                ...incomingAuthoriser,
-              }
-            } else {
-              departmentAuthorisers.push(incomingAuthoriser)
-            }
+          // Local security-settings fallback removed; forward to backend only
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/security-settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+            return
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            return
           }
-
-          const nextPayload = {
-            settings,
-            departmentAuthorisers,
-          }
-
-          await writeSecuritySettingsFile(nextPayload)
-          res.statusCode = 201
-          res.end(JSON.stringify(nextPayload))
-          return
         }
 
         if (req.method === 'OPTIONS') {
@@ -1989,11 +1622,22 @@ const productDefinitionApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
+        // GET forwarded to backend only; no local fallback
         if (req.method === 'GET') {
-          const data = await readProductDefinitionFile()
-          res.statusCode = 200
-          res.end(JSON.stringify(data))
-          return
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/product-definition', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+              const data = await backendRes.text()
+              res.statusCode = backendRes.status
+              res.end(data)
+              return
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            return
+          }
         }
 
         if (req.method === 'POST') {
@@ -2006,41 +1650,22 @@ const productDefinitionApiPlugin = () => ({
             return
           }
 
-          const existing = await readProductDefinitionFile()
-
-          const mainCategories = Array.from(new Set([
-            ...(existing.mainCategories || []),
-            ...(Array.isArray(body?.mainCategories) ? body.mainCategories : []),
-          ]))
-
-          const productNames = Array.from(new Set([
-            ...(existing.productNames || []),
-            ...(Array.isArray(body?.productNames) ? body.productNames : []),
-          ]))
-
-          const products = [...(existing.products || [])]
-          const incomingKey = incomingProduct.id || incomingProduct.productName
-          const existingIndex = products.findIndex((item) => (item.id || item.productName) === incomingKey)
-
-          if (existingIndex >= 0) {
-            products[existingIndex] = {
-              ...products[existingIndex],
-              ...incomingProduct,
-            }
-          } else {
-            products.push(incomingProduct)
+          // Local product-definition fallback removed; forward create/update to backend only
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/product-definition', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+            return
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            return
           }
-
-          const nextPayload = {
-            mainCategories,
-            productNames,
-            products,
-          }
-
-          await writeProductDefinitionFile(nextPayload)
-          res.statusCode = 201
-          res.end(JSON.stringify(nextPayload))
-          return
         }
 
         if (req.method === 'OPTIONS') {
@@ -2121,11 +1746,22 @@ const periodicProcessingApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
+        // GET forwarded to backend only; no local fallback
         if (req.method === 'GET') {
-          const data = await readPeriodicProcessingFile()
-          res.statusCode = 200
-          res.end(JSON.stringify(data))
-          return
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/periodic-processing', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+            return
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            return
+          }
         }
 
         if (req.method === 'POST') {
@@ -2142,27 +1778,22 @@ const periodicProcessingApiPlugin = () => ({
             return
           }
 
-          const existing = await readPeriodicProcessingFile()
-
-          const subscriptionRows = [...(existing.subscriptionRows || [])]
-          if (hasSubscriptionRow) {
-            subscriptionRows.push(incomingSubscriptionRow)
+          // Local periodic-processing fallback removed; forward to backend only
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/periodic-processing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+            return
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+            return
           }
-
-          const interestRows = [...(existing.interestRows || [])]
-          if (hasInterestRow) {
-            interestRows.push(incomingInterestRow)
-          }
-
-          const nextPayload = {
-            subscriptionRows,
-            interestRows,
-          }
-
-          await writePeriodicProcessingFile(nextPayload)
-          res.statusCode = 201
-          res.end(JSON.stringify(nextPayload))
-          return
         }
 
         if (req.method === 'OPTIONS') {
@@ -2183,7 +1814,7 @@ const periodicProcessingApiPlugin = () => ({
 const customerRegistrationApiPlugin = () => ({
   name: 'customer-registration-api-plugin',
   configureServer(server) {
-    server.middlewares.use('/api/customer-registration', async (req, res, next) => {
+    server.middlewares.use('/api/customer-registration', async (req, res) => {
       try {
         // Add CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*')
@@ -2191,60 +1822,23 @@ const customerRegistrationApiPlugin = () => ({
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         res.setHeader('Content-Type', 'application/json')
 
-        if (req.method === 'GET' && req.url?.startsWith('/report')) {
-          const rows = await readCustomerRegistrationFile()
-          const latest = rows.length > 0 ? rows[rows.length - 1] : null
-          const report = {
-            generatedAt: new Date().toISOString(),
-            totalRecords: rows.length,
-            latestMember: latest
-              ? {
-                  memberCode: latest.memberCode || '',
-                  fullName: [latest.firstName, latest.middleName, latest.surname].filter(Boolean).join(' '),
-                  branch: latest.branch || '',
-                  creditUnion: latest.creditUnion || '',
-                }
-              : null,
-          }
-
-          res.statusCode = 200
-          res.end(JSON.stringify({ report, rows }))
+        // Customer registration dev fallbacks removed; forward to backend only
+        try {
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com${req.url}`
+          const backendRes = await fetch(backendUrl, {
+            method: req.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: req.method === 'GET' ? undefined : await parseRequestBody(req) && JSON.stringify(await parseRequestBody(req)),
+          })
+          const data = await backendRes.text()
+          res.statusCode = backendRes.status
+          res.end(data)
+          return
+        } catch (err) {
+          res.statusCode = 502
+          res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
           return
         }
-
-        if (req.method === 'GET') {
-          const rows = await readCustomerRegistrationFile()
-          res.statusCode = 200
-          res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'POST') {
-          const body = await parseRequestBody(req)
-          const incomingRow = body?.row
-
-          if (!incomingRow || typeof incomingRow !== 'object') {
-            res.statusCode = 400
-            res.end(JSON.stringify({ message: 'Invalid payload. Expected row object.' }))
-            return
-          }
-
-          const rows = await readCustomerRegistrationFile()
-          rows.push(incomingRow)
-          await writeCustomerRegistrationFile(rows)
-
-          res.statusCode = 201
-          res.end(JSON.stringify({ rows }))
-          return
-        }
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
-          return
-        }
-
-        next()
       } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process customer registration data.' }))
@@ -2382,7 +1976,7 @@ const getMemberDetailsApiPlugin = () => ({
         }
 
         next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process getmemberdetails.' }))
       }
@@ -2426,7 +2020,7 @@ const getMemberApiPlugin = () => ({
         }
 
         next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process getmember.' }))
       }
@@ -2475,7 +2069,7 @@ const updateMemberDetailsApiPlugin = () => ({
         }
 
         next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process update member details.' }))
       }
@@ -2524,7 +2118,7 @@ const updateInstitutionApiPlugin = () => ({
         }
 
         next()
-      } catch (err) {
+      } catch {
         res.statusCode = 500
         res.end(JSON.stringify({ message: 'Failed to process updateInstitutionMember.' }))
       }
@@ -3613,7 +3207,7 @@ const reconcileApiPlugin = () => ({
             return
           }
 
-          const txMatch = req.url.match(/^\/api\/reconcile\/transactions\/30\/([^\/?]+)/)
+          const txMatch = req.url.match(/^\/api\/reconcile\/transactions\/30\/([^/?]+)/)
           if (txMatch) {
             const acc = txMatch[1]
             try {
@@ -3695,7 +3289,7 @@ const glStatementApiPlugin = () => ({
 
         if (req.method === 'GET') {
           // GET /api/glstatement/account/{accountNumber}
-          const accMatch = req.url.match(/^\/api\/glstatement\/account\/([^\/?]+)/)
+          const accMatch = req.url.match(/^\/api\/glstatement\/account\/([^/?]+)/)
           if (accMatch) {
             const acc = accMatch[1]
             try {
@@ -4074,7 +3668,7 @@ export default defineConfig({
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => '/api/CashManager/branches?companyId=30',
+        rewrite: () => '/api/CashManager/branches?companyId=30',
       },
       // Proxy for CashManager cashiers endpoint
       '/api/CashManager/cashiers': {
@@ -4355,11 +3949,6 @@ export default defineConfig({
         secure: false,
       },
       '/api/loans/accounts': {
-        target: 'https://alakuyateh-001-site10.atempurl.com',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/account/details': {
         target: 'https://alakuyateh-001-site10.atempurl.com',
         changeOrigin: true,
         secure: false,

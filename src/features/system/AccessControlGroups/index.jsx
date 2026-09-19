@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -13,6 +13,10 @@ import { DataGrid } from '@mui/x-data-grid';
 import accessControlData from '../../../data/access-control-groups.json';
 
 export default function AccessControlGroups({ user }) {
+  useEffect(() => {
+    // TODO: Replace local JSON import with API fetch; keeping import temporarily
+  }, [])
+
   const groups = Array.isArray(accessControlData?.groups) ? accessControlData.groups : [];
   const users = Array.isArray(accessControlData?.users) ? accessControlData.users : [];
   const roles = Array.isArray(accessControlData?.roles) ? accessControlData.roles : [];
