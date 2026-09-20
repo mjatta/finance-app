@@ -10,15 +10,16 @@ import { useGenerateAmortization } from './Hooks/useGenerateAmortization';
 const COLUMNS = [
   { field: 'loan_id', headerName: 'Loan Id', flex: 0.6, minWidth: 100 },
   { field: 'membername', headerName: 'Member Name', flex: 1.5, minWidth: 180 },
-  { field: 'loanamt', headerName: 'Principal', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (params) => formatCurrency(params.value || 0) },
+  { field: 'loanamt', headerName: 'Principal', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (params) => formatCurrency(params.value || 0) },
   { field: 'loan_interest', headerName: 'Interest rate', flex: 0.7, minWidth: 110, align: 'center', headerAlign: 'center', renderCell: (p) => `${p.value ?? 0}%` },
   { field: 'loandur', headerName: 'Duration', flex: 0.6, minWidth: 100, align: 'center', headerAlign: 'center' },
-  { field: 'totinterest', headerName: 'Total Interest', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-  { field: 'grossTotal', headerName: 'Gross Total', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
+  { field: 'totinterest', headerName: 'Total Interest', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+  { field: 'grossTotal', headerName: 'Gross Total', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
 ];
 
 export default function LoanAmortization() {
   const [rows, setRows] = useState([]);
+  const [selectedTransactionType, setSelectedTransactionType] = useState('active');
   const [amortizedLoanIds, setAmortizedLoanIds] = useState(new Set());
   const [previewRows, setPreviewRows] = useState([]);
   const [pendingLoanIds, setPendingLoanIds] = useState(new Set());
@@ -33,8 +34,11 @@ export default function LoanAmortization() {
   const { displayAmortization } = useDisplayAmortization();
   const { generateAmortization } = useGenerateAmortization();
 
-  const load = useCallback(async () => {
-    const data = await fetchAmortization(1, 30);
+  const load = useCallback(async (type = 'active') => {
+    // Map type to backend client group (1=Active, 2=Amortised, 3=Not Amortised)
+    const typeMap = { active: 1, amortised: 2, notAmortised: 3 };
+    const from = typeMap[type] || 1;
+    const data = await fetchAmortization(from, 30);
     // Expecting an array of loan objects
     if (Array.isArray(data)) {
       const mapped = data.map((item, idx) => ({
@@ -69,10 +73,10 @@ export default function LoanAmortization() {
     let mounted = true;
     (async () => {
       if (!mounted) return;
-      await load();
+      await load(selectedTransactionType);
     })();
     return () => { mounted = false; };
-  }, [load]);
+  }, [load, selectedTransactionType]);
 
   const handleRowClick = async (params) => {
     const loanId = params?.row?.loan_id;
@@ -120,13 +124,13 @@ export default function LoanAmortization() {
   };
 
   const PREVIEW_COLUMNS = [
-    { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 140, renderCell: (p) => p.value ? new Date(p.value).toISOString().slice(0,10) : '' },
-    { field: 'npayment', headerName: 'Periodic Payment', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'nprinpay', headerName: 'Prinicipal Payment', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'nintpay', headerName: 'Interest Payment', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'begbal', headerName: 'Begining Balance', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'endbal', headerName: 'End Balance', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
-    { field: 'cumInt', headerName: 'Cumulative Interest', flex: 1, minWidth: 140, align: 'right', headerAlign: 'right', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 140, headerAlign: 'center', align: 'center', renderCell: (p) => p.value ? new Date(p.value).toISOString().slice(0,10) : '' },
+    { field: 'npayment', headerName: 'Periodic Payment', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'nprinpay', headerName: 'Prinicipal Payment', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'nintpay', headerName: 'Interest Payment', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'begbal', headerName: 'Begining Balance', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'endbal', headerName: 'End Balance', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
+    { field: 'cumInt', headerName: 'Cumulative Interest', flex: 1, minWidth: 140, align: 'center', headerAlign: 'center', renderCell: (p) => formatCurrency(p.value || 0) },
     { field: 'dperiod', headerName: 'Period', flex: 0.5, minWidth: 80, align: 'center', headerAlign: 'center' },
   ];
 
@@ -159,20 +163,56 @@ export default function LoanAmortization() {
         </Alert>
       )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mt: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-              Active Loans
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={load}
-              disabled={loading}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              {loading ? 'Refreshing...' : '↻ Refresh'}
-            </Button>
+      {/* Filter Card (Filter by Transaction Type) */}
+      <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
+            Filter by Transaction Type
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant={selectedTransactionType === 'active' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setSelectedTransactionType('active')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                All Active Loans
+              </Button>
+              <Button
+                variant={selectedTransactionType === 'amortised' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setSelectedTransactionType('amortised')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Amortised
+              </Button>
+              <Button
+                variant={selectedTransactionType === 'notAmortised' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setSelectedTransactionType('notAmortised')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Not Amortised
+              </Button>
+            </Box>
+            <Box>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => load(selectedTransactionType)}
+                disabled={loading}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                {loading ? 'Refreshing...' : '↻ Refresh'}
+              </Button>
+            </Box>
           </Box>
+          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary', fontWeight: 500 }}>
+            Showing client list for selected type
+          </Typography>
+        </CardContent>
+      </Card>
           <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
             <div style={{ height: 420, width: '100%' }}>
               {loading ? (
