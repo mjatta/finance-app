@@ -5,6 +5,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import {
   Alert,
   AlertTitle,
+  Autocomplete,
   Backdrop,
   Box,
   Button,
@@ -31,12 +32,18 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PersonIcon from '@mui/icons-material/Person';
+import BusinessIcon from '@mui/icons-material/Business';
+import SearchIcon from '@mui/icons-material/Search';
 import dayjs from 'dayjs';
 import { useRegisterInstitution } from './hooks/useRegisterInstitution';
 import { useRegisterIndividual } from './hooks/useRegisterIndividual';
 import { useIdTypes } from './hooks/useIdTypes';
 import { useBanks } from './hooks/useBanks';
 import { useValidateGroupMemberId } from './hooks/useValidateGroupMemberId';
+import { useSearchCustomerByName } from './hooks/useSearchCustomerByName';
+import { useSearchInstitutionByName } from './hooks/useSearchInstitutionByName';
 import { CurrencyAdornment } from '../../../components/FieldAdornments';
 import { useMemberDetails } from '../../../hooks/useMemberDetails';
 import { useInstitutionDetails } from './hooks/useInstitutionDetails';
@@ -265,7 +272,7 @@ export default function CustomerRegistration(props) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [institutionBranches, setInstitutionBranches] = useState([]);
   const [countries, setCountries] = useState([]);
-  const { fetchMemberDetails, loading: loadingMemberDetails } = useMemberDetails();
+  const { fetchMemberDetails, loading: _loadingMemberDetails } = useMemberDetails();
 
   // Fetch institution branches for branch dropdowns
   useEffect(() => {
@@ -316,10 +323,18 @@ export default function CustomerRegistration(props) {
   }, []);
 
   const [individualSearchCode, setIndividualSearchCode] = useState('');
+  const [individualSearchOptions, setIndividualSearchOptions] = useState([]);
+  const [individualSelectedCustomer, setIndividualSelectedCustomer] = useState(null);
+  const individualSearchDebounceRef = useRef(null);
   const [institutionSearchCode, setInstitutionSearchCode] = useState('');
+  const [institutionSearchOptions, setInstitutionSearchOptions] = useState([]);
+  const [institutionSelectedInstitution, setInstitutionSelectedInstitution] = useState(null);
+  const institutionSearchDebounceRef = useRef(null);
   const [isExistingMember, setIsExistingMember] = useState(false);
-  const { fetchInstitutionDetails, loading: loadingInstitutionDetails } = useInstitutionDetails();
+  const { fetchInstitutionDetails, loading: _loadingInstitutionDetails } = useInstitutionDetails();
   const { updateInstitution } = useUpdateInstitution();
+  const { searchCustomers, loading: loadingCustomerSearch } = useSearchCustomerByName();
+  const { searchInstitutions, loading: loadingInstitutionSearch } = useSearchInstitutionByName();
 
   // Resolve a numeric branch id (legacy branch_id) to its display name using the loaded branches list
   const getBranchNameById = (id) => {
@@ -329,13 +344,14 @@ export default function CustomerRegistration(props) {
     return found ? found.name : '';
   };
 
-  const handleFillFromMember = async () => {
+  const handleFillFromMember = async (codeOverride) => {
     setSaveValidationErrors(null);
-    if (!individualSearchCode) return setStatusMessage('Enter member code to search');
+    const rawCode = codeOverride !== undefined ? codeOverride : individualSearchCode;
+    if (!rawCode) return setStatusMessage('Enter member code to search');
     setStatusMessage('');
     try {
       // If the user entered only digits, pad to 6 characters with leading zeros (e.g., 1 -> 000001)
-      const codeToUse = String(individualSearchCode || '').trim();
+      const codeToUse = String(rawCode || '').trim();
       const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
       const resp = await fetchMemberDetails(paddedCode);
       if (!resp.success) {
@@ -645,12 +661,13 @@ export default function CustomerRegistration(props) {
     }
   };
 
-  const handleFillFromInstitution = async () => {
+  const handleFillFromInstitution = async (codeOverride) => {
     setSaveValidationErrors(null);
-    if (!institutionSearchCode) return setStatusMessage('Enter institution code to search');
+    const rawCode = codeOverride !== undefined ? codeOverride : institutionSearchCode;
+    if (!rawCode) return setStatusMessage('Enter institution code to search');
     setStatusMessage('');
     try {
-      const codeToUse = String(institutionSearchCode || '').trim();
+      const codeToUse = String(rawCode || '').trim();
       const paddedCode = /^\d+$/.test(codeToUse) ? codeToUse.padStart(6, '0') : codeToUse;
       const resp = await fetchInstitutionDetails(paddedCode);
       if (!resp.success) {
@@ -830,7 +847,7 @@ export default function CustomerRegistration(props) {
     }
   };
 
-  const clearInstitutionFields = () => {
+  const _clearInstitutionFields = () => {
     setInstitutionSearchCode('');
     setStatusMessage('');
     setIsExistingMember(false);
@@ -886,6 +903,71 @@ export default function CustomerRegistration(props) {
     setSignaturePreviewUrl('');
     setApplicationFormPreviewUrl('');
   };
+
+  // Handle autocomplete search input change for Individual tab (debounced to avoid calling the API on every keystroke)
+  const handleIndividualSearchInputChange = (event, value, reason) => {
+    setIndividualSearchCode(value);
+    if (reason === 'reset') return;
+    if (individualSearchDebounceRef.current) clearTimeout(individualSearchDebounceRef.current);
+    if (!value || value.trim().length < 1) {
+      setIndividualSearchOptions([]);
+      return;
+    }
+    individualSearchDebounceRef.current = setTimeout(async () => {
+      const result = await searchCustomers(value);
+      if (result.success && Array.isArray(result.data)) {
+        setIndividualSearchOptions(result.data);
+      } else {
+        setIndividualSearchOptions([]);
+      }
+    }, 400);
+  };
+
+  // Handle individual customer selection from autocomplete
+  const handleIndividualCustomerSelect = async (event, customer) => {
+    if (!customer) return;
+    setIndividualSelectedCustomer(customer);
+    // Use the customer code to fill the form
+    const searchValue = customer.ccustcode || '';
+    setIndividualSearchCode(searchValue);
+    // Trigger fill from member with the selected customer code (pass code directly to avoid stale state)
+    if (searchValue) {
+      await handleFillFromMember(searchValue);
+    }
+  };
+
+  // Handle institution search input change (autocomplete, debounced to avoid calling the API on every keystroke)
+  const handleInstitutionSearchInputChange = (event, value, reason) => {
+    setInstitutionSearchCode(value);
+    if (reason === 'reset') return;
+    if (institutionSearchDebounceRef.current) clearTimeout(institutionSearchDebounceRef.current);
+    if (!value || value.trim().length < 1) {
+      setInstitutionSearchOptions([]);
+      return;
+    }
+    institutionSearchDebounceRef.current = setTimeout(async () => {
+      const result = await searchInstitutions(value);
+      if (result.success && Array.isArray(result.data)) {
+        setInstitutionSearchOptions(result.data);
+      } else {
+        setInstitutionSearchOptions([]);
+      }
+    }, 400);
+  };
+
+  // Handle institution selection from autocomplete
+  const handleInstitutionSelect = async (event, institution) => {
+    if (!institution) return;
+    setInstitutionSelectedInstitution(institution);
+    // Use the institution code to fill the form
+    const searchValue = institution.ccustcode || institution.companyCode || institution.companyId || '';
+    setInstitutionSearchCode(searchValue);
+    // Trigger fill from institution with the selected code (pass code directly to avoid stale state)
+    if (searchValue) {
+      await handleFillFromInstitution(searchValue);
+    }
+  };
+
 
 // Helper to format row for DataGrid
 function formatRecentMemberRow(row, institutionBranches = []) {
@@ -2419,20 +2501,165 @@ function formatRecentMemberRow(row, institutionBranches = []) {
                 <>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' } }}>
                     {/* Individual tab: Find Customer */}
-                    <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <TextField
-                        label="Find Customer"
-                        placeholder="Member code or Full Name or ID card number"
+                    <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                      <Box sx={{ flex: '0 1 50%' }}>
+                        <Autocomplete
+                          options={individualSearchOptions}
+                          getOptionLabel={(option) => {
+                            if (!option) return '';
+                            const fname = String(option.ccustfname || '').trim();
+                            const mname = String(option.ccustmname || '').trim();
+                            const lname = String(option.ccustlname || '').trim();
+                            const code = String(option.ccustcode || '').trim();
+                            const street = String(option.cstreet || '').trim();
+                            const dob = option.ddatebirth ? dayjs(option.ddatebirth).format('MMM DD, YYYY') : '';
+                            const fullName = [fname, mname, lname].filter(n => n).join(' ');
+                            return `${fullName} - ${code} - ${street} - DOB: ${dob}`;
+                          }}
+                          renderOption={(props, option) => {
+                            if (!option) return null;
+                            const fname = String(option.ccustfname || '').trim();
+                            const mname = String(option.ccustmname || '').trim();
+                            const lname = String(option.ccustlname || '').trim();
+                            const code = String(option.ccustcode || '').trim();
+                            const street = String(option.cstreet || '').trim();
+                            const dob = String(option.ddatebirth || '').trim();
+                            const fullName = [fname, mname, lname].filter(n => n).join(' ');
+                            return (
+                              <li {...props} key={`cust-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                                <Box
+                                  sx={{
+                                    p: 1.5,
+                                    borderBottom: '1px solid #e8e8e8',
+                                    '&:hover': { backgroundColor: '#e3f2fd' },
+                                    cursor: 'pointer',
+                                    transition: 'all 0.25s ease',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                    width: '100%',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                                    <PersonIcon sx={{ color: '#1976d2', fontSize: '1.2rem', flexShrink: 0 }} />
+                                    <Box sx={{ flex: 1, display: 'flex', gap: 2, alignItems: 'center', minWidth: 0 }}>
+                                      <Box sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1976d2', minWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {fullName}
+                                      </Box>
+                                      <Box sx={{ fontSize: '0.85rem', color: '#555', display: 'flex', gap: 0.5, minWidth: '80px', flexShrink: 0 }}>
+                                        <span style={{ color: '#999', fontWeight: 500 }}>Code:</span>
+                                        <strong>{code}</strong>
+                                      </Box>
+                                      <Box sx={{ fontSize: '0.85rem', color: '#666', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {street || '—'}
+                                      </Box>
+                                      <Box sx={{ fontSize: '0.85rem', color: '#666', minWidth: '120px', textAlign: 'right', flexShrink: 0 }}>
+                                        <span style={{ color: '#999', fontWeight: 500 }}>Born:</span> {dob ? dayjs(dob).format('MMM DD, YYYY') : '—'}
+                                      </Box>
+                                    </Box>
+                                  </Box>
+                                  <ChevronRightIcon sx={{ color: '#1976d2', fontSize: '1.4rem', flexShrink: 0 }} />
+                                </Box>
+                              </li>
+                            );
+                          }}
+                          inputValue={individualSearchCode}
+                          onInputChange={handleIndividualSearchInputChange}
+                          onChange={handleIndividualCustomerSelect}
+                          value={individualSelectedCustomer}
+                          loading={loadingCustomerSearch}
+                          filterOptions={(x) => x}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '10px',
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              border: '2px solid #e0e0e0',
+                              backgroundColor: '#fafafa',
+                              '&:hover': {
+                                border: '2px solid #1976d2',
+                                backgroundColor: '#fff',
+                                boxShadow: '0 2px 12px rgba(25, 118, 210, 0.1)',
+                              },
+                              '&.Mui-focused': {
+                                border: '2px solid #1976d2',
+                                backgroundColor: '#fff',
+                                boxShadow: '0 4px 16px rgba(25, 118, 210, 0.2)',
+                              },
+                            },
+                            '& .MuiOutlinedInput-input::placeholder': {
+                              opacity: 0.6,
+                              fontStyle: 'italic',
+                            },
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Find Customer"
+                              placeholder="Search by name, code, or ID..."
+                              variant="outlined"
+                              size="small"
+                              helperText={loadingCustomerSearch ? 'Searching...' : 'Type at least 1 character to search'}
+                              InputProps={{
+                                ...params.InputProps,
+                                startAdornment: (
+                                  <>
+                                    <SearchIcon sx={{ mr: 1, color: '#1976d2', fontSize: '1.2rem' }} />
+                                    {params.InputProps.startAdornment}
+                                  </>
+                                ),
+                              }}
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: '10px',
+                                },
+                                '& .MuiFormHelperText-root': {
+                                  fontSize: '0.75rem',
+                                  marginTop: '4px',
+                                },
+                              }}
+                            />
+                          )}
+                          noOptionsText={loadingCustomerSearch ? 'Searching...' : 'No customers found'}
+                          slotProps={{
+                            paper: {
+                              sx: {
+                                borderRadius: '10px',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                mt: 1,
+                                border: '1px solid #e0e0e0',
+                                minWidth: '450px',
+                                '& .MuiAutocomplete-listbox': {
+                                  padding: 0,
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      </Box>
+                      <Button
+                        variant="outlined"
                         size="small"
-                        value={individualSearchCode}
-                        onChange={(e) => setIndividualSearchCode(e.target.value)}
-                        sx={{ minWidth: 410 }}
-                      />
-                      <Button variant="contained" onClick={handleFillFromMember} disabled={loadingMemberDetails || !individualSearchCode} sx={{ backgroundColor: '#667eea' }}>
-                        {loadingMemberDetails ? 'Searching...' : 'Search'}
-                      </Button>
-                      <Button variant="outlined" onClick={clearIndividualFields}>
-                        Clear
+                        onClick={() => {
+                          clearIndividualFields();
+                          setIndividualSelectedCustomer(null);
+                          setIndividualSearchOptions([]);
+                        }}
+                        sx={{
+                          mt: 0.5,
+                          borderRadius: '8px',
+                          borderColor: '#d0d0d0',
+                          color: '#666',
+                          '&:hover': {
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                            color: '#1976d2',
+                          },
+                          transition: 'all 0.25s ease',
+                        }}
+                      >
+                        ✕ Clear
                       </Button>
                     </Box>
                     <TextField
@@ -2573,21 +2800,160 @@ function formatRecentMemberRow(row, institutionBranches = []) {
               ) : (
                 <Box sx={{ display: 'grid', gap: 2 }}>
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
-                      {/* Institution tab: Find Customer (institution) */}
-                      <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <TextField
-                          label="Find Institution"
-                          placeholder="Institution code or Address or ID Name"
+                      {/* Institution tab: Find Institution */}
+                      <Box sx={{ gridColumn: '1 / -1', display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                        <Box sx={{ flex: '0 1 50%' }}>
+                          <Autocomplete
+                            options={institutionSearchOptions}
+                            getOptionLabel={(option) => {
+                              if (!option) return '';
+                              const name = String(option.ccustname || option.CustName || option.custname || '').trim();
+                              const code = String(option.ccustcode || option.companyCode || option.companyId || '').trim();
+                              const street = String(option.cstreet || option.Street || option.caddr1 || option.caddr || option.address || '').trim();
+                              const dateJoin = (option.DateJoin || option.datejoin || option.datejoin_raw) ? dayjs(option.DateJoin || option.datejoin || option.datejoin_raw).format('MMM DD, YYYY') : '';
+                              return `${name} - ${code} - ${street} - ${dateJoin}`;
+                            }}
+                            renderOption={(props, option) => {
+                              if (!option) return null;
+                              const name = String(option.ccustname || option.CustName || option.custname || '').trim();
+                              const code = String(option.ccustcode || option.companyCode || option.companyId || '').trim();
+                              const street = String(option.cstreet || option.Street || option.caddr1 || option.caddr || option.address || '').trim();
+                              const dateJoin = (option.DateJoin || option.datejoin || option.datejoin_raw) ? dayjs(option.DateJoin || option.datejoin || option.datejoin_raw).format('MMM DD, YYYY') : '';
+                              return (
+                                <li {...props} key={`inst-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                                  <Box
+                                    sx={{
+                                      p: 1.5,
+                                      borderBottom: '1px solid #e8e8e8',
+                                      '&:hover': { backgroundColor: '#f3e5f5' },
+                                      cursor: 'pointer',
+                                      transition: 'all 0.25s ease',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: 2,
+                                      width: '100%',
+                                      overflow: 'hidden',
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                                      <BusinessIcon sx={{ color: '#667eea', fontSize: '1.2rem', flexShrink: 0 }} />
+                                      <Box sx={{ flex: 1, display: 'flex', gap: 2, alignItems: 'center', minWidth: 0 }}>
+                                        <Box sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#667eea', minWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {name}
+                                        </Box>
+                                        <Box sx={{ fontSize: '0.85rem', color: '#555', display: 'flex', gap: 0.5, minWidth: '80px', flexShrink: 0 }}>
+                                          <span style={{ color: '#999', fontWeight: 500 }}>Code:</span>
+                                          <strong>{code}</strong>
+                                        </Box>
+                                        <Box sx={{ fontSize: '0.85rem', color: '#666', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {street || '—'}
+                                        </Box>
+                                        <Box sx={{ fontSize: '0.85rem', color: '#666', minWidth: '120px', textAlign: 'right', flexShrink: 0 }}>
+                                          <span style={{ color: '#999', fontWeight: 500 }}>Joined:</span> {dateJoin || '—'}
+                                        </Box>
+                                      </Box>
+                                    </Box>
+                                    <ChevronRightIcon sx={{ color: '#667eea', fontSize: '1.4rem', flexShrink: 0 }} />
+                                  </Box>
+                                </li>
+                              );
+                            }}
+                            inputValue={institutionSearchCode}
+                            onInputChange={handleInstitutionSearchInputChange}
+                            onChange={handleInstitutionSelect}
+                            value={institutionSelectedInstitution}
+                            loading={loadingInstitutionSearch}
+                            filterOptions={(x) => x}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                border: '2px solid #e0e0e0',
+                                backgroundColor: '#fafafa',
+                                '&:hover': {
+                                  border: '2px solid #667eea',
+                                  backgroundColor: '#fff',
+                                  boxShadow: '0 2px 12px rgba(102, 126, 234, 0.1)',
+                                },
+                                '&.Mui-focused': {
+                                  border: '2px solid #667eea',
+                                  backgroundColor: '#fff',
+                                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)',
+                                },
+                              },
+                              '& .MuiOutlinedInput-input::placeholder': {
+                                opacity: 0.6,
+                                fontStyle: 'italic',
+                              },
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Find Institution"
+                                placeholder="Search by name, code, or address..."
+                                variant="outlined"
+                                size="small"
+                                helperText={loadingInstitutionSearch ? 'Searching...' : 'Type at least 1 character to search'}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <>
+                                      <SearchIcon sx={{ mr: 1, color: '#667eea', fontSize: '1.2rem' }} />
+                                      {params.InputProps.startAdornment}
+                                    </>
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    borderRadius: '10px',
+                                  },
+                                  '& .MuiFormHelperText-root': {
+                                    fontSize: '0.75rem',
+                                    marginTop: '4px',
+                                  },
+                                }}
+                              />
+                            )}
+                            noOptionsText={loadingInstitutionSearch ? 'Searching...' : 'No institutions found'}
+                            slotProps={{
+                              paper: {
+                                sx: {
+                                  borderRadius: '10px',
+                                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                  mt: 1,
+                                  border: '1px solid #e0e0e0',
+                                  minWidth: '450px',
+                                  '& .MuiAutocomplete-listbox': {
+                                    padding: 0,
+                                  },
+                                },
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Button
+                          variant="outlined"
                           size="small"
-                          value={institutionSearchCode}
-                          onChange={(e) => setInstitutionSearchCode(e.target.value)}
-                          sx={{ minWidth: 410 }}
-                        />
-                        <Button variant="contained" onClick={handleFillFromInstitution} disabled={loadingInstitutionDetails || !institutionSearchCode} sx={{ backgroundColor: '#667eea' }}>
-                          {loadingInstitutionDetails ? 'Searching...' : 'Search'}
-                        </Button>
-                        <Button variant="outlined" onClick={clearInstitutionFields}>
-                          Clear
+                          onClick={() => {
+                            _clearInstitutionFields();
+                            setInstitutionSelectedInstitution(null);
+                            setInstitutionSearchOptions([]);
+                          }}
+                          sx={{
+                            mt: 0.5,
+                            borderRadius: '8px',
+                            borderColor: '#d0d0d0',
+                            color: '#666',
+                            '&:hover': {
+                              borderColor: '#667eea',
+                              backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                              color: '#667eea',
+                            },
+                            transition: 'all 0.25s ease',
+                          }}
+                        >
+                          ✕ Clear
                         </Button>
                       </Box>
                     <TextField

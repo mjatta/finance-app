@@ -21,7 +21,15 @@ export const useInstitutionDetails = () => {
         throw new Error(txt || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      const payload = data?.data ?? data ?? {};
+      // Endpoint always returns an array (even for an exact code match) — unwrap to the first record.
+      let payload = data;
+      if (Array.isArray(data)) {
+        payload = data[0] || {};
+      } else if (Array.isArray(data?.data)) {
+        payload = data.data[0] || {};
+      } else {
+        payload = data?.data ?? data ?? {};
+      }
       return { success: true, data: payload };
     } catch (err) {
       setError(err.message || 'Failed to fetch institution details');
