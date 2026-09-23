@@ -18,6 +18,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { BarChart } from '@mui/x-charts/BarChart';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import useGetAgingRanges from '../DetailedAging/hooks/useGetAgingRanges';
@@ -73,6 +74,7 @@ export default function LoanProvision() {
   const [statusMessage, setStatusMessage] = useState('');
   const [rangesInitialized, setRangesInitialized] = useState(false);
   const [savingRanges, setSavingRanges] = useState(false);
+  const [detailsData, setDetailsData] = useState([]);
   const isBusy = detailsLoading || savingRanges;
 
   useEffect(() => {
@@ -200,23 +202,26 @@ export default function LoanProvision() {
       return;
     }
 
-    const detailsData = Array.isArray(response.data)
+    const data = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response.data?.data)
         ? response.data.data
         : [];
 
-    if (detailsData.length === 0) {
+    if (data.length === 0) {
       setStatusMessage('No loan provision details found for the selected filters.');
       return;
     }
 
+    // Store data for chart display
+    setDetailsData(data);
+
     if (exportType === 'pdf') {
-      handleExportPDF(detailsData);
+      handleExportPDF(data);
     } else if (exportType === 'csv') {
-      handleExportCSV(detailsData);
+      handleExportCSV(data);
     } else if (exportType === 'excel') {
-      handleExportExcel(detailsData);
+      handleExportExcel(data);
     }
   };
 
@@ -277,6 +282,43 @@ export default function LoanProvision() {
     setCategory('');
     setRunDate(dayjs());
     setStatusMessage('');
+    setDetailsData([]);
+  };
+
+  const prepareChartData = () => {
+    if (!detailsData || detailsData.length === 0) return [];
+
+    const groupedData = {};
+    const ageRanges = [];
+
+    detailsData.forEach((row) => {
+      const key = `${row.DaysFrom || 'N/A'}-${row.DaysTo || 'N/A'}`;
+      if (!groupedData[key]) {
+        groupedData[key] = {
+          daysFrom: row.DaysFrom,
+          daysTo: row.DaysTo,
+          loanBalance: 0,
+        };
+        ageRanges.push(key);
+      }
+
+      groupedData[key].loanBalance += Number(row.LoanBalance ?? 0);
+    });
+
+    // Sort by daysTo
+    ageRanges.sort((keyA, keyB) => {
+      const daysToA = Number(groupedData[keyA].daysTo) || 0;
+      const daysToB = Number(groupedData[keyB].daysTo) || 0;
+      return daysToA - daysToB;
+    });
+
+    return ageRanges.map((key) => {
+      const group = groupedData[key];
+      return {
+        days: `${group.daysFrom || '0'}-${group.daysTo || '0'}`,
+        loanBalance: Math.round(group.loanBalance),
+      };
+    });
   };
 
   return (
@@ -504,6 +546,80 @@ export default function LoanProvision() {
               Clear
             </Button>
           </Box>
+
+          {detailsData.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>
+                Loan Provision Chart
+              </Typography>
+              <Box sx={{ width: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, bgcolor: '#fafafa', overflowX: 'auto' }}>
+                <Box sx={{ minWidth: 1000 }}>
+                  <BarChart
+                    dataset={prepareChartData()}
+                    xAxis={[{ 
+                      scaleType: 'band', 
+                      dataKey: 'days',
+                      label: 'Days (from - to)'
+                    }]}
+                    yAxis={[{ 
+                      label: 'Loan Amount'
+                    }]}
+                    series={[{ 
+                      dataKey: 'loanBalance', 
+                      label: 'Loan Balance',
+                      color: '#667eea',
+                      valueFormatter: (value) => {
+                        if (value >= 1000000) {
+                          return `${(value / 1000000).toFixed(1)}M`;
+                        }
+                        if (value >= 1000) {
+                          return `${(value / 1000).toFixed(0)}K`;
+                        }
+                        return value.toString();
+                      }
+                    }]}
+                    width={950}
+                    height={400}
+                    margin={{ top: 10, bottom: 60, left: 100, right: 20 }}
+                    slotProps={{
+                      legend: {
+                        hidden: false,
+                        position: 'top-right'
+                      }
+                    }}
+                    sx={{
+                      '& .MuiChartsAxis-left .MuiChartsAxis-tickLabel': {
+                        fill: '#666',
+                        fontSize: '12px',
+                      },
+                      '& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel': {
+                        fill: '#666',
+                        fontSize: '11px',
+                        angle: 0,
+                      },
+                      '& .MuiChartsAxis-left .MuiChartsAxis-line': {
+                        stroke: '#ddd',
+                      },
+                      '& .MuiChartsAxis-bottom .MuiChartsAxis-line': {
+                        stroke: '#ddd',
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+              <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, fontSize: '0.9rem', color: '#666' }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Chart Legend:
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 16, height: 16, bgcolor: '#667eea', borderRadius: 0.5 }} />
+                  <Typography variant="body2">
+                    Loan Balance - Total outstanding loan balance for each days range
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
         </CardContent>
       </Card>
 

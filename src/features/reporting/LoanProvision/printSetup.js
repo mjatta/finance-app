@@ -230,6 +230,27 @@ export const buildLoanProvisionDetailsPrintHtml = (data, date) => {
             </tr>
           </tfoot>
         </table>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
+          <h3 style="margin-bottom: 15px; color: #667eea;">Loan Balance by Days Range</h3>
+          <div style="display: flex; align-items: flex-end; gap: 15px; height: 300px; padding: 20px; background-color: #f9f9f9; border-radius: 4px;">
+            ${ageRanges
+              .map((key) => {
+                const group = groupedData[key];
+                const maxBalance = Math.max(...ageRanges.map((k) => groupedData[k].loanBalance), 1);
+                const percentage = (group.loanBalance / maxBalance) * 100;
+                const daysLabel = group.ageCategory || `${group.daysFrom || '0'}-${group.daysTo || '0'}`;
+                return `
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 100%; background-color: #667eea; height: ${percentage}%; min-height: 10px; border-radius: 2px; margin-bottom: 8px;"></div>
+                    <div style="font-size: 11px; text-align: center; max-width: 70px; word-break: break-word; color: #666;">${daysLabel}</div>
+                    <div style="font-size: 10px; color: #999; margin-top: 4px;">${formatAmount(group.loanBalance)}</div>
+                  </div>
+                `;
+              })
+              .join('')}
+          </div>
+        </div>
       </div>
     </body>
     </html>
