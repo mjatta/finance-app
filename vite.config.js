@@ -1098,6 +1098,44 @@ const memberEnquiryApiPlugin = () => ({
         res.end(JSON.stringify({ message: 'Failed to process member enquiry.', error: err.message }))
       }
     })
+
+    server.middlewares.use('/api/member/search', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          // Preserve query string and path
+          const backendUrl = `https://alakuyateh-001-site10.atempurl.com/api/member/search${req.url.replace('/api/member/search', '')}`
+          try {
+            const backendRes = await fetch(backendUrl, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process member search.', error: err.message }))
+      }
+    })
   },
 })
 

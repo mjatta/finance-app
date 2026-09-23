@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  InputAdornment,
   MenuItem,
   TextField,
   Typography,
   Alert,
 } from '@mui/material';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import PersonIcon from '@mui/icons-material/Person';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddCircleRoundedIcon from '@mui/icons-material/AddCircleRounded';
 import { useGetMemberAccountDetails } from './hooks/useGetMemberAccountDetails';
 import { useGetMemberAccountProducts } from './hooks/useGetMemberAccountProducts';
@@ -19,6 +22,7 @@ import { useCheckGlDuplicate } from './hooks/useCheckGlDuplicate';
 import { useSaveAccount } from './hooks/useSaveAccount';
 import { useAuthStore } from '../../../store/authStore';
 import { notifySaveError, notifySaveSuccess } from '../../../utils/saveNotifications';
+import { useSearchMembers } from '../../../hooks/useSearchMembers';
 
 export default function AddMemberAccount() {
   const { loading: memberLoading, error: memberError, fetchMemberDetails } = useGetMemberAccountDetails();
@@ -27,11 +31,15 @@ export default function AddMemberAccount() {
   const { checkGlDuplicate, loading: glLoading } = useCheckGlDuplicate();
   const { saveAccount } = useSaveAccount();
   const user = useAuthStore((state) => state.user);
+  const { searchMembers, loading: searchLoading } = useSearchMembers();
   
   const [customerCode, setCustomerCode] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [memberSearchOptions, setMemberSearchOptions] = useState([]);
+  const [memberSearchInput, setMemberSearchInput] = useState('');
+  const memberSearchDebounceRef = useRef(null);
   
   const [formData, setFormData] = useState({
     customerName: '',
@@ -43,67 +51,89 @@ export default function AddMemberAccount() {
     accountName: '',
   });
 
-  const handleCustomerCodeChange = (e) => {
-    setCustomerCode(e.target.value);
-  };
+  const handleMemberSearchInputChange = useCallback(
+    (e, value) => {
+      setMemberSearchInput(value);
 
-  const handleCustomerCodeTab = async (e) => {
-    if (e.key === 'Tab' && customerCode.trim()) {
-      await handleSearch();
-    }
-  };
+      if (memberSearchDebounceRef.current) {
+        clearTimeout(memberSearchDebounceRef.current);
+      }
 
-  const handleSearch = async () => {
-    if (!customerCode.trim()) {
-      setStatusMessage('Please enter a customer code');
-      setStatusError(true);
-      return;
-    }
+      if (!value || value.trim().length < 1) {
+        setMemberSearchOptions([]);
+        return;
+      }
 
-    try {
+      memberSearchDebounceRef.current = setTimeout(async () => {
+        const result = await searchMembers(value);
+        if (result.success && result.data) {
+          setMemberSearchOptions(result.data);
+        } else {
+          setMemberSearchOptions([]);
+        }
+      }, 400);
+    },
+    [searchMembers]
+  );
+
+  const handleMemberSelect = useCallback(
+    async (member) => {
+      if (!member || !member.ccustcode) return;
+
+      const customerCodeValue = member.ccustcode.trim();
+      setCustomerCode(customerCodeValue);
+      setMemberSearchInput('');
+      setMemberSearchOptions([]);
       setStatusMessage('');
       setStatusError(false);
-      const details = await fetchMemberDetails(customerCode.trim());
 
-      if (details) {
-        // Extract membname from the API response - this is the primary field name from the backend
-        let customerName = '';
-        
-        // Check for membname first (as provided in the API response)
-        if (details.membname && typeof details.membname === 'string' && details.membname.trim()) {
-          customerName = details.membname.trim();
-        } 
-        // Fallback to other possible field names
-        else if (details.customerName && typeof details.customerName === 'string' && details.customerName.trim()) {
-          customerName = details.customerName.trim();
-        } 
-        else if (details.CustomerName && typeof details.CustomerName === 'string' && details.CustomerName.trim()) {
-          customerName = details.CustomerName.trim();
+      try {
+        const details = await fetchMemberDetails(customerCodeValue);
+
+        if (details) {
+          // Extract membname from the API response
+          let customerName = '';
+          if (details.membname && typeof details.membname === 'string' && details.membname.trim()) {
+            customerName = details.membname.trim();
+          } else if (details.customerName && typeof details.customerName === 'string' && details.customerName.trim()) {
+            customerName = details.customerName.trim();
+          } else if (details.CustomerName && typeof details.CustomerName === 'string' && details.CustomerName.trim()) {
+            customerName = details.CustomerName.trim();
+          } else if (details.name && typeof details.name === 'string' && details.name.trim()) {
+            customerName = details.name.trim();
+          } else if (details.Name && typeof details.Name === 'string' && details.Name.trim()) {
+            customerName = details.Name.trim();
+          }
+
+          setFormData({
+            customerName: customerName,
+            accountType: '',
+            product: '',
+            branch: '',
+            itemNumber: String(customerCodeValue).padStart(6, '0'),
+            accountNumber: '',
+            accountName: customerName,
+          });
+          setStatusMessage('Customer details loaded successfully');
+          setStatusError(false);
+        } else if (memberError) {
+          setStatusMessage(`Error: ${memberError}`);
+          setStatusError(true);
+          setFormData({
+            customerName: '',
+            accountType: '',
+            product: '',
+            branch: '',
+            itemNumber: '',
+            accountNumber: '',
+            accountName: '',
+          });
         }
-        else if (details.name && typeof details.name === 'string' && details.name.trim()) {
-          customerName = details.name.trim();
-        }
-        else if (details.Name && typeof details.Name === 'string' && details.Name.trim()) {
-          customerName = details.Name.trim();
-        }
-        
-        setFormData({
-          customerName: customerName,
-          accountType: '',
-          product: '',
-          branch: '',
-          itemNumber: String(customerCode.trim()).padStart(6, '0'),
-          accountNumber: '',
-          accountName: customerName,
-        });
-        setStatusMessage('Customer details loaded successfully');
-        setStatusError(false);
-      } else if (memberError) {
-        setStatusMessage(`Error: ${memberError}`);
+      } catch (err) {
+        setStatusMessage(`Error: ${err.message}`);
         setStatusError(true);
         setFormData({
           customerName: '',
-          accountType: '',
           product: '',
           branch: '',
           itemNumber: '',
@@ -111,19 +141,9 @@ export default function AddMemberAccount() {
           accountName: '',
         });
       }
-    } catch (err) {
-      setStatusMessage(`Error: ${err.message}`);
-      setStatusError(true);
-      setFormData({
-        customerName: '',
-        product: '',
-        branch: '',
-        itemNumber: '',
-        accountNumber: '',
-        accountName: '',
-      });
-    }
-  };
+    },
+    [fetchMemberDetails, memberError]
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -155,6 +175,8 @@ export default function AddMemberAccount() {
 
   const handleClear = () => {
     setCustomerCode('');
+    setMemberSearchInput('');
+    setMemberSearchOptions([]);
     setFormData({
       customerName: '',
       accountType: '',
@@ -272,41 +294,96 @@ export default function AddMemberAccount() {
             Search Customer
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, maxWidth: 500 }}>
-            <TextField
-              label="Customer Code"
-              value={customerCode}
-              onChange={handleCustomerCodeChange}
-              onKeyDown={handleCustomerCodeTab}
-              placeholder="Enter customer code"
-              type="number"
-              helperText="Enter customer code and press Tab or Search to load details"
-              FormHelperTextProps={{
-                sx: {
-                  fontWeight: 600,
-                  color: '#666',
-                },
+            <Autocomplete
+              options={memberSearchOptions}
+              getOptionLabel={(option) => {
+                if (typeof option === 'string') return option;
+                const name = (option.ccustname || '').trim();
+                const code = (option.ccustcode || '').trim();
+                const street = (option.cstreet || '').trim();
+                const phone = (option.ctel || '').trim();
+                return `${name} - Code: ${code}${street ? ' - ' + street : ''}${phone ? ' - Phone: ' + phone : ''}`;
               }}
+              isOptionEqualToValue={(option, value) => option.ccustcode === value.ccustcode}
+              inputValue={memberSearchInput}
+              onInputChange={handleMemberSearchInputChange}
+              onChange={(e, value) => handleMemberSelect(value)}
+              loading={searchLoading}
+              noOptionsText="No members found"
               size="small"
-              fullWidth
-              disabled={memberLoading}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Find Customer"
+                  placeholder="Search by name or code"
+                  slotProps={{
+                    input: {
+                      ...params.InputProps,
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ mr: 1 }}>
+                          <PersonIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <>
+                          {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    },
+                  }}
+                  helperText="Enter customer name or code to search"
+                />
+              )}
+              renderOption={(props, option) => {
+                if (!option) return null;
+                const name = String(option.ccustname || '').trim();
+                const code = String(option.ccustcode || '').trim();
+                const street = String(option.cstreet || '').trim();
+                const phone = String(option.ctel || '').trim();
+                return (
+                  <li {...props} key={`member-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderBottom: '1px solid #e8e8e8',
+                        '&:hover': { backgroundColor: '#e3f2fd' },
+                        cursor: 'pointer',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        width: '100%',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                        <PersonIcon sx={{ color: '#1976d2', fontSize: '1.2rem', flexShrink: 0 }} />
+                        <Box sx={{ flex: 1, display: 'flex', gap: 1.2, alignItems: 'center', minWidth: 0 }}>
+                          <Box sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1976d2', minWidth: '140px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {name}
+                          </Box>
+                          <Box sx={{ fontSize: '0.85rem', color: '#555', display: 'flex', gap: 0.5, minWidth: '90px', flexShrink: 0 }}>
+                            <span style={{ color: '#999', fontWeight: 500 }}>Code:</span>
+                            <strong>{code}</strong>
+                          </Box>
+                          <Box sx={{ fontSize: '0.85rem', color: '#666', display: 'flex', gap: 0.75, alignItems: 'center', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ flexShrink: 0 }}>{street || '—'}</span>
+                            <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>|</span>
+                            <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>Phone:</span>
+                            <span style={{ flexShrink: 0 }}>{phone || '—'}</span>
+                          </Box>
+                        </Box>
+                      </Box>
+                      <ChevronRightIcon sx={{ color: '#1976d2', fontSize: '1.4rem', flexShrink: 0 }} />
+                    </Box>
+                  </li>
+                );
+              }}
             />
+
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="contained"
-                startIcon={memberLoading ? <CircularProgress size={18} /> : <SearchRoundedIcon />}
-                onClick={handleSearch}
-                disabled={memberLoading}
-                sx={{
-                  backgroundColor: '#667eea',
-                  '&:hover': { backgroundColor: '#5568d3' },
-                  fontWeight: 600,
-                  paddingX: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                }}
-              >
-                {memberLoading ? 'Searching...' : 'Search'}
-              </Button>
               <Button
                 variant="outlined"
                 onClick={handleClear}

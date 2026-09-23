@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   Alert,
+  Autocomplete,
   Backdrop,
   Box,
   Button,
@@ -15,6 +16,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { DataGrid } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
@@ -27,6 +30,7 @@ import { useGetBanks } from './hooks/useGetBanks';
 import { useGetBankAccounts } from './hooks/useGetBankAccounts';
 import { useWithdrawalTransaction } from './hooks/useWithdrawalTransaction';
 import { useAreas } from '../../../hooks/useAreas';
+import { useSearchMembers } from '../../../hooks/useSearchMembers';
 import { useAuthStore } from '../../../store/authStore';
 
 const todayIso = new Date().toISOString().split('T')[0];
@@ -149,6 +153,10 @@ export default function Withdrawal() {
   const [lastTransactionData, setLastTransactionData] = useState(null);
   const shouldAutoPrint = useRef(false);
   const { fetchMemberDetails } = useGetMemberDetails();
+  const { searchMembers, loading: searchLoading } = useSearchMembers();
+  const [memberSearchOptions, setMemberSearchOptions] = useState([]);
+  const [memberSearchInput, setMemberSearchInput] = useState('');
+  const memberSearchDebounceRef = useRef(null);
   const { fetchAccountDetails } = useGetAccountDetails();
   const { fetchBanks } = useGetBanks();
   const { fetchBankAccounts } = useGetBankAccounts();
@@ -241,101 +249,91 @@ export default function Withdrawal() {
     }
   }, [formData.depositType, user]);
 
-  const searchMember = async (searchBy) => {
-    const rawValue = searchBy === 'memberCode' ? formData.memberCode : formData.payrollNumber;
-    if (!rawValue.trim()) {
-      return;
-    }
+  const handleMemberSearchInputChange = useCallback(
+    (e, value) => {
+      setMemberSearchInput(value);
 
-    setIsLoadingMember(true);
-    setStatusMessage('');
-    setStatusError(false);
+      if (memberSearchDebounceRef.current) {
+        clearTimeout(memberSearchDebounceRef.current);
+      }
 
-    try {
-      let member = null;
+      if (!value || value.trim().length < 1) {
+        setMemberSearchOptions([]);
+        return;
+      }
 
-      // For member code, try fetching from backend API
-      if (searchBy === 'memberCode') {
-        const remoteMemberData = await fetchMemberDetails(rawValue.trim());
+      memberSearchDebounceRef.current = setTimeout(async () => {
+        const result = await searchMembers(value);
+        if (result.success && result.data) {
+          setMemberSearchOptions(result.data);
+        } else {
+          setMemberSearchOptions([]);
+        }
+      }, 400);
+    },
+    [searchMembers]
+  );
+
+  const handleMemberSelect = useCallback(
+    async (member) => {
+      if (!member || !member.ccustcode) return;
+
+      // Set the memberCode and clear search input
+      setFormData((prev) => ({
+        ...prev,
+        memberCode: member.ccustcode.trim(),
+      }));
+      setMemberSearchInput('');
+      setMemberSearchOptions([]);
+
+      // Trigger search with the selected member code
+      setIsLoadingMember(true);
+      setStatusMessage('');
+      setStatusError(false);
+
+      try {
+        const remoteMemberData = await fetchMemberDetails(member.ccustcode.trim());
         if (remoteMemberData) {
-          // Transform API response to match our local member structure
-          // Map Accounts array from API (with capital A) to accounts
-          const accounts = Array.isArray(remoteMemberData.Accounts) 
-            ? remoteMemberData.Accounts.map(acc => ({
+          const accounts = Array.isArray(remoteMemberData.Accounts)
+            ? remoteMemberData.Accounts.map((acc) => ({
                 accountType: acc.AccountName || 'Account',
                 accountNumber: acc.AccountNumber || '',
-                accountBalance: '0.00'
+                accountBalance: '0.00',
               }))
             : [];
-          
-          member = {
-            memberCode: remoteMemberData.memberCode || rawValue.trim(),
+
+          const memberData = {
+            memberCode: remoteMemberData.memberCode || member.ccustcode.trim(),
             payrollNumber: remoteMemberData.payrollNumber || '',
             profilePicture: formatProfileImage(remoteMemberData.MemberPicture),
             memberSignature: formatProfileImage(remoteMemberData.MemberSignature),
             phoneNumber: remoteMemberData.Phone || '',
             memberAccounts: Array.isArray(remoteMemberData.Accounts) ? remoteMemberData.Accounts : [],
-            accounts: accounts.length > 0 ? accounts : [{
-              accountType: 'Account',
-              accountNumber: '',
-              accountBalance: '0.00'
-            }],
+            accounts: accounts.length > 0 ? accounts : [{ accountType: 'Account', accountNumber: '', accountBalance: '0.00' }],
             memberRegion: remoteMemberData.region != null ? String(remoteMemberData.region) : '',
           };
+          applyMemberData(memberData);
+          setStatusMessage('Member details loaded successfully from search.');
+          setStatusError(false);
+        } else {
+          setStatusMessage('Member not found.');
+          setStatusError(true);
         }
-      } else {
-        // Payroll number search only from backend - no fallback
-        // setRows([]); // rows state removed
-        setFormData((prev) => ({
-          ...prev,
-          profilePicture: '',
-          memberSignature: '',
-          phoneNumber: '',
-          memberAccounts: [],
-          accountBalance: '',
-          accountNumber: '',
-          clearedBalance: '',
-          unclearedBalance: '',
-        }));
-        setStatusMessage('Member not found for provided search details.');
+      } catch (error) {
+        console.error('Error loading member details:', error);
+        setStatusMessage('Failed to load member details.');
         setStatusError(true);
+      } finally {
         setIsLoadingMember(false);
-        return;
       }
-
-      if (!member) {
-        // setRows([]); // rows state removed
-        setFormData((prev) => ({
-          ...prev,
-          profilePicture: '',
-          memberSignature: '',
-          phoneNumber: '',
-          memberAccounts: [],
-          accountBalance: '',
-          accountNumber: '',
-          clearedBalance: '',
-          unclearedBalance: '',
-        }));
-        setStatusMessage('Member not found for provided search details.');
-        setStatusError(true);
-        return;
-      }
-
-      applyMemberData(member);
-      setStatusMessage('Member accounts and contact details loaded successfully.');
-      setStatusError(false);
-    } catch (error) {
-      console.error('Error searching for member:', error);
-      setStatusMessage('Failed to load member details.');
-      setStatusError(true);
-    } finally {
-      setIsLoadingMember(false);
-    }
-  };
+    },
+    [fetchMemberDetails]
+  );
 
   const handleClear = () => {
     setFormData({ ...resetFormState });
-    // setRows([]); // rows state removed
+    setMemberSearchInput('');
+    setMemberSearchOptions([]);
     setStatusMessage('');
     setStatusError(false);
     setTouched({});
@@ -756,30 +754,93 @@ export default function Withdrawal() {
                 Search
               </Typography>
               <Box sx={{ display: 'grid', gap: 2 }}>
-                <TextField
-                  label="Customer Code"
-                  name="memberCode"
-                  value={formData.memberCode}
-                  onChange={handleChange}
-                  onBlur={() => searchMember('memberCode')}
-                  disabled={isLoadingMember}
-                  placeholder="Member Code"
-                  helperText="Enter customer code and press Tab to load member details."
-                  FormHelperTextProps={{
-                    sx: {
-                      fontWeight: 800,
-                      color: '#b45309',
-                    },
+                <Autocomplete
+                  options={memberSearchOptions}
+                  getOptionLabel={(option) => {
+                    if (typeof option === 'string') return option;
+                    const name = (option.ccustname || '').trim();
+                    const code = (option.ccustcode || '').trim();
+                    const street = (option.cstreet || '').trim();
+                    const phone = (option.ctel || '').trim();
+                    return `${name} - Code: ${code}${street ? ' - ' + street : ''}${phone ? ' - Phone: ' + phone : ''}`;
                   }}
-                />
-                <TextField
-                  label="Payroll Number"
-                  name="payrollNumber"
-                  value={formData.payrollNumber}
-                  onChange={handleChange}
-                  onBlur={() => searchMember('payrollNumber')}
-                  disabled={isLoadingMember}
-                  placeholder="e.g. PAY001"
+                  isOptionEqualToValue={(option, value) => option.ccustcode === value.ccustcode}
+                  inputValue={memberSearchInput}
+                  onInputChange={handleMemberSearchInputChange}
+                  onChange={(e, value) => handleMemberSelect(value)}
+                  loading={searchLoading}
+                  noOptionsText="No members found"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Find Customer"
+                      placeholder="Search by name or code"
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          startAdornment: (
+                            <InputAdornment position="start" sx={{ mr: 1 }}>
+                              <PersonIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <>
+                              {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        },
+                      }}
+                      helperText="Enter customer name or code to search"
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    if (!option) return null;
+                    const name = String(option.ccustname || '').trim();
+                    const code = String(option.ccustcode || '').trim();
+                    const street = String(option.cstreet || '').trim();
+                    const phone = String(option.ctel || '').trim();
+                    return (
+                      <li {...props} key={`member-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            borderBottom: '1px solid #e8e8e8',
+                            '&:hover': { backgroundColor: '#e3f2fd' },
+                            cursor: 'pointer',
+                            transition: 'all 0.25s ease',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            width: '100%',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                            <PersonIcon sx={{ color: '#1976d2', fontSize: '1.2rem', flexShrink: 0 }} />
+                            <Box sx={{ flex: 1, display: 'flex', gap: 1.2, alignItems: 'center', minWidth: 0 }}>
+                              <Box sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1976d2', minWidth: '140px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {name}
+                              </Box>
+                              <Box sx={{ fontSize: '0.85rem', color: '#555', display: 'flex', gap: 0.5, minWidth: '90px', flexShrink: 0 }}>
+                                <span style={{ color: '#999', fontWeight: 500 }}>Code:</span>
+                                <strong>{code}</strong>
+                              </Box>
+                              <Box sx={{ fontSize: '0.85rem', color: '#666', display: 'flex', gap: 0.75, alignItems: 'center', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ flexShrink: 0 }}>{street || '—'}</span>
+                                <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>|</span>
+                                <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>Phone:</span>
+                                <span style={{ flexShrink: 0 }}>{phone || '—'}</span>
+                              </Box>
+                            </Box>
+                          </Box>
+                          <ChevronRightIcon sx={{ color: '#1976d2', fontSize: '1.4rem', flexShrink: 0 }} />
+                        </Box>
+                      </li>
+                    );
+                  }}
+                  sx={{ mb: 1 }}
                 />
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button

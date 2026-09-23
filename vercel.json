@@ -321,6 +321,14 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/enquiry/:path*"
     },
     {
+      "source": "/api/member/search",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/search"
+    },
+    {
+      "source": "/api/member/search/:path*",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/search/:path*"
+    },
+    {
       "source": "/api/users/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/users/:path*"
     },

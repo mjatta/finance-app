@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  InputAdornment,
   Skeleton,
   TextField,
   Typography,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import BalanceIcon from '@mui/icons-material/Balance';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -18,6 +21,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import BadgeIcon from '@mui/icons-material/Badge';
 import { useMemberDetails } from './hooks/useMemberDetails';
 import { useConfirmMemberActivate } from './hooks/useConfirmMemberActivate';
+import { useSearchMembers } from '../../../hooks/useSearchMembers';
 
 export default function MemberActivate() {
   const [customerCode, setCustomerCode] = useState('');
@@ -25,9 +29,56 @@ export default function MemberActivate() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-
   const { memberData, loading: isLoading, error: fetchError, fetchMemberDetails } = useMemberDetails();
   const { confirmActivate } = useConfirmMemberActivate();
+  const { searchMembers, loading: searchLoading } = useSearchMembers();
+  const [memberSearchOptions, setMemberSearchOptions] = useState([]);
+  const [memberSearchInput, setMemberSearchInput] = useState('');
+  const memberSearchDebounceRef = useRef(null);
+
+  const handleMemberSearchInputChange = useCallback(
+    (e, value) => {
+      setMemberSearchInput(value);
+
+      if (memberSearchDebounceRef.current) {
+        clearTimeout(memberSearchDebounceRef.current);
+      }
+
+      if (!value || value.trim().length < 1) {
+        setMemberSearchOptions([]);
+        return;
+      }
+
+      memberSearchDebounceRef.current = setTimeout(async () => {
+        const result = await searchMembers(value);
+        if (result.success && result.data) {
+          setMemberSearchOptions(result.data);
+        } else {
+          setMemberSearchOptions([]);
+        }
+      }, 400);
+    },
+    [searchMembers]
+  );
+
+  const handleMemberSelect = useCallback(
+    async (member) => {
+      if (!member || !member.ccustcode) return;
+
+      // Set the customer code and clear search input
+      const customerCodeValue = member.ccustcode.trim();
+      setCustomerCode(customerCodeValue);
+      setMemberSearchInput('');
+      setMemberSearchOptions([]);
+      setStatusMessage('');
+      setStatusError(false);
+      setHasSearched(true);
+
+      // Fetch member details
+      await fetchMemberDetails(customerCodeValue);
+    },
+    [fetchMemberDetails]
+  );
 
   const handleSearchMember = async () => {
     if (!customerCode.trim()) {
@@ -53,6 +104,8 @@ export default function MemberActivate() {
 
   const handleClear = () => {
     setCustomerCode('');
+    setMemberSearchInput('');
+    setMemberSearchOptions([]);
     setStatusMessage('');
     setStatusError(false);
     setHasSearched(false);
@@ -126,41 +179,96 @@ export default function MemberActivate() {
             </Typography>
 
             <Box sx={{ display: 'grid', gap: 2 }}>
-              <TextField
-                label="Customer Code"
-                value={customerCode}
-                onChange={(e) => setCustomerCode(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchMember()}
-                disabled={isLoading}
-                placeholder="e.g., 1, 123, 001"
-                type="number"
-                fullWidth
+              <Autocomplete
+                options={memberSearchOptions}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string') return option;
+                  const name = (option.ccustname || '').trim();
+                  const code = (option.ccustcode || '').trim();
+                  const street = (option.cstreet || '').trim();
+                  const phone = (option.ctel || '').trim();
+                  return `${name} - Code: ${code}${street ? ' - ' + street : ''}${phone ? ' - Phone: ' + phone : ''}`;
+                }}
+                isOptionEqualToValue={(option, value) => option.ccustcode === value.ccustcode}
+                inputValue={memberSearchInput}
+                onInputChange={handleMemberSearchInputChange}
+                onChange={(e, value) => handleMemberSelect(value)}
+                loading={searchLoading}
+                noOptionsText="No members found"
                 size="small"
-                helperText="Enter the customer code to search"
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Find Customer"
+                    placeholder="Search by name or code"
+                    slotProps={{
+                      input: {
+                        ...params.InputProps,
+                        startAdornment: (
+                          <InputAdornment position="start" sx={{ mr: 1 }}>
+                            <PersonIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <>
+                            {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      },
+                    }}
+                    helperText="Enter customer name or code to search"
+                  />
+                )}
+                renderOption={(props, option) => {
+                  if (!option) return null;
+                  const name = String(option.ccustname || '').trim();
+                  const code = String(option.ccustcode || '').trim();
+                  const street = String(option.cstreet || '').trim();
+                  const phone = String(option.ctel || '').trim();
+                  return (
+                    <li {...props} key={`member-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderBottom: '1px solid #e8e8e8',
+                          '&:hover': { backgroundColor: '#e3f2fd' },
+                          cursor: 'pointer',
+                          transition: 'all 0.25s ease',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          width: '100%',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                          <PersonIcon sx={{ color: '#1976d2', fontSize: '1.2rem', flexShrink: 0 }} />
+                          <Box sx={{ flex: 1, display: 'flex', gap: 1.2, alignItems: 'center', minWidth: 0 }}>
+                            <Box sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1976d2', minWidth: '140px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {name}
+                            </Box>
+                            <Box sx={{ fontSize: '0.85rem', color: '#555', display: 'flex', gap: 0.5, minWidth: '90px', flexShrink: 0 }}>
+                              <span style={{ color: '#999', fontWeight: 500 }}>Code:</span>
+                              <strong>{code}</strong>
+                            </Box>
+                            <Box sx={{ fontSize: '0.85rem', color: '#666', display: 'flex', gap: 0.75, alignItems: 'center', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ flexShrink: 0 }}>{street || '—'}</span>
+                              <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>|</span>
+                              <span style={{ color: '#999', fontWeight: 500, flexShrink: 0 }}>Phone:</span>
+                              <span style={{ flexShrink: 0 }}>{phone || '—'}</span>
+                            </Box>
+                          </Box>
+                        </Box>
+                        <ChevronRightIcon sx={{ color: '#1976d2', fontSize: '1.4rem', flexShrink: 0 }} />
+                      </Box>
+                    </li>
+                  );
+                }}
               />
 
               <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <Button
-                  variant="contained"
-                  onClick={handleSearchMember}
-                  disabled={isLoading || !customerCode.trim()}
-                  sx={{
-                    backgroundColor: '#667eea',
-                    '&:hover': { backgroundColor: '#5568d3' },
-                    fontWeight: 600,
-                    flex: 1,
-                    textTransform: 'none',
-                  }}
-                >
-                  {isLoading ? (
-                    <>
-                      <CircularProgress size={16} sx={{ mr: 1 }} />
-                      Searching...
-                    </>
-                  ) : (
-                    'Search'
-                  )}
-                </Button>
                 <Button
                   variant="outlined"
                   onClick={handleClear}
