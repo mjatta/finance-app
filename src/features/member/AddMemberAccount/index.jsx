@@ -59,7 +59,8 @@ export default function AddMemberAccount() {
         clearTimeout(memberSearchDebounceRef.current);
       }
 
-      if (!value || value.trim().length < 1) {
+      // Don't search if value is empty or if it looks like a formatted option (contains " - Code:")
+      if (!value || value.trim().length < 1 || value.includes(' - Code:')) {
         setMemberSearchOptions([]);
         return;
       }

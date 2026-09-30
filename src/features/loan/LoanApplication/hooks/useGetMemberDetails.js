@@ -7,7 +7,7 @@ export function useGetMemberDetails() {
 
   const fetchMemberDetails = async (memberCode) => {
     if (!memberCode || !memberCode.trim()) {
-      return null;
+      return { data: null, error: 'No member code provided' };
     }
 
     setLoading(true);
@@ -21,33 +21,56 @@ export function useGetMemberDetails() {
       });
 
       if (response.status === 404) {
-        setError('Member not found');
-        return null;
+        const errorMsg = 'Member ID not found';
+        setError(errorMsg);
+        return { data: null, error: errorMsg };
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        const errorMsg = `HTTP Error: ${response.status} ${response.statusText}`;
+        setError(errorMsg);
+        return { data: null, error: errorMsg };
       }
 
       let payload;
       try {
         payload = await response.json();
       } catch {
-        setError('Invalid response format');
-        return null;
+        const errorMsg = 'Invalid response format';
+        setError(errorMsg);
+        return { data: null, error: errorMsg };
       }
 
       if (!payload || typeof payload !== 'object') {
-        setError('Invalid response structure');
-        return null;
+        const errorMsg = 'Invalid response structure';
+        setError(errorMsg);
+        return { data: null, error: errorMsg };
+      }
+
+      // Check if the API returned an error status with a message
+      if (payload.status === 'error' && payload.message) {
+        setError(payload.message);
+        return { data: null, error: payload.message };
+      }
+
+      // Check if the API returned an error message in the payload
+      if (payload.message && payload.message.toLowerCase().includes('not found')) {
+        setError(payload.message);
+        return { data: null, error: payload.message };
+      }
+
+      if (payload.error) {
+        setError(payload.error);
+        return { data: null, error: payload.error };
       }
 
       setError(null);
-      return payload;
+      return { data: payload, error: null };
     } catch (err) {
       console.error('Error fetching member details:', err);
-      setError(err.message || 'Failed to fetch member details');
-      return null;
+      const errorMsg = err.message || 'Failed to fetch member details';
+      setError(errorMsg);
+      return { data: null, error: errorMsg };
     } finally {
       setLoading(false);
     }

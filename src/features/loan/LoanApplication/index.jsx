@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   Alert,
   Backdrop,
   Box,
   Button,
+  Autocomplete,
   Card,
   CardContent,
   CircularProgress,
@@ -26,6 +27,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import PersonIcon from '@mui/icons-material/Person';
 import { useAuthStore } from '../../../store/authStore';
 import { formatCurrency, cleanNumericInput, CURRENCY_SYMBOL } from '../../../utils/currencyFormatter';
 import { CurrencyAdornment } from '../../../components/FieldAdornments';
@@ -39,6 +41,7 @@ import { useUpdateLoan } from './hooks/useUpdateLoan';
 import { useLoanReasons } from '../../../hooks/useLoanReasons';
 import { useLoanOfficers } from '../../../hooks/useLoanOfficers';
 import { useAreas } from '../../../hooks/useAreas';
+import { useSearchMembers } from '../../../hooks/useSearchMembers';
 
 const todayIso = new Date().toISOString().split('T')[0];
 
@@ -135,6 +138,10 @@ export default function LoanApplication() {
   const [searchMemberCode, setSearchMemberCode] = useState('');
 
   const { fetchMemberDetails, loading: loadingMember } = useGetMemberDetails();
+  const { searchMembers, loading: searchLoading } = useSearchMembers();
+  const [memberSearchOptions, setMemberSearchOptions] = useState([]);
+  const [memberSearchInput, setMemberSearchInput] = useState('');
+  const memberSearchDebounceRef = useRef(null);
   const { fetchLoanSetupDetails } = useLoanSetupDetails();
   const { calculateLoan } = useLoanCalculate();
   const { saveLoan } = useLoanSave();
@@ -340,6 +347,90 @@ export default function LoanApplication() {
       setStatusMessage('Failed to fetch member details');
       setStatusError(true);
     }
+  };
+
+  const handleMemberSelect = useCallback(
+    async (member) => {
+      if (!member || !member.ccustcode) return;
+
+      const customerCodeValue = member.ccustcode.trim();
+      setSearchMemberCode(customerCodeValue);
+      setMemberSearchInput('');
+      setMemberSearchOptions([]);
+      setStatusMessage('');
+      setStatusError(false);
+      setMemberDetails(null);
+
+      try {
+        const result = await fetchMemberDetails(customerCodeValue);
+
+        if (result?.error) {
+          setStatusMessage(result.error);
+          setStatusError(true);
+          return;
+        }
+
+        const data = result?.data;
+        if (data && Object.keys(data).length > 0) {
+          setMemberDetails(data);
+
+          const memberName = data.fullName || data.MemberName || '';
+          const savingsBalance = data.savingsBalance || data.SavingBalance || '';
+          const memberPic = data.memberPic || data.MemberPicture || '';
+          const memberSign = data.memberSign || data.MemberSignature || '';
+          const applicationForm = data.ApplicationForm || data.applicationForm || null;
+
+          if (applicationForm) {
+            const previewUrl = base64ToPreviewUrl(applicationForm);
+            setApplicationFormPreviewUrl(previewUrl);
+          }
+
+          setFormData((prev) => ({
+            ...prev,
+            memberCode: customerCodeValue,
+            memberName,
+            savingBalance: savingsBalance,
+            memberPic,
+            memberSign,
+            currentLoanBalance: data.LoanBalance || '',
+            loanLimit: data.LoanLimit || '',
+            selectedRegionId: data.region != null ? String(data.region) : '',
+          }));
+
+          setStatusMessage('Member details loaded successfully');
+          setStatusError(false);
+        } else {
+          setStatusMessage('Member not found');
+          setStatusError(true);
+        }
+      } catch (error) {
+        setStatusMessage('Failed to fetch member details: ' + (error.message || 'Unknown error'));
+        setStatusError(true);
+      }
+    },
+    [fetchMemberDetails]
+  );
+
+  const handleMemberSearchInputChange = (e, value) => {
+    setMemberSearchInput(value);
+
+    if (memberSearchDebounceRef.current) {
+      clearTimeout(memberSearchDebounceRef.current);
+    }
+
+    if (!value || value.trim().length < 1 || value.includes(' - Code:')) {
+      setMemberSearchOptions([]);
+      return;
+    }
+
+    memberSearchDebounceRef.current = setTimeout(async () => {
+      const result = await searchMembers(value);
+      if (result.success && result.data) {
+        setMemberSearchOptions(result.data);
+      } else {
+        setMemberSearchOptions([]);
+      }
+    }, 400);
   };
 
   const handleChange = (e) => {
@@ -989,21 +1080,78 @@ export default function LoanApplication() {
                 Search Customer
               </Typography>
               <Box component="form" onSubmit={handleSearch} sx={{ display: 'grid', gap: 2, maxWidth: 400 }}>
-                <TextField
-                  label="Customer Code"
-                  value={searchMemberCode}
-                  onChange={(e) => setSearchMemberCode(e.target.value)}
-                  placeholder="Enter customer code"
-                  //helperText="Enter customer code and press Tab to load member details."
-                  FormHelperTextProps={{
-                    sx: {
-                      fontWeight: 800,
-                      color: '#b45309',
-                    },
+                <Autocomplete
+                  options={memberSearchOptions}
+                  getOptionLabel={(option) => {
+                    if (typeof option === 'string') return option;
+                    const name = (option.ccustname || '').trim();
+                    const code = (option.ccustcode || '').trim();
+                    const street = (option.cstreet || '').trim();
+                    const phone = (option.ctel || '').trim();
+                    return `${name} - Code: ${code}${street ? ' - ' + street : ''}${phone ? ' - Phone: ' + phone : ''}`;
                   }}
+                  isOptionEqualToValue={(option, value) => option.ccustcode === value.ccustcode}
+                  inputValue={memberSearchInput}
+                  onInputChange={handleMemberSearchInputChange}
+                  onChange={(e, value) => handleMemberSelect(value)}
+                  loading={searchLoading}
+                  noOptionsText="No members found"
                   size="small"
-                  fullWidth
-                  disabled={loadingMember}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Find Customer"
+                      placeholder="Search by name or code"
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          startAdornment: (
+                            <InputAdornment position="start" sx={{ mr: 1 }}>
+                              <PersonIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <>
+                              {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        },
+                      }}
+                      helperText="Enter customer name or code to search"
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    if (!option) return null;
+                    const name = String(option.ccustname || '').trim();
+                    const code = String(option.ccustcode || '').trim();
+                    const street = String(option.cstreet || '').trim();
+                    const phone = String(option.ctel || '').trim();
+                    return (
+                      <li {...props} key={`member-${code}`} style={{ padding: 0, width: '100%', display: 'block' }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            borderBottom: '1px solid #e8e8e8',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                              <PersonIcon sx={{ color: '#1976d2', fontSize: 18 }} />
+                              <Box>
+                                <Typography sx={{ fontWeight: 700 }}>{name}</Typography>
+                                <Typography sx={{ fontSize: '0.8rem', color: '#666' }}>{street}</Typography>
+                              </Box>
+                            </Box>
+                            <Typography sx={{ color: '#1976d2', fontWeight: 700 }}>Code: {code}</Typography>
+                          </Box>
+                          {phone && (
+                            <Typography sx={{ mt: 0.5, fontSize: '0.85rem', color: '#444' }}>Phone: {phone}</Typography>
+                          )}
+                        </Box>
+                      </li>
+                    );
+                  }}
                 />
                 <Button
                   variant="contained"
