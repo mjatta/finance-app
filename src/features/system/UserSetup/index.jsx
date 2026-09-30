@@ -32,7 +32,7 @@ const BRANCHES_CACHE_KEY = 'userSetup_remoteBranches';
 const BRANCHES_RAW_CACHE_KEY = 'userSetup_remoteBranchesRaw';
 const SETUP_CACHE_KEY = 'userSetup_setupPayload';
 
-const featureOptions = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting'];
+const featureOptions = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting', 'payroll'];
 const featurePermissionOptions = ['write', 'view only', 'hide feature'];
 const pagePermissionOptions = ['inherit', 'write', 'view only', 'hide page'];
 
@@ -44,6 +44,7 @@ const featureLabelMap = {
   processing: 'Processing',
   system: 'System Administration',
   reporting: 'Reporting',
+  payroll: 'Member Payroll',
 };
 
 const getFeatureLabel = (feature) => featureLabelMap[feature] || feature.charAt(0).toUpperCase() + feature.slice(1);
@@ -116,6 +117,7 @@ const defaultFeaturePermissions = {
   processing: 'hide feature',
   system: 'hide feature',
   reporting: 'hide feature',
+  payroll: 'hide feature',
 };
 
 const featurePageMap = {
@@ -185,6 +187,9 @@ const featurePageMap = {
     { path: '/reporting/customer-enquiries', label: 'Customer Enquiries' },
     { path: '/reporting/audit-trail-report', label: 'Audit Trail Report' },
     { path: '/reporting/guarantors-report', label: 'Guarantors Report' },
+  ],
+  payroll: [
+    { path: '/payroll', label: 'Member Payroll' },
   ],
 };
 

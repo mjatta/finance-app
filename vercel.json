@@ -325,6 +325,10 @@
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/search"
     },
     {
+      "source": "/api/periodic-dues",
+      "destination": "https://alakuyateh-001-site10.atempurl.com/api/PeriodicDues/GetPeriodicDues?companyId=30"
+    },
+    {
       "source": "/api/member/search/:path*",
       "destination": "https://alakuyateh-001-site10.atempurl.com/api/member/search/:path*"
     },

@@ -196,6 +196,45 @@ const memberAccountProductsApiPlugin = () => ({
   },
 })
 
+// Periodic Dues API Plugin (dev server middleware)
+const periodicDuesApiPlugin = () => ({
+  name: 'periodic-dues-api-plugin',
+  configureServer(server) {
+    server.middlewares.use('/api/periodic-dues', async (req, res, next) => {
+      try {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method === 'GET') {
+          try {
+            const backendRes = await fetch('https://alakuyateh-001-site10.atempurl.com/api/PeriodicDues/GetPeriodicDues?companyId=30', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+            const data = await backendRes.text()
+            res.statusCode = backendRes.status
+            res.end(data)
+          } catch (err) {
+            res.statusCode = 502
+            res.end(JSON.stringify({ message: 'Backend service unavailable', error: err.message }))
+          }
+          return
+        }
+
+        return next()
+      } catch (err) {
+        res.statusCode = 500
+        res.end(JSON.stringify({ message: 'Failed to process periodic dues request.', error: err.message }))
+      }
+    })
+  },
+})
+
 // GL Account Update API Plugin (dev server middleware, backend only)
 const glAccountsUpdateApiPlugin = () => ({
   name: 'gl-accounts-update-api-plugin',

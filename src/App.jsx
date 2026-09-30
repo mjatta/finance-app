@@ -126,10 +126,11 @@ const ReportingHub = lazy(() => import('./features/reporting/ReportingHub'));
 const Landing = lazy(() => import('./features/home/Landing'));
 const Login = lazy(() => import('./features/auth/Login'));
 const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
+const MemberPayroll = lazy(() => import('./features/payroll'));
 
 const deriveCategoryFromPath = (pathname) => {
   const firstSegment = pathname.split('/').filter(Boolean)[0] || null;
-  const allowedKeys = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting'];
+  const allowedKeys = ['member', 'loan', 'accounting', 'processing', 'system', 'reporting', 'payroll'];
   return allowedKeys.includes(firstSegment) ? firstSegment : null;
 };
 
@@ -534,6 +535,13 @@ function App() {
         { label: 'Periodic Subscription Processing', to: '/processing/subscription', icon: AutorenewRoundedIcon },
         { label: 'Savings Interest Calculation', to: '/processing/interest', icon: CalculateRoundedIcon },
         { label: 'Period Processing Period Dues', to: '/processing/period-dues', icon: EventRepeatRoundedIcon },
+      ],
+    },
+    {
+      key: 'payroll',
+      label: 'Payroll',
+      children: [
+        { label: 'Payroll', to: '/payroll', icon: PaymentsRoundedIcon },
       ],
     },
     {
@@ -1129,6 +1137,11 @@ function App() {
                     <Route
                       path="/reporting/guarantors-report"
                       element={renderWithAccess('reporting', <GuarantorsReport />)}
+                    />
+
+                    <Route
+                      path="/payroll"
+                      element={renderWithAccess('payroll', <MemberPayroll />)}
                     />
 
                     <Route path="*" element={<Navigate to="/home" replace />} />

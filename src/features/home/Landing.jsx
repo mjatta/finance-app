@@ -12,6 +12,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import InsightsIcon from '@mui/icons-material/Insights';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
 import ManRoundedIcon from '@mui/icons-material/ManRounded';
 import WomanRoundedIcon from '@mui/icons-material/WomanRounded';
@@ -44,6 +45,12 @@ const categories = [
     label: 'Processing',
     description: 'Run subscriptions, interest calculations and period dues.',
     icon: <AutorenewRoundedIcon fontSize="large" color="primary" />,
+  },
+  {
+    key: 'payroll',
+    label: 'Payroll',
+    description: 'Manage member payroll contributions and deductions.',
+    icon: <PaymentsRoundedIcon fontSize="large" color="primary" />,
   },
   {
     key: 'system',
